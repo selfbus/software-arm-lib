@@ -27,5 +27,6 @@
 *.out
 *.app
 
-Debug_*
-Release_*
+Debug*
+Release*
+.settings
