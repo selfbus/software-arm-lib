@@ -26,14 +26,14 @@
 								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.1435234766" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.1748674177" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/Catch/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-cpp-test/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-cpp-test/cpu-emu}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-cpp-test/sblib-cpp/inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-cpp/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-test/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-test/cpu-emu}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-test/inc-sblib}&quot;"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1770185234" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" value="-m32 -c -fmessage-length=0" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.preprocessor.def.1182788315" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="BCU_TYPE=10"/>
+									<listOptionValue builtIn="false" value="__LPC11XX__"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.957132709" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
@@ -47,10 +47,10 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.1397013663" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 								<option id="gnu.cpp.link.option.flags.166450681" name="Linker flags" superClass="gnu.cpp.link.option.flags" value="-m32 " valueType="string"/>
 								<option id="gnu.cpp.link.option.paths.1152867821" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-cpp-test/Debug_BCU1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib-test/Debug_BCU1}&quot;"/>
 								</option>
 								<option id="gnu.cpp.link.option.libs.67265083" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
-									<listOptionValue builtIn="false" value="sblib-cpp-test"/>
+									<listOptionValue builtIn="false" value="sblib-test"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1981742691" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>

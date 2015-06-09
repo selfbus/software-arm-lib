@@ -27,12 +27,12 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>inc-sblib-cpp</name>
+			<name>inc-sblib</name>
 			<type>2</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/sblib/inc</locationURI>
 		</link>
 		<link>
-			<name>sblib-cpp</name>
+			<name>sblib</name>
 			<type>2</type>
 			<locationURI>$%7BPARENT-2-PROJECT_LOC%7D/sblib/src</locationURI>
 		</link>
@@ -40,7 +40,7 @@
 	<filteredResources>
 		<filter>
 			<id>0</id>
-			<name>sblib-cpp</name>
+			<name>sblib</name>
 			<type>21</type>
 			<matcher>
 				<id>org.eclipse.ui.ide.multiFilter</id>
@@ -49,7 +49,7 @@
 		</filter>
 		<filter>
 			<id>0</id>
-			<name>sblib-cpp</name>
+			<name>sblib</name>
 			<type>21</type>
 			<matcher>
 				<id>org.eclipse.ui.ide.multiFilter</id>
@@ -58,7 +58,7 @@
 		</filter>
 		<filter>
 			<id>0</id>
-			<name>sblib-cpp</name>
+			<name>sblib</name>
 			<type>10</type>
 			<matcher>
 				<id>org.eclipse.ui.ide.multiFilter</id>
@@ -67,7 +67,7 @@
 		</filter>
 		<filter>
 			<id>0</id>
-			<name>sblib-cpp</name>
+			<name>sblib</name>
 			<type>10</type>
 			<matcher>
 				<id>org.eclipse.ui.ide.multiFilter</id>

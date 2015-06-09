@@ -27,22 +27,22 @@ static void tc_setup(void)
     userRam.status ^= 0x81; // set the programming mode
 }
 
-static void connect(void * state)
+static void connect(void * state, unsigned int param)
 {
     VaS(state)->connected = true;
 }
 
-static void disconnect(void * state)
+static void disconnect(void * state, unsigned int param)
 {
     VaS(state)->connected = false;
 }
 
-static void phy_addr_changed(void * state)
+static void phy_addr_changed(void * state, unsigned int param)
 {
     VaS(state)->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
 }
 
-static void clearProgMode(void * state)
+static void clearProgMode(void * state, unsigned int param)
 {
     if (userRam.status & BCU_STATUS_PROG)
     {

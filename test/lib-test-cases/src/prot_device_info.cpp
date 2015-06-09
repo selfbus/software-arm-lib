@@ -26,12 +26,12 @@ static void tc_setup(void)
     bcu.setOwnAddress(0x117E); // set own address to 1.1.126
 }
 
-static void connect(void * state)
+static void connect(void * state, unsigned int param)
 {
     VaS(state)->connected = true;
 }
 
-static void disconnect(void * state)
+static void disconnect(void * state, unsigned int param)
 {
     VaS(state)->connected = false;
 }

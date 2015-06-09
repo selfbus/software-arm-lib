@@ -15,27 +15,27 @@
 
 Timeout to;
 
-static void _check_expired_no(void * refState)
+static void _check_expired_no(void * refState, unsigned int param)
 {
 	REQUIRE(to.expired() == false);
 	REQUIRE(to.started() == true);
 	REQUIRE(to.stopped() == false);
 }
-static void _start_to_20(void * refState)
+static void _start_to_20(void * refState, unsigned int param)
 {
 	to.start(20);
-	_check_expired_no(refState);
+	_check_expired_no(refState, param);
 }
 
-static void _check_expired_yes(void * refState)
+static void _check_expired_yes(void * refState, unsigned int param)
 {
 	REQUIRE(to.expired() == true);
 	REQUIRE(to.started() == false);
 	REQUIRE(to.stopped() == true);
 }
-static void _check_time_wrap(void * refState)
+static void _check_time_wrap(void * refState, unsigned int param)
 {
-	_check_expired_no(refState);
+	_check_expired_no(refState, param);
 	REQUIRE(systemTime < 10);
 }
 
