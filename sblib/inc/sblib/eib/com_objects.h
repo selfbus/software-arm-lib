@@ -257,43 +257,43 @@ inline void objectWritten(int objno)
 
 inline void objectSetValue(int objno, unsigned int value)
 {
-    extern void _objectWrite(int objno, unsigned int value, int flags);
+    extern void _objectWrite(int objno, unsigned int val, int flags);
     _objectWrite(objno, value, 0);
 }
 
 inline void objectWrite(int objno, unsigned int value)
 {
-    extern void _objectWrite(int objno, unsigned int value, int flags);
+    extern void _objectWrite(int objno, unsigned int val, int flags);
     _objectWrite(objno, value, COMFLAG_TRANSREQ);
 }
 
 inline void objectWrite(int objno, byte* value)
 {
-    extern void _objectWriteBytes(int objno, byte* value, int flags);
+    extern void _objectWriteBytes(int objno, byte* val, int flags);
     _objectWriteBytes(objno, value, COMFLAG_TRANSREQ);
 }
 
 inline void objectWriteFloat(int objno, int value)
 {
-    extern void _objectWrite(int objno, unsigned int value, int flags);
+    extern void _objectWrite(int objno, unsigned int val, int flags);
     _objectWrite(objno, dptToFloat(value), COMFLAG_TRANSREQ);
 }
 
 inline void objectUpdate(int objno, unsigned int value)
 {
-    extern void _objectWrite(int objno, unsigned int value, int flags);
+    extern void _objectWrite(int objno, unsigned int val, int flags);
     _objectWrite(objno, value, COMFLAG_UPDATE);
 }
 
 inline void objectUpdate(int objno, byte* value)
 {
-    extern void _objectWriteBytes(int objno, byte* value, int flags);
+    extern void _objectWriteBytes(int objno, byte* val, int flags);
     _objectWriteBytes(objno, value, COMFLAG_UPDATE);
 }
 
 inline void objectUpdateFloat(int objno, int value)
 {
-    extern void _objectWrite(int objno, unsigned int value, int flags);
+    extern void _objectWrite(int objno, unsigned int val, int flags);
     _objectWrite(objno, dptToFloat(value), COMFLAG_UPDATE);
 }
 
