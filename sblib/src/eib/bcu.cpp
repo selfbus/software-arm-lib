@@ -164,8 +164,9 @@ void BCU::loop()
         pinMode(bcu.progPin, INPUT);
         int oldValue = progButtonDebouncer.value();
         if (!progButtonDebouncer.debounce(digitalRead(bcu.progPin), 50) && oldValue)
+        {
             userRam.status ^= 0x81;  // toggle programming mode and checksum bit
-
+        }
         pinMode(bcu.progPin, OUTPUT);
         digitalWrite(bcu.progPin, !(userRam.status & BCU_STATUS_PROG));
     }

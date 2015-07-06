@@ -355,7 +355,7 @@ enum PortPin
     PIO1_21 = 0x35 | FUNC0(PF_PIO) | FUNC1(PF_DCD) | FUNC2(PF_MISO),
 
     // Port 1 pin 22
-    PIO1_22 = 0x36 | FUNC0(PF_PIO) | FUNC1(PF_RI) | FUNC2(PF_MISO),
+    PIO1_22 = 0x36 | FUNC0(PF_PIO) | FUNC1(PF_RI) | FUNC2(PF_MOSI),
 
     // Port 1 pin 23
     PIO1_23 = 0x37 | FUNC0(PF_PIO) | FUNC1(PF_MAT) | FUNC2(PF_SSEL),

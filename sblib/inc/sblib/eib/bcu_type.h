@@ -119,7 +119,7 @@
 #   define USER_RAM_SIZE 0x304
 
     /** How many bytes have to be allocated at the end of the RAM for shadowed values */
-#   define USER_RAM_SHADOW_SIZE 0
+#   define USER_RAM_SHADOW_SIZE 3
 
     /** Start address of the user EEPROM when ETS talks with us. */
 #   define USER_EEPROM_START 0x3f00

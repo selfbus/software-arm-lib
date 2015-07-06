@@ -67,7 +67,7 @@ SPI::SPI(int portNum, int mode)
     LPC_SYSCON->SYSAHBCLKCTRL |= (1<<6);
 
     // Disable reset of the SSP peripheral
-    LPC_SYSCON->PRESETCTRL |= portNum + 1;
+    LPC_SYSCON->PRESETCTRL |= portNum * 4;
 
     if (portNum == 0) // SPI port 0
     {
@@ -126,14 +126,14 @@ int SPI::transfer(int val, SpiTransferMode transferMode)
     port.ICR = SSP_ICR_BITMASK;
 
     // Write value to the buffer
-    LPC_SSP0->DR = val;
+    port.DR = val;
 
     // Wait for completed transfer
     while (port.SR & SSP_SR_BSY)
         ;
 
     // Return read value
-    return LPC_SSP0->DR;
+    return port.DR;
 }
 
 #ifdef SPI_BLOCK_TRANSFER

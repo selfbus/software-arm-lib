@@ -85,6 +85,7 @@ public:
      * @return True if the user application is active, false if not.
      */
     bool applicationRunning() const;
+    bool applicationShouldRun() const;
 
     /**
      * Test if a direct data connection is open.
@@ -207,6 +208,20 @@ inline bool BCU::applicationRunning() const
 #else
     return !(userRam.status & BCU_STATUS_PROG) &&
         userRam.runState == 1 && userEeprom.loadState[OT_APPLICATION];
+#endif
+}
+
+inline bool BCU::applicationShouldRun() const
+{
+    if (!enabled)
+        return true;
+
+#if BCU_TYPE == BCU1_TYPE
+    return (userRam.status & (BCU_STATUS_PROG|BCU_STATUS_AL)) == BCU_STATUS_AL &&
+        userRam.runState == 1 && userEeprom.runError == 0xff; // ETS sets the run error to 0 when programming
+#else
+    return !(userRam.status & BCU_STATUS_PROG) &&
+        userRam.runState == 1;
 #endif
 }
 

@@ -57,7 +57,7 @@
 #define PIN_INFO   PIO1_25
 #define PIN_RUN    PIO1_16
 
-#define PIN_PWM  PIO1_16
+#define PIN_PWM  PIO1_15
 #define PIN_APRG PIO0_6
 #define PIN_IO1  PIO1_21
 #define PIN_IO2  PIO0_7
@@ -79,10 +79,10 @@
 #define PIN_IO14 PIO0_19
 #define PIN_IO15 PIO0_18
 
-#define PIN_LT1 PIO1_27
+#define PIN_LT1 PIO1_20
 #define PIN_LT2 PIO0_3
-#define PIN_LT3 PIO0_3
-#define PIN_LT4 PIO0_3
+#define PIN_LT3 PIO1_27
+#define PIN_LT4 PIO1_26
 #define PIN_LT5 PIO1_24
 #define PIN_LT6 PIO1_23
 #define PIN_LT7 PIO0_22
