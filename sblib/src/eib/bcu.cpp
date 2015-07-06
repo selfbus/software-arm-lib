@@ -25,6 +25,9 @@
 
 #include <string.h>
 
+#ifdef APP_HANDLES_MEMORY_REQUESTS
+extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
+#endif
 
 BCU bcu;
 
@@ -341,6 +344,9 @@ void BCU::processDirectTelegram(int apci)
 
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
+#ifdef APP_HANDLES_MEMORY_REQUESTS
+    	sendAck = handleMemoryRequests(apciCmd, &sendTel, & bus.telegram[7]);
+#else
         count = bus.telegram[7] & 0x0f; // number of data byes
         address = (bus.telegram[8] << 8) | bus.telegram[9]; // address of the data block
 
@@ -388,6 +394,7 @@ void BCU::processDirectTelegram(int apci)
             sendTelegram[9] = address;
             sendTel = true;
         }
+#endif
         break;
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
