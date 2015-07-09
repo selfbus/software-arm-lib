@@ -46,6 +46,7 @@ BCU::BCU()
 :progButtonDebouncer()
 {
     progPin = DEFAULT_PROG_PIN;
+    progPinInv = true;
     enabled = false;
 }
 
@@ -164,14 +165,14 @@ void BCU::loop()
     if (bcu.progPin)
     {
         // Detect the falling edge of pressing the prog button
-        pinMode(bcu.progPin, INPUT);
+        pinMode(bcu.progPin, INPUT|PULL_UP);
         int oldValue = progButtonDebouncer.value();
         if (!progButtonDebouncer.debounce(digitalRead(bcu.progPin), 50) && oldValue)
         {
             userRam.status ^= 0x81;  // toggle programming mode and checksum bit
         }
         pinMode(bcu.progPin, OUTPUT);
-        digitalWrite(bcu.progPin, !(userRam.status & BCU_STATUS_PROG));
+        digitalWrite(bcu.progPin, (userRam.status & BCU_STATUS_PROG)^progPinInv);
     }
 
     if (userEeprom.isModified() && bus.idle() && bus.telegramLen == 0 && connectedAddr == 0)

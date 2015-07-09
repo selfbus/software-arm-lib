@@ -48,7 +48,17 @@
 
 Serial::Serial(int rxPin, int txPin)
 {
+	setRxPin(rxPin);
+	setTxPin(txPin);
+}
+
+void Serial::setRxPin(int rxPin)
+{
     pinMode(rxPin, SERIAL_RXD);
+}
+
+void Serial::setTxPin(int txPin)
+{
     pinMode(txPin, SERIAL_TXD);
 }
 
