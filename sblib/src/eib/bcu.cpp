@@ -29,6 +29,9 @@
 extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
 #endif
 
+#ifdef DUMP_TELEGRAMS
+#include <sblib/serial.h>
+#endif
 BCU bcu;
 
 extern unsigned int writeUserEepromTime;
@@ -153,13 +156,14 @@ void BCU::loop()
 
     if (!bus.sendingTelegram())
         sendNextGroupTelegram();
-
+#if 0
     // Send a disconnect after 6.5 seconds inactivity
     if (connectedAddr && elapsed(connectedTime) > 6500)
     {
         sendConControlTelegram(T_DISCONNECT_PDU, 0);
         connectedAddr = 0;
     }
+#endif
 
     if (bcu.progPin)
     {

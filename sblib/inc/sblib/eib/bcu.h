@@ -112,6 +112,8 @@ public:
      */
     void loop();
 
+    int connectedTo();
+
     /**
      * A buffer for sending telegrams. This buffer is considered library private
      * and should rather not be used by the application program.
@@ -233,6 +235,11 @@ inline int BCU::maskVersion() const
 inline bool BCU::directConnection() const
 {
     return connectedAddr != 0;
+}
+
+inline int BCU::connectedTo()
+{
+    return connectedAddr;
 }
 
 #ifndef INSIDE_BCU_CPP

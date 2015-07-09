@@ -15,6 +15,9 @@
 
 // dump all received and sent telegrams out on the serial interface
 //#define DUMP_TELEGRAMS
+#ifdef DUMP_TELEGRAMS
+#include <sblib/serial.h>
+#endif
 
 class Bus;
 
