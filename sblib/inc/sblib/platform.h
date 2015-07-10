@@ -56,7 +56,7 @@ unsigned int* ioconPointer(int port, int pinNum);
   extern unsigned char FLASH[];
 # define __vectors_start__ *FLASH
 #else
-  extern unsigned int __vectors_start__;
+  extern const unsigned int __vectors_start__;
 #endif
 
 /**

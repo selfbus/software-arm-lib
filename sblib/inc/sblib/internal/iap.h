@@ -49,6 +49,13 @@ int iapSectorOfAddress(const byte* address);
 IAP_Status iapEraseSector(int sector);
 
 /**
+ * Erase the specified page.
+ *  @param pageNumber   index of the page which should be erased
+ *  @return             status code (0 == OK)
+ */
+IAP_Status iapErasePage(int sector);
+
+/**
  * Programs the specified number of bytes from the RAM to the specified location
  * inside the FLASH.
  * @param rom           start address of inside the FLASH

@@ -117,6 +117,27 @@ IAP_Status iapEraseSector(int sector)
     return (IAP_Status) p.stat;
 }
 
+IAP_Status iapErasePage(int pageNumber)
+{
+    unsigned int sector = pageNumber * 16; // each sector has 16 pages
+    IAP_Parameter p;
+
+    p.cmd = CMD_PREPARE;
+    p.par[0] = sector;
+    p.par[1] = sector;
+    IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+
+    if (p.stat == IAP_SUCCESS)
+    {
+        p.cmd = CMD_ERASE_PAGE;
+        p.par[0] = pageNumber;
+        p.par[1] = pageNumber;
+        p.par[2] = SystemCoreClock / 1000;
+        IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+    }
+    return (IAP_Status) p.stat;
+}
+
 IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
 {
     IAP_Parameter p;
