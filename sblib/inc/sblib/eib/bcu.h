@@ -52,6 +52,48 @@ public:
     void begin(int manufacturer, int deviceType, int version);
 
     /**
+     * Set RxPin of board, must be called before begin method
+     * @param rxPin pin definition
+     */
+    void setRxPin(int rxPin) {
+        bus.rxPin=rxPin;
+    }
+    /**
+     * Set TxPin of board, must be called before begin method
+     * @param txPin pin definition
+     */
+    void setTxPin(int txPin) {
+        bus.txPin=txPin;
+    }
+    /**
+     * Set timer class, must be called before begin method
+     * @param timer
+     */
+    void setTimer(Timer& timer) {
+        bus.timer=timer;
+    }
+    /**
+     * Set capture channel of processor, must be called before begin method
+     * @param capture channel definition of processor
+     */
+    void setCaptureChannel(TimerCapture captureChannel) {
+        bus.captureChannel=captureChannel;
+    }
+    /**
+     * Set ProgPin of board, must be called before begin method
+     * @param progPin Pin definition
+     */
+    void setProgPin(int prgPin) {
+        progPin=prgPin;
+    }
+    /**
+     * Set ProgPin output inverted, must be called before begin method
+     * @param progPin output inverted
+     */
+    void setProgPinInverted(int prgPinInv) {
+        progPinInv=prgPinInv;
+    }
+    /**
      * End using the EIB bus coupling unit.
      */
     void end();
@@ -126,6 +168,12 @@ public:
      * to 0, the programming LED + button are not handled by the library.
      */
     int progPin;
+
+    /**
+     * Programming LED output inverted: If set to 1 the programming LED output is
+     * being inverted
+     */
+    int progPinInv;
 
 protected:
     /**

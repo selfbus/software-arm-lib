@@ -71,6 +71,18 @@ public:
     Serial(int rxPin, int txPin);
 
     /**
+     * Set rx pin for serial communication.
+     *
+     * @param rxPin - the pin to use for RXD: PIO1_6, PIO2_7, PIO3_1, or PIO3_4
+     */
+    void setRxPin(int rxPin);
+    /**
+     * Set tx pin for serial communication.
+     *
+     * @param txPin - the pin to use for TXD: PIO1_7, PIO2_8, PIO3_0, or PIO3_5
+     */
+    void setTxPin(int txPin);
+    /**
      * Begin using the serial port with the specified baud rate and 8 data bits,
      * no parity bit, and 1 stop bit (SERIAL_8N1).
      *
