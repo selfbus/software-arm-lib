@@ -62,10 +62,12 @@ extern unsigned char *sendCurTelegram;
  */
 extern unsigned char *sbSendNextTelegram;
 
+#if 0
 /**
  * Send an acknowledge or not-acknowledge byte if != 0
  */
 extern unsigned char sendAck;
+#endif
 
 /**
  * Test if we are in programming mode (the button on the controller is pressed and
@@ -162,6 +164,11 @@ public:
     int ownAddress() const;
 
     /**
+     * Set weather the an acknowledgment from the last received byte should be sent.
+     */
+    void setSendAck(int sendAck);
+
+    /**
      * Set the number of tries that we do sent a telegram when it is not ACKed.
      *
      * @param tries - the number of tries. Default: 3.
@@ -229,7 +236,7 @@ private:
     void handleTelegram(bool valid);
 
 protected:
-    friend class BCU;
+    friend class BCU_Base;
     Timer& timer;                //!< The timer
     int rxPin, txPin;            //!< The pins for bus receiving and sending
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
@@ -318,4 +325,8 @@ inline void Bus::end()
 {
 }
 
+inline void  Bus::setSendAck(int sendAck)
+{
+	this->sendAck = sendAck;
+}
 #endif /*sblib_bus_h*/

@@ -88,8 +88,7 @@ inline void IAP_Call_InterruptSafe(unsigned int *cmd, unsigned int *stat)
     interrupts();
 }
 
-
-IAP_Status iapEraseSector(int sector)
+static IAP_Status _prepareSector(int sector)
 {
     IAP_Parameter p;
 
@@ -97,6 +96,15 @@ IAP_Status iapEraseSector(int sector)
     p.par[0] = sector;
     p.par[1] = sector;
     IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+
+    return (IAP_Status) p.stat;
+}
+
+IAP_Status iapEraseSector(int sector)
+{
+    IAP_Parameter p;
+
+    p.stat = _prepareSector(sector);
 
     if (p.stat == IAP_SUCCESS)
     {
@@ -119,13 +127,10 @@ IAP_Status iapEraseSector(int sector)
 
 IAP_Status iapErasePage(int pageNumber)
 {
-    unsigned int sector = pageNumber * 16; // each sector has 16 pages
+    unsigned int sector = pageNumber / 16; // each sector has 16 pages
     IAP_Parameter p;
 
-    p.cmd = CMD_PREPARE;
-    p.par[0] = sector;
-    p.par[1] = sector;
-    IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+    p.stat = _prepareSector(sector);
 
     if (p.stat == IAP_SUCCESS)
     {
@@ -144,10 +149,7 @@ IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
     int sector = iapSectorOfAddress(rom);
 
     /* first we need to 'unlock' the sector */
-    p.cmd = CMD_PREPARE;
-    p.par[0] = sector;
-    p.par[1] = sector;
-    IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+    p.stat = _prepareSector(sector);
 
     if (p.stat == IAP_SUCCESS)
     {

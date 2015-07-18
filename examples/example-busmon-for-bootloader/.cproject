@@ -43,7 +43,7 @@
 								<option id="com.crt.advproject.cpp.misc.dialect.939147003" name="Language standard" superClass="com.crt.advproject.cpp.misc.dialect" value="com.crt.advproject.misc.dialect.cppdefault" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.warnings.pedantic.797126524" name="Pedantic (-pedantic)" superClass="gnu.cpp.compiler.option.warnings.pedantic" value="false" valueType="boolean"/>
 								<option id="gnu.cpp.compiler.option.warnings.allwarn.1676465388" name="All warnings (-Wall)" superClass="gnu.cpp.compiler.option.warnings.allwarn" value="false" valueType="boolean"/>
-								<option id="com.crt.advproject.cpp.specs.1256466103" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.cpp.specs.1256466103" name="Specs" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.1790996662" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.debug.940025323" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">
@@ -65,7 +65,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.gcc.exe.debug.option.optimization.level.1932176208" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.debug.option.optimization.level"/>
-								<option id="com.crt.advproject.gcc.specs.296115989" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.specs.296115989" name="Specs" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.input.13001928" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.debug.292197425" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.debug">
@@ -73,14 +73,14 @@
 								<option id="com.crt.advproject.gas.thumb.951933866" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
 								<option id="gnu.both.asm.option.flags.crt.109029865" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -D__NEWLIB__ -DDEBUG -D__CODE_RED" valueType="string"/>
 								<option id="com.crt.advproject.gas.hdrlib.421740908" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlibnano" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.specs.597141842" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.specs.597141842" name="Specs" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1162966041" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="com.crt.advproject.assembler.input.2137644331" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.link.cpp.exe.debug.1065922419" name="MCU C++ Linker" superClass="com.crt.advproject.link.cpp.exe.debug">
 								<option id="com.crt.advproject.link.cpp.arch.104538948" name="Architecture" superClass="com.crt.advproject.link.cpp.arch" value="com.crt.advproject.link.cpp.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.link.cpp.thumb.1273415777" name="Thumb mode" superClass="com.crt.advproject.link.cpp.thumb" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.link.cpp.script.1319796701" name="Linker script" superClass="com.crt.advproject.link.cpp.script" value="&quot;example-busmon_Debug.ld&quot;" valueType="string"/>
+								<option id="com.crt.advproject.link.cpp.script.1319796701" name="Linker script" superClass="com.crt.advproject.link.cpp.script" value="&quot;example-busmon-for-bootloader_Debug.ld&quot;" valueType="string"/>
 								<option id="com.crt.advproject.link.cpp.manage.2094565144" name="Manage linker script" superClass="com.crt.advproject.link.cpp.manage" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.nostdlibs.1754098815" name="No startup or default libs (-nostdlib)" superClass="gnu.cpp.link.option.nostdlibs" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.other.1165987440" name="Other options (-Xlinker [option])" superClass="gnu.cpp.link.option.other" valueType="stringList">
@@ -158,7 +158,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.cpp.exe.release.option.optimization.level.798083839" name="Optimization Level" superClass="com.crt.advproject.cpp.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.size" valueType="enumerated"/>
-								<option id="com.crt.advproject.cpp.specs.1500560037" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.cpp.specs.1500560037" name="Specs" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.1840631954" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.release.1354999183" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.release">
@@ -179,7 +179,7 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.gcc.exe.release.option.optimization.level.989169297" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.release.option.optimization.level" value="gnu.c.optimization.level.size" valueType="enumerated"/>
-								<option id="com.crt.advproject.gcc.specs.1700679085" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.specs.1700679085" name="Specs" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.input.414575409" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.release.685272905" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.release">
@@ -187,14 +187,14 @@
 								<option id="com.crt.advproject.gas.thumb.355045907" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
 								<option id="gnu.both.asm.option.flags.crt.1466625802" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -D__NEWLIB__ -DNDEBUG -D__CODE_RED" valueType="string"/>
 								<option id="com.crt.advproject.gas.hdrlib.972139427" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlibnano" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.specs.993938948" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.specs.993938948" name="Specs" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1655761521" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="com.crt.advproject.assembler.input.1371200415" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.link.cpp.exe.release.219874695" name="MCU C++ Linker" superClass="com.crt.advproject.link.cpp.exe.release">
 								<option id="com.crt.advproject.link.cpp.arch.2100837342" name="Architecture" superClass="com.crt.advproject.link.cpp.arch" value="com.crt.advproject.link.cpp.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.link.cpp.thumb.1559370210" name="Thumb mode" superClass="com.crt.advproject.link.cpp.thumb" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.link.cpp.script.335144488" name="Linker script" superClass="com.crt.advproject.link.cpp.script" value="&quot;example-busmon_Release.ld&quot;" valueType="string"/>
+								<option id="com.crt.advproject.link.cpp.script.335144488" name="Linker script" superClass="com.crt.advproject.link.cpp.script" value="&quot;example-busmon-for-bootloader_Release.ld&quot;" valueType="string"/>
 								<option id="com.crt.advproject.link.cpp.manage.1344245397" name="Manage linker script" superClass="com.crt.advproject.link.cpp.manage" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.nostdlibs.712621515" name="No startup or default libs (-nostdlib)" superClass="gnu.cpp.link.option.nostdlibs" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.other.1004698995" name="Other options (-Xlinker [option])" superClass="gnu.cpp.link.option.other" valueType="stringList">
@@ -267,7 +267,7 @@
 								<option id="com.crt.advproject.cpp.misc.dialect.1013584237" name="Language standard" superClass="com.crt.advproject.cpp.misc.dialect" value="com.crt.advproject.misc.dialect.cppdefault" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.warnings.pedantic.1870185017" name="Pedantic (-pedantic)" superClass="gnu.cpp.compiler.option.warnings.pedantic" value="false" valueType="boolean"/>
 								<option id="gnu.cpp.compiler.option.warnings.allwarn.1824197705" name="All warnings (-Wall)" superClass="gnu.cpp.compiler.option.warnings.allwarn" value="false" valueType="boolean"/>
-								<option id="com.crt.advproject.cpp.specs.425822413" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.cpp.specs.425822413" name="Specs" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.681834192" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.debug.2009944279" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">
@@ -286,7 +286,7 @@
 								<option id="gnu.c.compiler.option.misc.other.102459384" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections" valueType="string"/>
 								<option id="gnu.c.compiler.option.include.paths.232980709" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths"/>
 								<option id="com.crt.advproject.gcc.exe.debug.option.optimization.level.636918255" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.debug.option.optimization.level"/>
-								<option id="com.crt.advproject.gcc.specs.1881791364" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.specs.1881791364" name="Specs" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="com.crt.advproject.compiler.input.779536171" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.debug.345799105" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.debug">
@@ -294,14 +294,14 @@
 								<option id="com.crt.advproject.gas.thumb.316771415" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
 								<option id="gnu.both.asm.option.flags.crt.635342183" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -D__NEWLIB__ -DDEBUG -D__CODE_RED" valueType="string"/>
 								<option id="com.crt.advproject.gas.hdrlib.1014095573" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlibnano" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.specs.1171551017" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.specs.1171551017" name="Specs" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.77445327" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="com.crt.advproject.assembler.input.2105666070" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.link.cpp.exe.debug.1657299596" name="MCU C++ Linker" superClass="com.crt.advproject.link.cpp.exe.debug">
 								<option id="com.crt.advproject.link.cpp.arch.1756505778" name="Architecture" superClass="com.crt.advproject.link.cpp.arch" value="com.crt.advproject.link.cpp.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.link.cpp.thumb.100352359" name="Thumb mode" superClass="com.crt.advproject.link.cpp.thumb" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.link.cpp.script.26276887" name="Linker script" superClass="com.crt.advproject.link.cpp.script" value="&quot;example-busmon_Debug.ld&quot;" valueType="string"/>
+								<option id="com.crt.advproject.link.cpp.script.26276887" name="Linker script" superClass="com.crt.advproject.link.cpp.script" value="&quot;example-busmon-for-bootloader_Debug_LPC11UXX.ld&quot;" valueType="string"/>
 								<option id="com.crt.advproject.link.cpp.manage.448400848" name="Manage linker script" superClass="com.crt.advproject.link.cpp.manage" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.nostdlibs.854046526" name="No startup or default libs (-nostdlib)" superClass="gnu.cpp.link.option.nostdlibs" value="true" valueType="boolean"/>
 								<option id="gnu.cpp.link.option.other.329957366" name="Other options (-Xlinker [option])" superClass="gnu.cpp.link.option.other" valueType="stringList">
@@ -361,27 +361,28 @@
 &lt;memory can_program="true" id="Flash" is_ro="true" type="Flash"/&gt;&#13;
 &lt;memory id="RAM" type="RAM"/&gt;&#13;
 &lt;memory id="Periph" is_volatile="true" type="Peripheral"/&gt;&#13;
-&lt;memoryInstance derived_from="Flash" id="MFlash32" location="0x0" size="0x8000"/&gt;&#13;
-&lt;memoryInstance derived_from="RAM" id="RamLoc8" location="0x10000000" size="0x2000"/&gt;&#13;
-&lt;peripheralInstance derived_from="V6M_NVIC" determined="infoFile" id="NVIC" location="0xe000e000"/&gt;&#13;
-&lt;peripheralInstance derived_from="V6M_DCR" determined="infoFile" id="DCR" location="0xe000edf0"/&gt;&#13;
-&lt;peripheralInstance derived_from="I2C" determined="infoFile" id="I2C" location="0x40000000"/&gt;&#13;
-&lt;peripheralInstance derived_from="WWDT" determined="infoFile" id="WWDT" location="0x40004000"/&gt;&#13;
-&lt;peripheralInstance derived_from="UART" determined="infoFile" id="UART" location="0x40008000"/&gt;&#13;
-&lt;peripheralInstance derived_from="CT16B0" determined="infoFile" id="CT16B0" location="0x4000c000"/&gt;&#13;
-&lt;peripheralInstance derived_from="CT16B1" determined="infoFile" id="CT16B1" location="0x40010000"/&gt;&#13;
-&lt;peripheralInstance derived_from="CT32B0" determined="infoFile" id="CT32B0" location="0x40014000"/&gt;&#13;
-&lt;peripheralInstance derived_from="CT32B1" determined="infoFile" id="CT32B1" location="0x40018000"/&gt;&#13;
-&lt;peripheralInstance derived_from="ADC" determined="infoFile" id="ADC" location="0x4001c000"/&gt;&#13;
-&lt;peripheralInstance derived_from="PMU" determined="infoFile" id="PMU" location="0x40038000"/&gt;&#13;
-&lt;peripheralInstance derived_from="FLASHCTRL" determined="infoFile" id="FLASHCTRL" location="0x4003c000"/&gt;&#13;
-&lt;peripheralInstance derived_from="SPI0" determined="infoFile" id="SPI0" location="0x40040000"/&gt;&#13;
-&lt;peripheralInstance derived_from="IOCON" determined="infoFile" id="IOCON" location="0x40044000"/&gt;&#13;
-&lt;peripheralInstance derived_from="SYSCON" determined="infoFile" id="SYSCON" location="0x40048000"/&gt;&#13;
-&lt;peripheralInstance derived_from="GPIO0" determined="infoFile" id="GPIO0" location="0x50000000"/&gt;&#13;
-&lt;peripheralInstance derived_from="GPIO1" determined="infoFile" id="GPIO1" location="0x50010000"/&gt;&#13;
-&lt;peripheralInstance derived_from="GPIO2" determined="infoFile" id="GPIO2" location="0x50020000"/&gt;&#13;
-&lt;peripheralInstance derived_from="GPIO3" determined="infoFile" id="GPIO3" location="0x50030000"/&gt;&#13;
+&lt;memoryInstance derived_from="Flash" edited="true" id="MFlash32" location="0x2000" size="0x6000"/&gt;&#13;
+&lt;memoryInstance derived_from="RAM" edited="true" id="RamLoc8" location="0x10000100" size="0x1f00"/&gt;&#13;
+&lt;peripheralInstance derived_from="V6M_NVIC" id="NVIC" location="0xe000e000"/&gt;&#13;
+&lt;peripheralInstance derived_from="V6M_DCR" id="DCR" location="0xe000edf0"/&gt;&#13;
+&lt;peripheralInstance derived_from="I2C" id="I2C" location="0x40000000"/&gt;&#13;
+&lt;peripheralInstance derived_from="WWDT" id="WWDT" location="0x40004000"/&gt;&#13;
+&lt;peripheralInstance derived_from="UART" id="UART" location="0x40008000"/&gt;&#13;
+&lt;peripheralInstance derived_from="CT16B0" id="CT16B0" location="0x4000c000"/&gt;&#13;
+&lt;peripheralInstance derived_from="CT16B1" id="CT16B1" location="0x40010000"/&gt;&#13;
+&lt;peripheralInstance derived_from="CT32B0" id="CT32B0" location="0x40014000"/&gt;&#13;
+&lt;peripheralInstance derived_from="CT32B1" id="CT32B1" location="0x40018000"/&gt;&#13;
+&lt;peripheralInstance derived_from="ADC" id="ADC" location="0x4001c000"/&gt;&#13;
+&lt;peripheralInstance derived_from="PMU" id="PMU" location="0x40038000"/&gt;&#13;
+&lt;peripheralInstance derived_from="FLASHCTRL" id="FLASHCTRL" location="0x4003c000"/&gt;&#13;
+&lt;peripheralInstance derived_from="SPI0" id="SPI0" location="0x40040000"/&gt;&#13;
+&lt;peripheralInstance derived_from="IOCON" id="IOCON" location="0x40044000"/&gt;&#13;
+&lt;peripheralInstance derived_from="SYSCON" id="SYSCON" location="0x40048000"/&gt;&#13;
+&lt;peripheralInstance derived_from="SPI1" id="SPI1" location="0x40058000"/&gt;&#13;
+&lt;peripheralInstance derived_from="GPIO0" id="GPIO0" location="0x50000000"/&gt;&#13;
+&lt;peripheralInstance derived_from="GPIO1" id="GPIO1" location="0x50010000"/&gt;&#13;
+&lt;peripheralInstance derived_from="GPIO2" id="GPIO2" location="0x50020000"/&gt;&#13;
+&lt;peripheralInstance derived_from="GPIO3" id="GPIO3" location="0x50030000"/&gt;&#13;
 &lt;/chip&gt;&#13;
 &lt;processor&gt;&lt;name gcc_name="cortex-m0"&gt;Cortex-M0&lt;/name&gt;&#13;
 &lt;family&gt;Cortex-M&lt;/family&gt;&#13;

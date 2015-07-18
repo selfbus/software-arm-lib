@@ -17,18 +17,6 @@
 #include <sblib/eib/user_memory.h>
 #include <sblib/eib/properties.h>
 
-// The EIB bus access object
-#if defined (__LPC11XX__)
-Bus bus(timer16_1, PIO1_8, PIO1_9, CAP0, MAT0);
-#elif defined (__LPC11UXX__)
-Bus bus(timer16_1, PIO0_20, PIO0_21, CAP0, MAT0);
-#endif
-
-
-// The interrupt handler for the EIB bus access object
-BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, bus);
-
-
 /*
  * The timer16_1 is used as follows:
  *
@@ -418,7 +406,8 @@ STATE_SWITCH:
     case Bus::SEND_BIT_0:
         if (sendAck)
             currentByte = sendAck;
-        else currentByte = sendCurTelegram[nextByteIndex++];
+        else
+        	currentByte = sendCurTelegram[nextByteIndex++];
 
         // Calculate the parity bit
         for (bitMask = 1; bitMask < 0x100; bitMask <<= 1)
@@ -551,6 +540,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 
 #ifdef DUMP_TELEGRAMS
 	{
+		serial.print("SND: ");
         for (int i = 0; i <= length; ++i)
         {
             if (i) serial.print(" ");
