@@ -73,6 +73,8 @@ enum
 ,   UPD_GET_LAST_ERROR   = 20
 ,   UPD_SEND_LAST_ERROR  = 21
 ,   UPD_UNLOCK_DEVICE    = 30
+,   UPD_REQUEST_UID      = 31
+,   UPD_RESPONSE_UID     = 32
 ,   UPD_SET_EMULATION    = 100
 };
 
@@ -183,6 +185,18 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     		{
         		deviceLocked = DEVICE_UNLOCKED;
     		}
+    	}
+    	break;
+    case UPD_REQUEST_UID:
+    	if (!((BCU_Update *) bcu)->progPinStatus())
+    	{   // the operator has physical access to the device -> we unlock it
+    		byte uid[4*32];
+    		if (IAP_SUCCESS == iapReadUID(uid))
+    		{
+                * sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_UID);
+                memcpy(bcu->sendTelegram +10, uid, 12);
+    		}
+            break;
     	}
     	break;
     case UPD_ERASE_SECTOR:

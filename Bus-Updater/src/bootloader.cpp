@@ -103,16 +103,25 @@ void run_updater()
     }
 }
 
+#define NO_OF_BOOTBLOCKS 2
+
 int main (void)
 {
+	unsigned int * magicWord = (unsigned int *) 0x1000000;
+	if (* magicWord == 0x5E1FB055)
+    	run_updater();
+    * magicWord = 0;
     pinMode(PIN_PROG, INPUT);
     if (! digitalRead(PIN_PROG))
     {
     	run_updater();
     }
-	AppDescriptionBlock * block = (AppDescriptionBlock *) (FIRST_SECTOR - BOOT_BLOCK_SIZE);
-	if (checkApplication(block))
-		jumpToApplication(block->startAddress);
+	AppDescriptionBlock * block = (AppDescriptionBlock *)
+			(FIRST_SECTOR - NO_OF_BOOTBLOCKS * BOOT_BLOCK_SIZE);
+	for (unsigned int i = 0; i < NO_OF_BOOTBLOCKS; i++, block++)
+		if (checkApplication(block))
+			jumpToApplication(block->startAddress);
+
     run_updater();
     return 0 ;
 }
