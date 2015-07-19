@@ -70,6 +70,7 @@ void loop()
 
 void jumpToApplication(unsigned int start)
 {
+    unsigned int StackTop    = * (unsigned int *) (start);
     unsigned int ResetVector = * (unsigned int *) (start + 4);
     unsigned int * rom = (unsigned int *) start;
     unsigned int * ram = (unsigned int *) 0x10000000;
@@ -80,9 +81,14 @@ void jumpToApplication(unsigned int start)
         * ram = * rom;
     LPC_SYSCON->SYSMEMREMAP = 0x01;
 
-    void (*fptr)(void);
-    fptr = (void (*)(void))ResetVector;
-    fptr();
+    /* Normally during RESET the stack pointer will be loaded
+     * with the value stored location 0x0. Since the vector
+     * table of the application is not located at 0x0 we have to do this
+     * manually to ensure a correct stack.
+     */
+    asm volatile ("mov SP, %0" : : "r" (StackTop));
+    /* Once the stack is setup we jump to the application reset vector */
+    asm volatile ("bx      %0" : : "r" (ResetVector));
 }
 
 void run_updater()

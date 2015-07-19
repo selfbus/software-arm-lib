@@ -27,6 +27,12 @@ void BCU::_begin()
     readUserEeprom();
 }
 
+void BCU::end()
+{
+	BCU_Base::end();
+    writeUserEeprom();
+}
+
 void BCU::loop()
 {
     if (!enabled)

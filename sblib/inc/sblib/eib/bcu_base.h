@@ -96,7 +96,7 @@ public:
     /**
      * End using the EIB bus coupling unit.
      */
-    void end();
+    virtual void end();
 
     /**
      * Set our own physical address. Normally the physical address is set by ETS when

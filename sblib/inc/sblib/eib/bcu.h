@@ -28,6 +28,11 @@ public:
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
     virtual void loop();
+    /**
+     * End using the EIB bus coupling unit.
+     */
+    virtual void end();
+
 protected:
     /*
      * Special initialization for the BCU

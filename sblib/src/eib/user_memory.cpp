@@ -37,7 +37,6 @@ unsigned int writeUserEepromTime;
 #define FLASH_SECTOR_ADDRESS (FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE)
 #define LAST_EEPROM_PAGE     (FLASH_SECTOR_ADDRESS + USER_EEPROM_SIZE * (NUM_EEPROM_PAGES - 1))
 
-
 /*
  * Find the last valid page in the flash sector
  */
@@ -66,6 +65,7 @@ void readUserEeprom()
 
     userEepromModified = false;
 }
+
 
 void writeUserEeprom()
 {

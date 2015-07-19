@@ -16,7 +16,7 @@ class BCU_Update : public BCU_Base
 {
 public:
     virtual void processTelegram();
-
+    bool progPinStatus();
 protected:
     /**
      * Process a unicast telegram with our physical address as destination address.
@@ -47,4 +47,8 @@ protected:
     void sendConControlTelegram(int cmd, int senderSeqNo);
 };
 
+inline bool BCU_Update::progPinStatus()
+{
+	return progButtonDebouncer.value();
+}
 #endif /* BCUUPDATE_H_ */

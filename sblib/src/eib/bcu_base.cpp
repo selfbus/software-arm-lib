@@ -100,7 +100,6 @@ void BCU_Base::end()
     enabled = false;
 
     bus.end();
-    writeUserEeprom();
 }
 
 void BCU_Base::setOwnAddress(int addr)
