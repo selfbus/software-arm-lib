@@ -5,9 +5,9 @@
  *      Author: glueck
  */
 
-#include "BCUUpdate.h"
+#include "bcuupdate.h"
 
-void BCU_Update::processTelegram()
+void BcuUpdate::processTelegram()
 {
     unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
@@ -33,7 +33,7 @@ void BCU_Update::processTelegram()
 
 extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
 
-void BCU_Update::processDirectTelegram(int apci)
+void BcuUpdate::processDirectTelegram(int apci)
 {
     const int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
     const int senderSeqNo = bus.telegram[6] & 0x3c;
@@ -84,7 +84,7 @@ void BCU_Update::processDirectTelegram(int apci)
     }
 }
 
-void BCU_Update::processConControlTelegram(int tpci)
+void BcuUpdate::processConControlTelegram(int tpci)
 {
     int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
 
@@ -135,7 +135,7 @@ void BCU_Update::processConControlTelegram(int tpci)
     }
 }
 
-void BCU_Update::sendConControlTelegram(int cmd, int senderSeqNo)
+void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
 {
     if (cmd & 0x40)  // Add the sequence number if the command shall contain it
         cmd |= senderSeqNo & 0x3c;

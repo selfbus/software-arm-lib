@@ -18,7 +18,7 @@
  * In order to use the EIB bus, you need to call bcu.begin() once in your application's
  * setup() function.
  */
-class BCU : public BCU_Base
+class BCU : public BcuBase
 {
 public:
     virtual void processTelegram();

@@ -29,7 +29,7 @@ void BCU::_begin()
 
 void BCU::end()
 {
-	BCU_Base::end();
+	BcuBase::end();
     writeUserEeprom();
 }
 
@@ -37,7 +37,7 @@ void BCU::loop()
 {
     if (!enabled)
         return;
-    BCU_Base::loop();
+    BcuBase::loop();
 
     if (!bus.sendingTelegram())
         sendNextGroupTelegram();

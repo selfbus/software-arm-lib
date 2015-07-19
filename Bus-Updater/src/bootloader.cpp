@@ -14,10 +14,10 @@
 #include <sblib/timeout.h>
 #include <sblib/internal/variables.h>
 #include <sblib/io_pin_names.h>
-#include "BCUUpdate.h"
+#include "bcuupdate.h"
 
-static BCU_Update _bcu = BCU_Update();
-BCU_Base * bcu = &_bcu;
+static BcuUpdate _bcu = BcuUpdate();
+BcuBase * bcu = &_bcu;
 
 // The EIB bus access object
 #if defined (__LPC11XX__)
@@ -107,7 +107,7 @@ void run_updater()
 
 int main (void)
 {
-	unsigned int * magicWord = (unsigned int *) 0x1000000;
+	unsigned int * magicWord = (unsigned int *) 0x10000000;
 	if (* magicWord == 0x5E1FB055)
     	run_updater();
     * magicWord = 0;

@@ -20,6 +20,7 @@
 #include <boot_descriptor_block.h>
 
 //#define SERIAL_DEBUG
+//#define ENABLE_EMULATION
 
 /**
  * Updater protocol:
@@ -84,16 +85,18 @@ enum
 
 enum UPD_Status
 {
-      UDP_UNKONW_COMMAND = 0x100
-    , UDP_CRC_EROR
-    , UPD_ADDRESS_NOT_ALLOWED_TO_FLASH
-    , UPD_SECTOR_NOT_ALLOWED_TO_ERASE
-    , UPD_RAM_BUFFER_OVERFLOW
-    , UPD_WRONG_DESCRIPTOR_BLOCK
-    , UPD_APPLICATION_NOT_STARTABLE
-    , UPD_DEVICE_LOCKED
-	, UPD_UID_MISSMATCH
-    , UDP_NOT_IMPLEMENTED  = 0xFFFF
+      UDP_UNKONW_COMMAND = 0x100       //<! received command is not defined
+    , UDP_CRC_EROR                     //<! CRC calculated on the device
+								       //<! and by the updater don't match
+    , UPD_ADDRESS_NOT_ALLOWED_TO_FLASH //<! specifed address cannot be programmed
+    , UPD_SECTOR_NOT_ALLOWED_TO_ERASE  //<! the specified sector cannot be erased
+    , UPD_RAM_BUFFER_OVERFLOW          //<! internal buffer for storing the data
+	                                   //<! would overflow
+    , UPD_WRONG_DESCRIPTOR_BLOCK       //<! the boot descriptor block does not exist
+    , UPD_APPLICATION_NOT_STARTABLE    //<! the programmed application is not startable
+    , UPD_DEVICE_LOCKED                //<! the device is still locked
+	, UPD_UID_MISSMATCH                //<! UID sent to unlock the device is invalid
+    , UDP_NOT_IMPLEMENTED  = 0xFFFF    //<! this command is not yet implemented
 };
 
 unsigned char ramBuffer[4096];
@@ -161,7 +164,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     switch (data [2])
     {
     case UPD_UNLOCK_DEVICE:
-    	if (!((BCU_Update *) bcu)->progPinStatus())
+    	if (!((BcuUpdate *) bcu)->progPinStatus())
     	{   // the operator has physical access to the device -> we unlock it
     		deviceLocked = DEVICE_UNLOCKED;
     	}
@@ -188,16 +191,19 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     	}
     	break;
     case UPD_REQUEST_UID:
-    	if (!((BCU_Update *) bcu)->progPinStatus())
+    	if (!((BcuUpdate *) bcu)->progPinStatus())
     	{   // the operator has physical access to the device -> we unlock it
-    		byte uid[4*32];
-    		if (IAP_SUCCESS == iapReadUID(uid))
+    		byte uid[4*4];
+    		lastError = iapReadUID(uid);
+    		if (lastError == IAP_SUCCESS)
     		{
                 * sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_UID);
                 memcpy(bcu->sendTelegram +10, uid, 12);
     		}
             break;
     	}
+    	else
+    		lastError = UPD_DEVICE_LOCKED;
     	break;
     case UPD_ERASE_SECTOR:
 #ifdef SERIAL_DEBUG

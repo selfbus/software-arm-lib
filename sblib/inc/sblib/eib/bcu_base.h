@@ -7,8 +7,8 @@
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
  */
-#ifndef sblib_bcu_base_h
-#define sblib_bcu_base_h
+#ifndef sblib_BcuBase_h
+#define sblib_BcuBase_h
 
 #include <sblib/types.h>
 #include <sblib/eib/bus.h>
@@ -22,12 +22,12 @@
 // link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
 #define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
 
-class BCU_Base;
+class BcuBase;
 
 /**
  * The EIB bus coupling unit.
  */
-extern BCU_Base * bcu;
+extern BcuBase * bcu;
 
 
 /**
@@ -36,10 +36,10 @@ extern BCU_Base * bcu;
  * In order to use the EIB bus, you need to call bcu.begin() once in your application's
  * setup() function.
  */
-class BCU_Base
+class BcuBase
 {
 public:
-	BCU_Base();
+	BcuBase();
 
     /**
      * Begin using the EIB bus coupling unit, and set the  manufacturer-ID, device type,
@@ -195,22 +195,22 @@ protected:
 //  Inline functions
 //
 
-inline void BCU_Base::begin(int manufacturer, int deviceType, int version)
+inline void BcuBase::begin(int manufacturer, int deviceType, int version)
 {
     begin_BCU(manufacturer, deviceType, version);
 }
 
-inline bool BCU_Base::programmingMode() const
+inline bool BcuBase::programmingMode() const
 {
     return (userRam.status & BCU_STATUS_PROG) == BCU_STATUS_PROG;
 }
 
-inline int BCU_Base::ownAddress() const
+inline int BcuBase::ownAddress() const
 {
     return bus.ownAddr;
 }
 
-inline bool BCU_Base::applicationRunning() const
+inline bool BcuBase::applicationRunning() const
 {
     if (!enabled)
         return true;
@@ -224,12 +224,12 @@ inline bool BCU_Base::applicationRunning() const
 #endif
 }
 
-inline int BCU_Base::maskVersion() const
+inline int BcuBase::maskVersion() const
 {
     return MASK_VERSION;
 }
 
-inline bool BCU_Base::directConnection() const
+inline bool BcuBase::directConnection() const
 {
     return connectedAddr != 0;
 }

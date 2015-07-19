@@ -32,7 +32,7 @@ extern volatile unsigned int systemTime;
 #define DEFAULT_PROG_PIN  PIO1_19
 #endif
 
-BCU_Base::BCU_Base()
+BcuBase::BcuBase()
 :progButtonDebouncer()
 {
     progPin = DEFAULT_PROG_PIN;
@@ -42,7 +42,7 @@ BCU_Base::BCU_Base()
 
 // The method begin_BCU() is renamed during compilation to indicate the BCU type.
 // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-void BCU_Base::begin_BCU(int manufacturer, int deviceType, int version)
+void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
 	_begin();
 #ifdef DUMP_TELEGRAMS
@@ -90,19 +90,19 @@ void BCU_Base::begin_BCU(int manufacturer, int deviceType, int version)
     progButtonDebouncer.init(1);
 }
 
-void BCU_Base::_begin()
+void BcuBase::_begin()
 {
 
 }
 
-void BCU_Base::end()
+void BcuBase::end()
 {
     enabled = false;
 
     bus.end();
 }
 
-void BCU_Base::setOwnAddress(int addr)
+void BcuBase::setOwnAddress(int addr)
 {
     userEeprom.addrTab[0] = addr >> 8;
     userEeprom.addrTab[1] = addr;
@@ -120,7 +120,7 @@ void BCU_Base::setOwnAddress(int addr)
     bus.ownAddr = addr;
 }
 
-void BCU_Base::loop()
+void BcuBase::loop()
 {
     if (!enabled)
         return;
@@ -160,6 +160,6 @@ void BCU_Base::loop()
     }
 }
 
-void BCU_Base::processTelegram()
+void BcuBase::processTelegram()
 {
 }

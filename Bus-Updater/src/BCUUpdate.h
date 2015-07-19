@@ -8,11 +8,11 @@
 #ifndef BCUUPDATE_H_
 #define BCUUPDATE_H_
 
-#include <sblib/eib/BCU_Base.h>
+#include <sblib/eib/bcu_base.h>
 #include <sblib/eib/apci.h>
 #include <sblib/internal/variables.h>
 
-class BCU_Update : public BCU_Base
+class BcuUpdate : public BcuBase
 {
 public:
     virtual void processTelegram();
@@ -47,7 +47,7 @@ protected:
     void sendConControlTelegram(int cmd, int senderSeqNo);
 };
 
-inline bool BCU_Update::progPinStatus()
+inline bool BcuUpdate::progPinStatus()
 {
 	return progButtonDebouncer.value();
 }
