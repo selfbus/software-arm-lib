@@ -129,9 +129,6 @@ void BcuBase::loop()
 	{
     	extern unsigned char telBuffer[];
     	extern unsigned int telLength ;
-    	extern unsigned char infBuffer[256];
-    	extern unsigned char infIdx;
-    	static unsigned char u = 0;
     	if (telLength > 0)
     	{
     		serial.print("RCV: ");
@@ -142,67 +139,6 @@ void BcuBase::loop()
             }
             serial.println();
             telLength = 0;
-    	}
-    	while (u != infIdx)
-    	{
-    		switch (infBuffer[u++])
-    		{
-    		case 0x01:
-    			serial.println("Coll");
-    			break;
-    		case 0x02:
-    			serial.print("ACK ");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.println();
-    			break;
-    		case 0x06:
-    			serial.print("~ACK ");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.println();
-    			break;
-    		case 0x03:
-    			serial.print("CHK SND ");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.print(" ");
-    			serial.print(infBuffer[u++], HEX, 1);
-    			serial.println();
-    			break;
-    		case 0x04:
-    			serial.println("SND NACK");
-    			break;
-    		case 0x05:
-    			serial.print("HAS SND ");
-    			serial.print(infBuffer[u++], HEX, 1);
-    			serial.println();
-    			break;
-    		case 0x10:
-    			serial.print("S=");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.println();
-    			break;
-    		case 0x11:
-    			serial.print("SNDI ");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.println();
-    			break;
-    		case 0x12:
-    			serial.print("ST SND");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.println();
-    			break;
-    		case 0x20:
-    			serial.print("CLR ACK ");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.println();
-    			break;
-    		case 0x30:
-    			serial.print("A");
-    			serial.print(infBuffer[u++], HEX, 2);
-    			serial.println();
-    			break;
-    		}
     	}
 	}
 #endif
