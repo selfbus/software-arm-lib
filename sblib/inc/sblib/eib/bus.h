@@ -53,23 +53,6 @@ extern Bus bus;
 #define SB_TELEGRAM_SIZE 24
 
 /**
- * The telegram that is currently being sent.
- */
-extern unsigned char *sendCurTelegram;
-
-/**
- * The telegram to be sent after sbSendTelegram is done.
- */
-extern unsigned char *sbSendNextTelegram;
-
-#if 0
-/**
- * Send an acknowledge or not-acknowledge byte if != 0
- */
-extern unsigned char sendAck;
-#endif
-
-/**
  * Test if we are in programming mode (the button on the controller is pressed and
  * the red programming LED is on).
  *

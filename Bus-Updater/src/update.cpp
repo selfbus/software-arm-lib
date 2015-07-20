@@ -19,8 +19,15 @@
 #include <crc.h>
 #include <boot_descriptor_block.h>
 
-//#define SERIAL_DEBUG
 //#define ENABLE_EMULATION
+
+#ifdef ENABLE_EMULATION
+//#define SERIAL_DEBUG
+#define RUN_OR_EMULATE(code) (emulation & 0x0F ? IAP_SUCCESS : code)
+#else
+#define RUN_OR_EMULATE(code) code
+#endif
+
 
 /**
  * Updater protocol:
@@ -158,12 +165,24 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 	static unsigned int deviceLocked = DEVICE_LOCKED;
 	unsigned int crc = 0xFFFFFFFF;
 	static unsigned int lastError = 0;
+#ifdef ENABLE_EMULATION
 	static unsigned int emulation = 0;
+#endif
 
     digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
     switch (data [2])
     {
     case UPD_UNLOCK_DEVICE:
+#ifdef SERIAL_DEBUG
+        if (emulation & 0xF0)
+        {
+            serial.print("REUL ");
+            serial.print(streamToUIn32(data + 3 + 0), HEX, 8);
+            serial.print(streamToUIn32(data + 3 + 4), HEX, 8);
+            serial.print(streamToUIn32(data + 3 + 8), HEX, 8);
+            serial.println();
+        }
+#endif
     	if (!((BcuUpdate *) bcu)->progPinStatus())
     	{   // the operator has physical access to the device -> we unlock it
     		deviceLocked = DEVICE_UNLOCKED;
@@ -178,7 +197,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     		{
     			for (unsigned int i = 0; i < 12; i++)
     			{
-    				if (data [i + 2] != uid[i])
+    				if (data [i + 3] != uid[i])
     				{
     					lastError = UPD_UID_MISSMATCH;
     				}
@@ -191,6 +210,12 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     	}
     	break;
     case UPD_REQUEST_UID:
+#ifdef SERIAL_DEBUG
+        if (emulation & 0xF0)
+        {
+            serial.println("REUI");
+        }
+#endif
     	if (!((BcuUpdate *) bcu)->progPinStatus())
     	{   // the operator has physical access to the device -> we unlock it
     		byte uid[4*4];
@@ -218,10 +243,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
         {
 			if (sectorAllowedToErease(data [3]))
 			{
-				if (emulation & 0x0F)
-					lastError = IAP_SUCCESS;
-				else
-					lastError = iapEraseSector(data [3]);
+				lastError = RUN_OR_EMULATE(iapEraseSector(data [3]));
 			}
 			else
 				lastError = UPD_SECTOR_NOT_ALLOWED_TO_ERASE;
@@ -280,10 +302,8 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 	#endif
 				if (crc == streamToUIn32(data + 3 + 4 + 4))
 				{
-					if (emulation & 0x0F)
-						lastError = IAP_SUCCESS;
-					else
-						lastError = iapProgram((byte *) address, ramBuffer, count);
+					lastError = RUN_OR_EMULATE
+							(iapProgram((byte *) address, ramBuffer, count));
 				}
 				else
 					lastError = UDP_CRC_EROR;
@@ -322,15 +342,11 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 				address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
 				if (checkApplication ((AppDescriptionBlock *) ramBuffer))
 				{
-					if (emulation & 0x0F)
-						lastError = IAP_SUCCESS;
-					else
+					lastError = RUN_OR_EMULATE
+					    (iapErasePage(BOOT_BLOCK_PAGE - data[7]));
+					if (lastError == IAP_SUCCESS)
 					{
-						lastError = iapErasePage(BOOT_BLOCK_PAGE - data[7]);
-						if (lastError == IAP_SUCCESS)
-						{
-							lastError = iapProgram((byte *) address, ramBuffer, 256);
-						}
+						lastError = RUN_OR_EMULATE(iapProgram((byte *) address, ramBuffer, 256));
 					}
 				}
 				else
@@ -373,6 +389,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
         memcpy(bcu->sendTelegram +10, (void *)&lastError, 4);
         lastError = IAP_SUCCESS;
         break;
+#ifdef ENABLE_EMULATION
     case UPD_SET_EMULATION:
         emulation = data [3];
 #ifdef SERIAL_DEBUG
@@ -392,6 +409,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 #endif
         lastError = IAP_SUCCESS;
         break;
+#endif
     default:
         lastError = UDP_UNKONW_COMMAND; // set to any error
     }

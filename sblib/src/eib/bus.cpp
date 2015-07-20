@@ -66,6 +66,12 @@ static int debugLine = 0;
 // The value for the prescaler
 #define TIMER_PRESCALER (SystemCoreClock / 1000000 - 1)
 
+#ifdef DUMP_TELEGRAMS
+unsigned char telBuffer[32];
+unsigned int telLength = 0;
+unsigned char infBuffer[256];
+unsigned char infIdx = 0;
+#endif
 
 Bus::Bus(Timer& aTimer, int aRxPin, int aTxPin, TimerCapture aCaptureChannel, TimerMatch aPwmChannel)
 :timer(aTimer)
@@ -149,22 +155,29 @@ void Bus::idleState()
 
     state = Bus::IDLE;
     sendAck = 0;
+#ifdef DUMP_TELEGRAMS
+    	infBuffer[infIdx++] = 0x20;
+    	infBuffer[infIdx++] = 0x01;
+#endif
 
 //    digitalWrite(txPin, 0); // Set bus-out pin to 0
 //    pinMode(txPin, INPUT);
 }
 
-#ifdef DUMP_TELEGRAMS
-unsigned char telBuffer[32];
-unsigned int telLength = 0;
-#endif
 void Bus::handleTelegram(bool valid)
 {
 //    D(digitalWrite(PIO1_4, 1));         // purple: end of telegram
     sendAck = 0;
+#ifdef DUMP_TELEGRAMS
+	infBuffer[infIdx++] = 0x20;
+	infBuffer[infIdx++] = 0x02;
+#endif
 
     if (collision) // A collision occurred. Ignore the received bytes
     {
+#ifdef DUMP_TELEGRAMS
+    	infBuffer[infIdx++] = 0x01;
+#endif
     }
     else if (nextByteIndex >= 8 && valid) // Received a valid telegram with correct checksum
     {
@@ -199,18 +212,40 @@ void Bus::handleTelegram(bool valid)
             telegramLen = nextByteIndex;
             sendAck = SB_BUS_ACK;
         }
+#ifdef DUMP_TELEGRAMS
+    	infBuffer[infIdx++] = 0x02;
+    	infBuffer[infIdx++] = sendAck;
+#endif
     }
     else if (nextByteIndex == 1)   // Received a spike or a bus acknowledgment
     {
         currentByte &= 0xff;
 
+#ifdef DUMP_TELEGRAMS
+		infBuffer[infIdx++] = 0x03;
+		infBuffer[infIdx++] = currentByte;
+#endif
         if ((currentByte == SB_BUS_ACK || sendTries > sendTriesMax) && sendCurTelegram)
+        {
+#ifdef DUMP_TELEGRAMS
+			infBuffer[infIdx++] = 0x01;
+#endif
             sendNextTelegram();
+        }
+#ifdef DUMP_TELEGRAMS
+        else
+        {
+			infBuffer[infIdx++] = 0x00;
+        }
+#endif
     }
     else // Received wrong checksum, or more than one byte but too short for a telegram
     {
         telegramLen = 0;
         sendAck = SB_BUS_NACK;
+#ifdef DUMP_TELEGRAMS
+		infBuffer[infIdx++] = 0x04;
+#endif
     }
 
     // Wait before sending. In SEND_INIT we will cancel if there is nothing to be sent.
@@ -224,6 +259,10 @@ void Bus::handleTelegram(bool valid)
     collision = false;
     state = Bus::SEND_INIT;
     debugLine = __LINE__;
+#ifdef DUMP_TELEGRAMS
+	infBuffer[infIdx++] = 0x06;
+	infBuffer[infIdx++] = sendAck;
+#endif
 }
 
 void Bus::sendNextTelegram()
@@ -233,6 +272,10 @@ void Bus::sendNextTelegram()
     sendNextTel = 0;
     sendTries = 0;
     sendTelegramLen = 0;
+#ifdef DUMP_TELEGRAMS
+	infBuffer[infIdx++] = 0x05;
+	infBuffer[infIdx++] = (sendCurTelegram ? 0x01 : 0x00);
+#endif
 }
 
 void Bus::timerInterruptHandler()
@@ -260,6 +303,10 @@ STATE_SWITCH:
         nextByteIndex = 0;
         collision = false;
         checksum = 0xff;
+#ifdef DUMP_TELEGRAMS
+    	infBuffer[infIdx++] = 0x20;
+    	infBuffer[infIdx++] = 0x03;
+#endif
         sendAck = 0;
         valid = 1;
         // no break here
@@ -326,11 +373,18 @@ STATE_SWITCH:
     // SEND_INIT is entered some usec before sending the start bit of the first byte. It
     // is always entered after receiving or sending is done, even if nothing is to be sent.
     case Bus::SEND_INIT:
+#ifdef DUMP_TELEGRAMS
+    	infBuffer[infIdx++] = 0x11;
+    	infBuffer[infIdx++] = sendAck;
+#endif
         D(digitalWrite(PIO1_5, 1)); // yellow: prepare transmission
 
         if (timer.flag(captureChannel))  // Bus input, enter receive mode
         {
             state = Bus::IDLE;
+#ifdef DUMP_TELEGRAMS
+        	infBuffer[infIdx++] = 0xFF;
+#endif
             goto STATE_SWITCH;
         }
 
@@ -338,14 +392,25 @@ STATE_SWITCH:
         {
             time = PRE_SEND_TIME;
             sendTelegramLen = 0;
-        }
+#ifdef DUMP_TELEGRAMS
+        	infBuffer[infIdx++] = 0xFE;
+#endif
+        	}
         else
         {
-            if (sendTries > sendTriesMax)
+#ifdef DUMP_TELEGRAMS
+        	infBuffer[infIdx++] = sendTries | 0x80;
+#endif
+        	if (sendTries > sendTriesMax)
                 sendNextTelegram();
 
             if (sendCurTelegram)  // Send a telegram?
             {
+#ifdef DUMP_TELEGRAMS
+        	    infBuffer[infIdx++] = 0x12;
+        	    infBuffer[infIdx++] = sendTries;
+        	    infBuffer[infIdx++] = sendCurTelegram[0];
+#endif
                 time = PRE_SEND_TIME + ((sendCurTelegram[0] >> 2) & 3) * BIT_TIME;
                 sendTelegramLen = telegramSize(sendCurTelegram) + 1;
 
@@ -408,6 +473,10 @@ STATE_SWITCH:
             currentByte = sendAck;
         else
         	currentByte = sendCurTelegram[nextByteIndex++];
+#ifdef DUMP_TELEGRAMS
+    	infBuffer[infIdx++] = 0x10;
+    	infBuffer[infIdx++] = currentByte;
+#endif
 
         // Calculate the parity bit
         for (bitMask = 1; bitMask < 0x100; bitMask <<= 1)
@@ -480,7 +549,14 @@ STATE_SWITCH:
         timer.match(timeChannel, SEND_WAIT_TIME);
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
 
-        if (sendAck) sendAck = 0;
+        if (sendAck)
+        {
+        	sendAck = 0;
+#ifdef DUMP_TELEGRAMS
+			infBuffer[infIdx++] = 0x20;
+			infBuffer[infIdx++] = 0x04;
+#endif
+        }
         else ++sendTries;
 
         state = Bus::SEND_WAIT;
@@ -502,6 +578,10 @@ STATE_SWITCH:
     }
 
     timer.resetFlags();
+#ifdef DUMP_TELEGRAMS_E
+    	infBuffer[infIdx++] = 0x30;
+    	infBuffer[infIdx++] = sendAck;
+#endif
 }
 
 /**
@@ -540,7 +620,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 
 #ifdef DUMP_TELEGRAMS
 	{
-		serial.print("SND: ");
+		serial.print("QSD: ");
         for (int i = 0; i <= length; ++i)
         {
             if (i) serial.print(" ");

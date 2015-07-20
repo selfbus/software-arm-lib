@@ -49,7 +49,7 @@ static inline void lib_setup()
 	pinMode(PIN_INFO, OUTPUT);
 	pinMode(PIN_RUN,  OUTPUT);
 	blinky.start(1);
-	bcu->setOwnAddress(0x1103);
+	bcu->setOwnAddress(0xFFC0);
 	extern byte userEepromModified;
 	userEepromModified = 0;
 }
@@ -103,7 +103,11 @@ void run_updater()
     }
 }
 
-#define NO_OF_BOOTBLOCKS 2
+const unsigned int blocks[3] =
+	{ FIRST_SECTOR - 2 * BOOT_BLOCK_SIZE
+	, FIRST_SECTOR - 1 * BOOT_BLOCK_SIZE
+	, 0
+	};
 
 int main (void)
 {
@@ -116,12 +120,14 @@ int main (void)
     {
     	run_updater();
     }
-	AppDescriptionBlock * block = (AppDescriptionBlock *)
-			(FIRST_SECTOR - NO_OF_BOOTBLOCKS * BOOT_BLOCK_SIZE);
-	for (unsigned int i = 0; i < NO_OF_BOOTBLOCKS; i++, block++)
+    magicWord = (unsigned int *) blocks;
+	while (* magicWord)
+	{
+		AppDescriptionBlock * block = (AppDescriptionBlock *) (* magicWord);
 		if (checkApplication(block))
 			jumpToApplication(block->startAddress);
-
+		magicWord ++;
+	}
     run_updater();
     return 0 ;
 }
