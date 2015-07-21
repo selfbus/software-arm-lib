@@ -169,10 +169,10 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
     int len = count * size;
 
     if (type < PDT_CHAR_BLOCK)
-        reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);
-    else memcpy(bcu.sendTelegram + 12, valuePtr + start * size, len);
+        reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+    else memcpy(bcu->sendTelegram + 12, valuePtr + start * size, len);
 
-    bcu.sendTelegram[5] += len;
+    bcu->sendTelegram[5] += len;
 
     return true;
 }
@@ -196,7 +196,7 @@ bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count,
         len = bus.telegramLen - 13;
         state = loadProperty(objectIdx, data, len);
         userEeprom.loadState[objectIdx] = state;
-        bcu.sendTelegram[12] = state;
+        bcu->sendTelegram[12] = state;
         len = 1;
     }
     else
@@ -205,13 +205,13 @@ bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count,
         --start;
 
         reverseCopy(valuePtr + start * type, data, len);
-        reverseCopy(bcu.sendTelegram + 12, valuePtr + start * type, len);
+        reverseCopy(bcu->sendTelegram + 12, valuePtr + start * type, len);
 
         if (def->isEepromPointer())
             userEeprom.modified();
     }
 
-    bcu.sendTelegram[5] += len;
+    bcu->sendTelegram[5] += len;
     return true;
 }
 
@@ -223,15 +223,15 @@ bool propertyDescReadTelegram(int objectIdx, PropertyID propertyId, int index)
         def = propertyDef(objectIdx, propertyId);
     else def = &propertiesTab[objectIdx][index];
 
-    bcu.sendTelegram[10] = index;
+    bcu->sendTelegram[10] = index;
 
     if (!def || !def->id)
     {
-        bcu.sendTelegram[9] = propertyId;
-        bcu.sendTelegram[11] = 0;
-        bcu.sendTelegram[12] = 0;
-        bcu.sendTelegram[13] = 0;
-        bcu.sendTelegram[14] = 0;
+        bcu->sendTelegram[9] = propertyId;
+        bcu->sendTelegram[11] = 0;
+        bcu->sendTelegram[12] = 0;
+        bcu->sendTelegram[13] = 0;
+        bcu->sendTelegram[14] = 0;
         return false; // not found
     }
 
@@ -240,11 +240,11 @@ bool propertyDescReadTelegram(int objectIdx, PropertyID propertyId, int index)
         numElems = *def->valuePointer();
     else numElems = 1;
 
-    bcu.sendTelegram[9] = def->id;
-    bcu.sendTelegram[11] = def->control & (PC_TYPE_MASK | PC_WRITABLE);
-    bcu.sendTelegram[12] = (numElems >> 8) & 15;
-    bcu.sendTelegram[13] = numElems;
-    bcu.sendTelegram[14] = def->control & PC_WRITABLE ? 0xf1 : 0x50; // wild guess from bus traces
+    bcu->sendTelegram[9] = def->id;
+    bcu->sendTelegram[11] = def->control & (PC_TYPE_MASK | PC_WRITABLE);
+    bcu->sendTelegram[12] = (numElems >> 8) & 15;
+    bcu->sendTelegram[13] = numElems;
+    bcu->sendTelegram[14] = def->control & PC_WRITABLE ? 0xf1 : 0x50; // wild guess from bus traces
 
     return true;
 }

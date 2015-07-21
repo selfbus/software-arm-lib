@@ -11,7 +11,7 @@
 #include <sblib/eib.h>
 
 static BCU _bcu = BCU();
-BCU_Base * bcu = &_bcu;
+BcuBase * bcu = &_bcu;
 
 // The EIB bus access object
 #if defined (__LPC11XX__)

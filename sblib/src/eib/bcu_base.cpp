@@ -11,8 +11,11 @@
 #define INSIDE_BCU_CPP
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/user_memory.h>
+#include <sblib/eib/addr_tables.h>
 #include <sblib/internal/functions.h>
 #include <sblib/internal/variables.h>
+#include <sblib/internal/iap.h>
+#include <string.h>
 
 #ifdef DUMP_TELEGRAMS
 #include <sblib/serial.h>
