@@ -83,6 +83,8 @@ enum
 ,   UPD_UNLOCK_DEVICE    = 30
 ,   UPD_REQUEST_UID      = 31
 ,   UPD_RESPONSE_UID     = 32
+,   UPD_APP_VERSION_REQUEST  = 33
+,   UPD_APP_VERSION_RESPONSE  = 34
 ,   UPD_SET_EMULATION    = 100
 };
 
@@ -186,6 +188,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     	if (!((BcuUpdate *) bcu)->progPinStatus())
     	{   // the operator has physical access to the device -> we unlock it
     		deviceLocked = DEVICE_UNLOCKED;
+			lastError = IAP_SUCCESS;
     	}
     	else
     	{   // we need to ensure that only authorized operators can
@@ -206,6 +209,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     		if (lastError != UPD_UID_MISSMATCH)
     		{
         		deviceLocked = DEVICE_UNLOCKED;
+    			lastError = IAP_SUCCESS;
     		}
     	}
     	break;
@@ -229,6 +233,24 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     	}
     	else
     		lastError = UPD_DEVICE_LOCKED;
+    	break;
+    case UPD_APP_VERSION_REQUEST:
+        unsigned char * appversion;
+        appversion = getAppVersion
+	    	    ( (AppDescriptionBlock *)
+    		    		(FIRST_SECTOR - (1 + data[3]) * BOOT_BLOCK_SIZE)
+				);
+        if (((unsigned int) appversion) < 0x50000)
+        {
+            * sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
+			memcpy( bcu->sendTelegram +10
+				  , appversion
+				  , 12
+				  );
+			lastError = IAP_SUCCESS;
+        }
+        else
+        	lastError = UPD_APPLICATION_NOT_STARTABLE;
     	break;
     case UPD_ERASE_SECTOR:
 #ifdef SERIAL_DEBUG
@@ -339,7 +361,6 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 	#endif
 			if (crc == streamToUIn32(data + 3))
 			{
-				address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
 				if (checkApplication ((AppDescriptionBlock *) ramBuffer))
 				{
 					lastError = RUN_OR_EMULATE

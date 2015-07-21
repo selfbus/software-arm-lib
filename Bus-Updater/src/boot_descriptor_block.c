@@ -8,7 +8,7 @@
 #include "boot_descriptor_block.h"
 #include "crc.h"
 
-#if 0
+#if 1
 unsigned int checkVectorTable (unsigned int start)
 {
     unsigned int i;
@@ -39,4 +39,8 @@ unsigned int checkApplication (AppDescriptionBlock * block)
     return 0;
 }
 
+inline unsigned char * getAppVersion(AppDescriptionBlock * block)
+{
+	return (unsigned char *) (block->appVersionAddress);
+}
 

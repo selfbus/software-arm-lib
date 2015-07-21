@@ -1,0 +1,8 @@
+<info flash_driver='LPC11_12_13_64K_8K.cfx'>
+ <chip>
+  <memory id='Flash' type='Flash' is_ro='true' can_program='true'></memory>
+  <memory id='RAM' type='RAM'></memory>
+   <memoryInstance id='MFlash64' derived_from='Flash' location='0x2000' size='0xe000'  edited='true' />
+   <memoryInstance id='RamLoc8' derived_from='RAM' location='0x10000100' size='0x1f00'  edited='true' />
+ </chip>
+</info>

@@ -22,9 +22,12 @@ typedef struct
     unsigned int startAddress;
     unsigned int endAddress;
     unsigned int crc;
+    unsigned int appVersionAddress;
 } AppDescriptionBlock;
 
 unsigned int checkApplication (AppDescriptionBlock * block);
+
+unsigned char * getAppVersion(AppDescriptionBlock * block);
 
 #ifdef __cplusplus
 }
