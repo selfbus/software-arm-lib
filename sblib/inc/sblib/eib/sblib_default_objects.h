@@ -9,15 +9,11 @@
 #define SBLIB_DEFAULT_OBJECTS_H_
 
 #include <sblib/eib.h>
-
+#include <sblib/io_pin_names.h>
 static BCU _bcu = BCU();
 BcuBase * bcu = &_bcu;
 
 // The EIB bus access object
-#if defined (__LPC11XX__)
-Bus bus(timer16_1, PIO1_8, PIO1_9, CAP0, MAT0);
-#elif defined (__LPC11UXX__)
-Bus bus(timer16_1, PIO0_20, PIO0_21, CAP0, MAT0);
-#endif
+Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 
 #endif /* SBLIB_DEFAULT_OBJECTS_H_ */

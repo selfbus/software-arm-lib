@@ -9,6 +9,7 @@
  */
 
 #define INSIDE_BCU_CPP
+#include <sblib/io_pin_names.h>
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/user_memory.h>
 #include <sblib/eib/addr_tables.h>
@@ -26,14 +27,6 @@ BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, bus);
 
 extern unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
-
-
-// Default pin of the programming mode button+led
-#if defined (__LPC11XX__)
-#define DEFAULT_PROG_PIN  PIO2_0
-#elif defined (__LPC11UXX__)
-#define DEFAULT_PROG_PIN  PIO1_19
-#endif
 
 BcuBase::BcuBase()
 :progButtonDebouncer()
