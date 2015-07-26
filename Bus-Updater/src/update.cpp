@@ -339,7 +339,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
         crc         = 0xFFFFFFFF;
         break;
     case UPD_UPDATE_BOOT_DESC:
-        if (deviceLocked == DEVICE_UNLOCKED)
+        if (deviceLocked == DEVICE_UNLOCKED && data[7]<2)
         {
 			crc     = crc32(0xFFFFFFFF, ramBuffer, 256);
 			address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
