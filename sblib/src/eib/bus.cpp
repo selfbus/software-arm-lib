@@ -551,6 +551,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 
 #ifdef DUMP_TELEGRAMS
 	{
+        serial.print("TX: ");
         for (int i = 0; i <= length; ++i)
         {
             if (i) serial.print(" ");

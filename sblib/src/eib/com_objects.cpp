@@ -193,7 +193,7 @@ void sendGroupReadTelegram(int objno, int addr)
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
     bcu.sendTelegram[3] = addr >> 8;
     bcu.sendTelegram[4] = addr;
-    bcu.sendTelegram[5] = 0xe0;
+    bcu.sendTelegram[5] = 0xe1;
     bcu.sendTelegram[6] = 0;
     bcu.sendTelegram[7] = 0x00;
 
@@ -323,7 +323,7 @@ void processGroupTelegram(int addr, int apci)
             objno = assocTab[idx + 1];  // Get the com-object number from the assoc table
             objConf = configTab[objno].config;
 
-            if (apci == APCI_GROUP_VALUE_WRITE_PDU)
+            if (apci == APCI_GROUP_VALUE_WRITE_PDU || apci == APCI_GROUP_VALUE_RESPONSE_PDU)
             {
                 // Check if communication and write are enabled
                 if ((objConf & COMCONF_WRITE_COMM) == COMCONF_WRITE_COMM)

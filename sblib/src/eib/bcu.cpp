@@ -141,6 +141,7 @@ void BCU::loop()
     	extern unsigned int telLength ;
     	if (telLength > 0)
     	{
+            serial.print("RX: ");
             for (int i = 0; i < telLength; ++i)
             {
                 if (i) serial.print(" ");
