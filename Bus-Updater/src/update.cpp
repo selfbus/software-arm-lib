@@ -22,7 +22,7 @@
 //#define ENABLE_EMULATION
 
 #ifdef ENABLE_EMULATION
-//#define SERIAL_DEBUG
+#define SERIAL_DEBUG
 #define RUN_OR_EMULATE(code) (emulation & 0x0F ? IAP_SUCCESS : code)
 #else
 #define RUN_OR_EMULATE(code) code
