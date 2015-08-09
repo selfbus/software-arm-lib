@@ -89,6 +89,13 @@
 #define PIN_LT8 PIO0_11
 #define PIN_LT9 PIO1_22
 
+#elif defined (__LPC11XX_IN16__)
+#define PIN_PROG PIO2_11
+#define PIN_INFO PIO1_0
+#define PIN_RUN PIO2_10
+#define PIN_INFO PIO1_0
+#define PIN_RUN PIO2_10
+//#define PIN_VBUS   PIO0_23
 #endif
 
 #endif /* SBLIB_IO_PIN_NAMES_H_ */

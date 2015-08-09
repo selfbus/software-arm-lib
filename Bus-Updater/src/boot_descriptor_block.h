@@ -23,7 +23,7 @@ typedef struct
     unsigned int endAddress;
     unsigned int crc;
     unsigned int appVersionAddress;
-} AppDescriptionBlock;
+} __attribute__ ((aligned (256))) AppDescriptionBlock;
 
 unsigned int checkApplication (AppDescriptionBlock * block);
 
