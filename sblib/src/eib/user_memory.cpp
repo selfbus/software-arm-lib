@@ -33,9 +33,9 @@ byte userEepromModified;
 unsigned int writeUserEepromTime;
 
 
-#define NUM_EEPROM_PAGES     (FLASH_SECTOR_SIZE / USER_EEPROM_SIZE)
+#define NUM_EEPROM_PAGES     (FLASH_SECTOR_SIZE / USER_EEPROM_FLASH_SIZE)
 #define FLASH_SECTOR_ADDRESS (FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE)
-#define LAST_EEPROM_PAGE     (FLASH_SECTOR_ADDRESS + USER_EEPROM_SIZE * (NUM_EEPROM_PAGES - 1))
+#define LAST_EEPROM_PAGE     (FLASH_SECTOR_ADDRESS + USER_EEPROM_FLASH_SIZE * (NUM_EEPROM_PAGES - 1))
 
 /*
  * Find the last valid page in the flash sector
@@ -50,7 +50,7 @@ byte* findValidPage()
         if (page[USER_EEPROM_SIZE - 1] != 0xff)
             return page;
 
-        page -= USER_EEPROM_SIZE;
+        page -= USER_EEPROM_FLASH_SIZE;
     }
 
     return 0;
@@ -88,7 +88,7 @@ void writeUserEeprom()
         page = FLASH_SECTOR_ADDRESS;
     }
     else if (page)
-        page += USER_EEPROM_SIZE;
+        page += USER_EEPROM_FLASH_SIZE;
     else page = FLASH_SECTOR_ADDRESS;
 
     userEepromData[USER_EEPROM_SIZE - 1] = 0; // mark the page as in use

@@ -12,6 +12,7 @@
 #include <sblib/serial.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/timeout.h>
+#include <sblib/eib/sblib_default_objects.h>
 
 Timeout blinky;
 
@@ -20,7 +21,7 @@ Timeout blinky;
  */
 void setup()
 {
-    bcu.begin(2, 1, 1); // ABB, dummy something device
+    bcu->begin(2, 1, 1); // ABB, dummy something device
 
     // Disable telegram processing by the lib
     if (userRam.status & BCU_STATUS_TL)
@@ -32,7 +33,7 @@ void setup()
     pinMode(PIN_INFO, OUTPUT);    // Info LED
     pinMode(PIN_RUN, OUTPUT);    // Run LED
     blinky.start(1);
-    bcu.setOwnAddress(0x1140);
+    bcu->setOwnAddress(0x1140);
 }
 
 /*

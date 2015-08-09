@@ -148,28 +148,42 @@ IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
     IAP_Parameter p;
     int sector = iapSectorOfAddress(rom);
 
-    /* first we need to 'unlock' the sector */
-    p.stat = _prepareSector(sector);
-
-    if (p.stat == IAP_SUCCESS)
+    unsigned int tries = 0;
+    do
     {
-        /* then we can `copy` the RAM content to the FLASH */
-        p.cmd = CMD_COPY_RAM2FLASH;
-        p.par[0] = (unsigned int) (unsigned long) rom;
-        p.par[1] = (unsigned int) (unsigned long) ram;
-        p.par[2] = size;
-        p.par[3] = SystemCoreClock / 1000;
-        IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+        tries++;
+        /* first we need to 'unlock' the sector */
+        p.stat = _prepareSector(sector);
 
         if (p.stat == IAP_SUCCESS)
         {
-            p.cmd = CMD_COMPARE;
+            /* then we can `copy` the RAM content to the FLASH */
+            p.cmd = CMD_COPY_RAM2FLASH;
             p.par[0] = (unsigned int) (unsigned long) rom;
             p.par[1] = (unsigned int) (unsigned long) ram;
             p.par[2] = size;
+            p.par[3] = SystemCoreClock / 1000;
             IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+
+            if (p.stat == IAP_SUCCESS)
+            {
+                p.cmd = CMD_COMPARE;
+                p.par[0] = (unsigned int) (unsigned long) rom;
+                p.par[1] = (unsigned int) (unsigned long) ram;
+                p.par[2] = size;
+                IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+                if (p.stat != IAP_SUCCESS)
+                {   // programming failed, try it once more with an erase before
+                    if (IAP_SUCCESS != iapEraseSector(sector))
+                    {
+                        tries = 20; // break the loop
+                    }
+                }
+                else
+                    tries = 20; // break to loop
+            }
         }
-    }
+    } while (tries < 2);
     return (IAP_Status) p.stat;
 }
 

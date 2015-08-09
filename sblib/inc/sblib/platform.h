@@ -62,7 +62,9 @@ unsigned int* ioconPointer(int port, int pinNum);
 /**
  * The base address of the flash.
  */
-#define FLASH_BASE_ADDRESS ((unsigned char*) &__vectors_start__)
+// the code below does no longer work once we move the application up to 0x2000
+//#define FLASH_BASE_ADDRESS ((unsigned char*) &__vectors_start__)
+#define FLASH_BASE_ADDRESS ((unsigned char*) 0)
 
 /**
 * The size of a flash sector in bytes.
