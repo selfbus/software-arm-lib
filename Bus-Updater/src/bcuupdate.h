@@ -12,7 +12,7 @@
 #include <sblib/eib/apci.h>
 #include <sblib/internal/variables.h>
 
-class BcuUpdate : public BcuBase
+class BcuUpdate: public BcuBase
 {
 public:
     virtual void processTelegram();
@@ -49,6 +49,6 @@ protected:
 
 inline bool BcuUpdate::progPinStatus()
 {
-	return progButtonDebouncer.value();
+    return progButtonDebouncer.value();
 }
 #endif /* BCUUPDATE_H_ */

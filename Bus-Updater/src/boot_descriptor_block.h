@@ -10,7 +10,8 @@
 #define BOOT_DESCRIPTOR_BLOCK_H_
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
 
 #define FIRST_SECTOR    0x2000
@@ -23,9 +24,9 @@ typedef struct
     unsigned int endAddress;
     unsigned int crc;
     unsigned int appVersionAddress;
-} __attribute__ ((aligned (256))) AppDescriptionBlock;
+}__attribute__ ((aligned (256))) AppDescriptionBlock;
 
-unsigned int checkApplication (AppDescriptionBlock * block);
+unsigned int checkApplication(AppDescriptionBlock * block);
 
 unsigned char * getAppVersion(AppDescriptionBlock * block);
 

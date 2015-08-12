@@ -25,6 +25,7 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 #include <boot_descriptor_block.h>
 #include "sblib/digital_pin.h"
 #include "sblib/io_pin_names.h"
+#include <sblib/serial.h>
 
 Timeout blinky;
 
@@ -38,15 +39,15 @@ static inline void lib_setup()
     systemTime = 0;
 }
 
- void setup()
+void setup()
 {
-	bcu->begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
-	pinMode(PIN_INFO, OUTPUT);
-	pinMode(PIN_RUN,  OUTPUT);
-	blinky.start(1);
-	bcu->setOwnAddress(0xFFC0);
-	extern byte userEepromModified;
-	userEepromModified = 0;
+    bcu->begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
+    pinMode(PIN_INFO, OUTPUT);
+    pinMode(PIN_RUN, OUTPUT);
+    blinky.start(1);
+    bcu->setOwnAddress(0xFFC0);
+    extern byte userEepromModified;
+    userEepromModified = 0;
 }
 
 void loop()
@@ -64,15 +65,15 @@ void loop()
 
 void jumpToApplication(unsigned int start)
 {
-    unsigned int StackTop    = * (unsigned int *) (start);
-    unsigned int ResetVector = * (unsigned int *) (start + 4);
+    unsigned int StackTop = *(unsigned int *) (start);
+    unsigned int ResetVector = *(unsigned int *) (start + 4);
     unsigned int * rom = (unsigned int *) start;
     unsigned int * ram = (unsigned int *) 0x10000000;
     unsigned int i;
     // copy the first 200 bytes of the "application" (the vector table)
     // into the RAM and than remap the vector table inside the RAM
     for (i = 0; i < 50; i++, rom++, ram++)
-        * ram = * rom;
+        *ram = *rom;
     LPC_SYSCON->SYSMEMREMAP = 0x01;
 
     /* Normally during RESET the stack pointer will be loaded
@@ -88,6 +89,10 @@ void jumpToApplication(unsigned int start)
 void run_updater()
 {
     lib_setup();
+#ifdef DUMP_TELEGRAMS
+    serial.setRxPin(PIO3_1);
+    serial.setTxPin(PIO3_0);
+#endif
     setup();
 
     while (1)
@@ -97,24 +102,24 @@ void run_updater()
     }
 }
 
-int main (void)
+int main(void)
 {
-	unsigned int * magicWord = (unsigned int *) 0x10000000;
-	if (* magicWord == 0x5E1FB055)
-    	run_updater();
-    * magicWord = 0;
+    unsigned int * magicWord = (unsigned int *) 0x10000000;
+    if (*magicWord == 0x5E1FB055)
+        run_updater();
+    *magicWord = 0;
     pinMode(PIN_PROG, INPUT | PULL_UP);
-    if (! digitalRead(PIN_PROG))
+    if (!digitalRead(PIN_PROG))
     {
-    	run_updater();
+        run_updater();
     }
-    AppDescriptionBlock * block = (AppDescriptionBlock *)FIRST_SECTOR;
+    AppDescriptionBlock * block = (AppDescriptionBlock *) FIRST_SECTOR;
     block--;
-    for(int i=0; i<2; i++, block--)
+    for (int i = 0; i < 2; i++, block--)
     {
-    	if (checkApplication(block))
-     	    jumpToApplication(block->startAddress);
+        if (checkApplication(block))
+            jumpToApplication(block->startAddress);
     }
     run_updater();
-    return 0 ;
+    return 0;
 }

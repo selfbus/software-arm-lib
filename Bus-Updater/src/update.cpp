@@ -19,16 +19,6 @@
 #include <crc.h>
 #include <boot_descriptor_block.h>
 
-//#define ENABLE_EMULATION
-
-#ifdef ENABLE_EMULATION
-#define SERIAL_DEBUG
-#define RUN_OR_EMULATE(code) (emulation & 0x0F ? IAP_SUCCESS : code)
-#else
-#define RUN_OR_EMULATE(code) code
-#endif
-
-
 /**
  * Updater protocol:
  *   We miss-use the memory write EIB frames. Miss-use because we do not transmitt the address in each request
@@ -73,19 +63,19 @@
  */
 enum
 {
-	UPD_ERASE_SECTOR     = 0
-,   UPD_SEND_DATA        = 1
-,   UPD_PROGRAM          = 2
-,   UPD_UPDATE_BOOT_DESC = 3
-,   UPD_REQ_DATA         = 10
-,   UPD_GET_LAST_ERROR   = 20
-,   UPD_SEND_LAST_ERROR  = 21
-,   UPD_UNLOCK_DEVICE    = 30
-,   UPD_REQUEST_UID      = 31
-,   UPD_RESPONSE_UID     = 32
-,   UPD_APP_VERSION_REQUEST  = 33
-,   UPD_APP_VERSION_RESPONSE  = 34
-,   UPD_SET_EMULATION    = 100
+    UPD_ERASE_SECTOR = 0,
+    UPD_SEND_DATA = 1,
+    UPD_PROGRAM = 2,
+    UPD_UPDATE_BOOT_DESC = 3,
+    UPD_REQ_DATA = 10,
+    UPD_GET_LAST_ERROR = 20,
+    UPD_SEND_LAST_ERROR = 21,
+    UPD_UNLOCK_DEVICE = 30,
+    UPD_REQUEST_UID = 31,
+    UPD_RESPONSE_UID = 32,
+    UPD_APP_VERSION_REQUEST = 33,
+    UPD_APP_VERSION_RESPONSE = 34,
+    UPD_SET_EMULATION = 100
 };
 
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)
@@ -94,18 +84,27 @@ enum
 
 enum UPD_Status
 {
-      UDP_UNKONW_COMMAND = 0x100       //<! received command is not defined
-    , UDP_CRC_EROR                     //<! CRC calculated on the device
-								       //<! and by the updater don't match
-    , UPD_ADDRESS_NOT_ALLOWED_TO_FLASH //<! specifed address cannot be programmed
-    , UPD_SECTOR_NOT_ALLOWED_TO_ERASE  //<! the specified sector cannot be erased
-    , UPD_RAM_BUFFER_OVERFLOW          //<! internal buffer for storing the data
-	                                   //<! would overflow
-    , UPD_WRONG_DESCRIPTOR_BLOCK       //<! the boot descriptor block does not exist
-    , UPD_APPLICATION_NOT_STARTABLE    //<! the programmed application is not startable
-    , UPD_DEVICE_LOCKED                //<! the device is still locked
-	, UPD_UID_MISSMATCH                //<! UID sent to unlock the device is invalid
-    , UDP_NOT_IMPLEMENTED  = 0xFFFF    //<! this command is not yet implemented
+    UDP_UNKONW_COMMAND = 0x100       //<! received command is not defined
+    ,
+    UDP_CRC_ERROR                     //<! CRC calculated on the device
+                                      //<! and by the updater don't match
+    ,
+    UPD_ADDRESS_NOT_ALLOWED_TO_FLASH //<! specifed address cannot be programmed
+    ,
+    UPD_SECTOR_NOT_ALLOWED_TO_ERASE  //<! the specified sector cannot be erased
+    ,
+    UPD_RAM_BUFFER_OVERFLOW          //<! internal buffer for storing the data
+                                     //<! would overflow
+    ,
+    UPD_WRONG_DESCRIPTOR_BLOCK     //<! the boot descriptor block does not exist
+    ,
+    UPD_APPLICATION_NOT_STARTABLE //<! the programmed application is not startable
+    ,
+    UPD_DEVICE_LOCKED                //<! the device is still locked
+    ,
+    UPD_UID_MISMATCH               //<! UID sent to unlock the device is invalid
+    ,
+    UDP_NOT_IMPLEMENTED = 0xFFFF    //<! this command is not yet implemented
 };
 
 unsigned char ramBuffer[4096];
@@ -116,7 +115,15 @@ unsigned char ramBuffer[4096];
  */
 unsigned int streamToUIn32(unsigned char * buffer)
 {
-    return buffer[0] << 24 | buffer [1] << 16 | buffer [2] << 8 | buffer [3];
+    return buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0];
+}
+
+void UIn32ToStream(unsigned char * buffer, unsigned int val)
+{
+    buffer[3] = val >> 24;
+    buffer[2] = val >> 16;
+    buffer[1] = val >> 8;
+    buffer[0] = val & 0xff;
 }
 
 /* the following two symbols are used to protect the updater from
@@ -142,10 +149,10 @@ static bool _prepareReturnTelegram(unsigned int count, unsigned char cmd)
  */
 inline bool sectorAllowedToErease(unsigned int sectorNumber)
 {
-    if (sectorNumber == 0) return false; // bootloader sector
-    return !(  (sectorNumber >= ADDRESS2SECTOR(__vectors_start__))
-            && (sectorNumber <= ADDRESS2SECTOR(_etext))
-            );
+    if (sectorNumber == 0)
+        return false; // bootloader sector
+    return !((sectorNumber >= ADDRESS2SECTOR(__vectors_start__))
+            && (sectorNumber <= ADDRESS2SECTOR(_etext)));
 }
 
 /*
@@ -154,295 +161,216 @@ inline bool sectorAllowedToErease(unsigned int sectorNumber)
 inline bool addressAllowedToProgram(unsigned int start, unsigned int length)
 {
     unsigned int end = start + length;
-    return !(  (start >= __vectors_start__)
-            && (end   <= _etext)
-            );
+    if (start & 0xff)
+    {
+        return 0;
+    }
+    return !((start >= __vectors_start__) && (end <= _etext));
 }
 
-unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data)
+unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
+        unsigned char * data)
 {
     unsigned int count = data[0] & 0x0f;
-	unsigned int address;
-	static unsigned int ramLocation;
-	static unsigned int deviceLocked = DEVICE_LOCKED;
-	unsigned int crc = 0xFFFFFFFF;
-	static unsigned int lastError = 0;
-#ifdef ENABLE_EMULATION
-	static unsigned int emulation = 0;
-#endif
+    unsigned int address;
+    static unsigned int ramLocation;
+    static unsigned int deviceLocked = DEVICE_LOCKED;
+    unsigned int crc = 0xFFFFFFFF;
+    static unsigned int lastError = 0;
+    unsigned int sendLastError = 0;
 
     digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
-    switch (data [2])
+    switch (data[2])
     {
-    case UPD_UNLOCK_DEVICE:
-#ifdef SERIAL_DEBUG
-        if (emulation & 0xF0)
-        {
-            serial.print("REUL ");
-            serial.print(streamToUIn32(data + 3 + 0), HEX, 8);
-            serial.print(streamToUIn32(data + 3 + 4), HEX, 8);
-            serial.print(streamToUIn32(data + 3 + 8), HEX, 8);
-            serial.println();
-        }
-#endif
-    	if (!((BcuUpdate *) bcu)->progPinStatus())
-    	{   // the operator has physical access to the device -> we unlock it
-    		deviceLocked = DEVICE_UNLOCKED;
-			lastError = IAP_SUCCESS;
-    	}
-    	else
-    	{   // we need to ensure that only authorized operators can
-    		// update the application
-    		// as a simple method we use the unique ID of the CPU itself
-    		// only if this UUID is known, the device will be unlocked
-    		byte uid[4*32];
-    		if (IAP_SUCCESS == iapReadUID(uid))
-    		{
-    			for (unsigned int i = 0; i < 12; i++)
-    			{
-    				if (data [i + 3] != uid[i])
-    				{
-    					lastError = UPD_UID_MISSMATCH;
-    				}
-    			}
-    		}
-    		if (lastError != UPD_UID_MISSMATCH)
-    		{
-        		deviceLocked = DEVICE_UNLOCKED;
-    			lastError = IAP_SUCCESS;
-    		}
-    	}
-    	break;
-    case UPD_REQUEST_UID:
-#ifdef SERIAL_DEBUG
-        if (emulation & 0xF0)
-        {
-            serial.println("REUI");
-        }
-#endif
-    	if (!((BcuUpdate *) bcu)->progPinStatus())
-    	{   // the operator has physical access to the device -> we unlock it
-    		byte uid[4*4];
-    		lastError = iapReadUID(uid);
-    		if (lastError == IAP_SUCCESS)
-    		{
-                * sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_UID);
-                memcpy(bcu->sendTelegram +10, uid, 12);
-    		}
+        case UPD_UNLOCK_DEVICE:
+            if (!((BcuUpdate *) bcu)->progPinStatus())
+            { // the operator has physical access to the device -> we unlock it
+                deviceLocked = DEVICE_UNLOCKED;
+                lastError = IAP_SUCCESS;
+            }
+            else
+            {   // we need to ensure that only authorized operators can
+                // update the application
+                // as a simple method we use the unique ID of the CPU itself
+                // only if this UUID is known, the device will be unlocked
+                byte uid[4 * 32];
+                if (IAP_SUCCESS == iapReadUID(uid))
+                {
+                    for (unsigned int i = 0; i < 12; i++)
+                    {
+                        if (data[i + 3] != uid[i])
+                        {
+                            lastError = UPD_UID_MISMATCH;
+                        }
+                    }
+                }
+                if (lastError != UPD_UID_MISMATCH)
+                {
+                    deviceLocked = DEVICE_UNLOCKED;
+                    lastError = IAP_SUCCESS;
+                }
+            }
+            sendLastError = true;
+            ramLocation = 0;
+            crc = 0xFFFFFFFF;
             break;
-    	}
-    	else
-    		lastError = UPD_DEVICE_LOCKED;
-    	break;
-    case UPD_APP_VERSION_REQUEST:
-        unsigned char * appversion;
-        appversion = getAppVersion
-	    	    ( (AppDescriptionBlock *)
-    		    		(FIRST_SECTOR - (1 + data[3]) * BOOT_BLOCK_SIZE)
-				);
-        if (((unsigned int) appversion) < 0x50000)
-        {
-            * sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
-			memcpy( bcu->sendTelegram +10
-				  , appversion
-				  , 12
-				  );
-			lastError = IAP_SUCCESS;
-        }
-        else
-        	lastError = UPD_APPLICATION_NOT_STARTABLE;
-    	break;
-    case UPD_ERASE_SECTOR:
-#ifdef SERIAL_DEBUG
-        if (emulation & 0xF0)
-        {
-            serial.print("SCER ");
-            serial.print(data [3], HEX, 2);
-            serial.println();
-        }
-#endif
-        if (deviceLocked == DEVICE_UNLOCKED)
-        {
-			if (sectorAllowedToErease(data [3]))
-			{
-				lastError = RUN_OR_EMULATE(iapEraseSector(data [3]));
-			}
-			else
-				lastError = UPD_SECTOR_NOT_ALLOWED_TO_ERASE;
-        }
-        else
-        	lastError = UPD_DEVICE_LOCKED;
-        ramLocation = 0;
-        break;
-    case UPD_SEND_DATA:
-        if (deviceLocked == DEVICE_UNLOCKED)
-        {
-			if ((ramLocation + count) < sizeof(ramBuffer))
-			{
-				memcpy((void *)& ramBuffer[ramLocation], data + 3, count);
-				crc          = crc32(crc, data + 3, count);
-	#ifdef SERIAL_DEBUG
-				if (emulation & 0xF0)
-				{
-					serial.print("DSND ");
-					serial.print(count, HEX, 4);
-					serial.print(" ");
-					serial.print(ramLocation, HEX, 4);
-					serial.println();
-				}
-	#endif
-				ramLocation += count;
-				lastError    = IAP_SUCCESS;
-			}
-			else
-				lastError = UPD_RAM_BUFFER_OVERFLOW;
-        }
-        else
-        	lastError = UPD_DEVICE_LOCKED;
-        break;
-    case UPD_PROGRAM:
-        if (deviceLocked == DEVICE_UNLOCKED)
-        {
-			count        = streamToUIn32(data + 3);
-			address      = streamToUIn32(data + 3 + 4);
-			if (addressAllowedToProgram(address, count))
-			{
-				crc = crc32(0xFFFFFFFF, ramBuffer, count);
-	#ifdef SERIAL_DEBUG
-				if (emulation & 0xF0)
-				{
-					serial.print("PROG ");
-					serial.print(count, HEX, 8);
-					serial.print(" ");
-					serial.print(address, HEX, 8);
-					serial.print(" ");
-					serial.print(crc, HEX, 8);
-					serial.print(" ");
-					serial.print(streamToUIn32(data + 3 + 4 + 4), HEX, 8);
-					serial.println();
-				}
-	#endif
-				if (crc == streamToUIn32(data + 3 + 4 + 4))
-				{
-					lastError = RUN_OR_EMULATE
-							(iapProgram((byte *) address, ramBuffer, count));
-				}
-				else
-					lastError = UDP_CRC_EROR;
-			}
-			else
-				lastError = UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
-        }
-        else
-        	lastError = UPD_DEVICE_LOCKED;
-        ramLocation = 0;
-        crc         = 0xFFFFFFFF;
-        break;
-    case UPD_UPDATE_BOOT_DESC:
-        if (deviceLocked == DEVICE_UNLOCKED && data[7]<2)
-        {
-			crc     = crc32(0xFFFFFFFF, ramBuffer, 256);
-			address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
-	#ifdef SERIAL_DEBUG
-			if (emulation & 0xF0)
-			{
-				serial.print("UPDB ");
-				serial.print(data [7], HEX, 2);
-				serial.print(" ");
-				serial.print(BOOT_BLOCK_PAGE - data[7], DEC, 2);
-				serial.print(" ");
-				serial.print(address, HEX, 8);
-				serial.print(" ");
-				serial.print(crc, HEX, 8);
-				serial.print(" ");
-				serial.print(streamToUIn32(data + 3), HEX, 8);
-				serial.println();
-			}
-	#endif
-			if (crc == streamToUIn32(data + 3))
-			{
-				if (checkApplication ((AppDescriptionBlock *) ramBuffer))
-				{
-					lastError = RUN_OR_EMULATE
-					    (iapErasePage(BOOT_BLOCK_PAGE - data[7]));
-					if (lastError == IAP_SUCCESS)
-					{
-						lastError = RUN_OR_EMULATE(iapProgram((byte *) address, ramBuffer, 256));
-					}
-				}
-				else
-					lastError = UPD_APPLICATION_NOT_STARTABLE;
-			}
-			else
-				lastError = UDP_CRC_EROR;
-        }
-        else
-        	lastError = UPD_DEVICE_LOCKED;
-        ramLocation = 0;
-        crc         = 0xFFFFFFFF;
-        break;
-    case UPD_REQ_DATA:
-        if (deviceLocked == DEVICE_UNLOCKED)
-        {
-			/*
-			memcpy(bcu.sendTelegram + 9, (void *)address, count);
-			bcu.sendTelegram[5] = 0x63 + count;
-			bcu.sendTelegram[6] = 0x42;
-			bcu.sendTelegram[7] = 0x40 | count;
-			bcu.sendTelegram[8] = UPD_SEND_DATA;
-			* sendTel = true;
-			* */
-			lastError = UDP_NOT_IMPLEMENTED; // set to any error
-        }
-        else
-        	lastError = UPD_DEVICE_LOCKED;
-        break;
-    case UPD_GET_LAST_ERROR:
-#ifdef SERIAL_DEBUG
-        if (emulation & 0xF0)
-        {
-            serial.print("SNDE ");
-            serial.print(lastError, HEX, 2);
-            serial.println();
-        }
-#endif
-        * sendTel = _prepareReturnTelegram(4, UPD_SEND_LAST_ERROR);
-        memcpy(bcu->sendTelegram +10, (void *)&lastError, 4);
-        lastError = IAP_SUCCESS;
-        break;
-#ifdef ENABLE_EMULATION
-    case UPD_SET_EMULATION:
-        emulation = data [3];
-#ifdef SERIAL_DEBUG
-        if (emulation & 0xF0)
-        {
-#ifndef DUMP_TELEGRAMS
-            serial.begin(115200);
-#endif
-            serial.print("SETE ");
-            serial.print(emulation, HEX, 2);
-            serial.println();
-        }
-        else
-        {
-            //serial.end();
-        }
-#endif
-        lastError = IAP_SUCCESS;
-        break;
-#endif
-    default:
-        lastError = UDP_UNKONW_COMMAND; // set to any error
+        case UPD_REQUEST_UID:
+            if (1 || !((BcuUpdate *) bcu)->progPinStatus())
+            { // the operator has physical access to the device -> we unlock it
+                byte uid[4 * 4];
+                lastError = iapReadUID(uid);
+                if (lastError == IAP_SUCCESS)
+                {
+                    *sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_UID);
+                    memcpy(bcu->sendTelegram + 10, uid, 12);
+                }
+                break;
+            }
+            else
+                lastError = UPD_DEVICE_LOCKED;
+            break;
+        case UPD_APP_VERSION_REQUEST:
+            unsigned char * appversion;
+            appversion = getAppVersion(
+                    (AppDescriptionBlock *) (FIRST_SECTOR
+                            - (1 + data[3]) * BOOT_BLOCK_SIZE));
+            if (((unsigned int) appversion) < 0x50000)
+            {
+                *sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
+                memcpy(bcu->sendTelegram + 10, appversion, 12);
+                lastError = IAP_SUCCESS;
+            }
+            else
+                lastError = UPD_APPLICATION_NOT_STARTABLE;
+            break;
+        case UPD_ERASE_SECTOR:
+            if (deviceLocked == DEVICE_UNLOCKED)
+            {
+                if (sectorAllowedToErease(data[3]))
+                {
+                    lastError = iapEraseSector(data[3]);
+                }
+                else
+                    lastError = UPD_SECTOR_NOT_ALLOWED_TO_ERASE;
+            }
+            else
+                lastError = UPD_DEVICE_LOCKED;
+            ramLocation = 0;
+            sendLastError = true;
+            break;
+        case UPD_SEND_DATA:
+            if (deviceLocked == DEVICE_UNLOCKED)
+            {
+                if ((ramLocation + count) <= sizeof(ramBuffer))
+                {
+                    memcpy((void *) &ramBuffer[ramLocation], data + 3, count);
+                    crc = crc32(crc, data + 3, count);
+                    ramLocation += count;
+                    lastError = IAP_SUCCESS;
+                }
+                else
+                    lastError = UPD_RAM_BUFFER_OVERFLOW;
+            }
+            else
+                lastError = UPD_DEVICE_LOCKED;
+            sendLastError = true;
+            break;
+        case UPD_PROGRAM:
+            if (deviceLocked == DEVICE_UNLOCKED)
+            {
+                count = streamToUIn32(data + 3);
+                address = streamToUIn32(data + 3 + 4);
+                if (addressAllowedToProgram(address, count))
+                {
+                    crc = crc32(0xFFFFFFFF, ramBuffer, count);
+                    if (crc == streamToUIn32(data + 3 + 4 + 4))
+                    {
+                        if (count > 1024)
+                        {
+                            count = 4096;
+                        }
+                        else if (count > 512)
+                        {
+                            count = 1024;
+                        }
+                        else if (count > 256)
+                        {
+                            count = 512;
+                        }
+                        else
+                        {
+                            count = 256;
+                        }
+                        lastError = iapProgram((byte *) address, ramBuffer,
+                                count);
+                        if (lastError != 0)
+                        {
+                            lastError = 0x0;
+                        }
+                    }
+                    else
+                        lastError = UDP_CRC_ERROR;
+                }
+                else
+                    lastError = UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
+            }
+            else
+                lastError = UPD_DEVICE_LOCKED;
+            ramLocation = 0;
+            crc = 0xFFFFFFFF;
+            sendLastError = true;
+            break;
+        case UPD_UPDATE_BOOT_DESC:
+            if (deviceLocked == DEVICE_UNLOCKED && data[7] < 2)
+            {
+                crc = crc32(0xFFFFFFFF, ramBuffer, 256);
+                address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
+                if (crc == streamToUIn32(data + 3))
+                {
+                    if (checkApplication((AppDescriptionBlock *) ramBuffer))
+                    {
+//					lastError = iapErasePage(BOOT_BLOCK_PAGE - data[7]);
+//					if (lastError == IAP_SUCCESS) {
+                        lastError = iapProgram((byte *) address, ramBuffer,
+                                256);
+//					}
+                    }
+                    else
+                        lastError = UPD_APPLICATION_NOT_STARTABLE;
+                }
+                else
+                    lastError = UDP_CRC_ERROR;
+            }
+            else
+                lastError = UPD_DEVICE_LOCKED;
+            ramLocation = 0;
+            crc = 0xFFFFFFFF;
+            sendLastError = true;
+            break;
+        case UPD_REQ_DATA:
+            if (deviceLocked == DEVICE_UNLOCKED)
+            {
+                /*
+                 memcpy(bcu.sendTelegram + 9, (void *)address, count);
+                 bcu.sendTelegram[5] = 0x63 + count;
+                 bcu.sendTelegram[6] = 0x42;
+                 bcu.sendTelegram[7] = 0x40 | count;
+                 bcu.sendTelegram[8] = UPD_SEND_DATA;
+                 * sendTel = true;
+                 * */
+                lastError = UDP_NOT_IMPLEMENTED; // set to any error
+            }
+            else
+                lastError = UPD_DEVICE_LOCKED;
+            sendLastError = true;
+            break;
+        default:
+            lastError = UDP_UNKONW_COMMAND; // set to any error
     }
-    if (lastError == IAP_SUCCESS)
-        return T_ACK_PDU;
-#ifdef SERIAL_DEBUG
-    if (emulation & 0xF0)
+    if (sendLastError)
     {
-    	serial.print("  ER ");
-        serial.print(lastError, HEX, 2);
-        serial.println();
+        *sendTel = _prepareReturnTelegram(4, UPD_SEND_LAST_ERROR);
+        UIn32ToStream(bcu->sendTelegram + 10, lastError);
     }
-#endif
-    return T_NACK_PDU;
+    return T_ACK_PDU;
 }

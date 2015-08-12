@@ -7,6 +7,12 @@
 
 #include "bcuupdate.h"
 
+#ifdef DUMP_TELEGRAMS
+#define d(x) {serial.println(x);}
+#else
+#define d(x)
+#endif
+
 void BcuUpdate::processTelegram()
 {
     unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
@@ -19,10 +25,12 @@ void BcuUpdate::processTelegram()
         {
             if (tpci & 0x80)  // A connection control command
             {
+                d("processControlTelegram\n");
                 processConControlTelegram(bus.telegram[6]);
             }
             else
             {
+                d("processDirectTelegram\n");
                 processDirectTelegram(apci);
             }
         }
@@ -31,7 +39,8 @@ void BcuUpdate::processTelegram()
     bus.discardReceivedTelegram();
 }
 
-extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
+extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
+        unsigned char * data);
 
 void BcuUpdate::processDirectTelegram(int apci)
 {
@@ -47,23 +56,26 @@ void BcuUpdate::processDirectTelegram(int apci)
     sendTelegram[6] = 0;
 
     int apciCmd = apci & APCI_GROUP_MASK;
-    if ( (apciCmd == APCI_MEMORY_READ_PDU)
-       | (apciCmd == APCI_MEMORY_WRITE_PDU)
-	   )
+    if ((apciCmd == APCI_MEMORY_READ_PDU) | (apciCmd == APCI_MEMORY_WRITE_PDU))
     {
-    	sendAck = handleMemoryRequests(apciCmd, &sendTel, & bus.telegram [7]);
+        d("R/W DATA\n");
+        sendAck = handleMemoryRequests(apciCmd, &sendTel, &bus.telegram[7]);
     }
     else if (apci == APCI_RESTART_PDU)
-            NVIC_SystemReset();  // Software Reset
+        NVIC_SystemReset();  // Software Reset
     else
-		sendAck = T_NACK_PDU;  // Command not supported
+        sendAck = T_NACK_PDU;  // Command not supported
 
     if (sendTel)
         sendAck = T_ACK_PDU;
 
     if (sendAck)
+    {
+        d("TX-ACK\n");
         sendConControlTelegram(sendAck, senderSeqNo);
-    else sendCtrlTelegram[0] = 0;
+    }
+    else
+        sendCtrlTelegram[0] = 0;
 
     if (sendTel)
     {
@@ -78,8 +90,9 @@ void BcuUpdate::processDirectTelegram(int apci)
             sendTelegram[6] |= connectedSeqNo;
             incConnectedSeqNo = true;
         }
-        else incConnectedSeqNo = false;
-
+        else
+            incConnectedSeqNo = false;
+        d("TX-DATA\n");
         bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
     }
 }
@@ -95,6 +108,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
         {
             if (incConnectedSeqNo && connectedAddr == senderAddr)
             {
+                d("RX-ACK\n");
                 connectedSeqNo += 4;
                 connectedSeqNo &= 0x3c;
                 incConnectedSeqNo = false;
@@ -104,8 +118,10 @@ void BcuUpdate::processConControlTelegram(int tpci)
         {
             if (connectedAddr == senderAddr)
             {
+                d("RX-NACK\n");
                 sendConControlTelegram(T_DISCONNECT_PDU, 0);
                 connectedAddr = 0;
+                incConnectedSeqNo = false;
             }
         }
 
@@ -115,13 +131,15 @@ void BcuUpdate::processConControlTelegram(int tpci)
     {
         if (tpci == T_CONNECT_PDU)  // Open a direct data connection
         {
-            if (connectedAddr == 0)
+            if (connectedAddr == 0 || connectedAddr == senderAddr)
             {
                 connectedTime = systemTime;
                 connectedAddr = senderAddr;
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
-                bus.setSendAck (0);
+                d("RX-CONNECT\n");
+                bus.setSendAck(0);
+
             }
         }
         else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
@@ -129,7 +147,8 @@ void BcuUpdate::processConControlTelegram(int tpci)
             if (connectedAddr == senderAddr)
             {
                 connectedAddr = 0;
-                bus.setSendAck (0);
+                bus.setSendAck(0);
+                d("RX-DISCONNECT\n");
             }
         }
     }
