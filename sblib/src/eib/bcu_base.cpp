@@ -31,7 +31,7 @@ extern volatile unsigned int systemTime;
 BcuBase::BcuBase()
 :progButtonDebouncer()
 {
-    progPin = DEFAULT_PROG_PIN;
+    progPin = PIN_PROG;
     progPinInv = true;
     enabled = false;
 }
