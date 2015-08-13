@@ -278,8 +278,18 @@ void BCU::processDirectTelegram(int apci)
         switch (apci)
         {
         case APCI_RESTART_PDU:
-            writeUserEeprom();   // Flush the EEPROM before resetting
-            NVIC_SystemReset();  // Software Reset
+        case APCI_RESTART_TYPE1_PDU:
+			if(apci&1) {
+				unsigned int erase   = bus.telegram[8];
+				unsigned int channel = bus.telegram[9];
+
+				if(erase == 0 && channel == 255) {
+					unsigned int * magicWord = (unsigned int *) 0x10000000;
+					*magicWord = 0x5E1FB055;
+				}
+			}
+			writeUserEeprom();   // Flush the EEPROM before resetting
+			NVIC_SystemReset();  // Software Reset
             break;
 
         case APCI_AUTHORIZE_REQUEST_PDU:
