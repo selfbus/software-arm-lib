@@ -75,7 +75,6 @@ enum
     UPD_RESPONSE_UID = 32,
     UPD_APP_VERSION_REQUEST = 33,
     UPD_APP_VERSION_RESPONSE = 34,
-    UPD_SET_EMULATION = 100
 };
 
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)
@@ -215,7 +214,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             crc = 0xFFFFFFFF;
             break;
         case UPD_REQUEST_UID:
-            if (1 || !((BcuUpdate *) bcu)->progPinStatus())
+            if (!((BcuUpdate *) bcu)->progPinStatus())
             { // the operator has physical access to the device -> we unlock it
                 byte uid[4 * 4];
                 lastError = iapReadUID(uid);
@@ -303,10 +302,6 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                         }
                         lastError = iapProgram((byte *) address, ramBuffer,
                                 count);
-                        if (lastError != 0)
-                        {
-                            lastError = 0x0;
-                        }
                     }
                     else
                         lastError = UDP_CRC_ERROR;
@@ -329,11 +324,12 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 {
                     if (checkApplication((AppDescriptionBlock *) ramBuffer))
                     {
-//					lastError = iapErasePage(BOOT_BLOCK_PAGE - data[7]);
-//					if (lastError == IAP_SUCCESS) {
-                        lastError = iapProgram((byte *) address, ramBuffer,
-                                256);
-//					}
+						lastError = iapErasePage(BOOT_BLOCK_PAGE - data[7]);
+						if (lastError == IAP_SUCCESS)
+						{
+							lastError = iapProgram((byte *) address, ramBuffer,
+									256);
+						}
                     }
                     else
                         lastError = UPD_APPLICATION_NOT_STARTABLE;
