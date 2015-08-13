@@ -106,8 +106,10 @@ int main(void)
 {
     unsigned int * magicWord = (unsigned int *) 0x10000000;
     if (*magicWord == 0x5E1FB055)
+    {
+        *magicWord = 0;
         run_updater();
-    *magicWord = 0;
+    }
     pinMode(PIN_PROG, INPUT | PULL_UP);
     if (!digitalRead(PIN_PROG))
     {

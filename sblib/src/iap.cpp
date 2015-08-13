@@ -143,7 +143,7 @@ IAP_Status iapErasePage(int pageNumber)
     return (IAP_Status) p.stat;
 }
 
-IIAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
+IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
 {
     IAP_Parameter p;
     int sector = iapSectorOfAddress(rom);
