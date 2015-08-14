@@ -54,17 +54,16 @@ unsigned int* ioconPointer(int port, int pinNum);
 
 #ifdef IAP_EMULATION
   extern unsigned char FLASH[];
-# define __vectors_start__ *FLASH
+# define LPC_FLASH_BASE *FLASH
 #else
-  #define __vectors_start__ LPC_FLASH_BASE
+  #define LPC_FLASH_BASE 0
 #endif
 
 /**
  * The base address of the flash.
  */
 // the code below does no longer work once we move the application up to 0x2000
-//#define FLASH_BASE_ADDRESS ((unsigned char*) &__vectors_start__)
-#define FLASH_BASE_ADDRESS ((unsigned char*) 0)
+#define FLASH_BASE_ADDRESS ((unsigned char*) LPC_FLASH_BASE)
 
 /**
 * The size of a flash sector in bytes.

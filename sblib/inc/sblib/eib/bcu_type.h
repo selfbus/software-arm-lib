@@ -133,6 +133,9 @@
 #   error "Unsupported BCU type"
 #endif
 
+#ifndef USER_EEPROM_FLASH_SIZE
+#define USER_EEPROM_FLASH_SIZE USER_EEPROM_SIZE
+#endif
 
 /** End address of the user RAM +1, when ETS talks with us. */
 #define USER_RAM_END (USER_RAM_START + USER_RAM_SIZE)
