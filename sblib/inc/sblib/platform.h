@@ -69,6 +69,6 @@ unsigned int* ioconPointer(int port, int pinNum);
 * The size of a flash sector in bytes.
 */
 #define FLASH_SECTOR_SIZE 0x1000
-
+#define FLASH_PAGE_SIZE 0x100
 
 #endif /*sblib_platform_h*/
