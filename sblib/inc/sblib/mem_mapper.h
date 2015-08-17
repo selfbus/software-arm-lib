@@ -55,7 +55,6 @@ class MemMapper
 
     private:
     bool isValidAddress(int virtAddress);
-    bool cacheMem(unsigned int flashPage);
 
     byte *flashBase;  //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
