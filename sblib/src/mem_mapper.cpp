@@ -20,8 +20,6 @@ MemMapper::MemMapper(byte *flashBase = (byte*) 0xf000, unsigned int flashSize =
         4096) :
         flashBase(flashBase), flashSize(flashSize)
 {
-    allocTable = new byte[FLASH_PAGE_SIZE];
-    writeBuf = new byte[FLASH_PAGE_SIZE];
     flashSizePages = flashSize / FLASH_PAGE_SIZE;
     flashBasePage = ((unsigned int) flashBase) / FLASH_PAGE_SIZE;
     lastAllocated = 0; // means: nothing allocated in this run

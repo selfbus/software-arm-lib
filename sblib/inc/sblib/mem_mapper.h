@@ -118,9 +118,9 @@ private:
     unsigned int flashSize;
     unsigned int flashSizePages;
 
-    byte *allocTable;
+    byte allocTable[FLASH_PAGE_SIZE];
 
-    byte *writeBuf;
+    byte writeBuf[FLASH_PAGE_SIZE];
     unsigned int writePage;
 
     unsigned int lastAllocated;
