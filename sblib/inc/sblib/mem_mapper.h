@@ -13,9 +13,13 @@
 #ifndef SBLIB_MEM_MAPPER_H_
 #define SBLIB_MEM_MAPPER_H_
 
+#define INVALID_ADDRESS 1
+#define NOT_MAPPED      2
+#define OUT_OF_MEMORY   4
+
 class MemMapper
 {
-    public:
+public:
     /**
      * Creates a MemMapper instance with flash base address and size
      *
@@ -53,10 +57,62 @@ class MemMapper
      */
     int doFlash(void);
 
-    private:
+    /**
+     * Access the user EEPROM to get a unsigned byte
+     *
+     * @param idx - the index of the data byte to access.
+     * @return The data byte.
+     */
+    unsigned char getUInt8(int idx);
+
+    /**
+     * Access the user EEPROM to get a unsigned short
+     *
+     * @param idx - the index of the 16 bit data to access.
+     * @return The 16bit as unsigned short.
+     */
+    unsigned short getUInt16(int idx);
+
+    /**
+     * Access the user EEPROM to get a unsigned int
+     *
+     * @param idx - the index of the 32 bit data to access.
+     * @return The 32bit as unsigned int.
+     */
+    unsigned int getUInt32(int idx);
+
+    /**
+     * Access the user EEPROM to set a unsigned byte
+     *
+     * @param idx - the index of the data byte to access.
+     * @param data - the value to be written
+     * @return error value of flash operation
+     */
+
+    int setUInt8(int idx, byte data);
+
+    /**
+     * Access the user EEPROM to set a unsigned short
+     *
+     * @param idx - the index of the 16 bit data to access.
+     * @param data - the value to be written
+     * @return error value of flash operation
+     */
+    int setUInt16(int idx, unsigned short data);
+
+    /**
+     * Access the user EEPROM to set a unsigned int
+     *
+     * @param idx - the index of the 32 bit data to access.
+     * @param data - the value to be written
+     * @return error value of flash operation
+     */
+    int setUInt32(int idx, unsigned int data);
+
+private:
     bool isValidAddress(int virtAddress);
 
-    byte *flashBase;  //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
+    byte *flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
 
     unsigned int flashSize;
