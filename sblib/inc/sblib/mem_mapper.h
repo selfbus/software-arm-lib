@@ -13,9 +13,11 @@
 #ifndef SBLIB_MEM_MAPPER_H_
 #define SBLIB_MEM_MAPPER_H_
 
-#define INVALID_ADDRESS 1
-#define NOT_MAPPED      2
-#define OUT_OF_MEMORY   4
+#define MEM_MAPPER_SUCCESS         0
+#define MEM_MAPPER_INVALID_ADDRESS -1
+#define MEM_MAPPER_NOT_MAPPED      -2
+#define MEM_MAPPER_OUT_OF_MEMORY   -4
+#define MEM_MAPPER_INVALID_LENGTH  -8
 
 class MemMapper
 {
@@ -27,7 +29,7 @@ public:
      * @param flashBase - must be a page aligned address within 16 bit address space
      * @param flashSize - must be a page aligned size in bytes
      */
-    MemMapper(byte *flashBase, unsigned int flashSize);
+    MemMapper(byte *flashBase = (byte*) 0xf000, unsigned int flashSize = 0x1000, bool autoAddPage = false);
 
     /**
      * Write a single byte to virtual address
@@ -35,7 +37,7 @@ public:
      *
      * @param virtAddress - a 16 bit virtual address
      * @param data - a byte that should be written to the address
-     * @return 0 on success, < 0 on error
+     * @return 0 on success, else error
      */
     int writeMem(int virtAddress, byte data);
 
@@ -45,9 +47,20 @@ public:
      *
      * @param virtAddress - a 16 bit virtual address
      * @param data - a reference to a byte that should contain the read data
-     * @return 0 on success, < 0 on error
+     * @param forceFlash - force pending data to be flashed before operation
+     * @return 0 on success, else error
      */
-    int readMem(int virtAddress, byte &data);
+    int readMem(int virtAddress, byte &data, bool forceFlash = false);
+
+    /**
+     * Add a prereserved range
+     *
+     *
+     * @param virtAddress - a 16 bit virtual address
+     * @param length - the size of the range
+     * @return 0 on success, else error
+     */
+    int addRange(int virtAddress, int length);
 
     /**
      * Force writing all pending data to flash
@@ -60,56 +73,75 @@ public:
     /**
      * Access the user EEPROM to get a unsigned byte
      *
-     * @param idx - the index of the data byte to access.
+     * @param virtAddress - the virtual address of the data byte to access.
      * @return The data byte.
      */
-    unsigned char getUInt8(int idx);
+    unsigned char getUInt8(int virtAddress);
 
     /**
      * Access the user EEPROM to get a unsigned short
      *
-     * @param idx - the index of the 16 bit data to access.
+     * @param virtAddress - the virtual address of the 16 bit data to access.
      * @return The 16bit as unsigned short.
      */
-    unsigned short getUInt16(int idx);
+    unsigned short getUInt16(int virtAddress);
 
     /**
      * Access the user EEPROM to get a unsigned int
      *
-     * @param idx - the index of the 32 bit data to access.
+     * @param virtAddress - the virtual address of the 32 bit data to access.
      * @return The 32bit as unsigned int.
      */
-    unsigned int getUInt32(int idx);
+    unsigned int getUInt32(int virtAddress);
 
     /**
      * Access the user EEPROM to set a unsigned byte
      *
-     * @param idx - the index of the data byte to access.
+     * @param virtAddress - the virtual address of the data byte to access.
      * @param data - the value to be written
      * @return error value of flash operation
      */
 
-    int setUInt8(int idx, byte data);
+    int setUInt8(int virtAddress, byte data);
 
     /**
      * Access the user EEPROM to set a unsigned short
      *
-     * @param idx - the index of the 16 bit data to access.
+     * @param virtAddress - the virtual address of the 16 bit data to access.
      * @param data - the value to be written
      * @return error value of flash operation
      */
-    int setUInt16(int idx, unsigned short data);
+    int setUInt16(int virtAddress, unsigned short data);
 
     /**
      * Access the user EEPROM to set a unsigned int
      *
-     * @param idx - the index of the 32 bit data to access.
+     * @param virtAddress - the virtual address of the 32 bit data to access.
      * @param data - the value to be written
      * @return error value of flash operation
      */
-    int setUInt32(int idx, unsigned int data);
+    int setUInt32(int virtAddress, unsigned int data);
+
+    /**
+     * Access the user EEPROM as a pointer
+     *
+     * @param virtAddresss - the virtual address of the data block.
+     * @param forceFlash - force pending data to be flashed before operation
+     * @return a pointer to the desired data
+     */
+    byte* memoryPtr(int virtAddress, bool forceFlash = true);
+
+    /**
+     * Query about mapping
+     *
+     * @param virtAddresss - the virtual address of the data block.
+     * @return true if virtual address is mapped
+     */
+    bool isMapped(int virtAddress);
 
 private:
+    int allocatePage(int virtPage);
+    int getFlashPageNum(int virtAddress);
 
     byte *flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
@@ -124,6 +156,7 @@ private:
 
     unsigned int lastAllocated;
 
+    bool autoAddPage;
     bool flashMemModified;
     bool allocTableModified;
 };

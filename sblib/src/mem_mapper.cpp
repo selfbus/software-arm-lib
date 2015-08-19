@@ -16,9 +16,8 @@
 #include <sblib/mem_mapper.h>
 #include <string.h>
 
-MemMapper::MemMapper(byte *flashBase = (byte*) 0xf000, unsigned int flashSize =
-        4096) :
-        flashBase(flashBase), flashSize(flashSize)
+MemMapper::MemMapper(byte *flashBase, unsigned int flashSize, bool autoAddPage) :
+        flashBase(flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
 {
     flashSizePages = flashSize / FLASH_PAGE_SIZE;
     flashBasePage = ((unsigned int) flashBase) / FLASH_PAGE_SIZE;
@@ -61,17 +60,89 @@ int MemMapper::doFlash(void)
     return ret;
 }
 
-int MemMapper::writeMem(int virtAddress, byte data)
+int MemMapper::allocatePage(int virtPage)
+{
+    if (lastAllocated == 0)
+    { // not yet found the highest used entry
+        for (int i = 0; i < FLASH_PAGE_SIZE; i++)
+        {
+            unsigned int entry = allocTable[i] ^ 0xff;
+            if (entry > lastAllocated)
+            {
+                lastAllocated = entry;
+            }
+        }
+    }
+    if (lastAllocated == (flashBasePage + flashSizePages - 1))
+    {
+        return MEM_MAPPER_OUT_OF_MEMORY; // we are out of memory
+    }
+    if (lastAllocated == 0)
+    {  // no pages allocated yet.
+        writePage = flashBasePage + 1;
+    } else
+    {
+        lastAllocated++;
+        writePage = lastAllocated;
+    }
+    memset(writeBuf, 0, FLASH_PAGE_SIZE);
+
+    allocTable[virtPage] = writePage ^ 0xff;
+    allocTableModified = true;
+    return MEM_MAPPER_SUCCESS;
+}
+
+int MemMapper::addRange(int virtAddress, int length)
+{
+    int virtPage = virtAddress >> 8;
+
+    if ((virtAddress & 0xff) || virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
+    {
+        return MEM_MAPPER_INVALID_ADDRESS;
+    }
+
+    if ((length & 0xff) != 0)
+    {
+        return MEM_MAPPER_INVALID_LENGTH;
+    }
+
+    byte pages = length >> 8;
+
+    for (int page = virtPage; page < (pages + virtPage); page++)
+    {
+        byte flashPageNum = allocTable[page] ^ 0xff;
+        if (flashPageNum == 0)
+        { // not yet allocated in flash memory
+            int result = allocatePage(page);
+            if (result != MEM_MAPPER_SUCCESS)
+            {
+                return result;
+            }
+        }
+    }
+    doFlash();
+    return MEM_MAPPER_SUCCESS;
+}
+
+int MemMapper::getFlashPageNum(int virtAddress)
 {
     int virtPage = virtAddress >> 8;
 
     if (virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
     {
-        return INVALID_ADDRESS;
+        return MEM_MAPPER_INVALID_ADDRESS;
     }
 
-    byte flashPageNum = allocTable[virtPage] ^ 0xff;
+    return allocTable[virtPage] ^ 0xff;
+}
 
+int MemMapper::writeMem(int virtAddress, byte data)
+{
+    int flashPageNum = getFlashPageNum(virtAddress);
+    if (flashPageNum < 0)
+    {
+        return flashPageNum;
+    }
     if (writePage != flashPageNum)
     {
         doFlash();
@@ -84,33 +155,14 @@ int MemMapper::writeMem(int virtAddress, byte data)
 
     if (flashPageNum == 0)
     { // not yet allocated in flash memory
-        if (lastAllocated == 0)
-        { // not yet found the highest used entry
-            for (int i = 0; i < FLASH_PAGE_SIZE; i++)
+        if (autoAddPage)
+        {
+            int result = allocatePage(virtAddress >> 8);
+            if (result != MEM_MAPPER_SUCCESS)
             {
-                unsigned int entry = allocTable[i] ^ 0xff;
-                if (entry > lastAllocated)
-                {
-                    lastAllocated = entry;
-                }
+                return result;
             }
         }
-        if (lastAllocated == (flashBasePage + flashSizePages - 1))
-        {
-            return OUT_OF_MEMORY; // we are out of memory
-        }
-        if (lastAllocated == 0)
-        {  // no pages allocated yet.
-            writePage = flashBasePage + 1;
-        } else
-        {
-            lastAllocated++;
-            writePage = lastAllocated;
-        }
-        memset(writeBuf, 0, FLASH_PAGE_SIZE);
-
-        allocTable[virtPage] = writePage ^ 0xff;
-        allocTableModified = true;
     }
     writeBuf[(virtAddress & 0xff)] = data;
     flashMemModified = true;
@@ -118,22 +170,24 @@ int MemMapper::writeMem(int virtAddress, byte data)
     return 0;
 }
 
-int MemMapper::readMem(int virtAddress, byte &data)
+int MemMapper::readMem(int virtAddress, byte &data, bool forceFlash)
 {
-    int virtPage = virtAddress >> 8;
+    int flashPageNum = getFlashPageNum(virtAddress);
 
-    if (virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
+    if (flashPageNum < 0)
     {
-        return INVALID_ADDRESS;
+        data = 0x00;
+        return flashPageNum;
     }
-
-    byte flashPageNum = allocTable[virtPage] ^ 0xff;
-
+    if (forceFlash)
+    {
+        doFlash();
+    }
     if (flashPageNum == 0)
     {
         data = 0x00;
-        return NOT_MAPPED;
-    } else if (flashPageNum == writePage)
+        return MEM_MAPPER_NOT_MAPPED;
+    } else if ((flashPageNum == writePage) && !forceFlash)
     {
         data = writeBuf[virtAddress & 0xff];
     } else
@@ -143,53 +197,80 @@ int MemMapper::readMem(int virtAddress, byte &data)
     return 0;
 }
 
-unsigned char MemMapper::getUInt8(int idx)
+inline bool MemMapper::isMapped(int virtAddress)
+{
+    return getFlashPageNum(virtAddress)>0 || autoAddPage?true:false;
+}
+
+byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash)
+{
+    int flashPageNum = getFlashPageNum(virtAddress);
+
+     if (flashPageNum < 0)
+     {
+         return NULL;
+     }
+     if (forceFlash)
+     {
+         doFlash();
+     }
+     if (flashPageNum == 0)
+     {
+         return NULL;
+     } else if ((flashPageNum == writePage) && !forceFlash)
+     {
+         return writeBuf + (virtAddress & 0xff);
+     }
+     return ((byte*) (flashPageNum << 8) + (virtAddress & 0xff));
+}
+
+unsigned char MemMapper::getUInt8(int virtAddress)
 {
     byte ret;
-    readMem(idx, ret);
+    readMem(virtAddress, ret);
     return ret;
 }
 
-unsigned short MemMapper::getUInt16(int idx)
+unsigned short MemMapper::getUInt16(int virtAddress)
 {
     byte b1;
     byte b2;
-    readMem(idx, b1);
-    readMem(idx + 1, b2);
+    readMem(virtAddress, b1);
+    readMem(virtAddress + 1, b2);
     return (b1 << 8) | b2;
 }
 
-unsigned int MemMapper::getUInt32(int idx)
+unsigned int MemMapper::getUInt32(int virtAddress)
 {
     byte b1;
     byte b2;
     byte b3;
     byte b4;
-    readMem(idx, b1);
-    readMem(idx + 1, b2);
-    readMem(idx + 2, b3);
-    readMem(idx + 3, b4);
+    readMem(virtAddress, b1);
+    readMem(virtAddress + 1, b2);
+    readMem(virtAddress + 2, b3);
+    readMem(virtAddress + 3, b4);
     return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
 }
 
-int MemMapper::setUInt8(int idx, byte data)
+int MemMapper::setUInt8(int virtAddress, byte data)
 {
-    return writeMem(idx, data);
+    return writeMem(virtAddress, data);
 }
 
-int MemMapper::setUInt16(int idx, unsigned short data)
+int MemMapper::setUInt16(int virtAddress, unsigned short data)
 {
-    int ret=writeMem(idx, data>>8);
-    ret|=writeMem(idx +1, data);
+    int ret = writeMem(virtAddress, data >> 8);
+    ret |= writeMem(virtAddress + 1, data);
     return ret;
 }
 
-int MemMapper::setUInt32(int idx, unsigned int data)
+int MemMapper::setUInt32(int virtAddress, unsigned int data)
 {
-    int ret=writeMem(idx, data>>24);
-    ret|=writeMem(idx + 1, data>>16);
-    ret|=writeMem(idx + 2, data>>8);
-    ret|=writeMem(idx + 3, data);
+    int ret = writeMem(virtAddress, data >> 24);
+    ret |= writeMem(virtAddress + 1, data >> 16);
+    ret |= writeMem(virtAddress + 2, data >> 8);
+    ret |= writeMem(virtAddress + 3, data);
     return ret;
 }
 
