@@ -29,7 +29,7 @@ public:
      * @param flashBase - must be a page aligned address within 16 bit address space
      * @param flashSize - must be a page aligned size in bytes
      */
-    MemMapper(byte *flashBase = (byte*) 0xf000, unsigned int flashSize = 0x1000,
+    MemMapper(unsigned int flashBase = 0xf000, unsigned int flashSize = 0x1000,
             bool autoAddPage = false);
 
     /**
@@ -168,7 +168,7 @@ private:
     int allocatePage(int virtPage);
     int getFlashPageNum(int virtAddress);
 
-    byte *flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
+    unsigned int flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
 
     unsigned int flashSize;

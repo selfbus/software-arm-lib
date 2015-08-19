@@ -16,7 +16,7 @@
 #include <sblib/mem_mapper.h>
 #include <string.h>
 
-MemMapper::MemMapper(byte *flashBase, unsigned int flashSize, bool autoAddPage) :
+MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAddPage) :
         flashBase(flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
 {
     flashSizePages = flashSize / FLASH_PAGE_SIZE;
@@ -24,7 +24,7 @@ MemMapper::MemMapper(byte *flashBase, unsigned int flashSize, bool autoAddPage) 
     lastAllocated = 0; // means: nothing allocated in this run
     writePage = 0;
 
-    memcpy(allocTable, flashBase, FLASH_PAGE_SIZE);
+    memcpy(allocTable, (byte *)flashBase, FLASH_PAGE_SIZE);
 }
 
 int MemMapper::doFlash(void)
@@ -36,7 +36,7 @@ int MemMapper::doFlash(void)
         {
             fatalError();
         }
-        if (iapProgram(flashBase, allocTable, FLASH_PAGE_SIZE) != IAP_SUCCESS)
+        if (iapProgram((byte *)flashBase, allocTable, FLASH_PAGE_SIZE) != IAP_SUCCESS)
         {
             fatalError();
         }
@@ -149,7 +149,7 @@ int MemMapper::writeMem(int virtAddress, byte data)
         writePage = flashPageNum;
         if (writePage != 0)
         { // swap flash page into write buffer
-            memcpy(writeBuf, flashBase + (writePage << 8), FLASH_PAGE_SIZE);
+            memcpy(writeBuf, (byte *)flashBase + (writePage << 8), FLASH_PAGE_SIZE);
         }
     }
 
