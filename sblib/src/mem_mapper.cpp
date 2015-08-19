@@ -61,21 +61,11 @@ int MemMapper::doFlash(void)
     return ret;
 }
 
-bool MemMapper::isValidAddress(int virtAddress)
-{
-    int virtPage = virtAddress >> 8;
-    if (virtPage >= FLASH_PAGE_SIZE)
-    {
-        return false;
-    }
-    return true;
-}
-
 int MemMapper::writeMem(int virtAddress, byte data)
 {
     int virtPage = virtAddress >> 8;
 
-    if (!isValidAddress(virtPage))
+    if (virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
     {
         return INVALID_ADDRESS;
     }
@@ -132,7 +122,7 @@ int MemMapper::readMem(int virtAddress, byte &data)
 {
     int virtPage = virtAddress >> 8;
 
-    if (!isValidAddress(virtPage))
+    if (virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
     {
         return INVALID_ADDRESS;
     }
