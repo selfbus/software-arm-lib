@@ -16,6 +16,7 @@
 #include <sblib/eib/properties.h>
 #include <sblib/eib/user_memory.h>
 #include <sblib/utils.h>
+#include <sblib/mem_mapper.h>
 
 
 // Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
@@ -157,6 +158,12 @@ public:
     int connectedTo();
 
     /**
+     * Allow an user provided memory mapper to store parameter data via memory write / read
+     * @param mapper - a pointer to an instance of a MemMapper object
+     */
+    void setMemMapper(MemMapper *mapper);
+
+    /**
      * A buffer for sending telegrams. This buffer is considered library private
      * and should rather not be used by the application program.
      */
@@ -225,6 +232,7 @@ private:
     int  connectedSeqNo;           //!< Sequence number for connected data telegrams.
     unsigned int connectedTime;    //!< System time of the last connected telegram.
     bool incConnectedSeqNo;        //!< True if the sequence number shall be incremented on ACK.
+    MemMapper *memMapper;
 };
 
 
@@ -288,6 +296,11 @@ inline bool BCU::directConnection() const
 inline int BCU::connectedTo()
 {
     return connectedAddr;
+}
+
+inline void BCU::setMemMapper(MemMapper *mapper)
+{
+    memMapper = mapper;
 }
 
 #ifndef INSIDE_BCU_CPP
