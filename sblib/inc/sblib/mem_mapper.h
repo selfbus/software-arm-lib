@@ -110,7 +110,6 @@ public:
     int setUInt32(int idx, unsigned int data);
 
 private:
-    bool isValidAddress(int virtAddress);
 
     byte *flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
