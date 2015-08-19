@@ -43,6 +43,17 @@ public:
     int writeMem(int virtAddress, byte data);
 
     /**
+     * Write an array of byte to virtual address
+     *
+     *
+     * @param virtAddress - a 16 bit virtual address
+     * @param data - bytes that should be written to the address
+     * @param length - number of bytes to write
+     * @return 0 on success, else error
+     */
+    int writeMemPtr(int virtAddress, byte *data, int length);
+
+    /**
      * Read a single byte from virtual address
      *
      *
@@ -52,6 +63,19 @@ public:
      * @return 0 on success, else error
      */
     int readMem(int virtAddress, byte &data, bool forceFlash = false);
+
+    /**
+     * Read a single byte from virtual address
+     *
+     *
+     * @param virtAddress - a 16 bit virtual address
+     * @param data - a reference to a byte that should contain the read data
+     * @param length - number of bytes to read
+     * @param forceFlash - force pending data to be flashed before operation
+     * @return 0 on success, else error
+     */
+    int readMemPtr(int virtAddress, byte *data, int length, bool forceFlash =
+            false);
 
     /**
      * Add a prereserved range

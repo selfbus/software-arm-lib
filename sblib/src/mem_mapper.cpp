@@ -17,7 +17,7 @@
 #include <string.h>
 
 MemMapper::MemMapper(byte *flashBase, unsigned int flashSize, bool autoAddPage) :
-flashBase(flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
+        flashBase(flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
 {
     flashSizePages = flashSize / FLASH_PAGE_SIZE;
     flashBasePage = ((unsigned int) flashBase) / FLASH_PAGE_SIZE;
@@ -167,7 +167,21 @@ int MemMapper::writeMem(int virtAddress, byte data)
     writeBuf[(virtAddress & 0xff)] = data;
     flashMemModified = true;
 
-    return 0;
+    return MEM_MAPPER_SUCCESS;
+}
+
+int MemMapper::writeMemPtr(int virtAddress, byte *data, int length)
+{
+    for (int i = 0; i < length; i++)
+    {
+        int result;
+        result = writeMem(virtAddress + i, data[i]);
+        if (result != MEM_MAPPER_SUCCESS)
+        {
+            return result;
+        }
+    }
+    return MEM_MAPPER_SUCCESS;
 }
 
 int MemMapper::readMem(int virtAddress, byte &data, bool forceFlash)
@@ -194,10 +208,25 @@ int MemMapper::readMem(int virtAddress, byte &data, bool forceFlash)
     {
         data = ((byte*) (flashPageNum << 8))[virtAddress & 0xff];
     }
-    return 0;
+    return MEM_MAPPER_SUCCESS;
 }
 
-inline bool MemMapper::isMapped(int virtAddress)
+int MemMapper::readMemPtr(int virtAddress, byte *data, int length,
+        bool forceFlash)
+{
+    for (int i = 0; i < length; i++)
+    {
+        int result;
+        result = readMem(virtAddress + i, data[i], forceFlash);
+        if (result != MEM_MAPPER_SUCCESS)
+        {
+            return result;
+        }
+    }
+    return MEM_MAPPER_SUCCESS;
+}
+
+bool MemMapper::isMapped(int virtAddress)
 {
     return getFlashPageNum(virtAddress) > 0 || autoAddPage ? true : false;
 }
