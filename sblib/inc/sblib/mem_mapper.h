@@ -29,7 +29,8 @@ public:
      * @param flashBase - must be a page aligned address within 16 bit address space
      * @param flashSize - must be a page aligned size in bytes
      */
-    MemMapper(byte *flashBase = (byte*) 0xf000, unsigned int flashSize = 0x1000, bool autoAddPage = false);
+    MemMapper(byte *flashBase = (byte*) 0xf000, unsigned int flashSize = 0x1000,
+            bool autoAddPage = false);
 
     /**
      * Write a single byte to virtual address
