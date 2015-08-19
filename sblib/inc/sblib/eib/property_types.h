@@ -158,6 +158,8 @@ enum PropertyID
 
     /** Device object property: hardware type. */
     PID_HARDWARE_TYPE = 78,
+
+    PID_ABB_CUSTOM = 0xcc,
 };
 
 
