@@ -23,20 +23,16 @@
 #include <sblib/internal/functions.h>
 #include <sblib/internal/variables.h>
 
-#include <sblib/mem_mapper.h>
-
 #include <string.h>
 
 #ifdef APP_HANDLES_MEMORY_REQUESTS
 extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
 #endif
 
-#include <sblib/serial.h>
 #ifdef DUMP_TELEGRAMS
 #include <sblib/serial.h>
 #endif
 BCU bcu;
-MemMapper memMapper((byte *)0xa000,0x1100);
 
 extern unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
@@ -362,16 +358,6 @@ void BCU::processDirectTelegram(int apci)
 
         if (apciCmd == APCI_MEMORY_WRITE_PDU)
         {
-            serial.print("writeMem:");
-            serial.print(address, HEX, 4);
-            serial.print(" Data:");
-            for(int i=0;i<count; i++) {
-                memMapper.writeMem(address + i , bus.telegram[10 + i]);
-                serial.print(bus.telegram[10 + i], HEX, 2);
-                serial.print(" ");
-            }
-            serial.println("");
-
             if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
             {
                 memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, count);
@@ -399,29 +385,14 @@ void BCU::processDirectTelegram(int apci)
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            serial.print("readMem: ");
-            serial.print(address, HEX, 4);
-            serial.print(" Data:");
-//            if (address >= USER_EEPROM_START && address < USER_EEPROM_END) {
-            if (address >= USER_EEPROM_START && address < LOAD_STATE_ADDR) {
-                if(address < USER_EEPROM_END)
-                  memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
-                for(int i=0;i<count; i++) {
-                    memMapper.readMem(address + i, sendTelegram[10+i]);
-                }
-            }
+            if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
+                memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
             else if (address >= USER_RAM_START && address < USER_RAM_END)
             	cpyFromUserRam(address - USER_RAM_START, sendTelegram + 10, count);
 #ifdef LOAD_STATE_ADDR
             else if (address >= LOAD_STATE_ADDR && address < LOAD_STATE_ADDR + 8)
                 memcpy(sendTelegram + 10, userEeprom.loadState + (address - LOAD_STATE_ADDR), count);
 #endif
-            for(int i=0;i<count; i++) {
-                serial.print(sendTelegram[10 + i], HEX, 2);
-                serial.print(" ");
-            }
-            serial.println("");
-
             sendTelegram[5] = 0x63 + count;
             sendTelegram[6] = 0x42;
             sendTelegram[7] = 0x40 | count;
