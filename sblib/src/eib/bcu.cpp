@@ -23,13 +23,15 @@
 #include <sblib/internal/functions.h>
 #include <sblib/internal/variables.h>
 
+#include <sblib/mem_mapper.h>
+
 #include <string.h>
 
 #ifdef APP_HANDLES_MEMORY_REQUESTS
 extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
 #endif
 
-#ifdef DUMP_TELEGRAMS
+#if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS
 #include <sblib/serial.h>
 #endif
 BCU bcu;
@@ -70,6 +72,8 @@ void BCU::begin_BCU(int manufacturer, int deviceType, int version)
     connectedAddr = 0;
     connectedSeqNo = 0;
     incConnectedSeqNo = false;
+
+    memMapper = NULL;
 
     userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
     userRam.deviceControl = 0;
@@ -358,6 +362,21 @@ void BCU::processDirectTelegram(int apci)
 
         if (apciCmd == APCI_MEMORY_WRITE_PDU)
         {
+#ifdef DUMP_MEM_OPS
+            serial.print("writeMem:");
+            serial.print(address, HEX, 4);
+            serial.print(" Data:");
+            for(int i=0;i<count; i++) {
+                serial.print(bus.telegram[10 + i], HEX, 2);
+                serial.print(" ");
+            }
+            serial.println("");
+#endif
+            if(memMapper && memMapper->isMapped(address))
+            {
+                memMapper->writeMemPtr(address, bus.telegram + 10, count);
+            }
+
             if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
             {
                 memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, count);
@@ -385,13 +404,28 @@ void BCU::processDirectTelegram(int apci)
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
-                memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
+            if (address >= USER_EEPROM_START && address < USER_EEPROM_END) {
+                  memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
+            }
             else if (address >= USER_RAM_START && address < USER_RAM_END)
             	cpyFromUserRam(address - USER_RAM_START, sendTelegram + 10, count);
 #ifdef LOAD_STATE_ADDR
             else if (address >= LOAD_STATE_ADDR && address < LOAD_STATE_ADDR + 8)
                 memcpy(sendTelegram + 10, userEeprom.loadState + (address - LOAD_STATE_ADDR), count);
+#endif
+            if(memMapper && memMapper->isMapped(address))
+            {
+                memMapper->readMemPtr(address, sendTelegram + 10, count);
+            }
+#ifdef DUMP_MEM_OPS
+            serial.print("readMem: ");
+            serial.print(address, HEX, 4);
+            serial.print(" Data:");
+            for(int i=0;i<count; i++) {
+                serial.print(sendTelegram[10 + i], HEX, 2);
+                serial.print(" ");
+            }
+            serial.println("");
 #endif
             sendTelegram[5] = 0x63 + count;
             sendTelegram[6] = 0x42;
