@@ -73,6 +73,8 @@ void BCU::begin_BCU(int manufacturer, int deviceType, int version)
     connectedSeqNo = 0;
     incConnectedSeqNo = false;
 
+    memMapper = NULL;
+
     userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
     userRam.deviceControl = 0;
     userRam.runState = 1;
@@ -403,7 +405,6 @@ void BCU::processDirectTelegram(int apci)
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
             if (address >= USER_EEPROM_START && address < USER_EEPROM_END) {
-                if(address < USER_EEPROM_END)
                   memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
             }
             else if (address >= USER_RAM_START && address < USER_RAM_END)
