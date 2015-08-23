@@ -27,7 +27,7 @@
 // The size of the object types BIT_7...VARDATA in bytes
 const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 15 };
 
-int le_ptr = 0;
+int le_ptr = BIG_ENDIAN;
 
 int objectSize(int objno)
 {
@@ -106,7 +106,7 @@ byte* objectValuePtr(int objno)
     // TODO Should handle userRam.segment0addr and userRam.segment1addr here
     // if (cfg.config & COMCONF_VALUE_TYPE) // 0 if segment 0, !=0 if segment 1
     const byte * addr = (const byte *) &cfg.dataPtr;
-    if (le_ptr)
+    if (le_ptr == LITTLE_ENDIAN)
         return userMemoryPtr(makeWord(addr[1], addr[0]));
     else
         return userMemoryPtr(makeWord(addr[0], addr[1]));
@@ -363,10 +363,9 @@ byte* objectFlagsTable()
 #else
     const byte* configTable = objectConfigTable();
     int addr;
-    if(le_ptr)
-        addr = makeWord(configTable[2], configTable[1]);
-    else
-        addr = makeWord(configTable[1], configTable[2]);
-    return userMemoryPtr(addr);
+    if(le_ptr == LITTLE_ENDIAN)
+    	return userMemoryPtr(makeWord(configTable[2], configTable[1]));
+
+    return userMemoryPtr(makeWord(configTable[1], configTable[2]));
 #endif
 }

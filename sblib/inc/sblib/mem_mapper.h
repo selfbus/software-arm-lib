@@ -18,8 +18,6 @@
 #define MEM_MAPPER_NOT_MAPPED      -2
 #define MEM_MAPPER_OUT_OF_MEMORY   -4
 #define MEM_MAPPER_INVALID_LENGTH  -8
-#define MEM_MAPPER_BIG_ENDIAN      0
-#define MEM_MAPPER_LITTLE_ENDIAN   1
 
 class MemMapper
 {
@@ -101,7 +99,7 @@ public:
     /**
      * Change endianess of 16 and 32bit methods
      *
-     * @param value - MEM_MAPPER_BIG_ENDIAN or MEM_MAPPER_LITTLE_ENDIAN
+     * @param value - BIG_ENDIAN or LITTLE_ENDIAN
      */
     void setEndianess(int value)
     {

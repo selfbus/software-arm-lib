@@ -15,6 +15,8 @@
 #include <sblib/utils.h>
 #include <sblib/mem_mapper.h>
 #include <string.h>
+#include <sys/param.h>
+
 
 MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAddPage) :
         flashBase(flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
@@ -268,7 +270,7 @@ unsigned int MemMapper::getUIntX(int virtAddress, int length)
 	for(int i = 0; i < length; i++)
 	{
 		byte b;
-		if(endianess == MEM_MAPPER_LITTLE_ENDIAN)
+		if(endianess == LITTLE_ENDIAN)
 			address = virtAddress + length - i - 1;
 		else
 			address = virtAddress + i;
@@ -300,7 +302,7 @@ int MemMapper::setUIntX(int virtAddress, int length, int val)
 	int address;
 	for(int i = 0; i < length; i++)
 	{
-		if(endianess == MEM_MAPPER_BIG_ENDIAN)
+		if(endianess == BIG_ENDIAN)
 			address = virtAddress + length - i - 1;
 		else
 			address = virtAddress + i;
