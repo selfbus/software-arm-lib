@@ -115,8 +115,11 @@
     /** Start address of the user RAM when ETS talks with us. */
 #   define USER_RAM_START 0x5FC
 
+#		ifndef EXTRA_USER_RAM_SIZE
+#			define EXTRA_USER_RAM_SIZE 0
+#		endif
     /** The size of the user RAM in bytes. */
-#   define USER_RAM_SIZE 0x304
+#   define USER_RAM_SIZE (0x304 + EXTRA_USER_RAM_SIZE)
 
     /** How many bytes have to be allocated at the end of the RAM for shadowed values */
 #   define USER_RAM_SHADOW_SIZE 3
