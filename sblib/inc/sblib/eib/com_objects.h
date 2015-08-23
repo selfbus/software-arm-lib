@@ -14,6 +14,12 @@
 #include <sblib/eib/types.h>
 #include <sblib/eib/datapoint_types.h>
 
+extern int le_ptr;
+
+inline void setTablePointerLE()
+{
+	le_ptr=1;
+}
 
 /**
  * Get the numeric value from a communication object. Can be used for
