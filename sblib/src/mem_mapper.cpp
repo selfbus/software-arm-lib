@@ -15,6 +15,8 @@
 #include <sblib/utils.h>
 #include <sblib/mem_mapper.h>
 #include <string.h>
+#include <sys/param.h>
+
 
 MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAddPage) :
         flashBase(flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
@@ -260,26 +262,33 @@ unsigned char MemMapper::getUInt8(int virtAddress)
     return ret;
 }
 
+unsigned int MemMapper::getUIntX(int virtAddress, int length)
+{
+	unsigned int ret = 0;
+	int address;
+
+	for(int i = 0; i < length; i++)
+	{
+		byte b;
+		if(endianess == LITTLE_ENDIAN)
+			address = virtAddress + length - i - 1;
+		else
+			address = virtAddress + i;
+		readMem( address , b);
+        ret <<= 8;
+		ret |= (unsigned int)b;
+	}
+    return ret;
+}
+
 unsigned short MemMapper::getUInt16(int virtAddress)
 {
-    byte b1;
-    byte b2;
-    readMem(virtAddress, b1);
-    readMem(virtAddress + 1, b2);
-    return (b1 << 8) | b2;
+	return (unsigned short)getUIntX(virtAddress, 2);
 }
 
 unsigned int MemMapper::getUInt32(int virtAddress)
 {
-    byte b1;
-    byte b2;
-    byte b3;
-    byte b4;
-    readMem(virtAddress, b1);
-    readMem(virtAddress + 1, b2);
-    readMem(virtAddress + 2, b3);
-    readMem(virtAddress + 3, b4);
-    return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
+	return (unsigned short)getUIntX(virtAddress, 4);
 }
 
 int MemMapper::setUInt8(int virtAddress, byte data)
@@ -287,19 +296,29 @@ int MemMapper::setUInt8(int virtAddress, byte data)
     return writeMem(virtAddress, data);
 }
 
+int MemMapper::setUIntX(int virtAddress, int length, int val)
+{
+	unsigned int ret = 0;
+	int address;
+	for(int i = 0; i < length; i++)
+	{
+		if(endianess == BIG_ENDIAN)
+			address = virtAddress + length - i - 1;
+		else
+			address = virtAddress + i;
+        ret |= writeMem(address, val & 0xff);
+        val >>= 8;
+	}
+    return ret;
+}
+
 int MemMapper::setUInt16(int virtAddress, unsigned short data)
 {
-    int ret = writeMem(virtAddress, data >> 8);
-    ret |= writeMem(virtAddress + 1, data);
-    return ret;
+	return setUIntX(virtAddress, 2, data);
 }
 
 int MemMapper::setUInt32(int virtAddress, unsigned int data)
 {
-    int ret = writeMem(virtAddress, data >> 24);
-    ret |= writeMem(virtAddress + 1, data >> 16);
-    ret |= writeMem(virtAddress + 2, data >> 8);
-    ret |= writeMem(virtAddress + 3, data);
-    return ret;
+	return setUIntX(virtAddress, 4, data);
 }
 

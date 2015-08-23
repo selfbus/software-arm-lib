@@ -73,8 +73,6 @@ void BCU::begin_BCU(int manufacturer, int deviceType, int version)
     connectedSeqNo = 0;
     incConnectedSeqNo = false;
 
-    memMapper = NULL;
-
     userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
     userRam.deviceControl = 0;
     userRam.runState = 1;
@@ -448,16 +446,22 @@ void BCU::processDirectTelegram(int apci)
         {
         case APCI_RESTART_PDU:
         case APCI_RESTART_TYPE1_PDU:
-			if(apci&1) {
+			if(apci&1)
+			{
 				unsigned int erase   = bus.telegram[8];
 				unsigned int channel = bus.telegram[9];
 
-				if(erase == 0 && channel == 255) {
+				if(erase == 0 && channel == 255)
+				{
 					unsigned int * magicWord = (unsigned int *) 0x10000000;
 					*magicWord = 0x5E1FB055;
 				}
 			}
 			writeUserEeprom();   // Flush the EEPROM before resetting
+			if(memMapper)
+			{
+				memMapper->doFlash();
+			}
 			NVIC_SystemReset();  // Software Reset
             break;
 

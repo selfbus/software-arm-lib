@@ -97,6 +97,16 @@ public:
     int doFlash(void);
 
     /**
+     * Change endianess of 16 and 32bit methods
+     *
+     * @param value - BIG_ENDIAN or LITTLE_ENDIAN
+     */
+    void setEndianess(int value)
+    {
+        endianess = value;
+    }
+
+    /**
      * Access the user EEPROM to get a unsigned byte
      *
      * @param virtAddress - the virtual address of the data byte to access.
@@ -168,6 +178,8 @@ public:
 private:
     int allocatePage(int virtPage);
     int getFlashPageNum(int virtAddress);
+    unsigned int getUIntX(int virtAddress, int length);
+    int setUIntX(int virtAddress, int length, int val);
 
     unsigned int flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
@@ -181,6 +193,7 @@ private:
     unsigned int writePage;
 
     unsigned int lastAllocated;
+    int endianess;
 
     bool autoAddPage;
     bool flashMemModified;
