@@ -264,8 +264,8 @@ unsigned short MemMapper::getUInt16(int virtAddress)
 {
     byte b1;
     byte b2;
-    readMem(virtAddress, b1);
-    readMem(virtAddress + 1, b2);
+    readMem(virtAddress + 1, b1);
+    readMem(virtAddress, b2);
     return (b1 << 8) | b2;
 }
 
@@ -275,10 +275,10 @@ unsigned int MemMapper::getUInt32(int virtAddress)
     byte b2;
     byte b3;
     byte b4;
-    readMem(virtAddress, b1);
-    readMem(virtAddress + 1, b2);
-    readMem(virtAddress + 2, b3);
-    readMem(virtAddress + 3, b4);
+    readMem(virtAddress + 3, b1);
+    readMem(virtAddress + 2, b2);
+    readMem(virtAddress + 1, b3);
+    readMem(virtAddress, b4);
     return (b1 << 24) | (b2 << 16) | (b3 << 8) | b4;
 }
 
@@ -289,17 +289,17 @@ int MemMapper::setUInt8(int virtAddress, byte data)
 
 int MemMapper::setUInt16(int virtAddress, unsigned short data)
 {
-    int ret = writeMem(virtAddress, data >> 8);
-    ret |= writeMem(virtAddress + 1, data);
+    int ret = writeMem(virtAddress + 1, data >> 8);
+    ret |= writeMem(virtAddress, data);
     return ret;
 }
 
 int MemMapper::setUInt32(int virtAddress, unsigned int data)
 {
-    int ret = writeMem(virtAddress, data >> 24);
-    ret |= writeMem(virtAddress + 1, data >> 16);
-    ret |= writeMem(virtAddress + 2, data >> 8);
-    ret |= writeMem(virtAddress + 3, data);
+    int ret = writeMem(virtAddress + 3, data >> 24);
+    ret |= writeMem(virtAddress + 2, data >> 16);
+    ret |= writeMem(virtAddress + 1, data >> 8);
+    ret |= writeMem(virtAddress, data);
     return ret;
 }
 
