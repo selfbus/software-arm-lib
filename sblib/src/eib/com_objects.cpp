@@ -132,6 +132,9 @@ void _objectWrite(int objno, unsigned int value, int flags)
     byte* ptr = objectValuePtr(objno);
     int sz = objectSize(objno);
 
+    if(ptr == 0)
+        return;
+
     for (; sz > 0; --sz)
     {
         *ptr++ = value;
