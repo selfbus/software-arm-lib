@@ -18,6 +18,8 @@
 #define MEM_MAPPER_NOT_MAPPED      -2
 #define MEM_MAPPER_OUT_OF_MEMORY   -4
 #define MEM_MAPPER_INVALID_LENGTH  -8
+#define MEM_MAPPER_BIG_ENDIAN      0
+#define MEM_MAPPER_LITTLE_ENDIAN   1
 
 class MemMapper
 {
@@ -97,6 +99,16 @@ public:
     int doFlash(void);
 
     /**
+     * Change endianess of 16 and 32bit methods
+     *
+     * @param value - MEM_MAPPER_BIG_ENDIAN or MEM_MAPPER_LITTLE_ENDIAN
+     */
+    void setEndianess(int value)
+    {
+        endianess = value;
+    }
+
+    /**
      * Access the user EEPROM to get a unsigned byte
      *
      * @param virtAddress - the virtual address of the data byte to access.
@@ -168,6 +180,8 @@ public:
 private:
     int allocatePage(int virtPage);
     int getFlashPageNum(int virtAddress);
+    unsigned int getUIntX(int virtAddress, int length);
+    int setUIntX(int virtAddress, int length, int val);
 
     unsigned int flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
@@ -181,6 +195,7 @@ private:
     unsigned int writePage;
 
     unsigned int lastAllocated;
+    int endianess;
 
     bool autoAddPage;
     bool flashMemModified;
