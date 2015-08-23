@@ -446,11 +446,13 @@ void BCU::processDirectTelegram(int apci)
         {
         case APCI_RESTART_PDU:
         case APCI_RESTART_TYPE1_PDU:
-			if(apci&1) {
+			if(apci&1)
+			{
 				unsigned int erase   = bus.telegram[8];
 				unsigned int channel = bus.telegram[9];
 
-				if(erase == 0 && channel == 255) {
+				if(erase == 0 && channel == 255)
+				{
 					unsigned int * magicWord = (unsigned int *) 0x10000000;
 					*magicWord = 0x5E1FB055;
 				}
