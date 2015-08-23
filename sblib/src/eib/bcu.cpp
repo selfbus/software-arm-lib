@@ -73,8 +73,6 @@ void BCU::begin_BCU(int manufacturer, int deviceType, int version)
     connectedSeqNo = 0;
     incConnectedSeqNo = false;
 
-    memMapper = NULL;
-
     userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
     userRam.deviceControl = 0;
     userRam.runState = 1;
