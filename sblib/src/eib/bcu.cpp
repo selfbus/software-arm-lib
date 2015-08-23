@@ -456,6 +456,10 @@ void BCU::processDirectTelegram(int apci)
 				}
 			}
 			writeUserEeprom();   // Flush the EEPROM before resetting
+			if(memMapper)
+			{
+				memMapper->doFlash();
+			}
 			NVIC_SystemReset();  // Software Reset
             break;
 
