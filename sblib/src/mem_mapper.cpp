@@ -90,7 +90,6 @@ int MemMapper::allocatePage(int virtPage)
     memset(writeBuf, 0, FLASH_PAGE_SIZE);
 
     allocTable[virtPage] = writePage ^ 0xff;
-    allocTableModified = true;
     return MEM_MAPPER_SUCCESS;
 }
 
@@ -120,8 +119,11 @@ int MemMapper::addRange(int virtAddress, int length)
             {
                 return result;
             }
+            flashMemModified = true;
+            doFlash();
         }
     }
+    allocTableModified = true;
     doFlash();
     return MEM_MAPPER_SUCCESS;
 }
@@ -151,7 +153,7 @@ int MemMapper::writeMem(int virtAddress, byte data)
         writePage = flashPageNum;
         if (writePage != 0)
         { // swap flash page into write buffer
-            memcpy(writeBuf, (byte *)flashBase + (writePage << 8), FLASH_PAGE_SIZE);
+            memcpy(writeBuf, (byte *)(writePage << 8), FLASH_PAGE_SIZE);
         }
     }
 
@@ -164,6 +166,7 @@ int MemMapper::writeMem(int virtAddress, byte data)
             {
                 return result;
             }
+            allocTableModified = true;
         }
     }
     writeBuf[(virtAddress & 0xff)] = data;
