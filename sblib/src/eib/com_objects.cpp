@@ -362,7 +362,6 @@ byte* objectFlagsTable()
     return userRamData + userEepromData[userEeprom.commsTabPtr + 1];
 #else
     const byte* configTable = objectConfigTable();
-    int addr;
     if(le_ptr == LITTLE_ENDIAN)
     	return userMemoryPtr(makeWord(configTable[2], configTable[1]));
 
