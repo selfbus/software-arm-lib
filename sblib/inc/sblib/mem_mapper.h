@@ -190,7 +190,7 @@ private:
     byte allocTable[FLASH_PAGE_SIZE];
 
     byte writeBuf[FLASH_PAGE_SIZE];
-    unsigned int writePage;
+    int writePage;
 
     unsigned int lastAllocated;
     int endianess;

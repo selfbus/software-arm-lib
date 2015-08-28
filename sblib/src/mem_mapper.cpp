@@ -25,7 +25,8 @@ MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAd
     flashBasePage = ((unsigned int) flashBase) / FLASH_PAGE_SIZE;
     lastAllocated = 0; // means: nothing allocated in this run
     writePage = 0;
-
+    allocTableModified = false;
+    flashMemModified = false;
     memcpy(allocTable, (byte *)flashBase, FLASH_PAGE_SIZE);
 }
 
