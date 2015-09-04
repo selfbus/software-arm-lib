@@ -14,8 +14,10 @@
 #include <sblib/internal/functions.h>
 #include <sblib/eib/com_objects.h>
 #include <string.h>
+#include <sblib/internal/variables.h>
+#include <sblib/mem_mapper.h>
 
-#ifdef DUMP_TELEGRAMS
+#if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS
 #include <sblib/serial.h>
 #endif
 
@@ -29,7 +31,7 @@ void BCU::_begin()
 
 void BCU::end()
 {
-	BcuBase::end();
+    BcuBase::end();
     writeUserEeprom();
 }
 
@@ -144,44 +146,44 @@ bool BCU::processDeviceDescriptorReadTelegram(int id)
 
 static void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
 {
-	address -= USER_RAM_START;
-	if ((address > 0x60) || ((address + count) < 0x60))
-	{
-		memcpy(userRamData + address, buffer, count);
-	}
-	else
-	{
-		while (count--)
-		{
-			if (address == 0x60)
-				userRam.status = * buffer;
-			else
-				userRamData[address] = * buffer;
-			buffer++;
-			address++;
-		}
-	}
+    address -= USER_RAM_START;
+    if ((address > 0x60) || ((address + count) < 0x60))
+    {
+        memcpy(userRamData + address, buffer, count);
+    }
+    else
+    {
+        while (count--)
+        {
+            if (address == 0x60)
+                userRam.status = * buffer;
+            else
+                userRamData[address] = * buffer;
+            buffer++;
+            address++;
+        }
+    }
 }
 
 static void cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
 {
-	address -= USER_RAM_START;
-	if ((address > 0x60) || ((address + count) < 0x60))
-	{
-		memcpy(buffer, userRamData + address, count);
-	}
-	else
-	{
-		while (count--)
-		{
-			if (address == 0x60)
-				* buffer = userRam.status;
-			else
-				* buffer = userRamData[address];
-			buffer++;
-			address++;
-		}
-	}
+    address -= USER_RAM_START;
+    if ((address > 0x60) || ((address + count) < 0x60))
+    {
+        memcpy(buffer, userRamData + address, count);
+    }
+    else
+    {
+        while (count--)
+        {
+            if (address == 0x60)
+                * buffer = userRam.status;
+            else
+                * buffer = userRamData[address];
+            buffer++;
+            address++;
+        }
+    }
 }
 
 void BCU::processDirectTelegram(int apci)
@@ -224,13 +226,28 @@ void BCU::processDirectTelegram(int apci)
 
         if (apciCmd == APCI_MEMORY_WRITE_PDU)
         {
+#ifdef DUMP_MEM_OPS
+            serial.print("writeMem:");
+            serial.print(address, HEX, 4);
+            serial.print(" Data:");
+            for(int i=0;i<count; i++) {
+                serial.print(bus.telegram[10 + i], HEX, 2);
+                serial.print(" ");
+            }
+            serial.println("");
+#endif
+            if(memMapper && memMapper->isMapped(address))
+            {
+                memMapper->writeMemPtr(address, bus.telegram + 10, count);
+            }
+
             if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
             {
                 memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, count);
                 userEeprom.modified();
             }
             else if (address >= USER_RAM_START && address < USER_RAM_END)
-            	cpyToUserRam(address - USER_RAM_START, bus.telegram + 10, count);
+                cpyToUserRam(address - USER_RAM_START, bus.telegram + 10, count);
 
             sendAck = T_ACK_PDU;
 
@@ -251,13 +268,28 @@ void BCU::processDirectTelegram(int apci)
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
-                memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
+            if (address >= USER_EEPROM_START && address < USER_EEPROM_END) {
+                  memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
+            }
             else if (address >= USER_RAM_START && address < USER_RAM_END)
-            	cpyFromUserRam(address - USER_RAM_START, sendTelegram + 10, count);
+                cpyFromUserRam(address - USER_RAM_START, sendTelegram + 10, count);
 #ifdef LOAD_STATE_ADDR
             else if (address >= LOAD_STATE_ADDR && address < LOAD_STATE_ADDR + 8)
                 memcpy(sendTelegram + 10, userEeprom.loadState + (address - LOAD_STATE_ADDR), count);
+#endif
+            if(memMapper && memMapper->isMapped(address))
+            {
+                memMapper->readMemPtr(address, sendTelegram + 10, count);
+            }
+#ifdef DUMP_MEM_OPS
+            serial.print("readMem: ");
+            serial.print(address, HEX, 4);
+            serial.print(" Data:");
+            for(int i=0;i<count; i++) {
+                serial.print(sendTelegram[10 + i], HEX, 2);
+                serial.print(" ");
+            }
+            serial.println("");
 #endif
             sendTelegram[5] = 0x63 + count;
             sendTelegram[6] = 0x42;
@@ -279,17 +311,23 @@ void BCU::processDirectTelegram(int apci)
         {
         case APCI_RESTART_PDU:
         case APCI_RESTART_TYPE1_PDU:
-			if(apci&1) {
-				unsigned int erase   = bus.telegram[8];
-				unsigned int channel = bus.telegram[9];
+            if(apci&1)
+            {
+                unsigned int erase   = bus.telegram[8];
+                unsigned int channel = bus.telegram[9];
 
-				if(erase == 0 && channel == 255) {
-					unsigned int * magicWord = (unsigned int *) 0x10000000;
-					*magicWord = 0x5E1FB055;
-				}
-			}
-			writeUserEeprom();   // Flush the EEPROM before resetting
-			NVIC_SystemReset();  // Software Reset
+                if(erase == 0 && channel == 255)
+                {
+                    unsigned int * magicWord = (unsigned int *) 0x10000000;
+                    *magicWord = 0x5E1FB055;
+                }
+            }
+            writeUserEeprom();   // Flush the EEPROM before resetting
+            if(memMapper)
+            {
+                memMapper->doFlash();
+            }
+            NVIC_SystemReset();  // Software Reset
             break;
 
         case APCI_AUTHORIZE_REQUEST_PDU:

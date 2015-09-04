@@ -64,13 +64,11 @@ unsigned int* ioconPointer(int port, int pinNum);
 /**
  * The base address of the flash.
  */
-// the code below does no longer work once we move the application up to 0x2000
-#define FLASH_BASE_ADDRESS ((unsigned char*) LPC_FLASH_BASE)
-
+# define FLASH_BASE_ADDRESS ((unsigned char *)LPC_FLASH_BASE)
 /**
 * The size of a flash sector in bytes.
 */
 #define FLASH_SECTOR_SIZE 0x1000
-
+#define FLASH_PAGE_SIZE 0x100
 
 #endif /*sblib_platform_h*/

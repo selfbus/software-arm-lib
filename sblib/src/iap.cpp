@@ -149,10 +149,7 @@ IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
     int sector = iapSectorOfAddress(rom);
 
     /* first we need to 'unlock' the sector */
-    p.cmd = CMD_PREPARE;
-    p.par[0] = sector;
-    p.par[1] = sector;
-    IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+    p.stat = _prepareSector(sector);
 
     if (p.stat == IAP_SUCCESS)
     {
@@ -201,6 +198,11 @@ IAP_Status iapReadPartID(unsigned int* partId)
 int iapSectorOfAddress(const byte* address)
 {
     return (address - FLASH_BASE_ADDRESS) / FLASH_SECTOR_SIZE;
+}
+
+int iapPageOfAddress(const byte* address)
+{
+    return (address - FLASH_BASE_ADDRESS) / FLASH_PAGE_SIZE;
 }
 
 int iapFlashSize()

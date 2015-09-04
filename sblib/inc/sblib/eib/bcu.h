@@ -11,6 +11,18 @@
 #define sblib_bcu_h
 
 #include <sblib/eib/bcu_base.h>
+#include <sblib/types.h>
+#include <sblib/eib/bus.h>
+#include <sblib/eib/bcu_type.h>
+#include <sblib/eib/properties.h>
+#include <sblib/eib/user_memory.h>
+#include <sblib/utils.h>
+#include <sblib/mem_mapper.h>
+
+
+// Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
+// link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
+#define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
 
 /**
  * Class for controlling all BCU related things.
@@ -28,6 +40,28 @@ public:
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
     virtual void loop();
+
+    int connectedTo();
+
+    /**
+     * Allow an user provided memory mapper to store parameter data via memory write / read
+     * @param mapper - a pointer to an instance of a MemMapper object
+     */
+    void setMemMapper(MemMapper *mapper);
+
+    /**
+     * A buffer for sending telegrams. This buffer is considered library private
+     * and should rather not be used by the application program.
+     */
+    byte sendTelegram[Bus::TELEGRAM_SIZE];
+
+    /**
+     * The pin where the programming LED + button are connected. The default pin
+     * is PIO1_5. This variable may be changed in setup(), if required. If set
+     * to 0, the programming LED + button are not handled by the library.
+     */
+    int progPin;
+
     /**
      * End using the EIB bus coupling unit.
      */
@@ -78,7 +112,28 @@ protected:
     // The method begin_BCU() is renamed during compilation to indicate the BCU type.
     // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
     void begin_BCU(int manufacturer, int deviceType, int version);
+
+private:
+    MemMapper *memMapper;
 };
 
+
+//
+//  Inline functions
+//
+
+inline int BCU::connectedTo()
+{
+    return connectedAddr;
+}
+
+inline void BCU::setMemMapper(MemMapper *mapper)
+{
+    memMapper = mapper;
+}
+
+#ifndef INSIDE_BCU_CPP
+#   undef begin_BCU
+#endif
 
 #endif /*sblib_bcu_h*/

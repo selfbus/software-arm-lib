@@ -27,6 +27,7 @@
 // The size of the object types BIT_7...VARDATA in bytes
 const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 15 };
 
+int le_ptr = BIG_ENDIAN;
 
 int objectSize(int objno)
 {
@@ -105,7 +106,10 @@ byte* objectValuePtr(int objno)
     // TODO Should handle userRam.segment0addr and userRam.segment1addr here
     // if (cfg.config & COMCONF_VALUE_TYPE) // 0 if segment 0, !=0 if segment 1
     const byte * addr = (const byte *) &cfg.dataPtr;
-    return userMemoryPtr(makeWord(addr[0], addr[1]));
+    if (le_ptr == LITTLE_ENDIAN)
+        return userMemoryPtr(makeWord(addr[1], addr[0]));
+    else
+        return userMemoryPtr(makeWord(addr[0], addr[1]));
 #endif
 }
 
@@ -127,6 +131,9 @@ void _objectWrite(int objno, unsigned int value, int flags)
 {
     byte* ptr = objectValuePtr(objno);
     int sz = objectSize(objno);
+
+    if(ptr == 0)
+        return;
 
     for (; sz > 0; --sz)
     {
@@ -355,7 +362,9 @@ byte* objectFlagsTable()
     return userRamData + userEepromData[userEeprom.commsTabPtr + 1];
 #else
     const byte* configTable = objectConfigTable();
-    const int addr = makeWord(configTable[1], configTable[2]);
-    return userMemoryPtr(addr);
+    if(le_ptr == LITTLE_ENDIAN)
+    	return userMemoryPtr(makeWord(configTable[2], configTable[1]));
+
+    return userMemoryPtr(makeWord(configTable[1], configTable[2]));
 #endif
 }

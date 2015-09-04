@@ -116,6 +116,9 @@ static const PropertyDef appObjectProps[] =
     // Pointer to the communication objects table
     { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsTabAddr) },
 
+    // ABB_CUSTOM
+    { PID_ABB_CUSTOM, PDT_GENERIC_10|PC_POINTER|PC_WRITABLE, PD_USER_RAM_OFFSET(user2) },
+
     // End of table
     PROPERTY_DEF_TABLE_END
 };

@@ -193,6 +193,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 // as a simple method we use the unique ID of the CPU itself
                 // only if this UUID is known, the device will be unlocked
                 byte uid[4 * 32];
+                lastError = IAP_SUCCESS;
                 if (IAP_SUCCESS == iapReadUID(uid))
                 {
                     for (unsigned int i = 0; i < 12; i++)
@@ -360,8 +361,12 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 lastError = UPD_DEVICE_LOCKED;
             sendLastError = true;
             break;
+        case UPD_GET_LAST_ERROR:
+        	sendLastError = true;
+            break;
         default:
             lastError = UDP_UNKONW_COMMAND; // set to any error
+        	sendLastError = true;
     }
     if (sendLastError)
     {

@@ -42,6 +42,14 @@ enum IAP_Status
 int iapSectorOfAddress(const byte* address);
 
 /**
+ * Get the index of the FLASH page for the passed address.
+ *
+ * @param address - the address inside the FLASH
+ * @return The sector index of the address.
+ */
+int iapPageOfAddress(const byte* address);
+
+/**
  * Erase the specified sector.
  *  @param sector       index of the sector which should be erased
  *  @return             status code (0 == OK)

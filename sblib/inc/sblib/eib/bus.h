@@ -229,14 +229,14 @@ protected:
     int sendAck;                 //!< Send an acknowledge or not-acknowledge byte if != 0
 
 private:
-    State state;                 //!< The state of the lib's telegram sending/receiving
+    volatile State state;                 //!< The state of the lib's telegram sending/receiving
     int sendTries;               //!< The number of repeats when sending a telegram
     int sendTriesMax;            //!< The maximum number of repeats when sending a telegram. Default: 3
     int nextByteIndex;           //!< The number of the next byte in the telegram
 
     int currentByte;             //!< The current byte that is received/sent, including the parity bit
     int sendTelegramLen;         //!< The size of the to be sent telegram in bytes (including the checksum).
-    byte *sendCurTelegram;       //!< The telegram that is currently being sent.
+    volatile byte *sendCurTelegram;       //!< The telegram that is currently being sent.
     byte *sendNextTel;           //!< The telegram to be sent after sbSendTelegram is done.
     int bitMask;
     int bitTime;                 // The bit-time within a byte when receiving

@@ -10,10 +10,17 @@
 #ifndef sblib_com_objects_h
 #define sblib_com_objects_h
 
+#include <sys/param.h>
 #include <sblib/eib/bcu.h>
 #include <sblib/eib/types.h>
 #include <sblib/eib/datapoint_types.h>
 
+extern int le_ptr;
+
+inline void objectEndian(int val)
+{
+	le_ptr=val;
+}
 
 /**
  * Get the numeric value from a communication object. Can be used for
