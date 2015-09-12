@@ -54,11 +54,11 @@ unsigned int* ioconPointer(int port, int pinNum);
 
 #ifdef IAP_EMULATION
   extern unsigned char FLASH[];
-  #define LPC _Flash_Base *FLASH
+# define LPC_FLASH_BASE *FLASH
 #else
-  #if not defined LPC_FLASH_BASE
-    #define LPC_FLASH_BASE 0
-  #endif
+#ifndef LPC_FLASH_BASE
+  #define LPC_FLASH_BASE 0
+#endif
 #endif
 
 /**

@@ -47,7 +47,7 @@ public:
 
     enum
     {
-        BUFFER_SIZE = 64,  //!< The size of the internal read/write buffers in bytes.
+        BUFFER_SIZE = 128,  //!< The size of the internal read/write buffers in bytes.
         BUFFER_SIZE_MASK = BUFFER_SIZE-1
     };
 

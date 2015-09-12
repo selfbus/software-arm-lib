@@ -395,7 +395,7 @@ enum AnalogChannel
 	AD4 = 4,   //!< Analog channel 4 (this is pin PIO1_3)
 	AD5 = 5,   //!< Analog channel 5 (this is pin PIO1_4)
 	AD6 = 6,   //!< Analog channel 6 (this is pin PIO1_10)
-	AD7 = 7    //!< Analog channel 7 (this is pin PIO1_11)
+	AD7 = 7,   //!< Analog channel 7 (this is pin PIO1_11)
 };
 
 /**

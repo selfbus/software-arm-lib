@@ -10,176 +10,45 @@
 
 #define INSIDE_BCU_CPP
 #include <sblib/eib/bcu.h>
-
 #include <sblib/eib/apci.h>
-#include <sblib/eib/bus.h>
-#include <sblib/eib/addr_tables.h>
-#include <sblib/eib/com_objects.h>
-#include <sblib/eib/properties.h>
-#include <sblib/eib/user_memory.h>
-
-#include <sblib/version.h>
-#include <sblib/internal/iap.h>
 #include <sblib/internal/functions.h>
-#include <sblib/internal/variables.h>
-
-#include <sblib/mem_mapper.h>
-
+#include <sblib/eib/com_objects.h>
 #include <string.h>
-
-#ifdef APP_HANDLES_MEMORY_REQUESTS
-extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
-#endif
+#include <sblib/internal/variables.h>
+#include <sblib/mem_mapper.h>
 
 #if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS
 #include <sblib/serial.h>
 #endif
-BCU bcu;
 
 extern unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
 
-
-// Default pin of the programming mode button+led
-#if defined (__LPC11XX__)
-#define DEFAULT_PROG_PIN  PIO2_0
-#elif defined (__LPC11UXX__)
-#define DEFAULT_PROG_PIN  PIO1_19
-#endif
-
-BCU::BCU()
-:progButtonDebouncer()
-{
-    progPin = DEFAULT_PROG_PIN;
-    progPinInv = true;
-    enabled = false;
-}
-
-// The method begin_BCU() is renamed during compilation to indicate the BCU type.
-// If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-void BCU::begin_BCU(int manufacturer, int deviceType, int version)
+void BCU::_begin()
 {
     readUserEeprom();
-
-#ifdef DUMP_TELEGRAMS
-    serial.begin(115200);
-    serial.println("Telegram dump enabled");
-#endif
-
-    sendTelegram[0] = 0;
-    sendCtrlTelegram[0] = 0;
-
-    connectedAddr = 0;
-    connectedSeqNo = 0;
-    incConnectedSeqNo = false;
-
-    userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
-    userRam.deviceControl = 0;
-    userRam.runState = 1;
-
-    userEeprom.runError = 0xff;
-    userEeprom.portADDR = 0;
-
-    userEeprom.manufacturerH = manufacturer >> 8;
-    userEeprom.manufacturerL = manufacturer;
-
-    userEeprom.deviceTypeH = deviceType >> 8;
-    userEeprom.deviceTypeL = deviceType;
-
-    userEeprom.version = version;
-
-#if BCU_TYPE != BCU1_TYPE
-    unsigned int serial;
-    iapReadPartID(& serial);
-    memcpy (userEeprom.serial, &serial, 4);
-    userEeprom.serial[4] = SBLIB_VERSION >> 8;
-    userEeprom.serial[5] = SBLIB_VERSION;
-
-    userRam.peiType = 0;     // PEI type: 0=no adapter connected to PEI.
-    userEeprom.appType = 0;  // Set to BCU2 application. ETS reads this when programming.
-#endif
-
-    writeUserEepromTime = 0;
-    enabled = true;
-
-    bus.begin();
-    progButtonDebouncer.init(1);
 }
 
 void BCU::end()
 {
-    enabled = false;
-
-    bus.end();
+    BcuBase::end();
     writeUserEeprom();
-}
-
-void BCU::setOwnAddress(int addr)
-{
-    userEeprom.addrTab[0] = addr >> 8;
-    userEeprom.addrTab[1] = addr;
-#if BCU_TYPE != BCU1_TYPE
-    if (userEeprom.loadState[OT_ADDR_TABLE] == 2)
-    {
-        byte * addrTab =  addrTable() + 1;
-
-        * (addrTab + 0)  = addr >> 8;
-        * (addrTab + 1)  = addr;
-    }
-#endif
-    userEeprom.modified();
-
-    bus.ownAddr = addr;
 }
 
 void BCU::loop()
 {
     if (!enabled)
         return;
-
-#ifdef DUMP_TELEGRAMS
-	{
-    	extern unsigned char telBuffer[];
-    	extern unsigned int telLength ;
-    	if (telLength > 0)
-    	{
-            serial.print("RX: ");
-            for (int i = 0; i < telLength; ++i)
-            {
-                if (i) serial.print(" ");
-                serial.print(telBuffer[i], HEX, 2);
-            }
-            serial.println();
-            telLength = 0;
-    	}
-	}
-#endif
-
-    if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
-        bcu.processTelegram();
+    BcuBase::loop();
 
     if (!bus.sendingTelegram())
         sendNextGroupTelegram();
-#if 0
+
     // Send a disconnect after 6.5 seconds inactivity
     if (connectedAddr && elapsed(connectedTime) > 6500)
     {
         sendConControlTelegram(T_DISCONNECT_PDU, 0);
         connectedAddr = 0;
-    }
-#endif
-
-    if (bcu.progPin)
-    {
-        // Detect the falling edge of pressing the prog button
-        pinMode(bcu.progPin, INPUT|PULL_UP);
-        int oldValue = progButtonDebouncer.value();
-        if (!progButtonDebouncer.debounce(digitalRead(bcu.progPin), 50) && oldValue)
-        {
-            userRam.status ^= 0x81;  // toggle programming mode and checksum bit
-        }
-        pinMode(bcu.progPin, OUTPUT);
-        digitalWrite(bcu.progPin, (userRam.status & BCU_STATUS_PROG)^progPinInv);
     }
 
     if (userEeprom.isModified() && bus.idle() && bus.telegramLen == 0 && connectedAddr == 0)
@@ -237,7 +106,7 @@ void BCU::processTelegram()
     }
     else if ((bus.telegram[5] & 0x80) == 0) // a physical destination address
     {
-        if (destAddr == bus.ownAddr) // it's our physical address
+        if (destAddr == bus.ownAddress()) // it's our physical address
         {
             if (tpci & 0x80)  // A connection control command
             {
@@ -277,44 +146,44 @@ bool BCU::processDeviceDescriptorReadTelegram(int id)
 
 static void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
 {
-	address -= USER_RAM_START;
-	if ((address > 0x60) || ((address + count) < 0x60))
-	{
-		memcpy(userRamData + address, buffer, count);
-	}
-	else
-	{
-		while (count--)
-		{
-			if (address == 0x60)
-				userRam.status = * buffer;
-			else
-				userRamData[address] = * buffer;
-			buffer++;
-			address++;
-		}
-	}
+    address -= USER_RAM_START;
+    if ((address > 0x60) || ((address + count) < 0x60))
+    {
+        memcpy(userRamData + address, buffer, count);
+    }
+    else
+    {
+        while (count--)
+        {
+            if (address == 0x60)
+                userRam.status = * buffer;
+            else
+                userRamData[address] = * buffer;
+            buffer++;
+            address++;
+        }
+    }
 }
 
 static void cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
 {
-	address -= USER_RAM_START;
-	if ((address > 0x60) || ((address + count) < 0x60))
-	{
-		memcpy(buffer, userRamData + address, count);
-	}
-	else
-	{
-		while (count--)
-		{
-			if (address == 0x60)
-				* buffer = userRam.status;
-			else
-				* buffer = userRamData[address];
-			buffer++;
-			address++;
-		}
-	}
+    address -= USER_RAM_START;
+    if ((address > 0x60) || ((address + count) < 0x60))
+    {
+        memcpy(buffer, userRamData + address, count);
+    }
+    else
+    {
+        while (count--)
+        {
+            if (address == 0x60)
+                * buffer = userRam.status;
+            else
+                * buffer = userRamData[address];
+            buffer++;
+            address++;
+        }
+    }
 }
 
 void BCU::processDirectTelegram(int apci)
@@ -352,9 +221,6 @@ void BCU::processDirectTelegram(int apci)
 
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
-#ifdef APP_HANDLES_MEMORY_REQUESTS
-    	sendAck = handleMemoryRequests(apciCmd, &sendTel, & bus.telegram[7]);
-#else
         count = bus.telegram[7] & 0x0f; // number of data byes
         address = (bus.telegram[8] << 8) | bus.telegram[9]; // address of the data block
 
@@ -381,7 +247,7 @@ void BCU::processDirectTelegram(int apci)
                 userEeprom.modified();
             }
             else if (address >= USER_RAM_START && address < USER_RAM_END)
-            	cpyToUserRam(address - USER_RAM_START, bus.telegram + 10, count);
+                cpyToUserRam(address - USER_RAM_START, bus.telegram + 10, count);
 
             sendAck = T_ACK_PDU;
 
@@ -406,7 +272,7 @@ void BCU::processDirectTelegram(int apci)
                   memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
             }
             else if (address >= USER_RAM_START && address < USER_RAM_END)
-            	cpyFromUserRam(address - USER_RAM_START, sendTelegram + 10, count);
+                cpyFromUserRam(address - USER_RAM_START, sendTelegram + 10, count);
 #ifdef LOAD_STATE_ADDR
             else if (address >= LOAD_STATE_ADDR && address < LOAD_STATE_ADDR + 8)
                 memcpy(sendTelegram + 10, userEeprom.loadState + (address - LOAD_STATE_ADDR), count);
@@ -432,7 +298,6 @@ void BCU::processDirectTelegram(int apci)
             sendTelegram[9] = address;
             sendTel = true;
         }
-#endif
         break;
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
@@ -446,23 +311,23 @@ void BCU::processDirectTelegram(int apci)
         {
         case APCI_RESTART_PDU:
         case APCI_RESTART_TYPE1_PDU:
-			if(apci&1)
-			{
-				unsigned int erase   = bus.telegram[8];
-				unsigned int channel = bus.telegram[9];
+            if(apci&1)
+            {
+                unsigned int erase   = bus.telegram[8];
+                unsigned int channel = bus.telegram[9];
 
-				if(erase == 0 && channel == 255)
-				{
-					unsigned int * magicWord = (unsigned int *) 0x10000000;
-					*magicWord = 0x5E1FB055;
-				}
-			}
-			writeUserEeprom();   // Flush the EEPROM before resetting
-			if(memMapper)
-			{
-				memMapper->doFlash();
-			}
-			NVIC_SystemReset();  // Software Reset
+                if(erase == 0 && channel == 255)
+                {
+                    unsigned int * magicWord = (unsigned int *) 0x10000000;
+                    *magicWord = 0x5E1FB055;
+                }
+            }
+            writeUserEeprom();   // Flush the EEPROM before resetting
+            if(memMapper)
+            {
+                memMapper->doFlash();
+            }
+            NVIC_SystemReset();  // Software Reset
             break;
 
         case APCI_AUTHORIZE_REQUEST_PDU:
@@ -573,7 +438,7 @@ void BCU::processConControlTelegram(int tpci)
                 connectedAddr = senderAddr;
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
-                bus.sendAck = 0;
+                bus.setSendAck (0);
             }
         }
         else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
@@ -581,7 +446,7 @@ void BCU::processConControlTelegram(int tpci)
             if (connectedAddr == senderAddr)
             {
                 connectedAddr = 0;
-                bus.sendAck = 0;
+                bus.setSendAck (0);
             }
         }
     }

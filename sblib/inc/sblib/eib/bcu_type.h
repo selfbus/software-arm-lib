@@ -128,13 +128,17 @@
 #   define USER_EEPROM_START 0x3f00
 
     /** The size of the user EEPROM in bytes. */
-#   define USER_EEPROM_SIZE 3072
+#   define USER_EEPROM_SIZE       3072
+#   define USER_EEPROM_FLASH_SIZE 4096
 
 #else
     // BCU_TYPE contains an invalid value and no other BCU type define is set
 #   error "Unsupported BCU type"
 #endif
 
+#ifndef USER_EEPROM_FLASH_SIZE
+#define USER_EEPROM_FLASH_SIZE USER_EEPROM_SIZE
+#endif
 
 /** End address of the user RAM +1, when ETS talks with us. */
 #define USER_RAM_END (USER_RAM_START + USER_RAM_SIZE)

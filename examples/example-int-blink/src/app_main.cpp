@@ -10,6 +10,7 @@
  */
 
 #include <sblib/core.h>
+#include <sblib/eib/sblib_default_objects.h>
 
 /*
  * Handler for the timer interrupt.

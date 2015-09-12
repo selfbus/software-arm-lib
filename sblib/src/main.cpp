@@ -29,13 +29,6 @@ static inline void lib_setup()
     systemTime = 0;
 }
 
-#define WEAK __attribute__ ((weak))
-#define ALIAS(f) __attribute__ ((weak, alias (#f)))
-
-WEAK void loop_test();
-
-void loop_test() {};
-
 
 /**
  * The main of the library.
@@ -51,11 +44,8 @@ int main()
     while (1)
     {
         bcu.loop();
-
         if (bcu.applicationRunning())
             loop();
-        else if (bcu.applicationShouldRun())
-            loop_test();
         else waitForInterrupt();
     }
 }

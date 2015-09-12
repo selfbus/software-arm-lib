@@ -17,18 +17,6 @@
 #include <sblib/eib/user_memory.h>
 #include <sblib/eib/properties.h>
 
-// The EIB bus access object
-#if defined (__LPC11XX__)
-Bus bus(timer16_1, PIO1_8, PIO1_9, CAP0, MAT0);
-#elif defined (__LPC11UXX__)
-Bus bus(timer16_1, PIO0_20, PIO0_21, CAP0, MAT0);
-#endif
-
-
-// The interrupt handler for the EIB bus access object
-BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, bus);
-
-
 /*
  * The timer16_1 is used as follows:
  *
@@ -78,6 +66,10 @@ static int debugLine = 0;
 // The value for the prescaler
 #define TIMER_PRESCALER (SystemCoreClock / 1000000 - 1)
 
+#ifdef DUMP_TELEGRAMS
+unsigned char telBuffer[32];
+unsigned int telLength = 0;
+#endif
 
 Bus::Bus(Timer& aTimer, int aRxPin, int aTxPin, TimerCapture aCaptureChannel, TimerMatch aPwmChannel)
 :timer(aTimer)
@@ -166,10 +158,6 @@ void Bus::idleState()
 //    pinMode(txPin, INPUT);
 }
 
-#ifdef DUMP_TELEGRAMS
-unsigned char telBuffer[32];
-unsigned int telLength = 0;
-#endif
 void Bus::handleTelegram(bool valid)
 {
 //    D(digitalWrite(PIO1_4, 1));         // purple: end of telegram
@@ -180,10 +168,6 @@ void Bus::handleTelegram(bool valid)
     }
     else if (nextByteIndex >= 8 && valid) // Received a valid telegram with correct checksum
     {
-#ifdef DUMP_TELEGRAMS
-    	memcpy(telBuffer, bus.telegram, nextByteIndex);
-    	telLength = nextByteIndex;
-#endif
         int destAddr = (telegram[3] << 8) | telegram[4];
         bool processTel = false;
 
@@ -215,9 +199,10 @@ void Bus::handleTelegram(bool valid)
     else if (nextByteIndex == 1)   // Received a spike or a bus acknowledgment
     {
         currentByte &= 0xff;
-
         if ((currentByte == SB_BUS_ACK || sendTries > sendTriesMax) && sendCurTelegram)
+        {
             sendNextTelegram();
+        }
     }
     else // Received wrong checksum, or more than one byte but too short for a telegram
     {
@@ -350,10 +335,10 @@ STATE_SWITCH:
         {
             time = PRE_SEND_TIME;
             sendTelegramLen = 0;
-        }
+        	}
         else
         {
-            if (sendTries > sendTriesMax)
+        	if (sendTries > sendTriesMax)
                 sendNextTelegram();
 
             if (sendCurTelegram)  // Send a telegram?
@@ -418,7 +403,8 @@ STATE_SWITCH:
     case Bus::SEND_BIT_0:
         if (sendAck)
             currentByte = sendAck;
-        else currentByte = sendCurTelegram[nextByteIndex++];
+        else
+        	currentByte = sendCurTelegram[nextByteIndex++];
 
         // Calculate the parity bit
         for (bitMask = 1; bitMask < 0x100; bitMask <<= 1)
@@ -551,7 +537,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 
 #ifdef DUMP_TELEGRAMS
 	{
-        serial.print("TX: ");
+		serial.print("QSD: ");
         for (int i = 0; i <= length; ++i)
         {
             if (i) serial.print(" ");
