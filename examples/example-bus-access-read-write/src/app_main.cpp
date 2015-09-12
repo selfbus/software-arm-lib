@@ -21,7 +21,7 @@ Timeout blinky;
  */
 void setup()
 {
-    bcu->begin(2, 1, 1); // ABB, dummy something device
+    bcu.begin(2, 1, 1); // ABB, dummy something device
 
     // Disable telegram processing by the lib
     if (userRam.status & BCU_STATUS_TL)
@@ -33,7 +33,7 @@ void setup()
     pinMode(PIN_INFO, OUTPUT);    // Info LED
     pinMode(PIN_RUN, OUTPUT);    // Run LED
     blinky.start(1);
-    bcu->setOwnAddress(0x1140);
+    bcu.setOwnAddress(0x1140);
 }
 
 /*
@@ -93,7 +93,7 @@ void loop()
 		int byte = serial.read();
 		byteCount++;
 		data = (data << 4) + _byteToNumber(byte);
-		if (byteCount == 2)
+	if (byteCount == 2)
 		{   // a new data byte has been received
 			byteCount = 0;
 			if (receiveCount < 0)

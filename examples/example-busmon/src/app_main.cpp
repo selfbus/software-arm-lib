@@ -17,7 +17,7 @@
  */
 void setup()
 {
-    bcu->begin(2, 1, 1); // ABB, dummy something device
+    bcu.begin(2, 1, 1); // ABB, dummy something device
 
     // Disable telegram processing by the lib
     if (userRam.status & BCU_STATUS_TL)

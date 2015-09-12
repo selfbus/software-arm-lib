@@ -14,10 +14,10 @@
 #include <sblib/timeout.h>
 #include <sblib/internal/variables.h>
 #include <sblib/io_pin_names.h>
-#include "bcuupdate.h"
+#include "bcu_update.h"
 
 static BcuUpdate _bcu = BcuUpdate();
-BcuBase * bcu = &_bcu;
+BcuBase& bcu = _bcu;
 
 // The EIB bus access object
 Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
@@ -41,11 +41,11 @@ static inline void lib_setup()
 
 void setup()
 {
-    bcu->begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
+    bcu.begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
     pinMode(PIN_INFO, OUTPUT);
     pinMode(PIN_RUN, OUTPUT);
     blinky.start(1);
-    bcu->setOwnAddress(0xFFC0);
+    bcu.setOwnAddress(0xFFC0);
     extern byte userEepromModified;
     userEepromModified = 0;
 }
@@ -54,7 +54,7 @@ void loop()
 {
     if (blinky.expired())
     {
-        if (bcu->directConnection())
+        if (bcu.directConnection())
             blinky.start(250);
         else
             blinky.start(1000);
@@ -97,7 +97,7 @@ void run_updater()
 
     while (1)
     {
-        bcu->loop();
+        bcu.loop();
         loop();
     }
 }

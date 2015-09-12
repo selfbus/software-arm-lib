@@ -15,7 +15,7 @@
 #include <string.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/serial.h>
-#include <BCUUpdate.h>
+#include <bcu_update.h>
 #include <crc.h>
 #include <boot_descriptor_block.h>
 
@@ -135,11 +135,11 @@ extern const unsigned int _etext;
 
 static bool _prepareReturnTelegram(unsigned int count, unsigned char cmd)
 {
-    bcu->sendTelegram[5] = 0x63 + count;
-    bcu->sendTelegram[6] = 0x42;
-    bcu->sendTelegram[7] = 0x40 | count;
-    bcu->sendTelegram[8] = 0;
-    bcu->sendTelegram[9] = cmd;
+    bcu.sendTelegram[5] = 0x63 + count;
+    bcu.sendTelegram[6] = 0x42;
+    bcu.sendTelegram[7] = 0x40 | count;
+    bcu.sendTelegram[8] = 0;
+    bcu.sendTelegram[9] = cmd;
     return true;
 }
 
@@ -182,7 +182,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
     switch (data[2])
     {
         case UPD_UNLOCK_DEVICE:
-            if (!((BcuUpdate *) bcu)->progPinStatus())
+            if (!((BcuUpdate &) bcu).progPinStatus())
             { // the operator has physical access to the device -> we unlock it
                 deviceLocked = DEVICE_UNLOCKED;
                 lastError = IAP_SUCCESS;
@@ -215,14 +215,14 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             crc = 0xFFFFFFFF;
             break;
         case UPD_REQUEST_UID:
-            if (!((BcuUpdate *) bcu)->progPinStatus())
+            if (!((BcuUpdate &) bcu).progPinStatus())
             { // the operator has physical access to the device -> we unlock it
                 byte uid[4 * 4];
                 lastError = iapReadUID(uid);
                 if (lastError == IAP_SUCCESS)
                 {
                     *sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_UID);
-                    memcpy(bcu->sendTelegram + 10, uid, 12);
+                    memcpy(bcu.sendTelegram + 10, uid, 12);
                 }
                 break;
             }
@@ -237,7 +237,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             if (((unsigned int) appversion) < 0x50000)
             {
                 *sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
-                memcpy(bcu->sendTelegram + 10, appversion, 12);
+                memcpy(bcu.sendTelegram + 10, appversion, 12);
                 lastError = IAP_SUCCESS;
             }
             else
@@ -371,7 +371,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
     if (sendLastError)
     {
         *sendTel = _prepareReturnTelegram(4, UPD_SEND_LAST_ERROR);
-        UIn32ToStream(bcu->sendTelegram + 10, lastError);
+        UIn32ToStream(bcu.sendTelegram + 10, lastError);
     }
     return T_ACK_PDU;
 }

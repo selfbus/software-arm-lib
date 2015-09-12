@@ -5,8 +5,8 @@
  *      Author: glueck
  */
 
-#ifndef BCUUPDATE_H_
-#define BCUUPDATE_H_
+#ifndef BCU_UPDATE_H_
+#define BCU_UPDATE_H_
 
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/apci.h>
@@ -51,4 +51,4 @@ inline bool BcuUpdate::progPinStatus()
 {
     return progButtonDebouncer.value();
 }
-#endif /* BCUUPDATE_H_ */
+#endif /* BCU_UPDATE_H_ */
