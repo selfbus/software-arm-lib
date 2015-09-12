@@ -43,8 +43,8 @@ int main()
 
     while (1)
     {
-        bcu->loop();
-        if (bcu->applicationRunning())
+        bcu.loop();
+        if (bcu.applicationRunning())
             loop();
         else waitForInterrupt();
     }

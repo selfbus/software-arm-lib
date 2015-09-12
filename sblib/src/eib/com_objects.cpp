@@ -189,15 +189,15 @@ int firstObjectAddr(int objno)
  */
 void sendGroupReadTelegram(int objno, int addr)
 {
-    bcu->sendTelegram[0] = 0xbc; // Control byte
+    bcu.sendTelegram[0] = 0xbc; // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    bcu->sendTelegram[3] = addr >> 8;
-    bcu->sendTelegram[4] = addr;
-    bcu->sendTelegram[5] = 0xe1;
-    bcu->sendTelegram[6] = 0;
-    bcu->sendTelegram[7] = 0x00;
+    bcu.sendTelegram[3] = addr >> 8;
+    bcu.sendTelegram[4] = addr;
+    bcu.sendTelegram[5] = 0xe1;
+    bcu.sendTelegram[6] = 0;
+    bcu.sendTelegram[7] = 0x00;
 
-    bus.sendTelegram(bcu->sendTelegram, 8);
+    bus.sendTelegram(bcu.sendTelegram, 8);
 }
 
 /*
@@ -212,18 +212,18 @@ void sendGroupWriteTelegram(int objno, int addr, bool isResponse)
     byte* valuePtr = objectValuePtr(objno);
     int sz = telegramObjectSize(objno);
 
-    bcu->sendTelegram[0] = 0xbc; // Control byte
+    bcu.sendTelegram[0] = 0xbc; // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    bcu->sendTelegram[3] = addr >> 8;
-    bcu->sendTelegram[4] = addr;
-    bcu->sendTelegram[5] = 0xe0 | ((sz + 1) & 15);
-    bcu->sendTelegram[6] = 0;
-    bcu->sendTelegram[7] = isResponse ? 0x40 : 0x80;
+    bcu.sendTelegram[3] = addr >> 8;
+    bcu.sendTelegram[4] = addr;
+    bcu.sendTelegram[5] = 0xe0 | ((sz + 1) & 15);
+    bcu.sendTelegram[6] = 0;
+    bcu.sendTelegram[7] = isResponse ? 0x40 : 0x80;
 
-    if (sz) reverseCopy(bcu->sendTelegram + 8, valuePtr, sz);
-    else bcu->sendTelegram[7] |= *valuePtr & 0x3f;
+    if (sz) reverseCopy(bcu.sendTelegram + 8, valuePtr, sz);
+    else bcu.sendTelegram[7] |= *valuePtr & 0x3f;
 
-    bus.sendTelegram(bcu->sendTelegram, 8 + sz);
+    bus.sendTelegram(bcu.sendTelegram, 8 + sz);
 }
 
 int sndStartIdx = 0;
