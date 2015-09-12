@@ -30,7 +30,7 @@ MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAd
     memcpy(allocTable, (byte *)flashBase, FLASH_PAGE_SIZE);
 }
 
-int MemMapper::doFlash(void)
+int MemMapper::doFlash(void) const
 {
     int ret = 0;
     if (allocTableModified)
@@ -129,7 +129,7 @@ int MemMapper::addRange(int virtAddress, int length)
     return MEM_MAPPER_SUCCESS;
 }
 
-int MemMapper::getFlashPageNum(int virtAddress)
+int MemMapper::getFlashPageNum(int virtAddress) const
 {
     int virtPage = virtAddress >> 8;
 
@@ -237,7 +237,7 @@ bool MemMapper::isMapped(int virtAddress)
     return getFlashPageNum(virtAddress) > 0 || autoAddPage ? true : false;
 }
 
-byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash)
+byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash) const
 {
     int flashPageNum = getFlashPageNum(virtAddress);
 
@@ -259,11 +259,16 @@ byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash)
     return ((byte*) (flashPageNum << 8) + (virtAddress & 0xff));
 }
 
-unsigned char MemMapper::getUInt8(int virtAddress)
+ unsigned char MemMapper::getUInt8(int virtAddress)
 {
     byte ret;
     readMem(virtAddress, ret);
     return ret;
+}
+
+unsigned char& MemMapper::operator[] (const int nIndex) const
+{
+    return memoryPtr(nIndex)[0];
 }
 
 unsigned int MemMapper::getUIntX(int virtAddress, int length)

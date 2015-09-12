@@ -191,7 +191,7 @@ public:
     /**
      * The received telegram.
      */
-    volatile byte telegram[TELEGRAM_SIZE];
+    byte telegram[TELEGRAM_SIZE];
 
     /**
      * The total length of the received telegram in telegram[].
