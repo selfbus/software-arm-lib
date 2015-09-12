@@ -11,7 +11,7 @@
 #include <sblib/eib.h>
 #include <sblib/io_pin_names.h>
 static BCU _bcu = BCU();
-BcuBase * bcu = &_bcu;
+BcuBase& bcu = _bcu;
 
 // The EIB bus access object
 Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);

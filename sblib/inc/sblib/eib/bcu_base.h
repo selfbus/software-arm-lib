@@ -27,7 +27,7 @@ class BcuBase;
 /**
  * The EIB bus coupling unit.
  */
-extern BcuBase * bcu;
+extern BcuBase& bcu;
 
 
 /**
