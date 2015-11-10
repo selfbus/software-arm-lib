@@ -153,8 +153,8 @@
 								<inputType id="com.crt.advproject.compiler.cpp.input.1121151991" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.release.1892580547" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.release">
-								<option id="com.crt.advproject.gcc.hdrlib.1550958846" name="Library headers" superClass="com.crt.advproject.gcc.hdrlib" value="com.crt.advproject.gcc.hdrlib.codered" valueType="enumerated"/>
-								<option id="com.crt.advproject.gcc.specs.2119027559" name="Specs" superClass="com.crt.advproject.gcc.specs" value="Redlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.hdrlib.1550958846" name="Library headers" superClass="com.crt.advproject.gcc.hdrlib" value="com.crt.advproject.gcc.hdrlib.newlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gcc.specs.2119027559" name="Specs" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlib" valueType="enumerated"/>
 								<option id="com.crt.advproject.gcc.arch.759311842" name="Architecture" superClass="com.crt.advproject.gcc.arch" value="com.crt.advproject.gcc.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.gcc.thumb.1323087371" name="Thumb mode" superClass="com.crt.advproject.gcc.thumb" value="true" valueType="boolean"/>
 								<option id="gnu.c.compiler.option.preprocessor.def.symbols.440861531" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" valueType="definedSymbols">
@@ -164,7 +164,7 @@
 									<listOptionValue builtIn="false" value="__USE_CMSIS=CMSIS_CORE_LPC11xx"/>
 									<listOptionValue builtIn="false" value="CPP_USE_HEAP"/>
 									<listOptionValue builtIn="false" value="__LPC11XX__"/>
-									<listOptionValue builtIn="false" value="__REDLIB__"/>
+									<listOptionValue builtIn="false" value="__NEWLIB__"/>
 								</option>
 								<option id="gnu.c.compiler.option.misc.other.1271664965" name="Other flags" superClass="gnu.c.compiler.option.misc.other" value="-c -fmessage-length=0 -fno-builtin -ffunction-sections -fdata-sections" valueType="string"/>
 								<option id="gnu.c.compiler.option.include.paths.199119287" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" valueType="includePath">
@@ -173,11 +173,11 @@
 								<inputType id="com.crt.advproject.compiler.input.1216450155" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.release.1348971322" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.release">
-								<option id="com.crt.advproject.gas.hdrlib.1529451976" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.codered" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.specs.1404952805" name="Specs" superClass="com.crt.advproject.gas.specs" value="Redlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.hdrlib.1529451976" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.specs.1404952805" name="Specs" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlib" valueType="enumerated"/>
 								<option id="com.crt.advproject.gas.arch.722221844" name="Architecture" superClass="com.crt.advproject.gas.arch" value="com.crt.advproject.gas.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.gas.thumb.207943898" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
-								<option id="gnu.both.asm.option.flags.crt.386862577" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -DNDEBUG -D__CODE_RED -DCORE_M0 -D__USE_CMSIS=CMSIS_CORE_LPC11xx -D__LPC11XX__ -D__REDLIB__" valueType="string"/>
+								<option id="gnu.both.asm.option.flags.crt.386862577" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -DNDEBUG -D__CODE_RED -DCORE_M0 -D__USE_CMSIS=CMSIS_CORE_LPC11xx -D__LPC11XX__ -D__NEWLIB__" valueType="string"/>
 								<option id="gnu.both.asm.option.include.paths.1581906364" name="Include paths (-I)" superClass="gnu.both.asm.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/inc}&quot;"/>
 								</option>

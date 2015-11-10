@@ -39,37 +39,37 @@
 
 #define MAX_SCAN_DEVICES   4
 
-#define FAST_MODE_PLUS	0
+#define FAST_MODE_PLUS  0
 
-#define BUFSIZE			    8
+#define BUFSIZE         8
 
-#define MAX_TIMEOUT		  0x00FFFFFF
+#define MAX_TIMEOUT     0x00FFFFFF
 
-#define I2CMASTER		    0x01
+#define I2CMASTER       0x01
 #define I2CSLAVE        0x02
 
-#define PCF8594_ADDR	  0xA0
-#define READ_WRITE		  0x01
+#define PCF8594_ADDR    0xA0
+#define READ_WRITE      0x01
 
-#define RD_BIT			    0x01
+#define RD_BIT          0x01
 
-#define I2CONSET_I2EN		0x00000040  // I2C Control Set Register
-#define I2CONSET_AA			0x00000004
-#define I2CONSET_SI			0x00000008
-#define I2CONSET_STO		0x00000010
-#define I2CONSET_STA		0x00000020
+#define I2CONSET_I2EN   0x00000040  // I2C Control Set Register
+#define I2CONSET_AA     0x00000004
+#define I2CONSET_SI     0x00000008
+#define I2CONSET_STO    0x00000010
+#define I2CONSET_STA    0x00000020
 
-#define I2CONCLR_AAC		0x00000004  // I2C Control clear Register
-#define I2CONCLR_SIC		0x00000008
-#define I2CONCLR_STAC		0x00000020
-#define I2CONCLR_I2ENC	0x00000040
+#define I2CONCLR_AAC    0x00000004  // I2C Control clear Register
+#define I2CONCLR_SIC    0x00000008
+#define I2CONCLR_STAC   0x00000020
+#define I2CONCLR_I2ENC  0x00000040
 
-#define I2DAT_I2C			  0x00000000  // I2C Data Reg
-#define I2ADR_I2C			  0x00000000  // I2C Slave Address Reg
-#define I2SCLH_SCLH			58          // I2C SCL Duty Cycle High Reg
-#define I2SCLL_SCLL			57          // I2C SCL Duty Cycle Low Reg
-#define I2SCLH_HS_SCLH	0x00000020  // Fast Plus I2C SCL Duty Cycle High Reg
-#define I2SCLL_HS_SCLL	0x00000020  // Fast Plus I2C SCL Duty Cycle Low Reg
+#define I2DAT_I2C       0x00000000  // I2C Data Reg
+#define I2ADR_I2C       0x00000000  // I2C Slave Address Reg
+#define I2SCLH_SCLH     58          // I2C SCL Duty Cycle High Reg
+#define I2SCLL_SCLL     57          // I2C SCL Duty Cycle Low Reg
+#define I2SCLH_HS_SCLH  0x00000020  // Fast Plus I2C SCL Duty Cycle High Reg
+#define I2SCLL_HS_SCLL  0x00000020  // Fast Plus I2C SCL Duty Cycle Low Reg
 
 /****************************************************************************
 * I2C Class
@@ -93,17 +93,17 @@ public:
 
   bool bI2CIsInitialized;
 
-	void I2CInit( uint8_t I2cMode=I2CMASTER );
-	uint16_t I2CEngine( void );
-	bool I2CStart();
-	bool I2CStop();
-	uint8_t I2CScan(uint8_t StartAdrr=0, uint8_t EndAdrr = 255);
-	void ClearBuffer(bool bClearMaster=true, bool bClearSlave=true);
-	bool Write(uint8_t uDeviceAddr, const char *udata, uint8_t data_length);
-	bool Read(uint8_t uDeviceAddr, char *udata, uint8_t data_read_length, uint16_t uDelayMS=200);
+  void I2CInit( uint8_t I2cMode=I2CMASTER );
+  uint16_t I2CEngine( void );
+  bool I2CStart();
+  bool I2CStop();
+  uint8_t I2CScan(uint8_t StartAdrr=0, uint8_t EndAdrr = 255);
+  void ClearBuffer(bool bClearMaster=true, bool bClearSlave=true);
+  bool Write(uint8_t uDeviceAddr, const char *udata, uint8_t data_length);
+  bool Read(uint8_t uDeviceAddr, char *udata, uint8_t data_read_length, uint16_t uDelayMS=200);
 private:
-	I2C(); I2C(I2C const&);
-	static I2C* m_pInstance;
+  I2C(); I2C(I2C const&);
+  static I2C* m_pInstance;
 };
 
 #endif /* end __I2C_H */

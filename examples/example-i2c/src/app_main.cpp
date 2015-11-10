@@ -49,7 +49,6 @@
 
 #if DBG_DHT
   DHT dht;                   // DHT 1st
-  DHT dht1;                  // DHT 2nd
 #endif
 
 #define READ_TIMER 1000      // Read values timer in Milliseconds
@@ -159,7 +158,6 @@ void setup()
 
 #if DBG_DHT
   dht.DHTInit(PIO2_2, DHT22); // Use the DHT22 sensor on PIN
-  dht1.DHTInit(PIO0_7, DHT22);// Use the DHT22 sensor on PIN
 #endif
 
   /*
@@ -212,7 +210,7 @@ void ReadLux()
 #if DBG_DHT
 bool ReadTempHum()
 {
-  bool bRet= dht.readData() && dht1.readData();
+  bool bRet= dht.readData();
   if(bRet)
   {
     digitalWrite(PIO3_3, !digitalRead(PIO3_3));

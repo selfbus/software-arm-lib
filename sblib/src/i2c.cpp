@@ -112,12 +112,12 @@ I2C* I2C::Instance()
 }
 
 /*****************************************************************************
-** Function name:		I2C_IRQHandler
+** Function name:   I2C_IRQHandler
 **
-** Descriptions:		I2C interrupt handler, deal with master mode only.
+** Descriptions:    I2C interrupt handler, deal with master mode only.
 **
-** parameters:			None
-** Returned value:	None
+** parameters:      None
+** Returned value:  None
 ** 
 *****************************************************************************/
 extern "C" {
@@ -192,7 +192,7 @@ extern "C" {
         {
           /* Send a Repeated START to initialize a read transaction */
           /* (handled in state 0x10)                                */
-          LPC_I2C->CONSET = I2CONSET_STA;	/* Set Repeated-start flag */
+          LPC_I2C->CONSET = I2CONSET_STA;  /* Set Repeated-start flag */
         }
         else
         {
@@ -287,8 +287,8 @@ extern "C" {
        */
       i2c_m_pInstance->I2CSlaveBuffer[i2c_m_pInstance->RdIndex++] = LPC_I2C->DAT;
       i2c_m_pInstance->I2CMasterState = I2CSTATE_ACK;
-      LPC_I2C->CONSET = I2CONSET_STO;	/* Set Stop flag */
-      LPC_I2C->CONCLR = I2CONCLR_SIC;	/* Clear SI flag */
+      LPC_I2C->CONSET = I2CONSET_STO;  /* Set Stop flag */
+      LPC_I2C->CONCLR = I2CONCLR_SIC;  /* Clear SI flag */
       break;
 
 
@@ -300,65 +300,65 @@ extern "C" {
 } // extern "C"
 
 /*****************************************************************************
-** Function name:	I2CStart
+** Function name:  I2CStart
 **
-** Descriptions:	Create I2C start condition, a timeout value is set if the
+** Descriptions:  Create I2C start condition, a timeout value is set if the
 **                I2C never gets started, and timed out. It's a fatal error.
 **
-** parameters:		None
-** Returned value:	true or false, return false if timed out
+** parameters:    None
+** Returned value:  true or false, return false if timed out
 ** 
 *****************************************************************************/
 bool I2C::I2CStart( void )
 {
-	uint32_t timeout = 0;
+  uint32_t timeout = 0;
 
-	// --- Issue a start condition ---
-	LPC_I2C->CONSET = I2CONSET_STA;	// Set Start flag
+  // --- Issue a start condition ---
+  LPC_I2C->CONSET = I2CONSET_STA;  // Set Start flag
     
-	while((this->I2CMasterState != I2CSTATE_PENDING) && (timeout < MAX_TIMEOUT))
-	{
-		timeout++;
-	}
+  while((this->I2CMasterState != I2CSTATE_PENDING) && (timeout < MAX_TIMEOUT))
+  {
+    timeout++;
+  }
 
-	return (timeout < MAX_TIMEOUT);
+  return (timeout < MAX_TIMEOUT);
 }
 
 /*****************************************************************************
-** Function name:	I2CStop
+** Function name:  I2CStop
 **
-** Descriptions:	Set the I2C stop condition
+** Descriptions:  Set the I2C stop condition
 **
-** parameters:		None
-** Returned value:	true or never return
+** parameters:    None
+** Returned value:  true or never return
 ** 
 *****************************************************************************/
 bool I2C::I2CStop( void )
 {
-	uint32_t timeout = 0;
+  uint32_t timeout = 0;
 
-	LPC_I2C->CONSET = I2CONSET_STO;   // Set Stop flag
-	LPC_I2C->CONCLR = I2CONCLR_SIC;   // Clear SI flag
+  LPC_I2C->CONSET = I2CONSET_STO;   // Set Stop flag
+  LPC_I2C->CONCLR = I2CONCLR_SIC;   // Clear SI flag
 
-	//--- Wait for STOP detected ---
-	while((LPC_I2C->CONSET & I2CONSET_STO) && (timeout < MAX_TIMEOUT))
-	{
-		timeout++;
-	}
-	return (timeout >= MAX_TIMEOUT);
+  //--- Wait for STOP detected ---
+  while((LPC_I2C->CONSET & I2CONSET_STO) && (timeout < MAX_TIMEOUT))
+  {
+    timeout++;
+  }
+  return (timeout >= MAX_TIMEOUT);
 }
 
 
 
 /*****************************************************************************
-** Function name:	I2CEngine
+** Function name:  I2CEngine
 **
-** Descriptions:	The routine to complete a I2C transaction from start to stop.
+** Descriptions:  The routine to complete a I2C transaction from start to stop.
 **                All the intermitten steps are handled in the interrupt handler.
-**					      Before this routine is called, the read length, write length
-**					      and I2C master buffer need to be filled.
+**                Before this routine is called, the read length, write length
+**                and I2C master buffer need to be filled.
 **
-** parameters:		None
+** parameters:    None
 ** Returned value: Any of the I2CSTATE_... values. See i2c.h
 ** 
 *****************************************************************************/
@@ -380,14 +380,14 @@ uint16_t I2C::I2CEngine( void )
 }
 
 /*****************************************************************************
-** Function name:	I2CScan
+** Function name:  I2CScan
 **
 ** Descriptions: Will scan the I2C bus to find I2C device. If a device is found,
 **               the Device address will be stored in I2CScan_uAdress[x].
 **               Where x is iFoundDevices-1
 **               Valid slave addresses are from 0x00 to 0xFF(255)
 **
-** parameters:		Start Address
+** parameters:    Start Address
 ** Returned value: Number of devices (iFoundDevices).
 **
 *****************************************************************************/
@@ -404,10 +404,10 @@ uint8_t I2C::I2CScan(uint8_t StartAdrr, uint8_t EndAdrr)
       this->I2CMasterBuffer[0] = iScanAddr;
     this->I2CEngine();
 
-	  if( this->I2CScan_State == I2CSCAN_FOUND ) {
-	    this->I2CScan_uAdress[iFoundDevices]= this->I2CMasterBuffer[0];
-	    iFoundDevices++;
-	  }
+    if( this->I2CScan_State == I2CSCAN_FOUND ) {
+      this->I2CScan_uAdress[iFoundDevices]= this->I2CMasterBuffer[0];
+      iFoundDevices++;
+    }
   }
   return iFoundDevices;
 }

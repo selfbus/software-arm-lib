@@ -1,6 +1,6 @@
 /*
- *  A simple application which will read Lux and RTC from LPC1115 Dev Board using
- *  I2C class with a timer and the timer interrupt.
+ *  A simple application which will demonstrate how to read Temperature and
+ *  Humidity from one or more DHT22 sensors a timer and the timer interrupt.
  *
  *  Copyright (c) 2015 Erkan Colak <erkanc@gmx.de>
  *
@@ -8,21 +8,14 @@
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
  */
-
-#define DBG_PRINT_DHT       0
-
-#if DBG_PRINT_DHT
-  #include <stdio.h>
-#endif
-
 #include <sblib/core.h>
 
 #include <sblib/sensors/dht.h>
 
-DHT dht;  // DHT 1
-DHT dht1; // DHT 2
+DHT dht;  // DHT 1st Sensor
+//DHT dht1; // DHT 2nd Sensor
 
-#define READ_TIMER 50       // Read values timer in Milliseconds
+#define READ_TIMER 50         // Read values timer in Milliseconds
 bool bReadTimer= false;       // Condition to read values if timer reached
 
 /*
@@ -46,7 +39,7 @@ extern "C" void TIMER32_0_IRQHandler()
 void setup()
 {
   dht.DHTInit(PIO2_2, DHT22);       // Use the DHT22 sensor on PIN
-  dht1.DHTInit(PIO0_7, DHT22);      // Use the DHT22 sensor on PIN
+  //dht1.DHTInit(PIO0_7, DHT22);      // Use the DHT22 sensor on PIN
 
   // LED Initialize
 	pinMode(PIO2_6, OUTPUT);	// Info LED (yellow)
@@ -66,10 +59,12 @@ void setup()
   timer32_0.start();                                        // Start now the timer
 }
 
-
+/*
+ * Read Data from DHT. On success the green LED will blink.
+ */
 bool ReadDHT()
 {
-  if(dht.readData() && dht1.readData() )
+  if(dht.readData() /*&& dht1.readData() */ )
   {
     digitalWrite(PIO3_3, !digitalRead(PIO3_3));
     // dht._lastTemperature;
