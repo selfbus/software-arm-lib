@@ -1,10 +1,10 @@
 //*****************************************************************************
 // LPC11xx Microcontroller Startup code for use with LPCXpresso IDE
 //
-// Version : 130808
+// Version : 150706
 //*****************************************************************************
 //
-// Copyright(C) NXP Semiconductors, 2013
+// Copyright(C) NXP Semiconductors, 2013-2015
 // All rights reserved.
 //
 // Software that is described herein is for illustrative purposes only
@@ -119,6 +119,13 @@ extern int main(void);
 extern void _vStackTop(void);
 
 //*****************************************************************************
+//
+// External declaration for LPC MCU vector table checksum from  Linker Script
+//
+//*****************************************************************************
+WEAK extern void __valid_user_code_checksum();
+
+//*****************************************************************************
 #if defined (__cplusplus)
 } // extern "C"
 #endif
@@ -129,7 +136,7 @@ extern void _vStackTop(void);
 //
 //*****************************************************************************
 extern void (* const g_pfnVectors[])(void);
-__attribute__ ((section(".isr_vector")))
+__attribute__ ((used,section(".isr_vector")))
 void (* const g_pfnVectors[])(void) = {
     &_vStackTop,                            // The initial stack pointer
     ResetISR,                               // The reset handler
@@ -138,7 +145,7 @@ void (* const g_pfnVectors[])(void) = {
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved
-    0,                                      // Reserved
+    __valid_user_code_checksum,             // LPC MCU Checksum
     0,                                      // Reserved
     0,                                      // Reserved
     0,                                      // Reserved
