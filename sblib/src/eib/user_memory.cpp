@@ -29,8 +29,8 @@ UserEeprom& userEeprom = *(UserEeprom*) userEepromData;
 // TODO: the line above causes a compiler warning which should be avoided:
 // warning : dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
 
-byte userEepromModified;
-unsigned int writeUserEepromTime;
+volatile byte userEepromModified;
+volatile unsigned int writeUserEepromTime;
 
 
 #define NUM_EEPROM_PAGES     (FLASH_SECTOR_SIZE / USER_EEPROM_SIZE)

@@ -167,6 +167,7 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
     --start;
     int size = def->size();
     int len = count * size;
+    if(len > 12) return false; // length error
 
     if (type < PDT_CHAR_BLOCK)
         reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);

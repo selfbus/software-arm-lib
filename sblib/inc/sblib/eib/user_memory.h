@@ -59,7 +59,7 @@ public:
     /**
      * 0x0000: Application program data.
      */
-    byte user1[0x60];
+	volatile byte user1[0x60];
 
     /**
      * 0x0060: BCU1 system status. See enum BcuStatus below.
@@ -67,7 +67,7 @@ public:
      *         is sued for com objects as well. Therefor the real
      *         status is at the end of the user ram.
      */
-    byte _status;
+	volatile byte _status;
 
     /**
      * 0x0061: BCU2 application run state.
@@ -81,7 +81,7 @@ public:
      *         is sued for com objects as well. Therefor the real
      *         runState is at the end of the user ram.
      */
-    byte _runState;
+	volatile byte _runState;
 
     /**
      * 0x0062: BCU2 Device control, see enum DeviceControl below.
@@ -90,26 +90,26 @@ public:
      * Bit 1: a telegram with our own physical address was received.
      * Bit 2: send a memory-response telegram automatically on memory-write.
      */
-    byte deviceControl;
+	volatile byte deviceControl;
 
     /**
      * 0x0063: PEI type. This is the type of the physical external interface
      *         that is connected to the device. It is not used in Selfbus programs.
      */
-    byte peiType;
+	volatile byte peiType;
 
     /**
      * 0x0064: Reserved for system software.
      */
-    byte reserved[0x64];
+	volatile byte reserved[0x64];
 
     /**
      * 0x00C8: Application program data.
      */
-    byte user2[USER_RAM_SIZE - 0xc8];
+	volatile byte user2[USER_RAM_SIZE - 0xc8];
 
-    byte status; // real status
-    byte runState;
+    volatile byte status; // real status
+    volatile byte runState;
 
     /**
      * Access the user RAM like an ordinary array. The start address is subtracted

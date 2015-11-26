@@ -106,7 +106,7 @@ void Bus::begin()
     sendAck = 0;
     sendCurTelegram = 0;
     sendNextTel = 0;
-    sendTriesMax = 3;
+    sendTriesMax = 4;
     collision = false;
 
     timer.begin();

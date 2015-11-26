@@ -94,7 +94,7 @@ public:
      *
      * @return 0 nothing flashed, 1 allocation table flashed, 2 data page flashed
      */
-    int doFlash(void);
+    int doFlash(void) const;
 
     /**
      * Change endianess of 16 and 32bit methods
@@ -113,6 +113,7 @@ public:
      * @return The data byte.
      */
     unsigned char getUInt8(int virtAddress);
+    unsigned char &operator[] (const int nIndex) const;
 
     /**
      * Access the user EEPROM to get a unsigned short
@@ -165,7 +166,7 @@ public:
      * @param forceFlash - force pending data to be flashed before operation
      * @return a pointer to the desired data
      */
-    byte* memoryPtr(int virtAddress, bool forceFlash = true);
+    byte* memoryPtr(int virtAddress, bool forceFlash = true) const;
 
     /**
      * Query about mapping
@@ -177,7 +178,7 @@ public:
 
 private:
     int allocatePage(int virtPage);
-    int getFlashPageNum(int virtAddress);
+    int getFlashPageNum(int virtAddress) const;
     unsigned int getUIntX(int virtAddress, int length);
     int setUIntX(int virtAddress, int length, int val);
 
@@ -189,15 +190,15 @@ private:
 
     byte allocTable[FLASH_PAGE_SIZE];
 
-    byte writeBuf[FLASH_PAGE_SIZE];
-    int writePage;
+    mutable byte writeBuf[FLASH_PAGE_SIZE];
+    mutable int writePage;
 
     unsigned int lastAllocated;
     int endianess;
 
     bool autoAddPage;
-    bool flashMemModified;
-    bool allocTableModified;
+    mutable bool flashMemModified;
+    mutable bool allocTableModified;
 };
 
 #endif /* SBLIB_MEM_MAPPER_H_ */
