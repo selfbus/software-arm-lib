@@ -216,7 +216,7 @@ void Bus::handleTelegram(bool valid)
     {
         currentByte &= 0xff;
 
-        if ((currentByte == SB_BUS_ACK || sendTries > sendTriesMax) && sendCurTelegram)
+        if ((currentByte == SB_BUS_ACK || sendTries > sendTriesMax) && sendCurTelegram && sendTries > 0)
             sendNextTelegram();
     }
     else // Received wrong checksum, or more than one byte but too short for a telegram
