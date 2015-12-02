@@ -110,6 +110,7 @@ int main(void)
         *magicWord = 0;
         run_updater();
     }
+    *magicWord = 0;
     pinMode(PIN_PROG, INPUT | PULL_UP);
     if (!digitalRead(PIN_PROG))
     {

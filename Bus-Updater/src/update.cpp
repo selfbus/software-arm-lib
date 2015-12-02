@@ -75,6 +75,7 @@ enum
     UPD_RESPONSE_UID = 32,
     UPD_APP_VERSION_REQUEST = 33,
     UPD_APP_VERSION_RESPONSE = 34,
+    UPD_RESET = 35,
 };
 
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)
@@ -228,6 +229,13 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             }
             else
                 lastError = UPD_DEVICE_LOCKED;
+            break;
+        case UPD_RESET:
+            if (deviceLocked == DEVICE_UNLOCKED)
+            	NVIC_SystemReset();
+            else
+                lastError = UPD_DEVICE_LOCKED;
+        	sendLastError = true;
             break;
         case UPD_APP_VERSION_REQUEST:
             unsigned char * appversion;
