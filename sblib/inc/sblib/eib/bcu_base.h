@@ -188,6 +188,7 @@ protected:
     int  connectedSeqNo;           //!< Sequence number for connected data telegrams.
     unsigned int connectedTime;    //!< System time of the last connected telegram.
     bool incConnectedSeqNo;        //!< True if the sequence number shall be incremented on ACK.
+    int lastAckSeqNo;              //!< Last acknowledged sequence number
 };
 
 

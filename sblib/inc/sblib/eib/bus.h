@@ -186,7 +186,7 @@ public:
     /**
      * The total length of the received telegram in telegram[].
      */
-    int telegramLen;
+    volatile int telegramLen;
 
 private:
     /**
@@ -225,19 +225,19 @@ protected:
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
     TimerMatch pwmChannel;       //!< The timer channel for PWM for sending
     TimerMatch timeChannel;      //!< The timer channel for timeouts
-    int ownAddr;                 //!< Our own physical address on the bus
-    int sendAck;                 //!< Send an acknowledge or not-acknowledge byte if != 0
+    volatile int ownAddr;                 //!< Our own physical address on the bus
+    volatile int sendAck;                 //!< Send an acknowledge or not-acknowledge byte if != 0
 
 private:
     volatile State state;                 //!< The state of the lib's telegram sending/receiving
-    int sendTries;               //!< The number of repeats when sending a telegram
-    int sendTriesMax;            //!< The maximum number of repeats when sending a telegram. Default: 3
+    volatile int sendTries;               //!< The number of repeats when sending a telegram
+    volatile int sendTriesMax;            //!< The maximum number of repeats when sending a telegram. Default: 3
     int nextByteIndex;           //!< The number of the next byte in the telegram
 
     int currentByte;             //!< The current byte that is received/sent, including the parity bit
     int sendTelegramLen;         //!< The size of the to be sent telegram in bytes (including the checksum).
     volatile byte *sendCurTelegram;       //!< The telegram that is currently being sent.
-    byte *sendNextTel;           //!< The telegram to be sent after sbSendTelegram is done.
+    volatile byte *sendNextTel;           //!< The telegram to be sent after sbSendTelegram is done.
     int bitMask;
     int bitTime;                 // The bit-time within a byte when receiving
     int parity;                  // Parity bit of the current byte

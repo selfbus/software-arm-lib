@@ -98,7 +98,7 @@ void Bus::begin()
     sendAck = 0;
     sendCurTelegram = 0;
     sendNextTel = 0;
-    sendTriesMax = 3;
+    sendTriesMax = 4;
     collision = false;
 
     timer.begin();
@@ -199,9 +199,9 @@ void Bus::handleTelegram(bool valid)
     else if (nextByteIndex == 1)   // Received a spike or a bus acknowledgment
     {
         currentByte &= 0xff;
-        if ((currentByte == SB_BUS_ACK || sendTries > sendTriesMax) && sendCurTelegram)
+        if ((currentByte == SB_BUS_ACK || sendTries > sendTriesMax) && sendCurTelegram && sendTries > 0)
         {
-            sendNextTelegram();
+             sendNextTelegram();
         }
     }
     else // Received wrong checksum, or more than one byte but too short for a telegram

@@ -60,6 +60,8 @@ int telegramObjectSize(int objno)
 void addObjectFlags(int objno, int flags)
 {
     byte* flagsTab = objectFlagsTable();
+    if(flagsTab == 0)
+    	return;
 
     if (objno & 1)
         flags <<= 4;
@@ -240,6 +242,9 @@ void sendNextGroupTelegram()
 
     const ComConfig* configTab = &objectConfig(0);
     byte* flagsTab = objectFlagsTable();
+    if(flagsTab == 0)
+    	return;
+
     int addr, flags, objno, config, numObjs = objectCount();
 
     for (objno = sndStartIdx; objno < numObjs; ++objno)
@@ -277,6 +282,9 @@ int nextUpdatedObject()
     static int startIdx = 0;
 
     byte* flagsTab = objectFlagsTable();
+    if(flagsTab == 0)
+    	return -1;
+
     int flags, objno, numObjs = objectCount();
 
     for (objno = startIdx; objno < numObjs; ++objno)

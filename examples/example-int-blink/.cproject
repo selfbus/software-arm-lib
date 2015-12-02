@@ -40,7 +40,11 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.cpp.exe.debug.option.optimization.level.1693114724" name="Optimization Level" superClass="com.crt.advproject.cpp.exe.debug.option.optimization.level"/>
+<<<<<<< HEAD
 								<option id="com.crt.advproject.cpp.specs.1949484237" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
+=======
+								<option id="com.crt.advproject.cpp.specs.594897165" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
+>>>>>>> a2851f0d788f765aceef6b24361310a447e9d7f2
 								<inputType id="com.crt.advproject.compiler.cpp.input.1305441666" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.debug.117112628" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">
@@ -61,7 +65,11 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.gcc.exe.debug.option.optimization.level.1919359580" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.debug.option.optimization.level"/>
+<<<<<<< HEAD
 								<option id="com.crt.advproject.gcc.specs.676764625" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
+=======
+								<option id="com.crt.advproject.gcc.specs.372012591" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
+>>>>>>> a2851f0d788f765aceef6b24361310a447e9d7f2
 								<inputType id="com.crt.advproject.compiler.input.209908586" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.debug.501871877" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.debug">
@@ -69,7 +77,11 @@
 								<option id="com.crt.advproject.gas.thumb.710165491" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
 								<option id="gnu.both.asm.option.flags.crt.1634437816" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -D__NEWLIB__ -DDEBUG -D__CODE_RED" valueType="string"/>
 								<option id="com.crt.advproject.gas.hdrlib.679944917" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlibnano" valueType="enumerated"/>
+<<<<<<< HEAD
 								<option id="com.crt.advproject.gas.specs.1097557796" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
+=======
+								<option id="com.crt.advproject.gas.specs.855152888" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
+>>>>>>> a2851f0d788f765aceef6b24361310a447e9d7f2
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.242811819" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="com.crt.advproject.assembler.input.2077670178" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
 							</tool>
@@ -152,9 +164,14 @@
 								<option id="gnu.cpp.compiler.option.optimization.flags.1789926680" name="Other optimization flags" superClass="gnu.cpp.compiler.option.optimization.flags" value="-Os" valueType="string"/>
 								<option id="gnu.cpp.compiler.option.include.paths.2105759830" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.cpp.exe.release.option.optimization.level.1269544540" name="Optimization Level" superClass="com.crt.advproject.cpp.exe.release.option.optimization.level" value="gnu.cpp.compiler.optimization.level.size" valueType="enumerated"/>
+<<<<<<< HEAD
 								<option id="com.crt.advproject.cpp.specs.1280399353" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
+=======
+								<option id="com.crt.advproject.cpp.specs.353464924" superClass="com.crt.advproject.cpp.specs" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
+>>>>>>> a2851f0d788f765aceef6b24361310a447e9d7f2
 								<inputType id="com.crt.advproject.compiler.cpp.input.239183216" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.release.137679665" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.release">
@@ -175,7 +192,11 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/inc}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.gcc.exe.release.option.optimization.level.669994903" name="Optimization Level" superClass="com.crt.advproject.gcc.exe.release.option.optimization.level" value="gnu.c.optimization.level.size" valueType="enumerated"/>
+<<<<<<< HEAD
 								<option id="com.crt.advproject.gcc.specs.1858583632" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
+=======
+								<option id="com.crt.advproject.gcc.specs.84107358" superClass="com.crt.advproject.gcc.specs" value="com.crt.advproject.gcc.specs.newlibnano" valueType="enumerated"/>
+>>>>>>> a2851f0d788f765aceef6b24361310a447e9d7f2
 								<inputType id="com.crt.advproject.compiler.input.1633456546" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.exe.release.2024909781" name="MCU Assembler" superClass="com.crt.advproject.gas.exe.release">
@@ -183,7 +204,11 @@
 								<option id="com.crt.advproject.gas.thumb.432075432" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
 								<option id="gnu.both.asm.option.flags.crt.1470140842" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -D__NEWLIB__ -DNDEBUG -D__CODE_RED" valueType="string"/>
 								<option id="com.crt.advproject.gas.hdrlib.857698591" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlibnano" valueType="enumerated"/>
+<<<<<<< HEAD
 								<option id="com.crt.advproject.gas.specs.1546418269" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
+=======
+								<option id="com.crt.advproject.gas.specs.1844489207" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlibnano" valueType="enumerated"/>
+>>>>>>> a2851f0d788f765aceef6b24361310a447e9d7f2
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1663010200" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="com.crt.advproject.assembler.input.623180489" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
 							</tool>
@@ -200,12 +225,15 @@
 								<option id="com.crt.advproject.link.cpp.hdrlib.1215253585" name="Library" superClass="com.crt.advproject.link.cpp.hdrlib"/>
 								<option id="gnu.cpp.link.option.libs.558687232" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="CMSIS_CORE_LPC11xx"/>
+									<listOptionValue builtIn="false" value="sblib"/>
 								</option>
 								<option id="gnu.cpp.link.option.paths.1026596629" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Release}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BCU1}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.1619258455" name="Enable Code Read Protect" superClass="com.crt.advproject.link.cpp.crpenable" value="true" valueType="boolean"/>
 								<option id="com.crt.advproject.link.cpp.multicore.master.userobjs.1344205756" name="Slave Objects (not visible)" superClass="com.crt.advproject.link.cpp.multicore.master.userobjs" valueType="userObjs"/>
+								<option id="com.crt.advproject.link.cpp.multicore.slave.1678987104" name="Multicore configuration" superClass="com.crt.advproject.link.cpp.multicore.slave"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1345995518" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

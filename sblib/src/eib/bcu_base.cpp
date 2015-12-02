@@ -51,6 +51,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 
     connectedSeqNo = 0;
     incConnectedSeqNo = false;
+    lastAckSeqNo = -1;
 
     connectedAddr = 0;
 

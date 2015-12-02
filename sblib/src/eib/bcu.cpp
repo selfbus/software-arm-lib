@@ -43,9 +43,8 @@ void BCU::loop()
 
     if (!bus.sendingTelegram())
         sendNextGroupTelegram();
-
-    // Send a disconnect after 6.5 seconds inactivity
-    if (connectedAddr && elapsed(connectedTime) > 6500)
+    // Send a disconnect after 6 seconds inactivity
+    if (connectedAddr && elapsed(connectedTime) > 6000)
     {
         sendConControlTelegram(T_DISCONNECT_PDU, 0);
         connectedAddr = 0;
@@ -410,11 +409,13 @@ void BCU::processConControlTelegram(int tpci)
         tpci &= 0xc3;
         if (tpci == T_ACK_PDU) // A positive acknowledgement
         {
-            if (incConnectedSeqNo && connectedAddr == senderAddr)
+            int curSeqNo = bus.telegram[6] & 0x3c;
+            if (incConnectedSeqNo && connectedAddr == senderAddr && lastAckSeqNo !=  curSeqNo)
             {
                 connectedSeqNo += 4;
                 connectedSeqNo &= 0x3c;
                 incConnectedSeqNo = false;
+                lastAckSeqNo = curSeqNo;
             }
         }
         else if (tpci == T_NACK_PDU)  // A negative acknowledgement
