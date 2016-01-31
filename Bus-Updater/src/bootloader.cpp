@@ -14,7 +14,7 @@
 #include <sblib/timeout.h>
 #include <sblib/internal/variables.h>
 #include <sblib/io_pin_names.h>
-#include "bcu_update.h"
+#include "bcu_updater.h"
 
 static BcuUpdate _bcu = BcuUpdate();
 BcuBase& bcu = _bcu;

@@ -15,7 +15,7 @@
 #include <string.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/serial.h>
-#include <bcu_update.h>
+#include <bcu_updater.h>
 #include <crc.h>
 #include <boot_descriptor_block.h>
 
