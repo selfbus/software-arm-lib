@@ -35,11 +35,11 @@ void setup()
  */
 void loop()
 {
-	// static int receiveCount = -1;
-  // static int telLength = 0;
-  // static int  byteCount = 0;
-  // static unsigned char telegram[32];
-  // static unsigned char data;
+	static int receiveCount = -1;
+	static int telLength = 0;
+	static int  byteCount = 0;
+	static unsigned char telegram[32];
+	static unsigned char data;
 
 	digitalWrite(PIN_RUN, 1);
 

@@ -137,8 +137,13 @@ int Serial::write(byte ch)
 
 void Serial::flush()
 {
+#ifdef SERIAL_WRITE_DIRECT
     while ((LPC_UART->LSR & (LSR_THRE|LSR_TEMT)) != (LSR_THRE|LSR_TEMT))
         ;
+#else
+    while (writeHead != writeTail)
+    		;
+#endif
 }
 
 int Serial::read()
