@@ -18,7 +18,9 @@
 int indexOfAddr(int addr)
 {
     byte* tab = addrTable();
-    int num = *tab;
+    int num = 0;
+    if (tab)
+        num = *tab;
 
     int addrHigh = addr >> 8;
     int addrLow = addr & 255;
@@ -38,7 +40,9 @@ int objectOfAddr(int addr)
     int addrIndex = indexOfAddr(addr);
 
     byte* tab = assocTable();
-    int num = *tab++;
+    int num = 0;
+    if (tab)
+        num = *tab++;
 
     for (int i = 0; i < num; ++i, tab += 2)
     {
