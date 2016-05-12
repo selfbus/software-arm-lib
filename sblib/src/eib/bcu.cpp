@@ -439,6 +439,7 @@ void BCU::processConControlTelegram(int tpci)
                 connectedAddr = senderAddr;
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
+                lastAckSeqNo = -1;
                 bus.setSendAck (0);
             }
         }
