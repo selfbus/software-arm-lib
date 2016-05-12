@@ -117,7 +117,7 @@ void Bus::begin()
     timer.value(0xffff); // trigger the next event immediately
     while (timer.getMatchChannelLevel(pwmChannel) == true);
     pinMode(txPin, OUTPUT_MATCH);   // Configure bus output
-    pinMode(rxPin, INPUT_CAPTURE);  // Configure bus input
+    pinMode(rxPin, INPUT_CAPTURE | HYSTERESIS);  // Configure bus input
 
     //
     // Init GPIOs for debugging
