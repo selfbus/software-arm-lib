@@ -245,6 +245,11 @@ inline ComType objectType(int objno)
     return (ComType) objectConfig(objno).type;
 }
 
+inline void objectSetType(int objno, ComType newtype)
+{
+ ((ComConfig*)(objectConfigTable() + 1 + sizeof(DataPtrType) + objno * sizeof(ComConfig) ))->type = newtype;
+}
+
 inline const ComConfig& objectConfig(int objno)
 {
     return *(const ComConfig*) (objectConfigTable() + 1 + sizeof(DataPtrType) + objno * sizeof(ComConfig) );
