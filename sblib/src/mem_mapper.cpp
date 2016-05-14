@@ -96,6 +96,7 @@ int MemMapper::allocatePage(int virtPage)
 
 int MemMapper::addRange(int virtAddress, int length)
 {
+    bool tableModified = false;
     int virtPage = virtAddress >> 8;
 
     if ((virtAddress & 0xff) || virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
@@ -122,9 +123,11 @@ int MemMapper::addRange(int virtAddress, int length)
             }
             flashMemModified = true;
             doFlash();
+            tableModified = true;
         }
     }
-    allocTableModified = true;
+    if (tableModified)
+        allocTableModified = true;
     doFlash();
     return MEM_MAPPER_SUCCESS;
 }
