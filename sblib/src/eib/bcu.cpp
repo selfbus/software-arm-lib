@@ -33,6 +33,10 @@ void BCU::end()
 {
     BcuBase::end();
     writeUserEeprom();
+    if (memMapper)
+    {
+        memMapper->doFlash();
+    }
 }
 
 void BCU::loop()
@@ -55,7 +59,13 @@ void BCU::loop()
         if (writeUserEepromTime)
         {
             if (millis() - writeUserEepromTime > 0)
+            {
                 writeUserEeprom();
+                if (memMapper)
+                {
+                    memMapper->doFlash();
+                }
+            }
         }
         else writeUserEepromTime = millis() + 50;
     }
@@ -255,6 +265,7 @@ void BCU::processDirectTelegram(int apci)
             {
                 int objectIdx = bus.telegram[10] >> 4;
                 userEeprom.loadState[objectIdx] = loadProperty(objectIdx, bus.telegram + 10, count);
+                userEeprom.modified();
                 break;
             }
 #endif
@@ -322,7 +333,7 @@ void BCU::processDirectTelegram(int apci)
                 }
             }
             writeUserEeprom();   // Flush the EEPROM before resetting
-            if(memMapper)
+            if (memMapper)
             {
                 memMapper->doFlash();
             }
