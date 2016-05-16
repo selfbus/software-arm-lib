@@ -214,14 +214,16 @@ inline int BcuBase::ownAddress() const
 inline bool BcuBase::applicationRunning() const
 {
     if (!enabled)
-        return true;
+        return false;
 
 #if BCU_TYPE == BCU1_TYPE
     return (userRam.status & (BCU_STATUS_PROG|BCU_STATUS_AL)) == BCU_STATUS_AL &&
         userRam.runState == 1 && userEeprom.runError == 0xff; // ETS sets the run error to 0 when programming
 #else
-    return !(userRam.status & BCU_STATUS_PROG) &&
-        userRam.runState == 1 && userEeprom.loadState[OT_APPLICATION];
+    return userRam.runState == 1 &&
+        userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADED &&  // Address table object
+        userEeprom.loadState[OT_ASSOC_TABLE] == LS_LOADED && // Association table object &
+        userEeprom.loadState[OT_APPLICATION] == LS_LOADED;   // Application object. All three in State "Loaded"
 #endif
 }
 

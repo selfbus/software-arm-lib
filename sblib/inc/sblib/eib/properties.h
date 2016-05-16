@@ -53,6 +53,30 @@ enum ObjectType
     OT_APPLICATION = 3
 };
 
+/**
+ * Load states
+ */
+enum LoadState
+{
+    // No data is loaded
+    LS_UNLOADED = 0,
+
+    // Valid data is loaded
+    LS_LOADED = 1,
+
+    // Load process is active
+    LS_LOADING = 2,
+
+    // Error in data detected or error during load process
+    LS_ERROR = 3,
+
+    // Optional state: Unload process is active
+    LS_UNLOADING = 4,
+
+    // Optional state: Intermediate state between Loading and Loaded
+    LS_LOADCOMPLETING = 5
+};
+
 #endif /*BCU_TYPE != BCU1_TYPE*/
 
 #endif /*sblib_properties_h*/
