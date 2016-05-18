@@ -237,13 +237,13 @@ void sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 
 int sndStartIdx = 0;
 
-void sendNextGroupTelegram()
+bool sendNextGroupTelegram()
 {
 
     const ComConfig* configTab = &objectConfig(0);
     byte* flagsTab = objectFlagsTable();
     if(flagsTab == 0)
-    	return;
+    	return false;
 
     int addr, flags, objno, config, numObjs = objectCount();
 
@@ -270,11 +270,12 @@ void sendNextGroupTelegram()
             else continue;
 
             sndStartIdx = objno + 1;
-            return;
+            return true;
         }
     }
 
     sndStartIdx = 0;
+    return false;
 }
 
 int nextUpdatedObject()

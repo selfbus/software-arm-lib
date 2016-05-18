@@ -27,6 +27,9 @@ extern volatile unsigned int systemTime;
 void BCU::_begin()
 {
     readUserEeprom();
+    sendGrpTelEnabled = true;
+    sndGrpTelLimitTime = millis();
+    sndGrpTelLimit = 0; // 0 disables limit
 }
 
 void BCU::end()
@@ -45,8 +48,21 @@ void BCU::loop()
         return;
     BcuBase::loop();
 
-    if (!bus.sendingTelegram())
-        sendNextGroupTelegram();
+    if (sendGrpTelEnabled && !bus.sendingTelegram())
+    {
+        // Send group telegram if group telegram rate limit not exceeded
+        if (sndGrpTelLimit == 0 || sndGrpTelCnt < sndGrpTelLimit)
+            if (sendNextGroupTelegram())
+                sndGrpTelCnt++;
+    }
+
+    // Clear transmission counter after every second
+    if ((int)millis() - (int)sndGrpTelLimitTime > 0)
+    {
+        sndGrpTelCnt = 0;
+        sndGrpTelLimitTime = millis() + 1000;
+    }
+
     // Send a disconnect after 6 seconds inactivity
     if (connectedAddr && elapsed(connectedTime) > 6000)
     {
@@ -58,7 +74,7 @@ void BCU::loop()
     {
         if (writeUserEepromTime)
         {
-            if (millis() - writeUserEepromTime > 0)
+            if ((int)millis() - (int)writeUserEepromTime > 0)
             {
                 writeUserEeprom();
                 if (memMapper)

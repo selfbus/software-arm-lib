@@ -54,6 +54,24 @@ public:
      */
     virtual void end();
 
+    /**
+     * Enable/Disable sending of group write or group response telegrams.
+     * Useful if the device wants to implement transmission delays
+     * after bus voltage recovery.
+     * Transmission is enabled by default.
+     */
+    void enableGroupTelSend(bool enable);
+
+    /**
+     * Set a limit for group telegram tramsissions per second.
+     * If the parameter is not zero, up to this number of telegrams are sent
+     * in one second. After that number further transmissions are disabled
+     * until a new second begins.
+     *
+     * @param limit - the maximum number of telegrams per second.
+     */
+    void setGroupTelRateLimit(int limit);
+
 protected:
     /*
      * Special initialization for the BCU
@@ -102,6 +120,10 @@ protected:
 
 private:
     MemMapper *memMapper;
+    bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
+    int sndGrpTelLimit;
+    int sndGrpTelCnt;
+    unsigned int sndGrpTelLimitTime;
 };
 
 
@@ -117,6 +139,16 @@ inline int BCU::connectedTo()
 inline void BCU::setMemMapper(MemMapper *mapper)
 {
     memMapper = mapper;
+}
+
+inline void BCU::enableGroupTelSend(bool enable)
+{
+    sendGrpTelEnabled = enable;
+}
+
+inline void BCU::setGroupTelRateLimit(int limit)
+{
+    sndGrpTelLimit = limit;
 }
 
 #ifndef INSIDE_BCU_CPP
