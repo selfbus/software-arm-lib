@@ -86,7 +86,7 @@ void Bus::begin()
 {
     ownAddr = (userEeprom.addrTab[0] << 8) | userEeprom.addrTab[1];
 #if BCU_TYPE != BCU1_TYPE
-    if (userEeprom.loadState[OT_ADDR_TABLE] == 2)
+    if (userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADING)
     {
         byte * addrTab = addrTable() + 1;
         ownAddr = (*(addrTab) << 8) | *(addrTab + 1);
@@ -117,7 +117,7 @@ void Bus::begin()
     timer.value(0xffff); // trigger the next event immediately
     while (timer.getMatchChannelLevel(pwmChannel) == true);
     pinMode(txPin, OUTPUT_MATCH);   // Configure bus output
-    pinMode(rxPin, INPUT_CAPTURE);  // Configure bus input
+    pinMode(rxPin, INPUT_CAPTURE | HYSTERESIS);  // Configure bus input
 
     //
     // Init GPIOs for debugging

@@ -74,19 +74,19 @@ int loadProperty(int objectIdx, const byte* data, int len)
     switch (loadState) // the control state
     {
     case 1: // Load
-        return 2; // reply: Loading
+        return LS_LOADING; // reply: Loading
 
     case 2: // Load completed
-        return 1; // reply: Loaded
+        return LS_LOADED; // reply: Loaded
 
     case 3: // Load data: handled below
         break;
 
     case 4: // Unload
-        return 0;  // reply: Unloaded
+        return LS_UNLOADED;  // reply: Unloaded
 
     default:
-        return 3;  // reply: Error
+        return LS_ERROR;  // reply: Error
     }
 
     //
@@ -150,10 +150,10 @@ int loadProperty(int objectIdx, const byte* data, int len)
 
     default:
         IF_DEBUG(fatalError());
-        return 3; // reply: Error
+        return LS_ERROR; // reply: Error
     }
 
-    return 2;
+    return LS_LOADING;
 }
 
 bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start)

@@ -104,7 +104,7 @@ void BcuBase::setOwnAddress(int addr)
     userEeprom.addrTab[0] = addr >> 8;
     userEeprom.addrTab[1] = addr;
 #if BCU_TYPE != BCU1_TYPE
-    if (userEeprom.loadState[OT_ADDR_TABLE] == 2)
+    if (userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADING)
     {
         byte * addrTab =  addrTable() + 1;
 
