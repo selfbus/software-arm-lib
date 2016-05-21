@@ -145,7 +145,7 @@ void BCU::processTelegram()
     }
     else if (tpci == T_GROUP_PDU) // a group destination address and multicast
     {
-        processGroupTelegram(destAddr, apci & APCI_GROUP_MASK);
+        processGroupTelegram(destAddr, apci & APCI_GROUP_MASK, bus.telegram);
     }
 
     // At the end: discard the received telegram

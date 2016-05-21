@@ -232,6 +232,9 @@ void sendGroupWriteTelegram(int objno, int addr, bool isResponse)
     if (sz) reverseCopy(bcu.sendTelegram + 8, valuePtr, sz);
     else bcu.sendTelegram[7] |= *valuePtr & 0x3f;
 
+    // Process this telegram in the receive queue (if there is a local receiver of this group address)
+    processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, bcu.sendTelegram);
+
     bus.sendTelegram(bcu.sendTelegram, 8 + sz);
 }
 
@@ -307,18 +310,18 @@ int nextUpdatedObject()
     return -1;
 }
 
-void processGroupWriteTelegram(int objno)
+void processGroupWriteTelegram(int objno, byte* tel)
 {
     byte* valuePtr = objectValuePtr(objno);
     int count = telegramObjectSize(objno);
 
-    if (count > 0) reverseCopy(valuePtr, bus.telegram + 8, count);
-    else *valuePtr = bus.telegram[7] & 0x3f;
+    if (count > 0) reverseCopy(valuePtr, tel + 8, count);
+    else *valuePtr = tel[7] & 0x3f;
 
     addObjectFlags(objno, COMFLAG_UPDATE);
 }
 
-void processGroupTelegram(int addr, int apci)
+void processGroupTelegram(int addr, int apci, byte* tel)
 {
     const ComConfig* configTab = &objectConfig(0);
     const byte* assocTab = assocTable();
@@ -343,7 +346,7 @@ void processGroupTelegram(int addr, int apci)
             {
                 // Check if communication and write are enabled
                 if ((objConf & COMCONF_WRITE_COMM) == COMCONF_WRITE_COMM)
-                    processGroupWriteTelegram(objno);
+                    processGroupWriteTelegram(objno, tel);
             }
             else if (apci == APCI_GROUP_VALUE_READ_PDU)
             {
