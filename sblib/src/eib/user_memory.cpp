@@ -32,6 +32,9 @@ UserEeprom& userEeprom = *(UserEeprom*) userEepromData;
 volatile byte userEepromModified;
 volatile unsigned int writeUserEepromTime;
 
+#ifdef USR_RAM_START_VARIABLE
+int USER_RAM_START = USER_RAM_START_DEFAULT;
+#endif
 
 #define NUM_EEPROM_PAGES     (FLASH_SECTOR_SIZE / USER_EEPROM_FLASH_SIZE)
 #define FLASH_SECTOR_ADDRESS (FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE)

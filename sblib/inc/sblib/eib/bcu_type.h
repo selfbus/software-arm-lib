@@ -113,7 +113,12 @@
 #elif BCU_TYPE == 0x701  /* BIM 112, v7.1 */
 
     /** Start address of the user RAM when ETS talks with us. */
-#   define USER_RAM_START 0x5FC
+#ifdef USR_RAM_START_VARIABLE
+    extern int USER_RAM_START;
+#   define USER_RAM_START_DEFAULT 0x5FC
+#else
+#   define USER_RAM_START_ 0x5FC
+#endif
 
 #		ifndef EXTRA_USER_RAM_SIZE
 #			define EXTRA_USER_RAM_SIZE 0

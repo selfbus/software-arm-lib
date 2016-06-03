@@ -289,4 +289,11 @@ inline byte* userMemoryPtr(int addr)
     return 0;
 }
 
+#ifdef USR_RAM_START_VARIABLE
+inline void setUserRamStart(int addr)
+{
+    USER_RAM_START = addr;
+}
+#endif
+
 #endif /*sblib_user_memory_h*/
