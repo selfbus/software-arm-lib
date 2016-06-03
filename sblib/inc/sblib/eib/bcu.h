@@ -18,6 +18,7 @@
 #include <sblib/eib/user_memory.h>
 #include <sblib/utils.h>
 #include <sblib/mem_mapper.h>
+#include <sblib/usr_callback.h>
 
 
 // Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
@@ -48,6 +49,11 @@ public:
      * @param mapper - a pointer to an instance of a MemMapper object
      */
     void setMemMapper(MemMapper *mapper);
+
+    /**
+     * Set a callback class to notify the user program of some events
+     */
+    void setUsrCallback(UsrCallback *callback);
 
     /**
      * End using the EIB bus coupling unit.
@@ -120,6 +126,7 @@ protected:
 
 private:
     MemMapper *memMapper;
+    UsrCallback *usrCallback;
     bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
     int sndGrpTelLimit;
     int sndGrpTelCnt;
@@ -139,6 +146,11 @@ inline int BCU::connectedTo()
 inline void BCU::setMemMapper(MemMapper *mapper)
 {
     memMapper = mapper;
+}
+
+inline void BCU::setUsrCallback(UsrCallback *callback)
+{
+    usrCallback = callback;
 }
 
 inline void BCU::enableGroupTelSend(bool enable)

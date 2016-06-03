@@ -34,6 +34,8 @@ void BCU::_begin()
 
 void BCU::end()
 {
+    if (usrCallback)
+        usrCallback->Notify(USR_CALLBACK_BCU_END);
     BcuBase::end();
     writeUserEeprom();
     if (memMapper)
@@ -76,6 +78,8 @@ void BCU::loop()
         {
             if ((int)millis() - (int)writeUserEepromTime > 0)
             {
+                if (usrCallback)
+                    usrCallback->Notify(USR_CALLBACK_FLASH);
                 writeUserEeprom();
                 if (memMapper)
                 {
@@ -348,6 +352,8 @@ void BCU::processDirectTelegram(int apci)
                     *magicWord = 0x5E1FB055;
                 }
             }
+            if (usrCallback)
+                usrCallback->Notify(USR_CALLBACK_RESET);
             writeUserEeprom();   // Flush the EEPROM before resetting
             if (memMapper)
             {
