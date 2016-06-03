@@ -117,7 +117,7 @@
     extern int USER_RAM_START;
 #   define USER_RAM_START_DEFAULT 0x5FC
 #else
-#   define USER_RAM_START_ 0x5FC
+#   define USER_RAM_START 0x5FC
 #endif
 
 #		ifndef EXTRA_USER_RAM_SIZE
