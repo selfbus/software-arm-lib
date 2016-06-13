@@ -70,13 +70,13 @@ public:
 
     /**
      * Set a limit for group telegram tramsissions per second.
-     * If the parameter is not zero, up to this number of telegrams are sent
-     * in one second. After that number further transmissions are disabled
-     * until a new second begins.
+     * If the parameter is not zero, there is a minimum delay
+     * of 1/limit (in seconds) between subsequent group telegram
+     * transmissions.
      *
      * @param limit - the maximum number of telegrams per second.
      */
-    void setGroupTelRateLimit(int limit);
+    void setGroupTelRateLimit(unsigned int limit);
 
 protected:
     /*
@@ -128,9 +128,8 @@ private:
     MemMapper *memMapper;
     UsrCallback *usrCallback;
     bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
-    int sndGrpTelLimit;
-    int sndGrpTelCnt;
-    unsigned int sndGrpTelLimitTime;
+    unsigned int groupTelWaitMillis;
+    unsigned int groupTelSent;
 };
 
 
@@ -158,9 +157,12 @@ inline void BCU::enableGroupTelSend(bool enable)
     sendGrpTelEnabled = enable;
 }
 
-inline void BCU::setGroupTelRateLimit(int limit)
+inline void BCU::setGroupTelRateLimit(unsigned int limit)
 {
-    sndGrpTelLimit = limit;
+ if ((limit > 0) && (limit <= 1000))
+     groupTelWaitMillis = 1000/limit;
+ else
+     groupTelWaitMillis = 0;
 }
 
 #ifndef INSIDE_BCU_CPP

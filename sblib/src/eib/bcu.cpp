@@ -28,8 +28,8 @@ void BCU::_begin()
 {
     readUserEeprom();
     sendGrpTelEnabled = true;
-    sndGrpTelLimitTime = millis();
-    sndGrpTelLimit = 0; // 0 disables limit
+    groupTelSent = millis();
+    groupTelWaitMillis = 0; // 0 disables limit
 }
 
 void BCU::end()
@@ -53,16 +53,16 @@ void BCU::loop()
     if (sendGrpTelEnabled && !bus.sendingTelegram())
     {
         // Send group telegram if group telegram rate limit not exceeded
-        if (sndGrpTelLimit == 0 || sndGrpTelCnt < sndGrpTelLimit)
-            if (sendNextGroupTelegram())
-                sndGrpTelCnt++;
-    }
-
-    // Clear transmission counter after every second
-    if ((int)millis() - (int)sndGrpTelLimitTime > 0)
-    {
-        sndGrpTelCnt = 0;
-        sndGrpTelLimitTime = millis() + 1000;
+        if (elapsed(groupTelSent) >= groupTelWaitMillis)
+        {
+         if (sendNextGroupTelegram())
+             groupTelSent = millis();
+        }
+        // To prevent overflows if no telegrams are sent for a long time
+        if (elapsed(groupTelSent) >= 2000)
+        {
+            groupTelSent += 1000;
+        }
     }
 
     // Send a disconnect after 6 seconds inactivity
