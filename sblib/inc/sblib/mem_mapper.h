@@ -52,7 +52,7 @@ public:
      * @param length - number of bytes to write
      * @return 0 on success, else error
      */
-    int writeMemPtr(int virtAddress, byte *data, int length);
+    virtual int writeMemPtr(int virtAddress, byte *data, int length);
 
     /**
      * Read a single byte from virtual address
@@ -75,7 +75,7 @@ public:
      * @param forceFlash - force pending data to be flashed before operation
      * @return 0 on success, else error
      */
-    int readMemPtr(int virtAddress, byte *data, int length, bool forceFlash =
+    virtual int readMemPtr(int virtAddress, byte *data, int length, bool forceFlash =
             false);
 
     /**
