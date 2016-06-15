@@ -29,6 +29,14 @@ static inline void lib_setup()
     systemTime = 0;
 }
 
+#define WEAK __attribute__ ((weak))
+
+WEAK void loop_noapp();
+
+void loop_noapp()
+{
+    waitForInterrupt();
+};
 
 /**
  * The main of the library.
@@ -46,6 +54,7 @@ int main()
         bcu.loop();
         if (bcu.applicationRunning())
             loop();
-        else waitForInterrupt();
+        else
+            loop_noapp();
     }
 }

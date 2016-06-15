@@ -28,8 +28,9 @@ void writeUserEeprom();
 
 /*
  * Send the next communication object that is flagged to be sent.
+ * Returns true if a group telegram has been sent.
  */
-void sendNextGroupTelegram();
+bool sendNextGroupTelegram();
 
 /*
  * Process a property-value read telegram. (properties.cpp)

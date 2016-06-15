@@ -246,7 +246,7 @@ enum DeviceControl
 
 inline byte& UserRam::operator[](int idx) const
 {
-    return *(((byte*) this) + idx - USER_RAM_START);
+    return *(((byte*) this) + idx - userRamStart);
 }
 
 inline byte& UserEeprom::operator[](int idx) const
@@ -282,11 +282,16 @@ inline bool UserEeprom::isModified() const
 
 inline byte* userMemoryPtr(int addr)
 {
-    if (addr >= USER_EEPROM_START && addr <= USER_EEPROM_END)
+    if (addr >= USER_EEPROM_START && addr < USER_EEPROM_END)
         return userEepromData + (addr - USER_EEPROM_START);
-    else if (addr >= USER_RAM_START && addr <= USER_RAM_END)
-        return userRamData + (addr - USER_RAM_START);
+    else if (addr >= userRamStart && addr < (userRamStart + USER_RAM_SIZE))
+        return userRamData + (addr - userRamStart);
     return 0;
+}
+
+inline void setUserRamStart(int addr)
+{
+    userRamStart = addr;
 }
 
 #endif /*sblib_user_memory_h*/

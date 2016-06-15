@@ -204,12 +204,17 @@ const ComConfig& objectConfig(int objno);
  * Process a multicast group telegram.
  *
  * This function is called by bcu.processTelegram(). It is usually not required to call
- * this function from within a user program. The telegram that is processed is read from
- * bus.telegram[].
+ * this function from within a user program.
  *
  * @param addr - the destination group address.
+ * @apci - Kind of telegram to be processed
+ *         APCI_GROUP_VALUE_WRITE_PDU
+ *         APCI_GROUP_VALUE_RESPONSE_PDU
+ *         APCI_GROUP_VALUE_READ_PDU
+ * @tel - pointer to the telegram to read from
+ *         (only used if APCI_GROUP_VALUE_WRITE_PDU or APCI_GROUP_VALUE_RESPONSE_PDU)
  */
-void processGroupTelegram(int addr, int apci);
+void processGroupTelegram(int addr, int apci, byte* tel);
 
 /**
  * Get the communication object configuration table ("COMMS" table). This is the table

@@ -18,6 +18,7 @@
 #include <sblib/eib/user_memory.h>
 #include <sblib/utils.h>
 #include <sblib/mem_mapper.h>
+#include <sblib/usr_callback.h>
 
 
 // Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
@@ -50,9 +51,32 @@ public:
     void setMemMapper(MemMapper *mapper);
 
     /**
+     * Set a callback class to notify the user program of some events
+     */
+    void setUsrCallback(UsrCallback *callback);
+
+    /**
      * End using the EIB bus coupling unit.
      */
     virtual void end();
+
+    /**
+     * Enable/Disable sending of group write or group response telegrams.
+     * Useful if the device wants to implement transmission delays
+     * after bus voltage recovery.
+     * Transmission is enabled by default.
+     */
+    void enableGroupTelSend(bool enable);
+
+    /**
+     * Set a limit for group telegram tramsissions per second.
+     * If the parameter is not zero, there is a minimum delay
+     * of 1/limit (in seconds) between subsequent group telegram
+     * transmissions.
+     *
+     * @param limit - the maximum number of telegrams per second.
+     */
+    void setGroupTelRateLimit(unsigned int limit);
 
 protected:
     /*
@@ -102,6 +126,10 @@ protected:
 
 private:
     MemMapper *memMapper;
+    UsrCallback *usrCallback;
+    bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
+    unsigned int groupTelWaitMillis;
+    unsigned int groupTelSent;
 };
 
 
@@ -117,6 +145,24 @@ inline int BCU::connectedTo()
 inline void BCU::setMemMapper(MemMapper *mapper)
 {
     memMapper = mapper;
+}
+
+inline void BCU::setUsrCallback(UsrCallback *callback)
+{
+    usrCallback = callback;
+}
+
+inline void BCU::enableGroupTelSend(bool enable)
+{
+    sendGrpTelEnabled = enable;
+}
+
+inline void BCU::setGroupTelRateLimit(unsigned int limit)
+{
+ if ((limit > 0) && (limit <= 1000))
+     groupTelWaitMillis = 1000/limit;
+ else
+     groupTelWaitMillis = 0;
 }
 
 #ifndef INSIDE_BCU_CPP

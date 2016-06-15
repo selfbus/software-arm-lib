@@ -113,7 +113,8 @@
 #elif BCU_TYPE == 0x701  /* BIM 112, v7.1 */
 
     /** Start address of the user RAM when ETS talks with us. */
-#   define USER_RAM_START 0x5FC
+    extern int userRamStart;
+#   define USER_RAM_START_DEFAULT 0x5FC
 
 #		ifndef EXTRA_USER_RAM_SIZE
 #			define EXTRA_USER_RAM_SIZE 0
@@ -139,9 +140,6 @@
 #ifndef USER_EEPROM_FLASH_SIZE
 #define USER_EEPROM_FLASH_SIZE USER_EEPROM_SIZE
 #endif
-
-/** End address of the user RAM +1, when ETS talks with us. */
-#define USER_RAM_END (USER_RAM_START + USER_RAM_SIZE)
 
 /** End address of the user EEPROM +1, when ETS talks with us. */
 #define USER_EEPROM_END (USER_EEPROM_START + USER_EEPROM_SIZE)

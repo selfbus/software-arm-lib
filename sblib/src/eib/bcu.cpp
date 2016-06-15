@@ -27,10 +27,15 @@ extern volatile unsigned int systemTime;
 void BCU::_begin()
 {
     readUserEeprom();
+    sendGrpTelEnabled = true;
+    groupTelSent = millis();
+    groupTelWaitMillis = 0; // 0 disables limit
 }
 
 void BCU::end()
 {
+    if (usrCallback)
+        usrCallback->Notify(USR_CALLBACK_BCU_END);
     BcuBase::end();
     writeUserEeprom();
     if (memMapper)
@@ -45,8 +50,21 @@ void BCU::loop()
         return;
     BcuBase::loop();
 
-    if (!bus.sendingTelegram())
-        sendNextGroupTelegram();
+    if (sendGrpTelEnabled && !bus.sendingTelegram())
+    {
+        // Send group telegram if group telegram rate limit not exceeded
+        if (elapsed(groupTelSent) >= groupTelWaitMillis)
+        {
+         if (sendNextGroupTelegram())
+             groupTelSent = millis();
+        }
+        // To prevent overflows if no telegrams are sent for a long time
+        if (elapsed(groupTelSent) >= 2000)
+        {
+            groupTelSent += 1000;
+        }
+    }
+
     // Send a disconnect after 6 seconds inactivity
     if (connectedAddr && elapsed(connectedTime) > 6000)
     {
@@ -58,8 +76,10 @@ void BCU::loop()
     {
         if (writeUserEepromTime)
         {
-            if (millis() - writeUserEepromTime > 0)
+            if ((int)millis() - (int)writeUserEepromTime > 0)
             {
+                if (usrCallback)
+                    usrCallback->Notify(USR_CALLBACK_FLASH);
                 writeUserEeprom();
                 if (memMapper)
                 {
@@ -129,7 +149,7 @@ void BCU::processTelegram()
     }
     else if (tpci == T_GROUP_PDU) // a group destination address and multicast
     {
-        processGroupTelegram(destAddr, apci & APCI_GROUP_MASK);
+        processGroupTelegram(destAddr, apci & APCI_GROUP_MASK, bus.telegram);
     }
 
     // At the end: discard the received telegram
@@ -155,7 +175,7 @@ bool BCU::processDeviceDescriptorReadTelegram(int id)
 
 static void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
 {
-    address -= USER_RAM_START;
+    address -= userRamStart;
     if ((address > 0x60) || ((address + count) < 0x60))
     {
         memcpy(userRamData + address, buffer, count);
@@ -176,7 +196,7 @@ static void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned 
 
 static void cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
 {
-    address -= USER_RAM_START;
+    address -= userRamStart;
     if ((address > 0x60) || ((address + count) < 0x60))
     {
         memcpy(buffer, userRamData + address, count);
@@ -255,8 +275,8 @@ void BCU::processDirectTelegram(int apci)
                 memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, count);
                 userEeprom.modified();
             }
-            else if (address >= USER_RAM_START && address < USER_RAM_END)
-                cpyToUserRam(address - USER_RAM_START, bus.telegram + 10, count);
+            else if (address >= userRamStart && address < (userRamStart + USER_RAM_SIZE))
+                cpyToUserRam(address - userRamStart, bus.telegram + 10, count);
 
             sendAck = T_ACK_PDU;
 
@@ -281,8 +301,8 @@ void BCU::processDirectTelegram(int apci)
             if (address >= USER_EEPROM_START && address < USER_EEPROM_END) {
                   memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
             }
-            else if (address >= USER_RAM_START && address < USER_RAM_END)
-                cpyFromUserRam(address - USER_RAM_START, sendTelegram + 10, count);
+            else if (address >= userRamStart && address < (userRamStart + USER_RAM_SIZE))
+                cpyFromUserRam(address - userRamStart, sendTelegram + 10, count);
 #ifdef LOAD_STATE_ADDR
             else if (address >= LOAD_STATE_ADDR && address < LOAD_STATE_ADDR + 8)
                 memcpy(sendTelegram + 10, userEeprom.loadState + (address - LOAD_STATE_ADDR), count);
@@ -332,6 +352,8 @@ void BCU::processDirectTelegram(int apci)
                     *magicWord = 0x5E1FB055;
                 }
             }
+            if (usrCallback)
+                usrCallback->Notify(USR_CALLBACK_RESET);
             writeUserEeprom();   // Flush the EEPROM before resetting
             if (memMapper)
             {
