@@ -77,10 +77,10 @@
 #if BCU_TYPE == 0x10  /* BCU 1 */
 
     /** Start address of the user RAM when ETS talks with us. */
-#   define USER_RAM_START 0
+#   define USER_RAM_START_DEFAULT 0
 
     /** The size of the user RAM in bytes. */
-#   define USER_RAM_SIZE (0x100 - USER_RAM_START)
+#   define USER_RAM_SIZE 0x100
 	/** How many bytes have to be allocated at the end of the RAM
 		for shadowed values
 	*/
@@ -95,10 +95,10 @@
 #elif BCU_TYPE == 0x20  /* BCU 2 */
 
     /** Start address of the user RAM when ETS talks with us. */
-#   define USER_RAM_START 0
+#   define USER_RAM_START_DEFAULT 0
 
     /** The size of the user RAM in bytes. */
-#   define USER_RAM_SIZE (0x100 - USER_RAM_START)
+#   define USER_RAM_SIZE 0x100
 	/** How many bytes have to be allocated at the end of the RAM
 		for shadowed values
 	*/
@@ -113,7 +113,6 @@
 #elif BCU_TYPE == 0x701  /* BIM 112, v7.1 */
 
     /** Start address of the user RAM when ETS talks with us. */
-    extern int userRamStart;
 #   define USER_RAM_START_DEFAULT 0x5FC
 
 #		ifndef EXTRA_USER_RAM_SIZE
