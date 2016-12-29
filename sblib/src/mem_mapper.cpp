@@ -282,12 +282,12 @@ unsigned int MemMapper::getUIntX(int virtAddress, int length)
 	for(int i = 0; i < length; i++)
 	{
 		byte b;
-		if(endianess == LITTLE_ENDIAN)
-			address = virtAddress + length - i - 1;
-		else
+		if(endianess == BIG_ENDIAN)
 			address = virtAddress + i;
+		else
+			address = virtAddress + length - i - 1;
 		readMem( address , b);
-        ret <<= 8;
+		ret <<= 8;
 		ret |= (unsigned int)b;
 	}
     return ret;
@@ -300,7 +300,7 @@ unsigned short MemMapper::getUInt16(int virtAddress)
 
 unsigned int MemMapper::getUInt32(int virtAddress)
 {
-	return (unsigned short)getUIntX(virtAddress, 4);
+	return (unsigned int)getUIntX(virtAddress, 4);
 }
 
 int MemMapper::setUInt8(int virtAddress, byte data)
