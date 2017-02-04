@@ -67,7 +67,7 @@ SPI::SPI(int portNum, int mode)
     LPC_SYSCON->SYSAHBCLKCTRL |= (1<<6);
 
     // Disable reset of the SSP peripheral
-    LPC_SYSCON->PRESETCTRL |= portNum * 4;
+    LPC_SYSCON->PRESETCTRL |= (1 << (portNum * 2));
 
     if (portNum == 0) // SPI port 0
     {
