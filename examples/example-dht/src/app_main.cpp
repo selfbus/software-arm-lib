@@ -9,7 +9,7 @@
  *  published by the Free Software Foundation.
  */
 #include <sblib/core.h>
-
+#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/sensors/dht.h>
 
 DHT dht;  // DHT 1st Sensor

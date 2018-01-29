@@ -12,6 +12,7 @@
  */
 
 #include <sblib/core.h>
+#include <sblib/eib/sblib_default_objects.h>
 
 /*
  * NOTICE

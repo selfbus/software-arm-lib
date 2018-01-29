@@ -11,6 +11,7 @@
  */
 
 #include <sblib/core.h>
+#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/ioports.h>
 #include <sblib/spi.h>
 

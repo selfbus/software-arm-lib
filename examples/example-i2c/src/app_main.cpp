@@ -27,6 +27,7 @@
 #endif
 
 #include <sblib/core.h>
+#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/types.h>
 #include <sblib/i2c.h>
 
