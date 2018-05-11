@@ -176,7 +176,7 @@ public:
      * @param virtAddresss - the virtual address of the data block.
      * @return true if virtual address is mapped
      */
-    bool isMapped(int virtAddress);
+    virtual bool isMapped(int virtAddress);
 
 private:
     int allocatePage(int virtPage);
