@@ -19,8 +19,9 @@
 
 #include <sblib/core.h>
 #include <sblib/sensors/ds18x20.h>
+#include <sblib/eib/sblib_default_objects.h>
 
-#define USE_OWN_ROM     0      // Use you own extracted rom informations. See SetOwnDs18xDeviceRoms()
+#define USE_OWN_ROM     1      // Use you own extracted rom informations. See SetOwnDs18xDeviceRoms()
 #define PORTPIN         PIO1_7 // GPIO PIN, where the 1-wire data line is connected
 #define PARASITE_POWER  true   // Enable the Parasite power (check ds18x20 Datasheet )
 #define READ_TIMER 500         // Read values timer in Milliseconds
@@ -49,16 +50,16 @@ bool Set_Own_Ds18x_Device_Roms()
   ds.m_dsDev[0].addr[6]=0x0;
   ds.m_dsDev[0].addr[7]=0xd6;
 
-  ds.m_dsDev[1].addr[0]=0x22; // 0x22 Chip:  DS1822
-  ds.m_dsDev[1].addr[1]=0x93;
-  ds.m_dsDev[1].addr[2]=0xb2;
-  ds.m_dsDev[1].addr[3]=0x1e;
-  ds.m_dsDev[1].addr[4]=0x0;
-  ds.m_dsDev[1].addr[5]=0x0;
-  ds.m_dsDev[1].addr[6]=0x0;
-  ds.m_dsDev[1].addr[7]=0x9c;
+//  ds.m_dsDev[1].addr[0]=0x22; // 0x22 Chip:  DS1822
+//  ds.m_dsDev[1].addr[1]=0x93;
+//  ds.m_dsDev[1].addr[2]=0xb2;
+//  ds.m_dsDev[1].addr[3]=0x1e;
+//  ds.m_dsDev[1].addr[4]=0x0;
+//  ds.m_dsDev[1].addr[5]=0x0;
+//  ds.m_dsDev[1].addr[6]=0x0;
+//  ds.m_dsDev[1].addr[7]=0x9c;
 
-  ds.m_foundDevices= 2;   // Important: Set the count of your devices!
+  ds.m_foundDevices= 1;   // Important: Set the count of your devices!
   return true;
 }
 #endif
@@ -85,6 +86,23 @@ void setup()
   digitalWrite(PIO2_6, 1);   // Run  LED (yellow)         // Will be toggled with OneWire function (blinks the count of found devices )
   digitalWrite(PIO3_3, 1);   // Info LED (green)          // Will be toggled with OneWire function (blink on read success)
   digitalWrite(PIO2_0, 0);   // Prog LED (red)
+
+
+  /* Doumanix debug start: first yellow LED should blink 2 times then the green LED
+   * --> indicates that code and controller board work properly (at least until this point)
+   * */
+  digitalWrite(PIO2_6, 0); delay(400);
+  digitalWrite(PIO2_6, !digitalRead(PIO2_6));delay(400);
+  digitalWrite(PIO2_6, !digitalRead(PIO2_6));delay(400);
+  digitalWrite(PIO2_6, !digitalRead(PIO2_6));delay(400);
+  digitalWrite(PIO2_6, !digitalRead(PIO2_6));delay(1500);
+
+  digitalWrite(PIO3_3, 0); delay(400);
+  digitalWrite(PIO3_3, !digitalRead(PIO3_3));delay(400);
+  digitalWrite(PIO3_3, !digitalRead(PIO3_3));delay(400);
+  digitalWrite(PIO3_3, !digitalRead(PIO3_3));delay(400);
+  digitalWrite(PIO3_3, !digitalRead(PIO3_3));delay(1500);
+  /* Doumanix debug end*/
 
   enableInterrupt(TIMER_32_0_IRQn);                        // Enable the timer interrupt
   timer32_0.begin();                                       // Begin using the timer

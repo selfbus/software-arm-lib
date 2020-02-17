@@ -10,6 +10,7 @@
  */
 
 #include <sblib/core.h>
+#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/serial.h>
 /*
  * Initialize the application.

@@ -207,6 +207,8 @@ public:
      * 5 - interrupt flag for capture channel CAP1
      *
      * @see resetFlags()
+     * @see resetFlag(TimerMatch)
+     * @see resetFlag(TimerCapture)
      * @see flagSet(TimerMatch)
      * @see flagSet(TimerCapture)
      */
@@ -216,6 +218,20 @@ public:
      * Reset the interrupt flags of the timer.
      */
     void resetFlags();
+
+    /**
+     * Reset interrupt flag of a match channel.
+     *
+     * @param match - the match channel: MAT0, MAT1, MAT2, MAT3.
+     */
+    void resetFlag(TimerMatch match);
+
+    /**
+     * Reset interrupt flag of a capture channel.
+     *
+     * @param cap - the capture channel: CAP0, CAP1.
+     */
+    void resetFlag(TimerCapture capture);
 
     /**
      * Test if the timer flag of a match channel is set.
@@ -495,6 +511,16 @@ ALWAYS_INLINE int Timer::flags() const
 ALWAYS_INLINE void Timer::resetFlags()
 {
     timer->IR = 0xff;
+}
+
+ALWAYS_INLINE void Timer::resetFlag(TimerMatch match)
+{
+    timer->IR = (1 << match);
+}
+
+ALWAYS_INLINE void Timer::resetFlag(TimerCapture capture)
+{
+    timer->IR = (16 << capture);
 }
 
 ALWAYS_INLINE bool Timer::flag(TimerMatch match) const

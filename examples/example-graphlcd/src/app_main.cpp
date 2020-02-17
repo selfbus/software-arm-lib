@@ -12,6 +12,7 @@
 #include <sblib/lcd/graphical_eadogs.h>
 #include <sblib/lcd/font_5x7.h>
 #include <sblib/core.h>
+#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/ioports.h>
 
 

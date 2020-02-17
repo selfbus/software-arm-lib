@@ -178,11 +178,16 @@ void Serial::interruptHandler()
         }
     }
 
-    while ((LPC_UART->LSR & LSR_RDR) && !readBufferFull())
+    while (LPC_UART->LSR & LSR_RDR)
     {
-        readBuffer[readTail] = LPC_UART->RBR;
+        if  (!readBufferFull())
+        {
+            readBuffer[readTail] = LPC_UART->RBR;
 
-        ++readTail;
-        readTail &= BufferedStream::BUFFER_SIZE_MASK;
+            ++readTail;
+            readTail &= BufferedStream::BUFFER_SIZE_MASK;
+        } else {
+            LPC_UART->RBR; // if the readBuffer ist full, empty UART
+        }
     }
 }
