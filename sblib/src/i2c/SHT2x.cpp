@@ -21,6 +21,8 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SHT2x.  If not, see
  * <http://www.gnu.org/licenses/>.
+ *
+ *  Adapted to Selfbus Library by Oliver Stefan (2019)
  */
 
 #include <stdint.h>

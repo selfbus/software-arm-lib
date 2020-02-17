@@ -33,16 +33,6 @@
 #define CCS_811_ADDR            0x5A   // when I2C_ADDR pin is LOW
 //#define CCS_811_ADDR            0x5B   // when I2C_ADDR pin is HIGH
 
-// Registers for CCS811
-//#define STATUS          0x00
-//#define MEAS_MODE       0x01
-//#define ALG_RESULT_DATA 0x02
-//#define ENV_DATA        0x05
-//#define APP_START       0xF4
-//#define HW_ID           0x20
-//#define ERROR_ID        0xE0
-//#define SW_RESET        0xFF
-
 const char STATUS = 		0x00;
 const char MEAS_MODE =     	0x01;
 const char ALG_RESULT_DATA =0x02;
