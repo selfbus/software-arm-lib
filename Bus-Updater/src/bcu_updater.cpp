@@ -7,7 +7,7 @@
 
 #include "bcu_updater.h"
 
-#ifdef DUMP_TELEGRAMS
+#ifdef DUMP_TELEGRAMS1
 #define d(x) {serial.println(x);}
 #else
 #define d(x)

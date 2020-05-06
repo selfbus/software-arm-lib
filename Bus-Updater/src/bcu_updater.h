@@ -49,6 +49,7 @@ protected:
 
 inline bool BcuUpdate::progPinStatus()
 {
-    return progButtonDebouncer.value();
+    //return progButtonDebouncer.value();
+    return programmingMode();
 }
 #endif /* BCU_UPDATE_H_ */

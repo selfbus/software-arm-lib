@@ -1,5 +1,6 @@
 /*
  *  Copyright (c) 2014 Martin Glueck <martin@mangari.org>
+ *  Copyright (c) 2020 Stefan Haller
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -14,7 +15,7 @@ extern "C"
 {
 #endif
 
-#define FIRST_SECTOR    0x2000
+#define FIRST_SECTOR    0x3000
 #define BOOT_BLOCK_SIZE  0x100
 #define BOOT_BLOCK_PAGE ((FIRST_SECTOR / BOOT_BLOCK_SIZE) - 1)
 
