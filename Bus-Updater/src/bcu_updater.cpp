@@ -25,12 +25,12 @@ void BcuUpdate::processTelegram()
         {
             if (tpci & 0x80)  // A connection control command
             {
-                d("processControlTelegram\n");
+                d("procC-Tel\n");
                 processConControlTelegram(bus.telegram[6]);
             }
             else
             {
-                d("processDirectTelegram\n");
+                d("procD-Tel\n");
                 processDirectTelegram(apci);
             }
         }
@@ -139,7 +139,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
                 connectedAddr = senderAddr;
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
-                d("RX-CONNECT\n");
+                d("RX-CON\n");
                 bus.setSendAck(0);
 
             }
@@ -150,7 +150,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
             {
                 connectedAddr = 0;
                 bus.setSendAck(0);
-                d("RX-DISCONNECT\n");
+                d("RX-DIS\n");
             }
         }
     }
