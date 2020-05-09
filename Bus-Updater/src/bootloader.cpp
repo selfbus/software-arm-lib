@@ -102,11 +102,14 @@ void run_updater()
     serial.begin(19200);
     serial.clearBuffers();
     serial.println("=======================================================");
-    serial.println("Selfbus KNX Bootloader 0.25, DEBUG MODE :-)");	// Hello
-    serial.print("Build: ");
+    serial.print("Selfbus KNX Bootloader V");
+    serial.print(BL_IDENTITY, HEX, 4);
+    serial.print(", DEBUG MODE :-)\n\rBuild: ");
     serial.print(__DATE__);
     serial.print(" ");
-    serial.println(__TIME__);
+    serial.print(__TIME__);
+    serial.print(" Features: 0x");
+    serial.println(BL_FEATURES, HEX, 4);
     serial.println("-------------------------------------------------------");
 #endif
 
@@ -123,7 +126,7 @@ int main(void)
 	unsigned int * magicWord = (unsigned int *) 0x10000000;
     if (*magicWord == 0x5E1FB055)
     {
-        *magicWord = 0;
+        *magicWord = 0;	// avoid restarting BL after flashing
         run_updater();
     }
     *magicWord = 0;		// wrong magicWord, delete it

@@ -41,7 +41,7 @@ unsigned int checkApplication(AppDescriptionBlock * block)
 {
     if (block->startAddress < FIRST_SECTOR)
         return 0;
-    if (block->endAddress > 0x100000)
+    if (block->endAddress > 0x10000)	// we have just 64k of Flash
         return 0;
     if (block->startAddress == block->endAddress)
         return 0;

@@ -15,9 +15,17 @@ extern "C"
 {
 #endif
 
-#define FIRST_SECTOR    0x3000
-#define BOOT_BLOCK_SIZE  0x100
-#define BOOT_BLOCK_PAGE ((FIRST_SECTOR / BOOT_BLOCK_SIZE) - 1)
+#define BL_IDENTITY			 0x0031		// Version 0.31
+#define FIRST_SECTOR		 0x3000		// where the application starts (BL size)
+#define BOOT_BLOCK_DESC_SIZE 0x100		// 1 flash page
+#define BOOT_BLOCK_PAGE   ((FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
+
+#ifdef DUMP_TELEGRAMS
+	#define	BL_FEATURES  	 0x8000
+#else
+	#define BL_FEATURES		 0x0000		// Feature list of BL
+
+#endif
 
 typedef struct
 {

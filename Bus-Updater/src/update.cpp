@@ -88,6 +88,10 @@ enum
     UPD_APP_VERSION_REQUEST = 33,
     UPD_APP_VERSION_RESPONSE = 34,
     UPD_RESET = 35,
+	UPD_REQUEST_BOOT_DESC = 36,
+	UPD_RESPONSE_BOOT_DESC = 37,
+	UPD_REQUEST_BL_IDENTITY = 40,
+	UPD_RESPONSE_BL_IDENTITY = 41,
 };
 
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)
@@ -196,8 +200,8 @@ static bool _prepareReturnTelegram(unsigned int count, unsigned char cmd)
  */
 inline bool sectorAllowedToErease(unsigned int sectorNumber)
 {
-    if (sectorNumber == 0)
-        return false; // bootloader sector
+    if (sectorNumber < ADDRESS2SECTOR(FIRST_SECTOR-1)) // last byte of bootloader
+        return false; // protect bootloader sectors
     return !((sectorNumber >= ADDRESS2SECTOR(__vectors_start__))
             && (sectorNumber <= ADDRESS2SECTOR(_etext)));
 }
@@ -220,6 +224,8 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 {
     unsigned int count = data[0] & 0x0f;
     unsigned int address;
+    unsigned int bl_identity = BL_IDENTITY;
+    unsigned int bl_features = BL_FEATURES;
     static unsigned int ramLocation;
     static unsigned int deviceLocked = DEVICE_LOCKED;
     unsigned int crc = 0xFFFFFFFF;
@@ -290,15 +296,16 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             if (deviceLocked == DEVICE_UNLOCKED)
             	NVIC_SystemReset();
             else
+            {
                 lastError = UPD_DEVICE_LOCKED;
+            }
         	sendLastError = true;
             break;
         case UPD_APP_VERSION_REQUEST:
         	d1("App_Version Request ");
             unsigned char * appversion;
             appversion = getAppVersion(
-                    (AppDescriptionBlock *) (FIRST_SECTOR
-                            - (1 + data[3]) * BOOT_BLOCK_SIZE));
+                    (AppDescriptionBlock *) (FIRST_SECTOR - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
             if (((unsigned int) appversion) < 0x50000)
             {
                 *sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
@@ -353,7 +360,9 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 }
             }
             else
+            {
                 lastError = UPD_DEVICE_LOCKED;
+            }
             sendLastError = true;
             break;
         case UPD_PROGRAM:
@@ -408,7 +417,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             	count = streamToUIn32(data + 3);			// length of the descriptor
                 crc = crc32(0xFFFFFFFF, ramBuffer, count);	// checksum on used length only
                 //address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
-                address = FIRST_SECTOR - BOOT_BLOCK_SIZE;	// end of bootloader is application - BL descriptor size
+                address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
 
                 d1("Desc. CRC ");
                 d2(crc,HEX,8);
@@ -441,7 +450,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 						if (lastError == IAP_SUCCESS)
 						{
 							d1("OK, Flash Page: ");
-							lastError = iapProgram((byte *) address, ramBuffer, 256); // at leat one page needs to be flashed
+							lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
 							d2(lastError,DEC,2);
 						}
                     }
@@ -474,6 +483,46 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             crc = 0xFFFFFFFF;
             sendLastError = true;
             break;
+
+		case UPD_REQUEST_BOOT_DESC:
+			d1("BOOT_Desc ?");
+			if (deviceLocked == DEVICE_UNLOCKED)
+			{
+				address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
+				AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) address;
+				if (lastError == IAP_SUCCESS)
+				{
+					*sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
+					memcpy(bcu.sendTelegram + 10, &(bootDescr->startAddress), 12); // startAddress, endAddress, crc
+				}
+				break;
+			}
+			else
+				lastError = UPD_DEVICE_LOCKED;
+			sendLastError = true;
+			break;
+
+		case UPD_REQUEST_BL_IDENTITY:
+			d1("BL_Identity ?");
+			if (deviceLocked == DEVICE_UNLOCKED)
+			{
+				if (lastError == IAP_SUCCESS)
+				{
+					*sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_BL_IDENTITY);
+					UIn32ToStream(bcu.sendTelegram + 10, bl_identity);	// Bootloader identity
+					UIn32ToStream(bcu.sendTelegram + 14, bl_features);	// Bootloader features
+					UIn32ToStream(bcu.sendTelegram + 18, FIRST_SECTOR);	// Bootloader size
+					//memcpy(bcu.sendTelegram + 10, &(bl_identity), 4);
+					//memcpy(bcu.sendTelegram + 14, &(bl_features), 4);
+					//memcpy(bcu.sendTelegram + 18, &(address), 4);
+				}
+				break;
+			}
+			else
+				lastError = UPD_DEVICE_LOCKED;
+			sendLastError = true;
+			break;
+
         case UPD_REQ_DATA:
             if (deviceLocked == DEVICE_UNLOCKED)
             {
