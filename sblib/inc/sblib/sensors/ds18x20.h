@@ -36,15 +36,19 @@ enum eDsType {
 struct sDS18x20
 {
 #if DS18X20_SEARCH
-    eDsType type;             // Device type
+  eDsType type;             // Device type
 #endif
-    uint8_t res_type;         // Resolution type 0 or 1
-    byte data[12];            // Read data
-    byte addr[8];             // Device ROM. 64bit Lasered ROM-Code to detect the Family Code
-    bool crcOK;               // Last read crc state
-    bool lastReadOK;          // Read state of last received value
-    float current_temperature;// Current temperature
-    float last_temperature;   // Last temperature. Use always This!
+  uint8_t res_type;         // Resolution type 0 or 1
+  byte data[12];            // Read data
+  byte addr[8];             // Device ROM. 64bit Lasered ROM-Code to detect the Family Code
+  bool crcOK;               // Last read crc state
+  bool lastReadOK;          // Read state of last received value
+  float current_temperature;// Current temperature
+  float last_temperature;   // Last temperature. Use always This!
+  // Indicating that we're waiting for readyAt
+  bool conversionStarted;
+  // System time at which started conversion is readable
+  unsigned int readyAt;
 };
 
 
@@ -99,6 +103,62 @@ public:
 #if DS18X20_SEARCH
   bool Search(uint8_t uMaxDeviceSearch= MAX_DS_DEVICES);
 #endif
+
+/*
+ * Function name:  startConversion
+ *
+ * Descriptions:   Starts the Temperature conversion of the given sDS18x20
+ *                 device.
+ *
+ * parameters:     sDS18x20 *sDev: which must include the '.addr' of the
+ *                 DS18x20 device.(Is filled automatically by Search() function.)
+ *
+ * Returned value: true, if the device was accesed successfully.
+ *                 following global Parameter of sDS18x20 will be filled:
+ *
+ */
+  bool startConversion( sDS18x20 *sDev);
+
+/*
+ * Function name:  readResult
+ *
+ * Descriptions:   Reads the Temperature of the given sDS18x20 device.
+ *
+ * parameters:     sDS18x20 *sDev: which must include the '.addr' of the
+ *                 DS18x20 device.(Is filled automatically by Search() function.)
+ *
+ * Returned value: true, if the device was read successfully.
+ *                 following global Parameter of sDS18x20 will be filled:
+ *                 last_temperature - the current read temperature
+ *                 lastReadOK       - will be set to true if read was successful
+ *
+ */
+  bool readResult( sDS18x20 *sDev);
+
+/*
+ * Function name:  startConversionAll
+ *
+ * Descriptions:   Iterates the the global m_dsDev object and calls
+ *                 startConversion() for each device.
+ *
+ * Returned value: true, if one or more devices started successfully.
+ *
+ */
+  bool startConversionAll();
+
+/*
+ * Function name:  readResultAll
+ *
+ * Descriptions:   Iterates the the global m_dsDev object and calls
+ *                 readResult() for each device.
+ *
+ * Returned value: true, if one or more devices reads are successful.
+ *                 following global object parameters will be filled:
+ *                 last_temperature - the current read temperature
+ *                 lastReadOK       - will be set to true if read was successful
+ *
+ */
+  bool readResultAll();
 
  /*
   * Function name:  readTemperature
