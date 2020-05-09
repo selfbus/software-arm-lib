@@ -54,6 +54,8 @@ bool OneWire::OneWireReset()
   uint8_t retries= 125;
 
   pinDisableInterrupt(this->_pin);
+    // note if the bus was low to start with
+    bool bHigh = digitalRead(this->_pin);
     pinMode(this->_pin, INPUT |PULL_UP);
 #if ONEWIRE_INTERNAL_PULLUP
     digitalWrite(this->_pin, 1);       // enable pull-up resistor
@@ -62,6 +64,8 @@ bool OneWire::OneWireReset()
       if (--retries == 0) return 0;
       delayMicroseconds(2);
     } while ( !digitalRead(this->_pin));
+    // stay high long enough for the chip to get it in case bus was low
+    if (!bHigh) delayMicroseconds(60);
     pinMode(this->_pin,OUTPUT);         // drive output low
     digitalWrite(this->_pin, 0);
     delayMicroseconds(480);
