@@ -20,6 +20,11 @@
 #include <crc.h>
 #include <boot_descriptor_block.h>
 
+
+#ifdef DECOMPRESSOR
+#include <Decompressor.h>
+#endif
+
 /**
  * Updater protocol:
  *   We miss-use the memory write EIB frames. Miss-use because we do not transmit the address in each request
@@ -79,6 +84,8 @@ enum
     UPD_SEND_DATA = 1,
     UPD_PROGRAM = 2,
     UPD_UPDATE_BOOT_DESC = 3,
+	UPD_SEND_DATA_TO_DECOMPRESS = 4,	// Test
+	UPD_PROGRAM_DECOMPRESSED_DATA = 5,	// Test
     UPD_REQ_DATA = 10,
     UPD_GET_LAST_ERROR = 20,
     UPD_SEND_LAST_ERROR = 21,
@@ -119,11 +126,19 @@ enum UPD_Status
     UPD_DEVICE_LOCKED                //<! the device is still locked
     ,
     UPD_UID_MISMATCH               //<! UID sent to unlock the device is invalid
+	,
+	UPD_ERASE_FAILED				// page erase failed
+	,
+	UPD_FLASH_ERROR					// page program (flash) failed
     ,
     UDP_NOT_IMPLEMENTED = 0xFFFF    //<! this command is not yet implemented
 };
 
 unsigned char ramBuffer[4096];
+
+#ifdef DECOMPRESSOR
+Decompressor decompressor(FIRST_SECTOR);	// application base address
+#endif
 
 /*
  * a direct cast does not work due to possible miss aligned addresses.
@@ -212,7 +227,7 @@ inline bool sectorAllowedToErease(unsigned int sectorNumber)
 inline bool addressAllowedToProgram(unsigned int start, unsigned int length)
 {
     unsigned int end = start + length;
-    if (start & 0xff)
+    if ((start & 0xff) || !length) // not aligned to page or 0 length
     {
         return 0;
     }
@@ -409,6 +424,60 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             crc = 0xFFFFFFFF;
             sendLastError = true;
             break;
+
+#ifdef DECOMPRESSOR
+	case UPD_SEND_DATA_TO_DECOMPRESS:
+		d1("#");
+		if (deviceLocked == DEVICE_UNLOCKED)
+		{
+			if ((ramLocation + count) <= sizeof(ramBuffer))
+			{
+				for (unsigned int i = 0; i < count; i++) {
+					decompressor.putByte(data[i + 3]);
+				};
+				lastError = IAP_SUCCESS;
+			}
+			else
+				lastError = UPD_RAM_BUFFER_OVERFLOW;
+		}
+		else
+			lastError = UPD_DEVICE_LOCKED;
+		sendLastError = true;
+		break;
+
+        case UPD_PROGRAM_DECOMPRESSED_DATA:
+             if (deviceLocked == DEVICE_UNLOCKED)
+             {
+                count = decompressor.getBytesCountToBeFlashed();
+                address = decompressor.getStartAddrOfPageToBeFlashed();
+
+                d1("\n\rFlash Diff address 0x");
+                d2(address,HEX,4);
+                d1(" length: ");
+                d2(count,DEC,3);
+
+                if (addressAllowedToProgram(address, count))
+                {
+                	crc = decompressor.getCrc32();
+                	if (crc == streamToUIn32(data + 3 + 4 + 4))
+					{
+                	    if (decompressor.pageCompletedDoFlash())
+                	    	lastError = UPD_FLASH_ERROR;
+					}
+                	else
+                		lastError = UDP_CRC_ERROR;
+                 }
+                 else
+                     lastError = UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
+             }
+             else
+                 lastError = UPD_DEVICE_LOCKED;
+             ramLocation = 0;
+             crc = 0xFFFFFFFF;
+             sendLastError = true;
+             break;
+#endif
+
         case UPD_UPDATE_BOOT_DESC:
         	d1("BOOT_Desc ");
             if ((deviceLocked == DEVICE_UNLOCKED))// && (data[7] < 2)) // Test boot descriptor block number for valid value
@@ -485,7 +554,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             break;
 
 		case UPD_REQUEST_BOOT_DESC:
-			d1("BOOT_Desc ?");
+			d1("BOOT_Desc ?\n\r");
 			if (deviceLocked == DEVICE_UNLOCKED)
 			{
 				address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
@@ -503,7 +572,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 			break;
 
 		case UPD_REQUEST_BL_IDENTITY:
-			d1("BL_Identity ?");
+			d1("BL_Identity ?\n\r");
 			if (deviceLocked == DEVICE_UNLOCKED)
 			{
 				if (lastError == IAP_SUCCESS)
