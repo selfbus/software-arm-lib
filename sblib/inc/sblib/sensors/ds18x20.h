@@ -40,11 +40,14 @@ struct sDS18x20
 #endif
   uint8_t res_type;         // Resolution type 0 or 1
   byte data[12];            // Read data
-  byte addr[8];             // Device ROM. 64bit Lasered ROM-Code to detect the Family Code
+  // Device ROM. 64bit Lasered ROM-Code to detect the Family Code
+  byte addr[8];
   bool crcOK;               // Last read crc state
   bool lastReadOK;          // Read state of last received value
   float current_temperature;// Current temperature
   float last_temperature;   // Last temperature. Use always This!
+  // raw version of last temperature. Send this down the bus
+  int16_t last_raw;
   // Indicating that we're waiting for readyAt
   bool conversionStarted;
   // System time at which started conversion is readable
@@ -65,9 +68,17 @@ typedef enum {
 class DS18x20
 {
 private:
-  OneWire *_OW_DS18x;
+  OneWire _OW_DS18x;
 
 public:
+  // time it takes for a reading
+  // TODO: These vary:
+  //  DS18S20 9 bit 750ms (0.5deg) / 2
+  //  DS18B20 12 bit = 750ms (0.0625deg) / 16
+  //  DS18B20 11 bit = 375ms (0.125deg) / 8
+  //  DS18B20 10 bit = 187.5ms (0.25deg) / 4
+  //  DS18B20 9 bit = 93.75ms (0.5deg) / 2
+  static const uint32_t leadTime = 750 + 50; // just in case
   uint8_t m_foundDevices;           // Number of found devices
   sDS18x20 m_dsDev[MAX_DS_DEVICES]; // Object list and informations of the found devices
 
@@ -101,7 +112,7 @@ public:
   *                 m_dsDev        - Includes the Information about the devices
   */
 #if DS18X20_SEARCH
-  bool Search(uint8_t uMaxDeviceSearch= MAX_DS_DEVICES);
+  uint8_t Search(uint8_t uMaxDeviceSearch= MAX_DS_DEVICES);
 #endif
 
 /*
@@ -110,22 +121,20 @@ public:
  * Descriptions:   Starts the Temperature conversion of the given sDS18x20
  *                 device.
  *
- * parameters:     sDS18x20 *sDev: which must include the '.addr' of the
- *                 DS18x20 device.(Is filled automatically by Search() function.)
+ * parameters:     device index of sensor DS18x20 device.(Is filled automatically by Search() function.)
  *
  * Returned value: true, if the device was accesed successfully.
  *                 following global Parameter of sDS18x20 will be filled:
  *
  */
-  bool startConversion( sDS18x20 *sDev);
+  bool startConversion(int deviceIdx);
 
 /*
  * Function name:  readResult
  *
  * Descriptions:   Reads the Temperature of the given sDS18x20 device.
  *
- * parameters:     sDS18x20 *sDev: which must include the '.addr' of the
- *                 DS18x20 device.(Is filled automatically by Search() function.)
+ * parameters:     device index of sensor DS18x20 device.(Is filled automatically by Search() function.)
  *
  * Returned value: true, if the device was read successfully.
  *                 following global Parameter of sDS18x20 will be filled:
@@ -133,7 +142,7 @@ public:
  *                 lastReadOK       - will be set to true if read was successful
  *
  */
-  bool readResult( sDS18x20 *sDev);
+  bool readResult(int devieIdx);
 
 /*
  * Function name:  startConversionAll
@@ -145,6 +154,11 @@ public:
  *
  */
   bool startConversionAll();
+
+  // convenience wrappers
+  bool lastReadOk(int deviceIdx);
+  float temperature(int deviceIdx);
+  int16_t raw(int deviceIdx);
 
 /*
  * Function name:  readResultAll
@@ -161,29 +175,9 @@ public:
   bool readResultAll();
 
  /*
-  * Function name:  readTemperature
-  * Descriptions:   Reads the Temperature of the given sDS18x20 device.
-  *                 Basically you need to set the '.addr'.
-  * parameters:     sDS18x20 *sDev: which must include the '.addr' of the
-  *                 DS18x20 device.(Is filled automatically by Search() function.)
-  * Returned value: true, if one or more devices reads are successful.
-  *                 following global Parameter of sDS18x20 will be filled:
-  *                 last_temperature - the current read temperature
-  *                 lastReadOK       - will be set to true if read was successful
+  * Returns a string representation of the requested sensor
   */
-  bool readTemperature( sDS18x20 *sDev);
-
- /*
-  * Function name:  readTemperatureAll
-  * Descriptions:   Iterates the the global m_dsDev object and calls
-  *                 readTemperature() for each device.
-  * parameters:    none
-  * Returned value: true, if one or more devices reads are successful.
-  *                 following global object parameters will be filled:
-  *                 last_temperature - the current read temperature
-  *                 lastReadOK       - will be set to true if read was successful
-  */
-  bool readTemperatureAll();
+  const char* TypeStr(int deviceNum);
 
  /*
   * Function name:  ConvertTemperature

@@ -17,6 +17,9 @@ set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS Debug Release)
 set(BusType "BCU_TYPE=10" CACHE STRING "Bus type")
 set_property(CACHE BusType PROPERTY STRINGS BCU_TYPE=10 BCU_TYPE=20 BIM112)
 
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+    add_definitions(-DSERIAL_WRITE_DIRECT)
+endif()
 add_definitions(-DSPI_BLOCK_TRANSFER -D${BusType} )
 
 add_subdirectory(${SBLPC_DIR} CMSIS_CORE_LPC11xx)
