@@ -9,7 +9,7 @@
 #include "bcu_updater.h"
 //#include "../src/platform.h"
 
-#define REMEMBER_OLD_PAGES_COUNT 6	// what does this really do, just the buffer?
+#define REMEMBER_OLD_PAGES_COUNT 2	// There seems to be a RAM leak/overflow somewhere, 2 seems to work for the moment!
 
 
 /**
@@ -55,7 +55,7 @@ class Decompressor
 
 		void putByte(uint8_t data);
 
-		unsigned int pageCompletedDoFlash();
+		int pageCompletedDoFlash();
 
 		uint32_t getCrc32();
 

@@ -458,17 +458,27 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 
                 if (addressAllowedToProgram(address, count))
                 {
+                	d1(" Address valid, ");
                 	crc = decompressor.getCrc32();
                 	if (crc == streamToUIn32(data + 3 + 4 + 4))
 					{
+                		d1("CRC OK,\n\r");
                 	    if (decompressor.pageCompletedDoFlash())
                 	    	lastError = UPD_FLASH_ERROR;
+                	    else
+                	    	lastError = IAP_SUCCESS;
 					}
                 	else
+                	{
+                		d1("CRC Error!\n\r");
                 		lastError = UDP_CRC_ERROR;
+                	}
                  }
                  else
+                 {
+                	 d1(" Address protected!\n\r");
                      lastError = UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
+                 }
              }
              else
                  lastError = UPD_DEVICE_LOCKED;
@@ -510,24 +520,33 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 
 				if (crc == streamToUIn32(data + 7))
                 {
-					d1("CRC MATCH, Erase Page: ");
+					d1("CRC MATCH, comparing MCUs BootDescriptor: ");
+					if(memcmp((byte *) address, ramBuffer, count)) //If send descriptor is not equal to current one, flash it
+					{
+						d1("it's different, Erase Page: ");
 
-                    if (checkApplication((AppDescriptionBlock *) ramBuffer))
-                    {
-						lastError = iapErasePage(BOOT_BLOCK_PAGE);// - data[7]);
-						d2(lastError,DEC,2);
-						if (lastError == IAP_SUCCESS)
+						if (checkApplication((AppDescriptionBlock *) ramBuffer))
 						{
-							d1("OK, Flash Page: ");
-							lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
+							lastError = iapErasePage(BOOT_BLOCK_PAGE);// - data[7]);
 							d2(lastError,DEC,2);
+							if (lastError == IAP_SUCCESS)
+							{
+								d1("OK, Flash Page: ");
+								lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
+								d2(lastError,DEC,2);
+							}
 						}
-                    }
-                    else
-                    {
-                        lastError = UPD_APPLICATION_NOT_STARTABLE;
-                        d1("App Error\n\r");
-                    }
+						else
+						{
+							lastError = UPD_APPLICATION_NOT_STARTABLE;
+							d1("App Error\n\r");
+						}
+					}
+					else
+					{
+						d1("is equal, skipping\n\r");
+						lastError = IAP_SUCCESS;
+					}
                 }
                 else
                 {

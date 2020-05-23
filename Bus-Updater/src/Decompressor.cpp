@@ -72,7 +72,7 @@ void Decompressor::resetStateMachine()
 	state = State::EXPECT_COMMAND_BYTE;
 }
 
-unsigned int Decompressor::pageCompletedDoFlash()
+int Decompressor::pageCompletedDoFlash()
 {
 	// backup old page content, flash new content from scratchpad RAM to flash
 	static unsigned int lastError = 0;
@@ -96,6 +96,7 @@ unsigned int Decompressor::pageCompletedDoFlash()
 		//d2(getFlashPageNumberToBeFlashed(), DEC,2);
 
 		lastError = iapErasePage(getFlashPageNumberToBeFlashed());
+		//lastError = IAP_SUCCESS; // Dry RUN! for debug
 		if (lastError)
 		{
 			d1(" Failed!\n\r")
@@ -104,33 +105,18 @@ unsigned int Decompressor::pageCompletedDoFlash()
 		else
 			d1(" OK\n\r");
 
-
-	//	FLASH_EraseInitTypeDef  pEraseInit;
-	//	uint32_t PageError = 0;
-	//
-	//	pEraseInit.NbPages = 1;
-	//	pEraseInit.Page = getFlashPageNumberToBeFlashed();
-	//	pEraseInit.TypeErase = FLASH_TYPEERASE_PAGES;
-	//
-	//	HAL_FLASH_Unlock();
-	//	if (HAL_FLASHEx_Erase(&pEraseInit, &PageError) != HAL_OK) {
-	//		HAL_FLASH_Lock();
-	//		return false;
-	//	}
-	//	HAL_FLASH_Lock();
-
-
 		// proceed to flash the decompressed page stored in the scratchpad RAM
 		d1("Diff - Program Page at Address 0x");
 		d2((unsigned int)startAddrOfPageToBeFlashed, HEX,4);
 		lastError = iapProgram(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
-		if(!lastError)
+		//lastError = IAP_SUCCESS; // Dry RUN! for debug
+		if(lastError)
 		{
-			d1(" OK\n\r");
+			d1(" Failed!\n\r");
 		}
 		else
 		{
-			d1(" Failed!\n\r");
+			d1(" OK\n\r");
 		}
 	}
 	else
@@ -143,6 +129,9 @@ unsigned int Decompressor::pageCompletedDoFlash()
 	// reinitialize scratchpad
 	bytesToFlash = 0;
 	memset(scratchpad, 0, sizeof scratchpad);
+	//d1("LAST_ERROR = 0x");
+	//d2(lastError,HEX,2);
+	//d1("\n\r");
 	return lastError;
 }
 
