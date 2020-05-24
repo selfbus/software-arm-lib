@@ -12,6 +12,7 @@
 #include <sblib/eib.h>
 #include <sblib/eib/bus.h>
 #include <sblib/eib/apci.h>
+#include <sblib/timeout.h>
 #include <sblib/internal/iap.h>
 #include <string.h>
 #include <sblib/io_pin_names.h>
@@ -139,6 +140,20 @@ unsigned char ramBuffer[4096];
 #ifdef DECOMPRESSOR
 Decompressor decompressor(FIRST_SECTOR);	// application base address
 #endif
+
+Timeout mcu_restart_request;
+
+void restartRequest (unsigned int time)
+{
+	mcu_restart_request.start(time);
+}
+
+bool restartRequestExpired(void)
+{
+	return mcu_restart_request.expired();
+}
+
+
 
 /*
  * a direct cast does not work due to possible miss aligned addresses.
@@ -307,9 +322,12 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             }
             break;
         case UPD_RESET:
-        	//d1("Restart!");
+        	d1("Restart!");
             if (deviceLocked == DEVICE_UNLOCKED)
-            	NVIC_SystemReset();
+            {
+            	restartRequest(100);	// request restart in 100ms to allow transmission of ACK before
+            	lastError = IAP_SUCCESS;
+            }
             else
             {
                 lastError = UPD_DEVICE_LOCKED;
