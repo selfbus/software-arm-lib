@@ -72,7 +72,7 @@
 
 #ifdef DUMP_TELEGRAMS
 #define d1(x) {serial.print(x);}
-#define d2(u,v,w) {serial.println(u,v,w);}
+#define d2(u,v,w) {serial.print(u,v,w);}
 #else
 #define d1(x)
 #define d2(u,v,w)
@@ -519,26 +519,26 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 d1("Desc. CRC ");
                 d2(crc,HEX,8);
 
-                d1("Desc. Address ");
+                d1("  Desc. Address ");
                 d2(address,HEX,8);
 
-                d1("RamBuffer[0-3] ");
+                d1("\n\rRamBuffer[0-3] ");
 				d2(streamToUIn32(ramBuffer),HEX,8);
-				d1("RamBuffer[4-7] ");
+				d1("\n\rRamBuffer[4-7] ");
 				d2(streamToUIn32(ramBuffer+4),HEX,8);
-				d1("RamBuffer[8-11] ");
+				d1("\n\rRamBuffer[8-11] ");
 				d2(streamToUIn32(ramBuffer+8),HEX,8);
-				d1("RamBuffer[12-15] ");
+				d1("\n\rRamBuffer[12-15] ");
 				d2(streamToUIn32(ramBuffer+12),HEX,8);
-				d1("RamBuffer[16-20] ");
+				d1("\n\rRamBuffer[16-20] ");
 				d2(streamToUIn32(ramBuffer+16),HEX,8);
 
-				d1("Received CRC 0x");
+				d1("\n\rReceived CRC 0x");
 				d2(streamToUIn32(data + 7),HEX,8);
 
 				if (crc == streamToUIn32(data + 7))
                 {
-					d1("CRC MATCH, comparing MCUs BootDescriptor: ");
+					d1("\n\rCRC MATCH, comparing MCUs BootDescriptor: ");
 					if(memcmp((byte *) address, ramBuffer, count)) //If send descriptor is not equal to current one, flash it
 					{
 						d1("it's different, Erase Page: ");
