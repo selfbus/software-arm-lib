@@ -16,6 +16,7 @@
 #include <sblib/internal/variables.h>
 #include <sblib/io_pin_names.h>
 #include "bcu_updater.h"
+#include "update.h"
 
 static BcuUpdate _bcu = BcuUpdate();
 BcuBase& bcu = _bcu;
@@ -66,6 +67,10 @@ void loop()
         digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
     }
     //digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
+
+    // Check if restart request is pending
+    if (restartRequestExpired())
+    	NVIC_SystemReset();
 }
 
 void jumpToApplication(unsigned int start)

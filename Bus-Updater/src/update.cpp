@@ -12,6 +12,7 @@
 #include <sblib/eib.h>
 #include <sblib/eib/bus.h>
 #include <sblib/eib/apci.h>
+#include <sblib/timeout.h>
 #include <sblib/internal/iap.h>
 #include <string.h>
 #include <sblib/io_pin_names.h>
@@ -71,7 +72,7 @@
 
 #ifdef DUMP_TELEGRAMS
 #define d1(x) {serial.print(x);}
-#define d2(u,v,w) {serial.println(u,v,w);}
+#define d2(u,v,w) {serial.print(u,v,w);}
 #else
 #define d1(x)
 #define d2(u,v,w)
@@ -139,6 +140,20 @@ unsigned char ramBuffer[4096];
 #ifdef DECOMPRESSOR
 Decompressor decompressor(FIRST_SECTOR);	// application base address
 #endif
+
+Timeout mcu_restart_request;
+
+void restartRequest (unsigned int time)
+{
+	mcu_restart_request.start(time);
+}
+
+bool restartRequestExpired(void)
+{
+	return mcu_restart_request.expired();
+}
+
+
 
 /*
  * a direct cast does not work due to possible miss aligned addresses.
@@ -307,9 +322,12 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             }
             break;
         case UPD_RESET:
-        	//d1("Restart!");
+        	d1("Restart!");
             if (deviceLocked == DEVICE_UNLOCKED)
-            	NVIC_SystemReset();
+            {
+            	restartRequest(100);	// request restart in 100ms to allow transmission of ACK before
+            	lastError = IAP_SUCCESS;
+            }
             else
             {
                 lastError = UPD_DEVICE_LOCKED;
@@ -458,17 +476,27 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 
                 if (addressAllowedToProgram(address, count))
                 {
+                	d1(" Address valid, ");
                 	crc = decompressor.getCrc32();
                 	if (crc == streamToUIn32(data + 3 + 4 + 4))
 					{
+                		d1("CRC OK,\n\r");
                 	    if (decompressor.pageCompletedDoFlash())
                 	    	lastError = UPD_FLASH_ERROR;
+                	    else
+                	    	lastError = IAP_SUCCESS;
 					}
                 	else
+                	{
+                		d1("CRC Error!\n\r");
                 		lastError = UDP_CRC_ERROR;
+                	}
                  }
                  else
+                 {
+                	 d1(" Address protected!\n\r");
                      lastError = UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
+                 }
              }
              else
                  lastError = UPD_DEVICE_LOCKED;
@@ -491,43 +519,52 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 d1("Desc. CRC ");
                 d2(crc,HEX,8);
 
-                d1("Desc. Address ");
+                d1("  Desc. Address ");
                 d2(address,HEX,8);
 
-                d1("RamBuffer[0-3] ");
+                d1("\n\rRamBuffer[0-3] ");
 				d2(streamToUIn32(ramBuffer),HEX,8);
-				d1("RamBuffer[4-7] ");
+				d1("\n\rRamBuffer[4-7] ");
 				d2(streamToUIn32(ramBuffer+4),HEX,8);
-				d1("RamBuffer[8-11] ");
+				d1("\n\rRamBuffer[8-11] ");
 				d2(streamToUIn32(ramBuffer+8),HEX,8);
-				d1("RamBuffer[12-15] ");
+				d1("\n\rRamBuffer[12-15] ");
 				d2(streamToUIn32(ramBuffer+12),HEX,8);
-				d1("RamBuffer[16-20] ");
+				d1("\n\rRamBuffer[16-20] ");
 				d2(streamToUIn32(ramBuffer+16),HEX,8);
 
-				d1("Received CRC 0x");
+				d1("\n\rReceived CRC 0x");
 				d2(streamToUIn32(data + 7),HEX,8);
 
 				if (crc == streamToUIn32(data + 7))
                 {
-					d1("CRC MATCH, Erase Page: ");
+					d1("\n\rCRC MATCH, comparing MCUs BootDescriptor: ");
+					if(memcmp((byte *) address, ramBuffer, count)) //If send descriptor is not equal to current one, flash it
+					{
+						d1("it's different, Erase Page: ");
 
-                    if (checkApplication((AppDescriptionBlock *) ramBuffer))
-                    {
-						lastError = iapErasePage(BOOT_BLOCK_PAGE);// - data[7]);
-						d2(lastError,DEC,2);
-						if (lastError == IAP_SUCCESS)
+						if (checkApplication((AppDescriptionBlock *) ramBuffer))
 						{
-							d1("OK, Flash Page: ");
-							lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
+							lastError = iapErasePage(BOOT_BLOCK_PAGE);// - data[7]);
 							d2(lastError,DEC,2);
+							if (lastError == IAP_SUCCESS)
+							{
+								d1("OK, Flash Page: ");
+								lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
+								d2(lastError,DEC,2);
+							}
 						}
-                    }
-                    else
-                    {
-                        lastError = UPD_APPLICATION_NOT_STARTABLE;
-                        d1("App Error\n\r");
-                    }
+						else
+						{
+							lastError = UPD_APPLICATION_NOT_STARTABLE;
+							d1("App Error\n\r");
+						}
+					}
+					else
+					{
+						d1("is equal, skipping\n\r");
+						lastError = IAP_SUCCESS;
+					}
                 }
                 else
                 {

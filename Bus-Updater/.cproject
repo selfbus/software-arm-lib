@@ -519,6 +519,7 @@
 								<option id="com.crt.advproject.cpp.thumb.447386670" name="Thumb mode" superClass="com.crt.advproject.cpp.thumb" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.1959228846" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="NDEBUG"/>
+									<listOptionValue builtIn="false" value="DECOMPRESSOR"/>
 									<listOptionValue builtIn="false" value="__CODE_RED"/>
 									<listOptionValue builtIn="false" value="DONT_ENABLE_DISABLED_RAMBANKS"/>
 									<listOptionValue builtIn="false" value="CORE_M0"/>
@@ -660,12 +661,15 @@
 &lt;/TargetConfig&gt;</projectStorage>
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug on UART (LPC11XX)"/>
 		<configuration configurationName="Debug (LPC11UXX)">
 			<resource resourceType="PROJECT" workspacePath="/Bus-Updater"/>
 		</configuration>
+		<configuration configurationName="Release (LPC11xx)"/>
 		<configuration configurationName="Release (LPC11XX)">
 			<resource resourceType="PROJECT" workspacePath="/Bus-Updater"/>
 		</configuration>
+		<configuration configurationName="OLD Release (LPC11UXX)"/>
 		<configuration configurationName="Release (LPC11UXX)">
 			<resource resourceType="PROJECT" workspacePath="/Bus-Updater"/>
 		</configuration>
