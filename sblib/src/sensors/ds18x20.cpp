@@ -165,7 +165,6 @@ bool DS18x20::readResult(int deviceIdx)
   sDev->lastReadOK= (sDev->current_temperature >=-55 && (sDev->current_temperature) <= 125);
   if( sDev->lastReadOK ) {
       sDev->last_temperature= sDev->current_temperature;
-      sDev->last_raw = raw;
   }
   sDev->conversionStarted = false;
   return true;
@@ -181,12 +180,6 @@ float DS18x20::temperature(int deviceIdx)
 {
   if (deviceIdx >= this->m_foundDevices) return -999.9;
   return this->m_dsDev[deviceIdx].last_temperature;
-}
-
-int16_t DS18x20::raw(int deviceIdx)
-{
-  if (deviceIdx >= this->m_foundDevices) return 0;
-  return this->m_dsDev[deviceIdx].last_raw;
 }
 
 /*****************************************************************************

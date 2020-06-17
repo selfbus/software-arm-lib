@@ -10,6 +10,7 @@
 
 #ifndef ds18x20_h
 #define ds18x20_h
+#include <sblib/sensors/units.h>
 
 #ifndef onewire_h
 //#error "Please Include first <OneWire.h>"
@@ -46,21 +47,11 @@ struct sDS18x20
   bool lastReadOK;          // Read state of last received value
   float current_temperature;// Current temperature
   float last_temperature;   // Last temperature. Use always This!
-  // raw version of last temperature. Send this down the bus
-  int16_t last_raw;
   // Indicating that we're waiting for readyAt
   bool conversionStarted;
   // System time at which started conversion is readable
   unsigned int readyAt;
 };
-
-
-// Temperature conversions types
-typedef enum {
-  CELCIUS   = 0,
-  FARENHEIT = 1,
-  KELVIN    = 2
-} eScale;
 
 /*
  * DHT Class
@@ -100,17 +91,23 @@ public:
   */
   void DS18x20DeInit();
 
- /*
-  * Function name:  Search
-  * Descriptions:   Search for 1-Wire DS18x20 Family devices.
-  *                 Set MAX_DS_Devices to the number of devices you
-  *                 want to search/find
-  * parameters:     uMaxDeviceSearch Maximal count of devices to find.
-  * Returned value: true, if one or more devices are found. Then, the
-  *                 following global Parameters will be filled:
-  *                 m_foundDevices - Includes the number of found devices
-  *                 m_dsDev        - Includes the Information about the devices
-  */
+  /*****************************************************************************
+ ** Function name:  Search
+ **
+ ** Descriptions:   Search for 1-Wire DS18x20 Family devices.
+ **
+ ** parameters:     uMaxDeviceSearch Maximal count of devices to find.
+ **
+ ** Returned value: 0, one or more devices were found.
+ **                 1, unknown device type on at least one device
+ **                 2, CRC8 failed on at least one device
+ **                 4, the search failed no devices
+ **
+ **                 On Success, the following global Parameters will be filled:
+ **                 m_foundDevices - Includes the number of found devices
+ **                 m_dsDev        - Includes the Information about the devices
+ **
+ *****************************************************************************/
 #if DS18X20_SEARCH
   uint8_t Search(uint8_t uMaxDeviceSearch= MAX_DS_DEVICES);
 #endif
@@ -158,7 +155,6 @@ public:
   // convenience wrappers
   bool lastReadOk(int deviceIdx);
   float temperature(int deviceIdx);
-  int16_t raw(int deviceIdx);
 
 /*
  * Function name:  readResultAll
