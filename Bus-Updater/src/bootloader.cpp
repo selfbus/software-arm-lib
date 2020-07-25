@@ -44,10 +44,10 @@ static inline void lib_setup()
 void setup()
 {
     bcu.begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
-    pinMode(PIN_INFO, OUTPUT);
+    //pinMode(PIN_INFO, OUTPUT);
     pinMode(PIN_RUN, OUTPUT);
 
-    digitalWrite(PIN_INFO, false);	// Turn Off info LED
+    //digitalWrite(PIN_INFO, false);	// Turn Off info LED
 
 
     blinky.start(1);
@@ -58,15 +58,17 @@ void setup()
 
 void loop()
 {
+	//bool blink_state = false;
     if (blinky.expired())
     {
         if (bcu.directConnection())
             blinky.start(250);
         else
             blinky.start(1000);
+        //blink_state = !blink_state;
         digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
     }
-    //digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
+    digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
     // Check if restart request is pending
     if (restartRequestExpired())
@@ -102,8 +104,8 @@ void run_updater()
     setup();
 
 #ifdef DUMP_TELEGRAMS
-    serial.setRxPin(PIO3_1);
-    serial.setTxPin(PIO3_0);
+    //serial.setRxPin(PIO3_1);
+    //serial.setTxPin(PIO3_0);
     serial.begin(19200);
     serial.clearBuffers();
     serial.println("=======================================================");
@@ -115,7 +117,7 @@ void run_updater()
     serial.print(__TIME__);
     serial.print(" Features: 0x");
     serial.println(BL_FEATURES, HEX, 4);
-    serial.println("-------------------------------------------------------");
+    serial.println("------------------------------------------------- by sh");
 #endif
 
     while (1)

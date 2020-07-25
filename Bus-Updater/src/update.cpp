@@ -262,6 +262,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
     static unsigned int lastError = 0;
     unsigned int sendLastError = 0;
 
+    static unsigned char bl_id_string[13] = BL_ID_STRING;
     digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
     switch (data[2])
     {
@@ -339,18 +340,17 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             unsigned char * appversion;
             appversion = getAppVersion(
                     (AppDescriptionBlock *) (FIRST_SECTOR - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
-            if (((unsigned int) appversion) < 0x50000)
+            if (((unsigned int) appversion) > 0xFFFF) // Limit to our 64k flash
             {
-                *sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
-                memcpy(bcu.sendTelegram + 10, appversion, 12);
-                lastError = IAP_SUCCESS;
-                d1("OK\n\r");
+                d1("Outside range!\n\r");
+                appversion = bl_id_string;			// Bootloader ID if invalid (address out of range)
             }
             else
             {
-                lastError = UPD_APPLICATION_NOT_STARTABLE;
-                d1("Fail!\n\r");
+                d1("OK\n\r");
             }
+            *sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
+            memcpy(bcu.sendTelegram + 10, appversion, 12);
             break;
         case UPD_ERASE_SECTOR:
         	d1("Erase Sector ");
@@ -374,17 +374,17 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             sendLastError = true;
             break;
         case UPD_SEND_DATA:
-        	//d1("Data ");
+        	d1("\r\033[2KReceive Data: ");
             if (deviceLocked == DEVICE_UNLOCKED)
             {
                 if ((ramLocation + count) <= sizeof(ramBuffer))
                 {
                     memcpy((void *) &ramBuffer[ramLocation], data + 3, count);
-                    crc = crc32(crc, data + 3, count);
+                    //crc = crc32(crc, data + 3, count);
                     ramLocation += count;
                     lastError = IAP_SUCCESS;
                     //d1("OK\n\r");
-                    //d2(crc,HEX,8);
+                    d2(ramLocation,DEC,4);
                 }
                 else
                 {
@@ -399,7 +399,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             sendLastError = true;
             break;
         case UPD_PROGRAM:
-        	d1("Flash Sector, CRC 0x");
+        	d1("\n\rFlash Sector, CRC 0x");
             if (deviceLocked == DEVICE_UNLOCKED)
             {
                 count = streamToUIn32(data + 3);
@@ -425,10 +425,10 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                         {
                             count = 256;
                         }
-                        lastError = iapProgram((byte *) address, ramBuffer,
-                                count);
+                        lastError = iapProgram((byte *) address, ramBuffer,count);
 
                         d2(crc,HEX,8);
+                        d1("\n\r");
                     }
                     else
                         lastError = UDP_CRC_ERROR;
@@ -448,7 +448,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 		d1("#");
 		if (deviceLocked == DEVICE_UNLOCKED)
 		{
-			if ((ramLocation + count) <= sizeof(ramBuffer))
+			if ((ramLocation + count) <= sizeof(ramBuffer)) // Check if this can be removed. Overflow protection should be in decompressor class instead!
 			{
 				for (unsigned int i = 0; i < count; i++) {
 					decompressor.putByte(data[i + 3]);
@@ -507,7 +507,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 #endif
 
         case UPD_UPDATE_BOOT_DESC:
-        	d1("BOOT_Desc ");
+        	d1("\n\rBOOT_Desc ");
             if ((deviceLocked == DEVICE_UNLOCKED))// && (data[7] < 2)) // Test boot descriptor block number for valid value
             {
             	d1("Unlocked, ");
@@ -516,22 +516,22 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 //address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
                 address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
 
-                d1("Desc. CRC ");
+                d1("Desc. CRC 0x");
                 d2(crc,HEX,8);
 
-                d1("  Desc. Address ");
-                d2(address,HEX,8);
+                d1("  Desc. at address 0x");
+                d2(address,HEX,4);
 
-                d1("\n\rRamBuffer[0-3] ");
-				d2(streamToUIn32(ramBuffer),HEX,8);
-				d1("\n\rRamBuffer[4-7] ");
-				d2(streamToUIn32(ramBuffer+4),HEX,8);
-				d1("\n\rRamBuffer[8-11] ");
-				d2(streamToUIn32(ramBuffer+8),HEX,8);
-				d1("\n\rRamBuffer[12-15] ");
-				d2(streamToUIn32(ramBuffer+12),HEX,8);
-				d1("\n\rRamBuffer[16-20] ");
-				d2(streamToUIn32(ramBuffer+16),HEX,8);
+                d1("\n\rFW start@ 0x");
+				d2(streamToUIn32(ramBuffer),HEX,4);		// FW start address
+				d1("\n\rFW end  @ 0x");
+				d2(streamToUIn32(ramBuffer+4),HEX,4);	// FW end address
+				d1("\n\rFWs CRC : 0x");
+				d2(streamToUIn32(ramBuffer+8),HEX,8);	// FW CRC
+				d1("\n\rFW Desc.@ 0x");
+				d2(streamToUIn32(ramBuffer+12),HEX,4);	// FW App descriptor address
+				//d1("\n\rRamBuffer[16-20] ");
+				//d2(streamToUIn32(ramBuffer+16),HEX,8);// This is beyond the descriptor block
 
 				d1("\n\rReceived CRC 0x");
 				d2(streamToUIn32(data + 7),HEX,8);
@@ -549,7 +549,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 							d2(lastError,DEC,2);
 							if (lastError == IAP_SUCCESS)
 							{
-								d1("OK, Flash Page: ");
+								d1(" OK, Flash Page: ");
 								lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
 								d2(lastError,DEC,2);
 							}
@@ -618,9 +618,6 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 					UIn32ToStream(bcu.sendTelegram + 10, bl_identity);	// Bootloader identity
 					UIn32ToStream(bcu.sendTelegram + 14, bl_features);	// Bootloader features
 					UIn32ToStream(bcu.sendTelegram + 18, FIRST_SECTOR);	// Bootloader size
-					//memcpy(bcu.sendTelegram + 10, &(bl_identity), 4);
-					//memcpy(bcu.sendTelegram + 14, &(bl_features), 4);
-					//memcpy(bcu.sendTelegram + 18, &(address), 4);
 				}
 				break;
 			}

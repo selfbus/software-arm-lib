@@ -15,16 +15,17 @@ extern "C"
 {
 #endif
 
-#define BL_IDENTITY			 0x1043		// Version 0.43
-#define FIRST_SECTOR		 0x3000		// where the application starts (BL size)
+#define BL_IDENTITY			 0x1050		// Version 0.50
+#define BL_ID_STRING         "[SB KNX BL ]"
 #define BOOT_BLOCK_DESC_SIZE 0x100		// 1 flash page
 #define BOOT_BLOCK_PAGE   ((FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
 
 #ifdef DUMP_TELEGRAMS
 	#define	BL_FEATURES  	 0x8100
+	#define FIRST_SECTOR	 0x3000		// where the application starts (BL size)
 #else
 	#define BL_FEATURES		 0x0100		// Feature list of BL
-
+	#define FIRST_SECTOR	 0x2000		// where the application starts (BL size)
 #endif
 
 typedef struct
