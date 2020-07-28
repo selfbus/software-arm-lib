@@ -15,10 +15,11 @@ extern "C"
 {
 #endif
 
-#define BL_IDENTITY			 0x1050		// Version 0.50
+#define BL_IDENTITY			 0x1051		// Version 0.51
 #define BL_ID_STRING         "[SB KNX BL ]"
 #define BOOT_BLOCK_DESC_SIZE 0x100		// 1 flash page
 #define BOOT_BLOCK_PAGE   ((FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
+#define BOOT_DSCR_ADDRESS 	(FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE)	// Descriptor uses last page of bootloader
 
 #ifdef DUMP_TELEGRAMS
 	#define	BL_FEATURES  	 0x8100
@@ -39,6 +40,7 @@ typedef struct
 unsigned int checkApplication(AppDescriptionBlock * block);
 
 unsigned char * getAppVersion(AppDescriptionBlock * block);
+unsigned char * getFWstartAddress(AppDescriptionBlock * block);
 
 #ifdef __cplusplus
 }

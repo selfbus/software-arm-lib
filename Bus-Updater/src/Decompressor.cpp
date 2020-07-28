@@ -25,10 +25,13 @@
 #define ADDR_FROM_ROM 0
 #define ADDR_FROM_RAM 0b10000000
 
-Decompressor::Decompressor(int startAddrOfFirstPageToBeFlashed)
+Decompressor::Decompressor(AppDescriptionBlock* BaseAddress)
 {
-	startAddrOfFlash = (uint8_t*)startAddrOfFirstPageToBeFlashed;
-	startAddrOfPageToBeFlashed = (uint8_t*)startAddrOfFirstPageToBeFlashed;
+	startAddrOfFlash = getFWstartAddress(BaseAddress);
+	startAddrOfPageToBeFlashed = getFWstartAddress(BaseAddress);
+
+	//startAddrOfFlash = (uint8_t*)startAddrOfFirstPageToBeFlashed;
+	//startAddrOfPageToBeFlashed = (uint8_t*)startAddrOfFirstPageToBeFlashed;
 }
 
 int Decompressor::getLength()

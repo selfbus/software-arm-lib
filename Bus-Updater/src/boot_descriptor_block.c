@@ -60,3 +60,12 @@ inline unsigned char * getAppVersion(AppDescriptionBlock * block)
     return (unsigned char *) (block->appVersionAddress);
 }
 
+// Return start address of application in case of valid descriptor block
+// otherwise, base address of firmware area, directly behind bootloader
+unsigned char * getFWstartAddress(AppDescriptionBlock * block)
+{
+    if (checkApplication(block))
+    	return (unsigned char *) (block->startAddress);
+    else
+    	return (unsigned char *) FIRST_SECTOR;
+}

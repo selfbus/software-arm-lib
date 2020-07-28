@@ -138,7 +138,7 @@ enum UPD_Status
 unsigned char ramBuffer[4096];
 
 #ifdef DECOMPRESSOR
-Decompressor decompressor(FIRST_SECTOR);	// application base address
+Decompressor decompressor((AppDescriptionBlock*) BOOT_DSCR_ADDRESS);	// get application base address from boot descriptor
 #endif
 
 Timeout mcu_restart_request;
@@ -514,7 +514,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             	count = streamToUIn32(data + 3);			// length of the descriptor
                 crc = crc32(0xFFFFFFFF, ramBuffer, count);	// checksum on used length only
                 //address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
-                address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
+                address = BOOT_DSCR_ADDRESS;				// Address of boot block descriptor
 
                 d1("Desc. CRC 0x");
                 d2(crc,HEX,8);
@@ -594,12 +594,11 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 			d1("BOOT_Desc ?\n\r");
 			if (deviceLocked == DEVICE_UNLOCKED)
 			{
-				address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
-				AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) address;
+				AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) BOOT_DSCR_ADDRESS;	// Address of boot block descriptor
 				if (lastError == IAP_SUCCESS)
 				{
 					*sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
-					memcpy(bcu.sendTelegram + 10, &(bootDescr->startAddress), 12); // startAddress, endAddress, crc
+					memcpy(bcu.sendTelegram + 10, bootDescr, 12); // startAddress, endAddress, crc
 				}
 				break;
 			}
