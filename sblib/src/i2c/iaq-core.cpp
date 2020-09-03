@@ -68,6 +68,7 @@ bool IAQcoreClass::GetIAQ(uint16_t &CO2eq, uint8_t &status, uint32_t &resistance
 	//Byte 3 is always 0
 	resistance = ((result[3] << 24) | (result[4] << 16) | (result[5] << 8) | (result[6] << 0));
 	Tvoc = ((result[7] << 8) | (result[8] << 0));
+	return 1;
 }
 
 bool IAQcoreClass::GetIAQco2(uint16_t &CO2eq){
@@ -77,4 +78,5 @@ bool IAQcoreClass::GetIAQco2(uint16_t &CO2eq){
 		return 0;
 	}
 	CO2eq = ((result[0] << 8) | (result[1] << 0));
+	return 1;
 }
