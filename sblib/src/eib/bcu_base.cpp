@@ -41,8 +41,6 @@ void hashUIDtoSerial(byte* uid, int len_uid, int len_serial)
 {
     uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
     uint64_t a, b;
-    unsigned int middle, shiftby;
-    middle = (len_uid/2);
 
     memcpy (&a, &uid[0], len_uid/2); // copy first half of uid-bytes to a
     memcpy (&b, &uid[len_uid/2], len_uid/2); // copy second half of uid-bytes to b
@@ -58,7 +56,7 @@ void hashUIDtoSerial(byte* uid, int len_uid, int len_serial)
     }
     for (int i = len_serial; i<len_uid; i++)
     {
-         uid[i] = 0x00;
+        uid[i] = 0x00;
     }
 }
 
@@ -66,7 +64,7 @@ void hashUIDtoSerial(byte* uid, int len_uid, int len_serial)
 // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
 void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
-	_begin();
+    _begin();
 #ifdef DUMP_TELEGRAMS
     serial.begin(115200);
     serial.println("Telegram dump enabled");
@@ -163,12 +161,12 @@ void BcuBase::loop()
         return;
 
 #ifdef DUMP_TELEGRAMS
-	{
-    	extern unsigned char telBuffer[];
-    	extern unsigned int telLength ;
-    	if (telLength > 0)
-    	{
-    		serial.print("RCV: ");
+    {
+        extern unsigned char telBuffer[];
+        extern unsigned int telLength ;
+        if (telLength > 0)
+        {
+            serial.print("RCV: ");
             for (int i = 0; i < telLength; ++i)
             {
                 if (i) serial.print(" ");
@@ -176,8 +174,8 @@ void BcuBase::loop()
             }
             serial.println();
             telLength = 0;
-    	}
-	}
+        }
+    }
 #endif
 
     if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
