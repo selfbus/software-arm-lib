@@ -39,27 +39,27 @@ BcuBase::BcuBase()
 // creates from a 128bit uid a 48bit hash
 void hashUIDtoSerial(byte* uid, int len_uid, int len_serial)
 {
-	uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
-	uint64_t a, b;
-	unsigned int middle, shiftby;
-	middle = (len_uid/2);
+    uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
+    uint64_t a, b;
+    unsigned int middle, shiftby;
+    middle = (len_uid/2);
 
-	memcpy (&a, &uid[0], len_uid/2); // copy first half of uid-bytes to a
-	memcpy (&b, &uid[len_uid/2], len_uid/2); // copy second half of uid-bytes to b
+    memcpy (&a, &uid[0], len_uid/2); // copy first half of uid-bytes to a
+    memcpy (&b, &uid[len_uid/2], len_uid/2); // copy second half of uid-bytes to b
 
     // do some modulo a big primenumber
-	a = a % BigPrime48;
+    a = a % BigPrime48;
     b = b % BigPrime48;
     a = a^b;
     // copy the generated hash back to uid
     for (int i = 0; i<len_serial; i++)
     {
-    	uid[i] = uint64_t(a >> (8*i)) & 0xFF;
+        uid[i] = uint64_t(a >> (8*i)) & 0xFF;
     }
     for (int i = len_serial; i<len_uid; i++)
-	{
-		uid[i] = 0x00;
-	}
+    {
+         uid[i] = 0x00;
+    }
 }
 
 // The method begin_BCU() is renamed during compilation to indicate the BCU type.
