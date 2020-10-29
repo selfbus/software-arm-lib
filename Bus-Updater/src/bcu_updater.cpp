@@ -7,7 +7,7 @@
 
 #include "bcu_updater.h"
 
-#ifdef DUMP_TELEGRAMS1
+#ifdef DUMP_TELEGRAMS
 #define d(x) {serial.println(x);}
 #else
 #define d(x)
@@ -25,12 +25,12 @@ void BcuUpdate::processTelegram()
         {
             if (tpci & 0x80)  // A connection control command
             {
-                d("procC-Tel\n");
+                d("processControlTelegram\n");
                 processConControlTelegram(bus.telegram[6]);
             }
             else
             {
-                d("procD-Tel\n");
+                d("processDirectTelegram\n");
                 processDirectTelegram(apci);
             }
         }
@@ -139,7 +139,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
                 connectedAddr = senderAddr;
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
-                d("RX-CON\n");
+                d("RX-CONNECT\n");
                 bus.setSendAck(0);
 
             }
@@ -150,7 +150,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
             {
                 connectedAddr = 0;
                 bus.setSendAck(0);
-                d("RX-DIS\n");
+                d("RX-DISCONNECT\n");
             }
         }
     }

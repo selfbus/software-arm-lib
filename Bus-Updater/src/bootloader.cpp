@@ -2,7 +2,6 @@
  *  BootLoader.c - The bootloader.
  *
  *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2020 Stefan Haller
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -16,7 +15,6 @@
 #include <sblib/internal/variables.h>
 #include <sblib/io_pin_names.h>
 #include "bcu_updater.h"
-#include "update.h"
 
 static BcuUpdate _bcu = BcuUpdate();
 BcuBase& bcu = _bcu;
@@ -44,35 +42,25 @@ static inline void lib_setup()
 void setup()
 {
     bcu.begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
-    //pinMode(PIN_INFO, OUTPUT);
+    pinMode(PIN_INFO, OUTPUT);
     pinMode(PIN_RUN, OUTPUT);
-
-    //digitalWrite(PIN_INFO, false);	// Turn Off info LED
-
-
     blinky.start(1);
-    bcu.setOwnAddress(0xFFC0);		// 15.15.192 default updater PA
+    bcu.setOwnAddress(0xFFC0);
     extern byte userEepromModified;
     userEepromModified = 0;
 }
 
 void loop()
 {
-	//bool blink_state = false;
     if (blinky.expired())
     {
         if (bcu.directConnection())
             blinky.start(250);
         else
             blinky.start(1000);
-        //blink_state = !blink_state;
         digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
     }
     digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
-
-    // Check if restart request is pending
-    if (restartRequestExpired())
-    	NVIC_SystemReset();
 }
 
 void jumpToApplication(unsigned int start)
@@ -101,24 +89,11 @@ void jumpToApplication(unsigned int start)
 void run_updater()
 {
     lib_setup();
-    setup();
-
 #ifdef DUMP_TELEGRAMS
-    //serial.setRxPin(PIO3_1);
-    //serial.setTxPin(PIO3_0);
-    serial.begin(19200);
-    serial.clearBuffers();
-    serial.println("=======================================================");
-    serial.print("Selfbus KNX Bootloader V");
-    serial.print(BL_IDENTITY, HEX, 4);
-    serial.print(", DEBUG MODE :-)\n\rBuild: ");
-    serial.print(__DATE__);
-    serial.print(" ");
-    serial.print(__TIME__);
-    serial.print(" Features: 0x");
-    serial.println(BL_FEATURES, HEX, 4);
-    serial.println("------------------------------------------------- by sh");
+    serial.setRxPin(PIO3_1);
+    serial.setTxPin(PIO3_0);
 #endif
+    setup();
 
     while (1)
     {
@@ -129,31 +104,25 @@ void run_updater()
 
 int main(void)
 {
-    // Updater request from application by setting magicWord
-	unsigned int * magicWord = (unsigned int *) 0x10000000;
+    unsigned int * magicWord = (unsigned int *) 0x10000000;
     if (*magicWord == 0x5E1FB055)
     {
-        *magicWord = 0;	// avoid restarting BL after flashing
+        *magicWord = 0;
         run_updater();
     }
-    *magicWord = 0;		// wrong magicWord, delete it
-
-    // Enter Updater when prog button pressed at power up
+    *magicWord = 0;
     pinMode(PIN_PROG, INPUT | PULL_UP);
     if (!digitalRead(PIN_PROG))
     {
         run_updater();
     }
-
-    // Start main application at address
     AppDescriptionBlock * block = (AppDescriptionBlock *) FIRST_SECTOR;
     block--;
-    for (int i = 0; i < 2; i++, block--) // Do we really need to search of the correct block? Assume it's always fix, isn't it?
+    for (int i = 0; i < 2; i++, block--)
     {
         if (checkApplication(block))
             jumpToApplication(block->startAddress);
     }
-    // Start updater in case of error
     run_updater();
     return 0;
 }
