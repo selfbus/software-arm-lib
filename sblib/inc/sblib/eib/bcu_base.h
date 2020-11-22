@@ -161,7 +161,7 @@ public:
 
     /**
      * The pin where the programming LED + button are connected. The default pin
-     * is PIO1_5. This variable may be changed in setup(), if required. If set
+     * is PIO2_0. This variable may be changed in setup(), if required. If set
      * to 0, the programming LED + button are not handled by the library.
      */
     int progPin;
