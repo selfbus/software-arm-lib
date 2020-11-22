@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'org.hkfree.knxduino'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 9
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'org.hkfree.knxduino.updater.Updater',
+        )
+    }
+}
+
+task fatJar(type: Jar) {
+    manifest.from jar.manifest
+    classifier = 'all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'com.github.calimero', name: 'calimero-core', version: '2.4'
+    compile group: 'net.harawata', name: 'appdirs', version: '1.0.3'
+    compile group: 'com.google.guava', name: 'guava', version: '21+'
+    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.8.0-beta4'
+    compile group: 'org.slf4j', name: 'slf4j-nop', version: '1.8.0-beta4'
+    //compile group: 'org.slf4j', name: 'slf4j-simple', version: '1.8.0-beta4'
+}
