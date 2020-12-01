@@ -36,6 +36,7 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementClient;
+import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 import com.google.common.primitives.Bytes;  	// For search in byte array
 
 /**
@@ -54,13 +55,25 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * a {@link Runnable}.<br>
  * In console mode, the KNX device information, as well as errors and problems
  * during its execution are written to <code>System.out</code>.
+ * <p>
+ * CAUTION:
+ * To avoid disconnect problems caused by groupwrite telegrams and thereby send
+ * multiple Acknowledge telegrams there is a change in
+ * tuwien.auto.calimero.mgmt.TransportListenerImpl.java at line 512
+ * disconnectIndicate(p, true); is commented out
+ *<p>
+ * Because I had to change the calimero lib, I had to import the files into the project
+ * Due to other changes it was nessesary to move the UpdatableManagementClientImpl into
+ * tuwien.auto.calimero.mgmt folder
+ * Maybe in future someone finds a better way to do this....
  *
  * @author Deti Fliegl
  * @author Pavel Kriz
  * @author Stefan Haller
+ * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String tool = "Selfbus Updater 0.50";
+    private static final String tool = "Selfbus Updater 0.52";
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
 
@@ -319,6 +332,8 @@ public class Updater implements Runnable {
         sb.append("options:").append(sep);
         sb.append(" -help -h                 show this help message")
                 .append(sep);
+        sb.append(" -fileName                Filename of hex file to program")
+                .append(sep);
         sb.append(" -version                 show tool/library version and exit")
                 .append(sep);
         sb.append(" -verbose -v              enable verbose status output")
@@ -350,7 +365,7 @@ public class Updater implements Runnable {
         sb.append(
                 " -uid <hex>               send UID to unlock (default: request UID to unlock)")
                 .append(sep);
-        sb.append(" -full                  force full upload mode (disable diff)")
+        sb.append(" -full                    force full upload mode (disable diff)")
                 .append(sep);
         LOGGER.log(Level.INFO, sb.toString());
     }
@@ -494,10 +509,10 @@ public class Updater implements Runnable {
                 case UPD_FLASH_ERROR:
                     System.out.println("Flash page could not be programmed");
                     break;
-                    
+
                 default:
                     if (resultCode == 0) {
-                    	System.out.print(ConColors.BRIGHT_GREEN);	// Success in green
+                        System.out.print(ConColors.BRIGHT_GREEN);	// Success in green
                         if (verbose) {
                             System.out.println("done (" + resultCode + ")");
                         } else
@@ -506,12 +521,12 @@ public class Updater implements Runnable {
                         System.out.println(ConColors.BRIGHT_RED + "unknown error (" + resultCode + ").");
                     }
             }
-            System.out.print(ConColors.RESET);		// switch back to default colors   
+            System.out.print(ConColors.RESET);		// switch back to default colors
         }
         return resultCode;
     }
-    
-    
+
+
     public class ConColors {
         // Reset to default colors
         public static final String RESET  = "\033[0m";  	// Reset
@@ -576,9 +591,9 @@ public class Updater implements Runnable {
         public static final String BRIGHT_BG_CYAN   = "\033[0;106m";  // CYAN
         public static final String BRIGHT_BG_WHITE  = "\033[0;107m";  // WHITE
     }
-   
-    
-    
+
+
+
 
     /*
      * (non-Javadoc)
@@ -589,7 +604,7 @@ public class Updater implements Runnable {
         // ??? as with the other tools, maybe put this into the try block to
         // also call onCompletion
         AppDirs appDirs = AppDirsFactory.getInstance();
-        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", "0.50", "Stefan Haller");
+        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", "0.52", "Stefan Haller");
 
         if (options.isEmpty()) {
             LOGGER.log(Level.INFO, tool);
@@ -610,17 +625,17 @@ public class Updater implements Runnable {
         boolean canceled = false;
         KNXNetworkLink link = null;
 
-        
-        System.out.println(ConColors.BRIGHT_BOLD_GREEN + "\n" + 
-        		"\n" + 
-        		"     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" + 
-        		"    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" + 
-        		"    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" + 
-        		"   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" + 
-        		"  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" + 
-        		"  by Stefan Haller et al.                                                     Version 0.50  \n\n" +
-        		ConColors.RESET);
-        
+
+        System.out.println(ConColors.BRIGHT_BOLD_GREEN + "\n" +
+                "\n" +
+                "     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
+                "    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
+                "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
+                "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
+                "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
+                "  by Stefan Haller, Oliver Stefan et al.                                      Version 0.52  \n\n" +
+                ConColors.RESET);
+
         try {
             UpdatableManagementClientImpl mc;
             Destination pd;
@@ -630,7 +645,7 @@ public class Updater implements Runnable {
             IndividualAddress device = null;
             byte uid[] = null;
             byte result[] = null;
-            boolean DO_FLASH_WRITE = true; 
+            boolean DO_FLASH_WRITE = true;
 
             if (options.containsKey("fileName")) {
                 fName = (String) options.get("fileName");
@@ -663,7 +678,7 @@ public class Updater implements Runnable {
                     mc.restart(d, 0, 255);
                 } catch (final KNXException e) {
                 }
-                Thread.sleep(1000);	// currently not needed because calimero currently times out waiting for an ACK 
+                Thread.sleep(1000);	// currently not needed because calimero currently times out waiting for an ACK
             }
 
             pd = mc.createDestination(progDevice, true);
@@ -672,11 +687,11 @@ public class Updater implements Runnable {
                 System.out.print("Requesting UID from" + progDevice.toString() + " ... ");
                 result = mc.sendUpdateData(pd, UPD_REQUEST_UID, new byte[0]);
                 if (result.length == 16) {
-                	uid = new byte[12];
-                	// TODO this can be merged with the section below
+                    uid = new byte[12];
+                    // TODO this can be merged with the section below
                     System.out.print("got: ");
                     for (int i = 0; i < result.length - 4; i++) {
-                    	uid[i] = result[i + 4];
+                        uid[i] = result[i + 4];
                         if (i != 0) {
                             System.out.print(":");
                         }
@@ -685,7 +700,7 @@ public class Updater implements Runnable {
                     System.out.println();
                     //uid = new byte[12];
                     //for (int i = 0; i < result.length - 4; i++) {
-                        //uid[i] = result[i + 4];
+                    //uid[i] = result[i + 4];
                     //}
                 } else {
                     System.out.println("Reqest UID failed");
@@ -702,13 +717,13 @@ public class Updater implements Runnable {
                 System.out.print(String.format("%02X", uid[i] & 0xff));
             }
             System.out.print(" ... ");
-            
+
             result = mc.sendUpdateData(pd, UPD_UNLOCK_DEVICE, uid);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
                 throw new RuntimeException("Selfbus udpate failed.");
             }
-            
+
             result = mc.sendUpdateData(pd, UPD_REQUEST_BL_IDENTITY, new byte[] {0});
             if (checkResult(result) != 0) {
                 mc.restart(pd);
@@ -717,27 +732,27 @@ public class Updater implements Runnable {
             long BL_Identity = (result[4] & 0xFF) + ((result[5] & 0xFF) << 8) + ((result[6] & 0xFF) << 16) + ((long)(result[7] & 0xFF) << 24);
             long BL_Features = (result[8] & 0xFF) + ((result[9] & 0xFF) << 8) + ((result[10] & 0xFF) << 16) + ((long)(result[11] & 0xFF) << 24);
             long BL_Size = (result[12] & 0xFF) + ((result[13] & 0xFF) << 8) + ((result[14] & 0xFF) << 16) + ((long)(result[15] & 0xFF) << 24);
-            System.out.println("Device Bootloader Identity   : " + ConColors.BRIGHT_YELLOW + "0x" +  Long.toHexString(BL_Identity) 
-            	+ ", Features: 0x" + Long.toHexString(BL_Features) + ", Bootloader Size: 0x" + Long.toHexString(BL_Size) + ConColors.RESET);
-                        
+            System.out.println("Device Bootloader Identity   : " + ConColors.BRIGHT_YELLOW + "0x" +  Long.toHexString(BL_Identity)
+                    + ", Features: 0x" + Long.toHexString(BL_Features) + ", Bootloader Size: 0x" + Long.toHexString(BL_Size) + ConColors.RESET);
+
             System.out.print("\n\rRequesting App Version String ...");
             result = mc.sendUpdateData(pd, UPD_APP_VERSION_REQUEST, new byte[] {0});
             if (checkResult(result) != 0) {
                 //mc.restart(pd);
                 System.out.println(ConColors.BRIGHT_RED + " failed!" + ConColors.RESET);
             }
-            String app_version = new String(result,4,12);	// Convert 12 bytes to string starting from result[4]	
+            String app_version = new String(result,4,12);	// Convert 12 bytes to string starting from result[4]
             System.out.println("\n  Current App Version String is: " + ConColors.BRIGHT_GREEN + app_version + ConColors.RESET + "\n");
-            
-             
-         // Load Firmware file
+
+
+            // Load Firmware file
             System.out.println("Loading new firmware file ...");
             FileInputStream hexFis = new FileInputStream(fName);
 
-         // init parser
+            // init parser
             Parser parser = new Parser(hexFis);
 
-         // 1st iteration - calculate maximum output range
+            // 1st iteration - calculate maximum output range
             RangeDetector rangeDetector = new RangeDetector();
             parser.setDataListener(rangeDetector);
             parser.parse();
@@ -745,7 +760,7 @@ public class Updater implements Runnable {
             Region outputRegion = rangeDetector.getFullRangeRegion();
             long startAddress = outputRegion.getAddressStart();
 
-         // 2nd iteration - actual write of the output
+            // 2nd iteration - actual write of the output
             ByteArrayOutputStream os = new ByteArrayOutputStream();
             BinWriter writer = new BinWriter(outputRegion, os, false);
             parser.setDataListener(writer);
@@ -755,33 +770,33 @@ public class Updater implements Runnable {
             ByteArrayInputStream fis = new ByteArrayInputStream(binData);
             System.out.println("  Hex file parsed: starting at 0x" + Long.toHexString(startAddress) + ", length " + totalLength
                     + " bytes");
-            
-         // Handle App Version Pointer
+
+            // Handle App Version Pointer
             if (appVersionAddr > 0xD0 && appVersionAddr < binData.length) {  // manually provided and not in vector or outside file length
-            // Use manual set AppVersion address
-            String file_version = new String(binData,appVersionAddr,12);	// Get app version pointers content
-            System.out.println("  File App Version String is : " + ConColors.BRIGHT_RED + file_version + ConColors.RESET +
-            		" manually specified at address 0x" + Long.toHexString(appVersionAddr));
+                // Use manual set AppVersion address
+                String file_version = new String(binData,appVersionAddr,12);	// Get app version pointers content
+                System.out.println("  File App Version String is : " + ConColors.BRIGHT_RED + file_version + ConColors.RESET +
+                        " manually specified at address 0x" + Long.toHexString(appVersionAddr));
             }
-            
-         // Search for AppVersion pointer in flash file if not set manually
+
+            // Search for AppVersion pointer in flash file if not set manually
             else {
-	            byte[] APP_VER_PTR_MAGIC = {'!','A','V','P','!','@',':'};	// App Pointer follows this MAGIC
-	            String file_version = ("Sadly EMPTY!");
-	            // Search magic in image file
-	            appVersionAddr = Bytes.indexOf(binData, APP_VER_PTR_MAGIC) + APP_VER_PTR_MAGIC.length;
-	            if (appVersionAddr <= 0xD0 || appVersionAddr >= binData.length) {
-	            	appVersionAddr = 0;		// missing, or not valid set to 0
-	            	
-	            	System.out.println(ConColors.BRIGHT_RED + "  Could not find the App Version string, setting to 0. "
-	            			+ "Please specify manually with -appVersionPtr!" + ConColors.RESET);
-	            }
-	            else {
-	            	file_version = new String(binData,appVersionAddr,12);	// Convert app version pointers content to string
-	            
-	            	System.out.println("  File App Version String is : " + ConColors.BRIGHT_GREEN + file_version + ConColors.RESET +
-	            			" found at address 0x" + Long.toHexString(appVersionAddr));
-	            }
+                byte[] APP_VER_PTR_MAGIC = {'!','A','V','P','!','@',':'};	// App Pointer follows this MAGIC
+                String file_version = ("Sadly EMPTY!");
+                // Search magic in image file
+                appVersionAddr = Bytes.indexOf(binData, APP_VER_PTR_MAGIC) + APP_VER_PTR_MAGIC.length;
+                if (appVersionAddr <= 0xD0 || appVersionAddr >= binData.length) {
+                    appVersionAddr = 0;		// missing, or not valid set to 0
+
+                    System.out.println(ConColors.BRIGHT_RED + "  Could not find the App Version string, setting to 0. "
+                            + "Please specify manually with -appVersionPtr!" + ConColors.RESET);
+                }
+                else {
+                    file_version = new String(binData,appVersionAddr,12);	// Convert app version pointers content to string
+
+                    System.out.println("  File App Version String is : " + ConColors.BRIGHT_GREEN + file_version + ConColors.RESET +
+                            " found at address 0x" + Long.toHexString(appVersionAddr));
+                }
             }
 
             try (FileOutputStream fos = new FileOutputStream("dump.bin")) {
@@ -791,30 +806,30 @@ public class Updater implements Runnable {
             CRC32 crc32File = new CRC32();
             crc32File.update(binData, 0, totalLength);
 
-         // store bin file in cache
+            // store bin file in cache
             File imageCacheFile = new File(hexCacheDir + File.separator + "image-" + Long.toHexString(startAddress) + "-" + totalLength + "-" + Long.toHexString(crc32File.getValue()) + ".bin" );
             imageCacheFile.getParentFile().mkdirs();
             try (FileOutputStream fos = new FileOutputStream(imageCacheFile)) {
                 fos.write(binData);
             }
 
-         // Check if FW image has correct offset for MCUs bootloader size
+            // Check if FW image has correct offset for MCUs bootloader size
             if(startAddress < BL_Size)
             {
-            	System.out.println(ConColors.BRIGHT_RED+"  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offsest setting in the linker!");
-            	System.out.println("  Firmware needs to start beyond 0x" + Long.toHexString(BL_Size) + ConColors.RESET);
-            	throw new RuntimeException("Firmware offset not correct!");
+                System.out.println(ConColors.BRIGHT_RED+"  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offsest setting in the linker!");
+                System.out.println("  Firmware needs to start beyond 0x" + Long.toHexString(BL_Size) + ConColors.RESET);
+                throw new RuntimeException("Firmware offset not correct!");
             }
             else if(startAddress == BL_Size)
             {
-            	System.out.println(ConColors.BRIGHT_GREEN+"  Firmware stats directly beyond bootloader." + ConColors.RESET);
+                System.out.println(ConColors.BRIGHT_GREEN+"  Firmware starts directly beyond bootloader." + ConColors.RESET);
             }
             else
             {
-            	System.out.println(ConColors.BRIGHT_YELLOW+"  Info: There are " + Long.toString(startAddress-BL_Size) + " bytes of unused flash between bootloader and firmware." + ConColors.RESET);
+                System.out.println(ConColors.BRIGHT_YELLOW+"  Info: There are " + Long.toString(startAddress-BL_Size) + " bytes of unused flash between bootloader and firmware." + ConColors.RESET);
             }
-            
-         // Request current main firmware boot descriptor from device
+
+            // Request current main firmware boot descriptor from device
             System.out.println("\nRequesting Boot Descriptor ...");
             result = mc.sendUpdateData(pd, UPD_REQUEST_BOOT_DESC, new byte[] {0});
             if (checkResult(result) != 0) {
@@ -826,16 +841,16 @@ public class Updater implements Runnable {
             long descrCrc = (result[12] & 0xFF) + ((result[13] & 0xFF) << 8) + ((result[14] & 0xFF) << 16) + ((long)(result[15] & 0xFF) << 24);
             long descrLength = descrEndAddr - descrStartAddr;
             System.out.println("  Current firmware: starts at 0x" +  Long.toHexString(descrStartAddr) + " ends at 0x" + Long.toHexString(descrEndAddr) + " CRC is 0x" + Long.toHexString(descrCrc));
-            
-         // try find file in cache
+
+            // try find file in cache
             boolean diffMode = false;
             File oldImageCacheFile = new File(hexCacheDir + File.separator + "image-" + Long.toHexString(descrStartAddr) + "-" + descrLength + "-" + Long.toHexString(descrCrc) + ".bin" );
             if (!(options.containsKey("full")) && oldImageCacheFile.exists()) {
                 System.out.println("  Found current firmware in cache " + oldImageCacheFile.getAbsolutePath() + ConColors.BRIGHT_GREEN +"\n\r  --> switching to diff upload mode" + ConColors.RESET);
                 diffMode = true;
             }
-            
-         // Start to flash the new firmware
+
+            // Start to flash the new firmware
             System.out.println("\n" + ConColors.BRIGHT_BG_BLUE + "Starting to send new firmware now: " + ConColors.RESET);
             if (diffMode) {
                 doDiffFlash(mc, pd, startAddress, binData, oldImageCacheFile);
@@ -888,9 +903,9 @@ public class Updater implements Runnable {
             integerToStream(programBootDescriptor, 4,
                     (int) crc32Block.getValue());
             System.out.print("Update boot descriptor with CRC32 0x"
-                    + Long.toHexString(crc32Block.getValue()) 
-            		+ ", length "
-            		+ Long.toHexString(bootDescriptor.length) + " ");
+                    + Long.toHexString(crc32Block.getValue())
+                    + ", length "
+                    + Long.toHexString(bootDescriptor.length) + " ");
             result = mc.sendUpdateData(pd, UPD_UPDATE_BOOT_DESC,
                     programBootDescriptor);
             if (checkResult(result) != 0) {
@@ -956,8 +971,8 @@ public class Updater implements Runnable {
             integerToStream(progPars, 4, 0);
             integerToStream(progPars, 8, (int) crc32);
             if (options.containsKey("verbose")) {
-            	System.out.println();
-            	System.out.print("Program device next page diff, CRC32 0x" + Long.toHexString(crc32) + " ... ");
+                System.out.println();
+                System.out.print("Program device next page diff, CRC32 0x" + Long.toHexString(crc32) + " ... ");
             }
             result = mc.sendUpdateData(pd, UPD_PROGRAM_DECOMPRESSED_DATA, progPars);
             if (checkResult(result) != 0) {
@@ -975,26 +990,26 @@ public class Updater implements Runnable {
 
         // This is the selfbus style of deleting pages, send one per telegram
         // use this for the time being
-	if (true) {
-		int erasePages = (totalLength / FLASH_SECTOR_SIZE) + 1;
-	        long startPage = startAddress / FLASH_SECTOR_SIZE;
-		byte[] sector = new byte[1];
-		for (int i = 0; i < erasePages; i++) {
-		sector[0] = (byte) (i + startPage);
-		System.out.print("Erase sector " + sector[0] + " ...");
-		result = mc.sendUpdateData(pd, UPD_ERASE_PAGES, sector);
-		if (checkResult(result) != 0) {
-			mc.restart(pd);
-			throw new RuntimeException("Selfbus udpate failed.");
-		}
-		else {
-			System.out.print(" OK");
-		}
-		}
-	}
-          
-            // This is the knxduino way of deleting pages, sending start and amount
-			// Disable for the time beeing and revert to selfbus old style
+        if (true) {
+            int erasePages = (totalLength / FLASH_SECTOR_SIZE) + 1;
+            long startPage = startAddress / FLASH_SECTOR_SIZE;
+            byte[] sector = new byte[1];
+            for (int i = 0; i < erasePages; i++) {
+                sector[0] = (byte) (i + startPage);
+                System.out.print("Erase sector " + sector[0] + " ...");
+                result = mc.sendUpdateData(pd, UPD_ERASE_PAGES, sector);
+                if (checkResult(result) != 0) {
+                    mc.restart(pd);
+                    throw new RuntimeException("Selfbus udpate failed.");
+                }
+                else {
+                    System.out.print(" OK");
+                }
+            }
+        }
+
+        // This is the knxduino way of deleting pages, sending start and amount
+        // Disable for the time beeing and revert to selfbus old style
 //            if (true) {
 //                int erasePages = (totalLength / FLASH_PAGE_SIZE) + 1;
 //                long startPage = startAddress / FLASH_PAGE_SIZE;
