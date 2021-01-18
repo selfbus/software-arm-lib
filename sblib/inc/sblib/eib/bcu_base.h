@@ -181,6 +181,18 @@ protected:
      */
     virtual void _begin();
 
+    /**
+     * Creates a len_hash wide hash of the uid.
+     * Hash will be generated in provided hash buffer
+     *
+     * @param uid - LPC-serial (128bit GUID) returned by iapReadUID() which will be hashed
+     * @param len_uid - size of uid  (normally 16 byte)
+     * @param hash - buffer for generated hash
+     * @param len_hash - size of provided hash buffer (normally 6byte/48bit for EIB)
+     * @return True if hash successfully created, false if not.
+     */
+    int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
+
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
     bool enabled;                  //!< The BCU is enabled. Set by bcu.begin().
     int  connectedAddr;            //!< Remote address of the connected partner.

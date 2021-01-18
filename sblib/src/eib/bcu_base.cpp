@@ -18,7 +18,7 @@
 #include <sblib/internal/iap.h>
 #include <string.h>
 
-#ifdef DUMP_TELEGRAMS
+#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL
 #include <sblib/serial.h>
 #endif
 
@@ -36,28 +36,34 @@ BcuBase::BcuBase()
     enabled = false;
 }
 
-// creates from a 128bit uid a 48bit hash
-void hashUIDtoSerial(byte* uid, int len_uid, int len_serial)
+/*
+ * Creates a len_hash wide hash of the uid.
+ * Hash will be generated in provided hash buffer
+ */
+int BcuBase::hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
 {
+    const unsigned int MAX_HASH_WIDE = 16;
     uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
     uint64_t a, b;
+    unsigned int mid;
 
-    memcpy (&a, &uid[0], len_uid/2); // copy first half of uid-bytes to a
-    memcpy (&b, &uid[len_uid/2], len_uid/2); // copy second half of uid-bytes to b
+    if ((len_uid <= 0) || (len_uid > MAX_HASH_WIDE))  // maximum of 16 bytes can be hashed by this function
+        return 0;
+    if ((len_hash <= 0) || (len_hash > len_uid))
+        return 0;
+
+    mid = len_uid/2;
+    memcpy (&a, &uid[0], mid);          // copy first half of uid-bytes to a
+    memcpy (&b, &uid[mid], len_uid-mid); // copy second half of uid-bytes to b
 
     // do some modulo a big primenumber
     a = a % BigPrime48;
     b = b % BigPrime48;
     a = a^b;
-    // copy the generated hash back to uid
-    for (int i = 0; i<len_serial; i++)
-    {
-        uid[i] = uint64_t(a >> (8*i)) & 0xFF;
-    }
-    for (int i = len_serial; i<len_uid; i++)
-    {
-        uid[i] = 0x00;
-    }
+    // copy the generated hash to provided buffer
+    for (int i = 0; i<len_hash; i++)
+        hash[i] = uint64_t(a >> (8*i)) & 0xFF;
+    return 1;
 }
 
 // The method begin_BCU() is renamed during compilation to indicate the BCU type.
@@ -65,9 +71,16 @@ void hashUIDtoSerial(byte* uid, int len_uid, int len_serial)
 void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
     _begin();
-#ifdef DUMP_TELEGRAMS
+#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL
     serial.begin(115200);
+#endif
+
+#ifdef DUMP_TELEGRAMS
     serial.println("Telegram dump enabled");
+#endif
+
+#ifdef DUMP_SERIAL
+    serial.println("Serialnumber dump enabled");
 #endif
 
     sendTelegram[0] = 0;
@@ -96,17 +109,32 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 
 #if BCU_TYPE != BCU1_TYPE
     unsigned int partID;
+    unsigned int useOldSerialStyle;
     byte uniqueID[16];
+
+    useOldSerialStyle = 1;
     if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
     {
+#ifdef DUMP_SERIAL
+        // dump the guid received from iapReadUID
+        serial.print("GUID  : ");
+        for (int i = 0; i < sizeof(uniqueID); ++i)
+        {
+            if (i) serial.print(" ");
+            serial.print(uniqueID[i], HEX, 2);
+        }
+        serial.println();
+#endif
         // https://community.nxp.com/t5/LPC-Microcontrollers/IAP-C-code-example-query/m-p/596131
         // Unfortunately the details of what go into the 128-bit GUID cannot be disclosed.
         // It can be said, however, that the 128-bit GUIDs are not random, nor are they sequential.
         // Thus to ensure there are no collisions with other devices, the full 128 bits should be used.
-        hashUIDtoSerial(&uniqueID[0], sizeof(uniqueID), 6);
-        memcpy (&userEeprom.serial, &uniqueID, sizeof(userEeprom.serial));
+
+        // create a 48bit serial/hash from the 128bit Guid
+        useOldSerialStyle = !hashUID(&uniqueID[0], sizeof(uniqueID), &userEeprom.serial[0], sizeof(userEeprom.serial));
     }
-    else
+
+    if (useOldSerialStyle)
     {
         iapReadPartID(&partID);
         memcpy (userEeprom.serial, &partID, 4);
@@ -114,6 +142,16 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
         userEeprom.serial[5] = SBLIB_VERSION;
     }
 
+#ifdef DUMP_SERIAL
+        // dump the generated hash/serial
+        serial.print("Serial: ");
+        for (int i = 0; i < sizeof(userEeprom.serial); ++i)
+        {
+            if (i) serial.print(" ");
+            serial.print(userEeprom.serial[i], HEX, 2);
+        }
+        serial.println();
+#endif
 
     userRam.peiType = 0;     // PEI type: 0=no adapter connected to PEI.
     userEeprom.appType = 0;  // Set to BCU2 application. ETS reads this when programming.
