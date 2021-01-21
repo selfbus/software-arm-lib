@@ -374,17 +374,24 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             sendLastError = true;
             break;
         case UPD_SEND_DATA:
-        	d1("\r\033[2KReceive Data: ");
+        	d1("Receive Data: ");
             if (deviceLocked == DEVICE_UNLOCKED)
             {
-                if ((ramLocation + count) <= sizeof(ramBuffer))
+            	int dataLocation = (data[3] << 8) | data[4]; // die ersten beiden Bytes enthalten die Adresse der Daten
+            	count -= 2; // 2 Bytes abziehen, da diese für die Adresse verwendet werden
+                if ((dataLocation + count) <= sizeof(ramBuffer))
                 {
-                    memcpy((void *) &ramBuffer[ramLocation], data + 3, count);
+                    memcpy((void *) &ramBuffer[dataLocation], data + 5, count); //ab dem 5. Byte sind die Daten verfügbar
                     //crc = crc32(crc, data + 3, count);
-                    ramLocation += count;
                     lastError = IAP_SUCCESS;
                     //d1("OK\n\r");
-                    d2(ramLocation,DEC,4);
+                    for(unsigned int i=0; i<count; i++){
+                    	d2(data[i+5],HEX,2);
+                    	d1(" ");
+                    }
+                    d1("at data location: ");
+                    d2(dataLocation,DEC,4);
+                    d1("\r\n");
                 }
                 else
                 {
@@ -438,30 +445,29 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             }
             else
                 lastError = UPD_DEVICE_LOCKED;
-            ramLocation = 0;
             crc = 0xFFFFFFFF;
             sendLastError = true;
             break;
 
 #ifdef DECOMPRESSOR
-	case UPD_SEND_DATA_TO_DECOMPRESS:
-		d1("#");
-		if (deviceLocked == DEVICE_UNLOCKED)
-		{
-			if ((ramLocation + count) <= sizeof(ramBuffer)) // Check if this can be removed. Overflow protection should be in decompressor class instead!
+		case UPD_SEND_DATA_TO_DECOMPRESS:
+			d1("#");
+			if (deviceLocked == DEVICE_UNLOCKED)
 			{
-				for (unsigned int i = 0; i < count; i++) {
-					decompressor.putByte(data[i + 3]);
-				};
-				lastError = IAP_SUCCESS;
+				if ((ramLocation + count) <= sizeof(ramBuffer)) // Check if this can be removed. Overflow protection should be in decompressor class instead!
+				{
+					for (unsigned int i = 0; i < count; i++) {
+						decompressor.putByte(data[i + 3]);
+					};
+					lastError = IAP_SUCCESS;
+				}
+				else
+					lastError = UPD_RAM_BUFFER_OVERFLOW;
 			}
 			else
-				lastError = UPD_RAM_BUFFER_OVERFLOW;
-		}
-		else
-			lastError = UPD_DEVICE_LOCKED;
-		sendLastError = true;
-		break;
+				lastError = UPD_DEVICE_LOCKED;
+			sendLastError = true;
+			break;
 
         case UPD_PROGRAM_DECOMPRESSED_DATA:
              if (deviceLocked == DEVICE_UNLOCKED)
@@ -585,7 +591,6 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 lastError = UPD_DEVICE_LOCKED;
                 d1("Lock\n\r");
             }
-            ramLocation = 0;
             crc = 0xFFFFFFFF;
             sendLastError = true;
             break;

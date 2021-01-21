@@ -15,7 +15,7 @@ extern "C"
 {
 #endif
 
-#define BL_IDENTITY			 0x1051		// Version 0.51
+#define BL_IDENTITY			 0x1053		// Version 0.53
 #define BL_ID_STRING         "[SB KNX BL ]"
 #define BOOT_BLOCK_DESC_SIZE 0x100		// 1 flash page
 #define BOOT_BLOCK_PAGE   ((FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)

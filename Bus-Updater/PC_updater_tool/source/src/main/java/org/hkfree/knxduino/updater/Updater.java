@@ -73,7 +73,7 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String tool = "Selfbus Updater 0.52";
+    private static final String tool = "Selfbus Updater 0.53";
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
 
@@ -604,7 +604,9 @@ public class Updater implements Runnable {
         // ??? as with the other tools, maybe put this into the try block to
         // also call onCompletion
         AppDirs appDirs = AppDirsFactory.getInstance();
-        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", "0.52", "Stefan Haller");
+        //Diese Angaben werden genutzt, um den Ordner für die Cache Files des DiffUpdaters abzulegen
+        //Unter Windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\0.53
+        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", "0.53", "Selfbus");
 
         if (options.isEmpty()) {
             LOGGER.log(Level.INFO, tool);
@@ -633,7 +635,7 @@ public class Updater implements Runnable {
                 "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Stefan Haller, Oliver Stefan et al.                                      Version 0.52  \n\n" +
+                "  by Stefan Haller, Oliver Stefan et al.                                      Version 0.53  \n\n" +
                 ConColors.RESET);
 
         try {
@@ -876,22 +878,36 @@ public class Updater implements Runnable {
                             + Long.toHexString(appVersionAddr) + ConColors.RESET);
 
             int nDone = 0;
+            boolean timeoutOccured = false;
             while (nDone < bootDescriptor.length) {
-                int txSize = 12;
+                int txSize = 10;
                 int remainBytes = bootDescriptor.length - nDone;
-                if (remainBytes < 12) {
+                if (remainBytes < 10) {
                     txSize = remainBytes;
                 }
-                byte txBuf[] = new byte[txSize];
+                byte txBuf[] = new byte[txSize + 2];
                 for (int i = 0; i < txSize; i++) {
-                    txBuf[i] = bootDescriptor[nDone + i];
+                    txBuf[i + 2] = bootDescriptor[nDone + i];
                 }
-                result = mc.sendUpdateData(pd, UPD_SEND_DATA, txBuf);
-                if (checkResult(result, false) != 0) {
-                    mc.restart(pd);
-                    throw new RuntimeException("Selfbus udpate failed.");
+                // Adresse der Daten in den ersten 2 Bytes senden
+                txBuf[0] = (byte)(nDone >> 8);
+                txBuf[1] = (byte)nDone;
+
+                try {
+                    result = mc.sendUpdateData(pd, UPD_SEND_DATA, txBuf);
+                    if (checkResult(result, false) != 0) {
+                        mc.restart(pd);
+                        throw new RuntimeException("Selfbus udpate failed.");
+                    }
                 }
-                nDone += txSize;
+                catch(KNXTimeoutException e){
+                    timeoutOccured = true;
+                }
+                if(!timeoutOccured){
+                    nDone += txSize;
+                }else{
+                    timeoutOccured = false;
+                }
             }
 
             CRC32 crc32Block = new CRC32();
@@ -985,7 +1001,8 @@ public class Updater implements Runnable {
 
     // Normal update routine, sending complete image
     // This works on sector page right now, so the complete affected flash is erased first
-    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis) throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
+    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis)
+            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
         byte[] result;
 
         // This is the selfbus style of deleting pages, send one per telegram
@@ -1024,13 +1041,14 @@ public class Updater implements Runnable {
 //                }
 //            }
 
-        byte[] buf = new byte[12];
+        byte[] buf = new byte[10];
         int nRead = 0;
         int total = 0;
         CRC32 crc32Block = new CRC32();
         int progSize = 0;
         long progAddress = startAddress;
         boolean doProg = false;
+        boolean timeoutOccured = false;
         if (true) {
             System.out.println("Sending application data (" + totalLength
                     + " bytes) ");
@@ -1048,22 +1066,39 @@ public class Updater implements Runnable {
                         doProg = true;
                     }
                     if (txSize > 0) {
-                        byte[] txBuf = new byte[txSize];
+                        byte[] txBuf = new byte[txSize + 2];
 
                         for (int i = 0; i < txSize; i++) {
-                            txBuf[i] = buf[i + nDone];
+                            txBuf[i + 2] = buf[i + nDone];
                         }
-                        crc32Block.update(txBuf, 0, txSize);
-                        result = mc
-                                .sendUpdateData(pd, UPD_SEND_DATA, txBuf);
-                        if (checkResult(result, false) != 0) {
-                            mc.restart(pd);
-                            throw new RuntimeException(
-                                    "Selfbus udpate failed.");
+                        // Adresse der Daten in den ersten 2 Bytes senden
+                        txBuf[0] = (byte)(progSize >> 8);
+                        txBuf[1] = (byte)progSize;
+
+                        try{
+                            result = mc
+                                    .sendUpdateData(pd, UPD_SEND_DATA, txBuf);
+
+                            if (checkResult(result, false) != 0) {
+                                mc.restart(pd);
+                                throw new RuntimeException(
+                                        "Selfbus udpate failed.");
+                            }
                         }
-                        nDone += txSize;
-                        progSize += txSize;
-                        total += txSize;
+                        // wenn eine Timeout Exception gesendet wird, ist ein Fehler bei der Datenübertragung vorgekommen
+                        // daher werden die letzten Daten noch einmal neu gesendet
+                        catch(KNXTimeoutException e){
+                            timeoutOccured = true;
+                        }
+
+                        if(!timeoutOccured) { // wenn kein Timeout Fehler vorgekommen ist, soll die Abarbeitung fortgesetzt werden
+                            crc32Block.update(txBuf, 2, txSize);
+                            nDone += txSize;
+                            progSize += txSize;
+                            total += txSize;
+                        }else{ // wenn ein Timeout passiert ist, muss der Merker wieder zurückgesetzt werden
+                            timeoutOccured = false;
+                        }
                     }
                     if (doProg) {
                         doProg = false;
