@@ -2,7 +2,7 @@
  *  app_main.cpp - The application's main.
  *
  *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2020 Stefan Haller
+ *  Copyright (c) 2021 Stefan Haller
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -377,20 +377,20 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
         	d1("Receive Data: ");
             if (deviceLocked == DEVICE_UNLOCKED)
             {
-            	int dataLocation = (data[3] << 8) | data[4]; // die ersten beiden Bytes enthalten die Adresse der Daten
-            	count -= 2; // 2 Bytes abziehen, da diese für die Adresse verwendet werden
-                if ((dataLocation + count) <= sizeof(ramBuffer))
+            	ramLocation = data[3];// * 11;	// Current Byte position as message number with 11 Bytes payload each
+            	count --; 					// 1 Bytes abziehen, da diese für die Nachrichtennummer verwendet wird
+            	if ((ramLocation + count) <= sizeof(ramBuffer))	// Space left
                 {
-                    memcpy((void *) &ramBuffer[dataLocation], data + 5, count); //ab dem 5. Byte sind die Daten verfügbar
+            		memcpy((void *) &ramBuffer[ramLocation], data + 4, count); //ab dem 4. Byte sind die Daten verfügbar
                     //crc = crc32(crc, data + 3, count);
                     lastError = IAP_SUCCESS;
                     //d1("OK\n\r");
                     for(unsigned int i=0; i<count; i++){
-                    	d2(data[i+5],HEX,2);
+                    	d2(data[i+4],HEX,2);
                     	d1(" ");
                     }
                     d1("at data location: ");
-                    d2(dataLocation,DEC,4);
+                    d2(ramLocation,DEC,3);
                     d1("\r\n");
                 }
                 else
@@ -445,6 +445,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             }
             else
                 lastError = UPD_DEVICE_LOCKED;
+            //ramLocation = 0;
             crc = 0xFFFFFFFF;
             sendLastError = true;
             break;
