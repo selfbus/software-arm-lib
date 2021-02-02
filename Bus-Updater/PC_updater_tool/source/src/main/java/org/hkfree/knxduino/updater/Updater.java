@@ -73,7 +73,7 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String tool = "Selfbus Updater 0.53";
+    private static final String tool = "Selfbus Updater 0.54";
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
 
@@ -456,6 +456,7 @@ public class Updater implements Runnable {
     // implemented
 
     public static final int FLASH_SECTOR_SIZE = 4096; // Selfbus ARM controller flash sector size
+    public static final int FLASH_PAGE_SIZE = 256;    // Selfbus ARM controller flash page size
 
     int streamToInteger(byte[] stream, int offset) {
         return (stream[offset + 3] << 24) | (stream[offset + 2] << 16)
@@ -606,7 +607,7 @@ public class Updater implements Runnable {
         AppDirs appDirs = AppDirsFactory.getInstance();
         //Diese Angaben werden genutzt, um den Ordner für die Cache Files des DiffUpdaters abzulegen
         //Unter Windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\0.53
-        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", "0.53", "Selfbus");
+        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", "0.54", "Selfbus");
 
         if (options.isEmpty()) {
             LOGGER.log(Level.INFO, tool);
@@ -635,7 +636,7 @@ public class Updater implements Runnable {
                 "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Stefan Haller, Oliver Stefan et al.                                      Version 0.53  \n\n" +
+                "  by Stefan Haller, Oliver Stefan et al.                                      Version 0.54  \n\n" +
                 ConColors.RESET);
 
         try {
@@ -880,18 +881,17 @@ public class Updater implements Runnable {
             int nDone = 0;
             boolean timeoutOccured = false;
             while (nDone < bootDescriptor.length) {
-                int txSize = 10;
+                int txSize = 11;
                 int remainBytes = bootDescriptor.length - nDone;
-                if (remainBytes < 10) {
+                if (remainBytes < 11) {
                     txSize = remainBytes;
                 }
-                byte txBuf[] = new byte[txSize + 2];
+                byte txBuf[] = new byte[txSize + 1];
                 for (int i = 0; i < txSize; i++) {
-                    txBuf[i + 2] = bootDescriptor[nDone + i];
+                    txBuf[i + 1] = bootDescriptor[nDone + i];
                 }
-                // Adresse der Daten in den ersten 2 Bytes senden
-                txBuf[0] = (byte)(nDone >> 8);
-                txBuf[1] = (byte)nDone;
+                // First Byte contains message number
+                txBuf[0] = (byte)nDone;
 
                 try {
                     result = mc.sendUpdateData(pd, UPD_SEND_DATA, txBuf);
@@ -1041,7 +1041,7 @@ public class Updater implements Runnable {
 //                }
 //            }
 
-        byte[] buf = new byte[10];
+        byte[] buf = new byte[11];
         int nRead = 0;
         int total = 0;
         CRC32 crc32Block = new CRC32();
@@ -1056,8 +1056,8 @@ public class Updater implements Runnable {
                 int txSize;
                 int nDone = 0;
                 while (nDone < nRead) {
-                    if ((progSize + nRead) > FLASH_SECTOR_SIZE) {
-                        txSize = FLASH_SECTOR_SIZE - progSize;
+                    if ((progSize + nRead) > FLASH_PAGE_SIZE) {
+                        txSize = FLASH_PAGE_SIZE - progSize;
                         doProg = true;
                     } else {
                         txSize = nRead - nDone;
@@ -1066,14 +1066,13 @@ public class Updater implements Runnable {
                         doProg = true;
                     }
                     if (txSize > 0) {
-                        byte[] txBuf = new byte[txSize + 2];
+                        byte[] txBuf = new byte[txSize + 1];
 
                         for (int i = 0; i < txSize; i++) {
-                            txBuf[i + 2] = buf[i + nDone];
+                            txBuf[i + 1] = buf[i + nDone];
                         }
                         // Adresse der Daten in den ersten 2 Bytes senden
-                        txBuf[0] = (byte)(progSize >> 8);
-                        txBuf[1] = (byte)progSize;
+                        txBuf[0] = (byte)progSize;
 
                         try{
                             result = mc
@@ -1092,7 +1091,7 @@ public class Updater implements Runnable {
                         }
 
                         if(!timeoutOccured) { // wenn kein Timeout Fehler vorgekommen ist, soll die Abarbeitung fortgesetzt werden
-                            crc32Block.update(txBuf, 2, txSize);
+                            crc32Block.update(txBuf, 1, txSize);
                             nDone += txSize;
                             progSize += txSize;
                             total += txSize;

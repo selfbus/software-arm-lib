@@ -4,9 +4,9 @@ plugins {
 }
 
 group 'org.hkfree.knxduino'
-version '1.0-SNAPSHOT'
+version '0.54'
 
-sourceCompatibility = 15
+sourceCompatibility = 11
 
 jar {
     manifest {
