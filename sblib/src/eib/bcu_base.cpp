@@ -42,7 +42,7 @@ BcuBase::BcuBase()
  */
 int BcuBase::hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
 {
-    const unsigned int MAX_HASH_WIDE = 16;
+    const int MAX_HASH_WIDE = 16;
     uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
     uint64_t a, b;
     unsigned int mid;
