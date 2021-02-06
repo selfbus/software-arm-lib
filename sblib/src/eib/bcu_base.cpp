@@ -125,7 +125,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
         }
         serial.println();
 #endif
-        // https://community.nxp.com/t5/LPC-Microcontrollers/IAP-C-code-example-query/m-p/596131
+        // https://community.nxp.com/t5/LPC-Microcontrollers/IAP-C-code-example-query/m-p/596139/highlight/true#M22963
         // Unfortunately the details of what go into the 128-bit GUID cannot be disclosed.
         // It can be said, however, that the 128-bit GUIDs are not random, nor are they sequential.
         // Thus to ensure there are no collisions with other devices, the full 128 bits should be used.
