@@ -70,6 +70,10 @@ void loop()
     }
     digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
+    // Check if there is data to flash when bus is idle
+    if(bus.idle())
+    	request_flashWrite(NULL, 0);
+
     // Check if restart request is pending
     if (restartRequestExpired())
     	NVIC_SystemReset();

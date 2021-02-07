@@ -1,6 +1,6 @@
 /*
  *  Copyright (c) 2014 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2020 Stefan Haller
+ *  Copyright (c) 2021 Stefan Haller
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -15,7 +15,7 @@ extern "C"
 {
 #endif
 
-#define BL_IDENTITY			 0x1054		// Version 0.54
+#define BL_IDENTITY			 0x1055		// Version 0.55
 #define BL_ID_STRING         "[SB KNX BL ]"
 #define BOOT_BLOCK_DESC_SIZE 0x100		// 1 flash page
 #define BOOT_BLOCK_PAGE   ((FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
