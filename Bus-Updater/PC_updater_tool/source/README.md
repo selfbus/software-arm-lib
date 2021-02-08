@@ -1,17 +1,17 @@
-# KNXduino-updater
+# Selfbus-updater
 
-KNXduino Updater 0.3
+Selfbus Updater 0.5x
 
 # Requirements
 
-* JDK 9+
+* JDK 11+
 * gradle
 
 # Build
 
     gradle fatJar
     
-*knxduino-updater-1.0-SNAPSHOT-all.jar* file is created in build/libs directory. 
+*selfbus_updater-0.xx-all.jar* file is created in build/libs directory. 
 
 # Usage
 
@@ -31,10 +31,18 @@ KNXduino Updater 0.3
 	 -progDevice -p           KNX device address used for programming (default 15.15.192)
 	 -device <knxid>          KNX device address in normal operating mode (default none)
 	 -appVersionPtr <hex/dev> pointer to APP_VERSION string
-	 -uid <hex>               send UID to unlock (default: request UID to unlock)
+	 -uid <hex>               send UID to unlock (default: request UID to unlock, required Prog. mode to be on!)
+	 -full                    Force regular full download (disable diff-update mode)
 
 
 To be used like this:
 
-
-	java -jar knxduino-updater-1.0-SNAPSHOT-all.jar -nat <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
+#Manual specification of parameters if the App-Version pointer is not found/integrated in the firmware file
+	java -jar selfbus_updater-0.xx-all.jar -nat <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
+	
+#Recommended for new firmware versions with known UID
+	java -jar selfbus_updater-0.xx-all.jar -nat <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
+	
+#Recommended for new firmware versions if UID is unknown (requires active Prog. mode to unlock device)
+	java -jar selfbus_updater-0.xx-all.jar -nat <ip address of KNX/IP GW> -fileName "out8-bcu1.hex"
+	

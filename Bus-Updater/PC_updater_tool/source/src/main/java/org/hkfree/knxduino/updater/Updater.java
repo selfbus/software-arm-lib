@@ -73,7 +73,7 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String tool = "Selfbus Updater 0.54";
+    private static final String tool = "Selfbus Updater 0.55";
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
 
@@ -326,8 +326,8 @@ public class Updater implements Runnable {
     private static void showUsage() {
         final StringBuffer sb = new StringBuffer();
         sb.append(tool).append(sep).append(sep);
-        sb.append("usage: KNXduino-updater.jar")
-                .append(" [options] <host|port> -fileName <filename.hex> -device <KNX device address>")
+        sb.append("usage: SB_updater.jar")
+                .append(" [options] <KNX Interface> -fileName <filename.hex> -device <KNX device address>")
                 .append(sep).append(sep);
         sb.append("options:").append(sep);
         sb.append(" -help -h                 show this help message")
@@ -636,7 +636,7 @@ public class Updater implements Runnable {
                 "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Stefan Haller, Oliver Stefan et al.                                      Version 0.54  \n\n" +
+                "  by Dr. Stefan Haller, Oliver Stefan et al.                                   Version 0.55  \n\n" +
                 ConColors.RESET);
 
         try {
@@ -701,10 +701,6 @@ public class Updater implements Runnable {
                         System.out.print(String.format("%02X", uid[i] & 0xff));
                     }
                     System.out.println();
-                    //uid = new byte[12];
-                    //for (int i = 0; i < result.length - 4; i++) {
-                    //uid[i] = result[i + 4];
-                    //}
                 } else {
                     System.out.println("Reqest UID failed");
                     mc.restart(pd);
@@ -845,11 +841,11 @@ public class Updater implements Runnable {
             long descrLength = descrEndAddr - descrStartAddr;
             System.out.println("  Current firmware: starts at 0x" +  Long.toHexString(descrStartAddr) + " ends at 0x" + Long.toHexString(descrEndAddr) + " CRC is 0x" + Long.toHexString(descrCrc));
 
-            // try find file in cache
+            // try to find old firmware file in cache
             boolean diffMode = false;
             File oldImageCacheFile = new File(hexCacheDir + File.separator + "image-" + Long.toHexString(descrStartAddr) + "-" + descrLength + "-" + Long.toHexString(descrCrc) + ".bin" );
             if (!(options.containsKey("full")) && oldImageCacheFile.exists()) {
-                System.out.println("  Found current firmware in cache " + oldImageCacheFile.getAbsolutePath() + ConColors.BRIGHT_GREEN +"\n\r  --> switching to diff upload mode" + ConColors.RESET);
+                System.out.println("  Found current device firmware in cache " + oldImageCacheFile.getAbsolutePath() + ConColors.BRIGHT_GREEN +"\n\r  --> switching to diff upload mode" + ConColors.RESET);
                 diffMode = true;
             }
 
@@ -955,9 +951,12 @@ public class Updater implements Runnable {
         }
     }
 
-    // Differential update routine
+    
+    
+    // Differential update routine #######################
     private void doDiffFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, byte[] binData, File oldBinFile) throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
-        FlashDiff differ = new FlashDiff();
+    	long flash_time_start = System.currentTimeMillis();
+    	FlashDiff differ = new FlashDiff();
         BinImage img2 = BinImage.copyFromArray(binData, startAddress);
         BinImage img1 = BinImage.readFromBin(oldBinFile.getAbsolutePath());
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
@@ -997,139 +996,136 @@ public class Updater implements Runnable {
                         "Selfbus update failed.");
             }
         });
+        long flash_time_duration = System.currentTimeMillis() - flash_time_start;
+        System.out.printf("Diff-Update required %tM:%<tS.", flash_time_duration);   
     }
 
-    // Normal update routine, sending complete image
+    
+    
+    // Normal update routine, sending complete image #######################
     // This works on sector page right now, so the complete affected flash is erased first
     private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
         byte[] result;
 
-        // This is the selfbus style of deleting pages, send one per telegram
-        // use this for the time being
-        if (true) {
-            int erasePages = (totalLength / FLASH_SECTOR_SIZE) + 1;
-            long startPage = startAddress / FLASH_SECTOR_SIZE;
-            byte[] sector = new byte[1];
-            for (int i = 0; i < erasePages; i++) {
-                sector[0] = (byte) (i + startPage);
-                System.out.print("Erase sector " + sector[0] + " ...");
-                result = mc.sendUpdateData(pd, UPD_ERASE_PAGES, sector);
-                if (checkResult(result) != 0) {
-                    mc.restart(pd);
-                    throw new RuntimeException("Selfbus udpate failed.");
-                }
-                else {
-                    System.out.print(" OK");
-                }
+        // Erasing flash on sector base (4k), one telegram per sector
+        int erasePages = (totalLength / FLASH_SECTOR_SIZE) + 1;
+        long startPage = startAddress / FLASH_SECTOR_SIZE;
+        byte[] sector = new byte[1];
+        for (int i = 0; i < erasePages; i++) {
+            sector[0] = (byte) (i + startPage);
+            System.out.print("Erase sector " + sector[0] + " ...");
+            result = mc.sendUpdateData(pd, UPD_ERASE_PAGES, sector);
+            if (checkResult(result) != 0) {
+                mc.restart(pd);
+                throw new RuntimeException("Selfbus udpate failed.");
+            }
+            else {
+                System.out.print(" OK");
             }
         }
 
-        // This is the knxduino way of deleting pages, sending start and amount
-        // Disable for the time beeing and revert to selfbus old style
-//            if (true) {
-//                int erasePages = (totalLength / FLASH_PAGE_SIZE) + 1;
-//                long startPage = startAddress / FLASH_PAGE_SIZE;
-//                byte[] metaData = new byte[2];
-//                metaData[0] = (byte) (startPage);
-//                metaData[1] = (byte) (erasePages);
-//                System.out.print("Erase " + erasePages + " pages starting from page " + startPage + " ...");
-//                result = mc.sendUpdateData(pd, UPD_ERASE_PAGES, metaData);
-//                if (checkResult(result) != 0) {
-//                    mc.restart(pd);
-//                    throw new RuntimeException("KNXduino udpate failed.");
-//                }
-//            }
-
-        byte[] buf = new byte[11];
-        int nRead = 0;
+        byte[] buf = new byte[FLASH_PAGE_SIZE];	// Read one flash page
+        int nRead = 0;		//Bytes read from file into buffer
+        int payload = 11;	// maximum start payload size
         int total = 0;
         CRC32 crc32Block = new CRC32();
-        int progSize = 0;
+        int progSize = 0;	//Bytes send so far
         long progAddress = startAddress;
         boolean doProg = false;
         boolean timeoutOccured = false;
-        if (true) {
-            System.out.println("Sending application data (" + totalLength
-                    + " bytes) ");
-            while ((nRead = fis.read(buf)) != -1) {
-                int txSize;
-                int nDone = 0;
-                while (nDone < nRead) {
-                    if ((progSize + nRead) > FLASH_PAGE_SIZE) {
-                        txSize = FLASH_PAGE_SIZE - progSize;
-                        doProg = true;
-                    } else {
-                        txSize = nRead - nDone;
+        
+        System.out.println("\n\rStart sending application data (" + totalLength + " bytes)");
+        long flash_time_start = System.currentTimeMillis();
+        
+        // Read up to size of buffer, 1 Page of 256Bytes from file
+        while ((nRead = fis.read(buf)) != -1) {
+        	
+        	System.out.printf("Reading %d bytes: %3d%%%n", nRead, 100*(total+nRead)/totalLength);
+        	
+            int nDone = 0;
+            // Bytes left to write
+            while (nDone < nRead) {
+            	
+            	// Calculate payload size for next telegram
+            	// sufficient data left, use maximum payload size
+            	if (progSize + payload <= nRead)
+				{
+					payload = 11;	// maximum payload size
+				}
+				else
+				{
+					payload = nRead - progSize;	// remaining bytes
+					doProg = true;
+				}
+            	
+                // Data left to send
+                if (payload > 0) {
+                	// Message length is payload +1 byte for position
+                    byte[] txBuf = new byte[payload + 1];
+
+                    for (int i = 0; i < payload; i++) {
+                        txBuf[i + 1] = buf[i + nDone];	//Shift payload into send buffer
                     }
-                    if ((total + nRead) == totalLength) {
-                        doProg = true;
-                    }
-                    if (txSize > 0) {
-                        byte[] txBuf = new byte[txSize + 1];
+                    // First byte contains start address of following data
+                    txBuf[0] = (byte)progSize;
 
-                        for (int i = 0; i < txSize; i++) {
-                            txBuf[i + 1] = buf[i + nDone];
-                        }
-                        // Adresse der Daten in den ersten 2 Bytes senden
-                        txBuf[0] = (byte)progSize;
+                    try{
+                        result = mc
+                                .sendUpdateData(pd, UPD_SEND_DATA, txBuf);
 
-                        try{
-                            result = mc
-                                    .sendUpdateData(pd, UPD_SEND_DATA, txBuf);
-
-                            if (checkResult(result, false) != 0) {
-                                mc.restart(pd);
-                                throw new RuntimeException(
-                                        "Selfbus udpate failed.");
-                            }
-                        }
-                        // wenn eine Timeout Exception gesendet wird, ist ein Fehler bei der Datenübertragung vorgekommen
-                        // daher werden die letzten Daten noch einmal neu gesendet
-                        catch(KNXTimeoutException e){
-                            timeoutOccured = true;
-                        }
-
-                        if(!timeoutOccured) { // wenn kein Timeout Fehler vorgekommen ist, soll die Abarbeitung fortgesetzt werden
-                            crc32Block.update(txBuf, 1, txSize);
-                            nDone += txSize;
-                            progSize += txSize;
-                            total += txSize;
-                        }else{ // wenn ein Timeout passiert ist, muss der Merker wieder zurückgesetzt werden
-                            timeoutOccured = false;
-                        }
-                    }
-                    if (doProg) {
-                        doProg = false;
-                        byte[] progPars = new byte[3 * 4];
-                        long crc = crc32Block.getValue();
-                        integerToStream(progPars, 0, progSize);
-                        integerToStream(progPars, 4, progAddress);
-                        integerToStream(progPars, 8, (int) crc);
-                        System.out.println();
-                        System.out
-                                .print("Program device at flash address 0x"
-                                        + Long.toHexString(progAddress)
-                                        + " with " + progSize
-                                        + " bytes and CRC32 0x"
-                                        + Long.toHexString(crc) + " ... ");
-                        result = mc.sendUpdateData(pd, UPD_PROGRAM,
-                                progPars);
-                        if (checkResult(result) != 0) {
+                        if (checkResult(result, false) != 0) {
                             mc.restart(pd);
                             throw new RuntimeException(
                                     "Selfbus udpate failed.");
                         }
-                        progAddress += progSize;
-                        progSize = 0;
-                        crc32Block.reset();
+                    }
+                    // wenn eine Timeout Exception gesendet wird, ist ein Fehler bei der Datenübertragung vorgekommen
+                    // daher werden die letzten Daten noch einmal neu gesendet
+                    catch(KNXTimeoutException e){
+                        timeoutOccured = true;
+                    }
+
+                    if(!timeoutOccured) { // wenn kein Timeout Fehler vorgekommen ist, soll die Abarbeitung fortgesetzt werden
+                        // Update CRC, skip byte 0 which is not part of payload
+                    	crc32Block.update(txBuf, 1, payload);
+                        nDone += payload;		// keep track of buffer bytes send (to determine end of while-loop)
+                        progSize += payload;	// keep track of page/sector bytes send
+                        total += payload;		// keep track of total bytes send from file
+                    }else{ // wenn ein Timeout passiert ist, muss der Merker wieder zurückgesetzt werden
+                        timeoutOccured = false;
                     }
                 }
+                if (doProg) {
+                    doProg = false;
+                    byte[] progPars = new byte[3 * 4];
+                    long crc = crc32Block.getValue();
+                    integerToStream(progPars, 0, progSize);
+                    integerToStream(progPars, 4, progAddress);
+                    integerToStream(progPars, 8, (int) crc);
+                    System.out.println();
+                    System.out
+                            .print("Program device at flash address 0x"
+                                    + Long.toHexString(progAddress)
+                                    + " with " + progSize
+                                    + " bytes and CRC32 0x"
+                                    + Long.toHexString(crc) + " ... ");
+                    result = mc.sendUpdateData(pd, UPD_PROGRAM,
+                            progPars);
+                    if (checkResult(result) != 0) {
+                        mc.restart(pd);
+                        throw new RuntimeException(
+                                "Selfbus udpate failed.");
+                    }
+                    progAddress += progSize;
+                    progSize = 0;	// reset page/sector byte counter
+                    crc32Block.reset();
+                }
             }
-            fis.close();
-            System.out.println("Wrote " + total
-                    + " bytes from file to device.");
-            Thread.sleep(1000);
         }
+        long flash_time_duration = System.currentTimeMillis() - flash_time_start;
+        fis.close();
+        System.out.printf("Wrote %d bytes from file to device in %tM:%<tS.", total, flash_time_duration);
+        Thread.sleep(100);	//TODO, can be removed
     }
 }
