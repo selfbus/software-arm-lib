@@ -15,7 +15,7 @@ Selfbus Updater 0.5x
 
 # Usage
 
-	usage: knxduino-updater-1.0-SNAPSHOT-all.jar [options] <host|port> -fileName <filename.hex> -device <KNX device address>
+	usage: selfbus_updater-0.xx-all.jar [options] <host|port> -fileName <filename.hex> -device <KNX device address>
 
 	options:
 	 -help -h                 show this help message
@@ -28,11 +28,12 @@ Selfbus Updater 0.5x
 	 -serial -s               use FT1.2 serial communication
 	 -routing                 use KNXnet/IP routing
 	 -medium -m <id>          KNX medium [tp0|tp1|p110|p132|rf] (default tp1)
-	 -progDevice -p           KNX device address used for programming (default 15.15.192)
+	 -progDevice -p           KNX device address of bootloader (default 15.15.192)
 	 -device <knxid>          KNX device address in normal operating mode (default none)
 	 -appVersionPtr <hex/dev> pointer to APP_VERSION string
 	 -uid <hex>               send UID to unlock (default: request UID to unlock, required Prog. mode to be on!)
-	 -full                    Force regular full download (disable diff-update mode)
+	 -full                    force regular full download (disable diff-update mode)
+	 -dealy                   delay telegrams in ms duing data transmission to reduce bus load (valid 40-500)
 
 
 To be used like this:

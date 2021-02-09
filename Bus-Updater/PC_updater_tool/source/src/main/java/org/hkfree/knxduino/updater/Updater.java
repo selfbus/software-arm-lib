@@ -73,7 +73,7 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String tool = "Selfbus Updater 0.55";
+    private static final String tool = "Selfbus Updater 0.56";
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
 
@@ -207,11 +207,9 @@ public class Updater implements Runnable {
                 options.put("version", null);
                 return;
             }
-            if (isOption(arg, "-full", null)) {
+            if (isOption(arg, "-full", null))
                 options.put("full", null);
-                return;
-            }
-            if (isOption(arg, "-verbose", "-v"))
+            else if (isOption(arg, "-verbose", "-v"))
                 options.put("verbose", null);
             else if (isOption(arg, "-NO_FLASH", "-f0"))
                 options.put("NO_FLASH", null);
@@ -266,8 +264,10 @@ public class Updater implements Runnable {
                     }
                     options.put("uid", uid);
                 }
-
-            } else
+            }
+            else if (isOption(arg, "-delay", null))
+                    options.put("delay", Integer.decode(args[++i]));
+            else
                 throw new KNXIllegalArgumentException("unknown option " + arg);
         }
         if (options.containsKey("host") == options.containsKey("serial"))
@@ -355,7 +355,7 @@ public class Updater implements Runnable {
                 " -medium -m <id>          KNX medium [tp0|tp1|p110|p132|rf] "
                         + "(default tp1)").append(sep);
         sb.append(
-                " -progDevice              KNX device address used for programming (default 15.15.192)")
+                " -progDevice              KNX device address of bootloader (default 15.15.192)")
                 .append(sep);
         sb.append(
                 " -device <knxid>          KNX device address in normal operating mode (default none)")
@@ -367,6 +367,8 @@ public class Updater implements Runnable {
                 .append(sep);
         sb.append(" -full                    force full upload mode (disable diff)")
                 .append(sep);
+        sb.append(" -delay                   delay telegrams duing data transmission to reduce bus load (valid 40-500)")
+        		.append(sep);
         LOGGER.log(Level.INFO, sb.toString());
     }
 
@@ -636,7 +638,7 @@ public class Updater implements Runnable {
                 "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Dr. Stefan Haller, Oliver Stefan et al.                                   Version 0.55  \n\n" +
+                "  by Dr. Stefan Haller, Oliver Stefan et al.                                 Version 0.56B \n\n" +
                 ConColors.RESET);
 
         try {
@@ -649,6 +651,7 @@ public class Updater implements Runnable {
             byte uid[] = null;
             byte result[] = null;
             boolean DO_FLASH_WRITE = true;
+            int data_send_delay = 0;	// no delay
 
             if (options.containsKey("fileName")) {
                 fName = (String) options.get("fileName");
@@ -667,6 +670,11 @@ public class Updater implements Runnable {
             }
             if (options.containsKey("NO_FLASH")) {
                 DO_FLASH_WRITE = false;	// Disable flashing firmware, for debugging use only
+            }
+            if (options.containsKey("delay")) {
+            	data_send_delay = (int) options.get("delay");
+            	if ((data_send_delay <40) || (data_send_delay >500))
+            		data_send_delay = 100;	// set to 100ms in case of invalid waiting time
             }
 
             link = createLink();
@@ -854,7 +862,7 @@ public class Updater implements Runnable {
             if (diffMode) {
                 doDiffFlash(mc, pd, startAddress, binData, oldImageCacheFile);
             } else if (DO_FLASH_WRITE){
-                doFullFlash(mc, pd, startAddress, totalLength, fis);
+                doFullFlash(mc, pd, startAddress, totalLength, fis, data_send_delay);
             }
 
             byte bootDescriptor[] = new byte[16];
@@ -1004,7 +1012,7 @@ public class Updater implements Runnable {
     
     // Normal update routine, sending complete image #######################
     // This works on sector page right now, so the complete affected flash is erased first
-    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis)
+    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis, int data_send_delay)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
         byte[] result;
 
@@ -1035,7 +1043,12 @@ public class Updater implements Runnable {
         boolean doProg = false;
         boolean timeoutOccured = false;
         
-        System.out.println("\n\rStart sending application data (" + totalLength + " bytes)");
+        if (data_send_delay != 0)
+        	System.out.printf("%nStart sending application data (%d bytes) with telegram delay of %dms%n", totalLength, data_send_delay);
+        else
+        	System.out.printf("%nStart sending application data (%d bytes)%n", totalLength);
+
+        // Get time when starting to transfer data
         long flash_time_start = System.currentTimeMillis();
         
         // Read up to size of buffer, 1 Page of 256Bytes from file
@@ -1058,6 +1071,12 @@ public class Updater implements Runnable {
 					payload = nRead - progSize;	// remaining bytes
 					doProg = true;
 				}
+            	// Handle last telegram with less than 11 bytes
+            	if (((total + nRead) == totalLength) && nRead <=11)
+            	{
+            		payload = nRead;
+            		doProg = true;
+            	}
             	
                 // Data left to send
                 if (payload > 0) {
@@ -1070,6 +1089,8 @@ public class Updater implements Runnable {
                     // First byte contains start address of following data
                     txBuf[0] = (byte)progSize;
 
+                    if (data_send_delay != 0)
+                    	Thread.sleep(data_send_delay);	//Reduce bus load during data upload, ohne 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
                     try{
                         result = mc
                                 .sendUpdateData(pd, UPD_SEND_DATA, txBuf);
@@ -1126,6 +1147,6 @@ public class Updater implements Runnable {
         long flash_time_duration = System.currentTimeMillis() - flash_time_start;
         fis.close();
         System.out.printf("Wrote %d bytes from file to device in %tM:%<tS.", total, flash_time_duration);
-        Thread.sleep(100);	//TODO, can be removed
+        //Thread.sleep(100);	//TODO, can be removed
     }
 }
