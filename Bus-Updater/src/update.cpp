@@ -110,28 +110,28 @@ enum UPD_Status
 {
     UDP_UNKONW_COMMAND = 0x100       //<! received command is not defined
     ,
-    UDP_CRC_ERROR                     //<! CRC calculated on the device
-                                      //<! and by the updater don't match
+    UDP_CRC_ERROR                    //<! CRC calculated on the device
+                                     //<! and by the updater don't match
     ,
     UPD_ADDRESS_NOT_ALLOWED_TO_FLASH //<! specifed address cannot be programmed
     ,
-    UPD_SECTOR_NOT_ALLOWED_TO_ERASE  //<! the specified sector cannot be erased
+    UPD_SECTOR_NOT_ALLOWED_TO_ERASE //<! the specified sector cannot be erased
     ,
-    UPD_RAM_BUFFER_OVERFLOW          //<! internal buffer for storing the data
-                                     //<! would overflow
+    UPD_RAM_BUFFER_OVERFLOW         //<! internal buffer for storing the data
+                                    //<! would overflow
     ,
-    UPD_WRONG_DESCRIPTOR_BLOCK     //<! the boot descriptor block does not exist
+    UPD_WRONG_DESCRIPTOR_BLOCK      //<! the boot descriptor block does not exist
     ,
-    UPD_APPLICATION_NOT_STARTABLE //<! the programmed application is not startable
+    UPD_APPLICATION_NOT_STARTABLE   //<! the programmed application is not startable
     ,
-    UPD_DEVICE_LOCKED                //<! the device is still locked
+    UPD_DEVICE_LOCKED               //<! the device is still locked
     ,
-    UPD_UID_MISMATCH               //<! UID sent to unlock the device is invalid
+    UPD_UID_MISMATCH                //<! UID sent to unlock the device is invalid
 	,
 	UPD_ERASE_FAILED				// page erase failed
 	,
 	UPD_FLASH_ERROR					// page program (flash) failed
-    ,
+	,
     UDP_NOT_IMPLEMENTED = 0xFFFF    //<! this command is not yet implemented
 };
 
@@ -152,8 +152,6 @@ bool restartRequestExpired(void)
 {
 	return mcu_restart_request.expired();
 }
-
-
 
 /*
  * a direct cast does not work due to possible miss aligned addresses.
@@ -249,6 +247,62 @@ inline bool addressAllowedToProgram(unsigned int start, unsigned int length)
     return !((start >= __vectors_start__) && (end <= _etext));
 }
 
+/*
+ * Handle flash writing
+ * write_req controls if flash information is pre-loaded and write request is registered
+ */
+unsigned int request_flashWrite(unsigned char * data, bool write_request)
+{
+	static volatile bool ready2write = false;
+	unsigned int crc;
+	static volatile unsigned int flash_count;
+	static volatile unsigned int address;
+
+	if (write_request)
+	{
+		flash_count = streamToUIn32(data + 3);
+		address = streamToUIn32(data + 3 + 4);
+		if (addressAllowedToProgram(address, flash_count))
+		{
+			crc = crc32(0xFFFFFFFF, ramBuffer, flash_count);
+			if (crc == streamToUIn32(data + 3 + 4 + 4))
+			{
+				// Select smallest possible sector size
+				if (flash_count > 1024)
+					flash_count = 4096;
+				else if (flash_count > 512)
+					flash_count = 1024;
+				else if (flash_count > 256)
+					flash_count = 512;
+				else
+					flash_count = 256;
+
+				// Debug: write CRC
+				d2(crc,HEX,8);
+				d1(" Prepare... ");
+
+				// Everything is setup, ready to write to flash
+				ready2write = true;
+
+				return IAP_SUCCESS;	//UDP_FLASH_WRITE_SETUP;
+			}
+			else
+				return UDP_CRC_ERROR;
+		}
+		else
+			return UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
+	}
+	else if (ready2write)
+	{
+		ready2write = false;
+		d1(" flash!\n\r");
+		return iapProgram((byte *) address, ramBuffer,flash_count);
+	}
+	return 0;
+}
+
+
+
 unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
         unsigned char * data)
 {
@@ -300,7 +354,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             }
             sendLastError = true;
             ramLocation = 0;
-            crc = 0xFFFFFFFF;
+            //crc = 0xFFFFFFFF; // Todo, check if this can be removed, it's initialized always to same value
             break;
         case UPD_REQUEST_UID:
         	d1("UID? ");
@@ -320,8 +374,9 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             {
                 lastError = UPD_DEVICE_LOCKED;
             	d1("LOCK\n\r");
+            	sendLastError = true;
+            	break;
             }
-            break;
         case UPD_RESET:
         	d1("Restart!");
             if (deviceLocked == DEVICE_UNLOCKED)
@@ -408,45 +463,10 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
         case UPD_PROGRAM:
         	d1("\n\rFlash Sector, CRC 0x");
             if (deviceLocked == DEVICE_UNLOCKED)
-            {
-                count = streamToUIn32(data + 3);
-                address = streamToUIn32(data + 3 + 4);
-                if (addressAllowedToProgram(address, count))
-                {
-                    crc = crc32(0xFFFFFFFF, ramBuffer, count);
-                    if (crc == streamToUIn32(data + 3 + 4 + 4))
-                    {
-                        if (count > 1024)
-                        {
-                            count = 4096;
-                        }
-                        else if (count > 512)
-                        {
-                            count = 1024;
-                        }
-                        else if (count > 256)
-                        {
-                            count = 512;
-                        }
-                        else
-                        {
-                            count = 256;
-                        }
-                        lastError = iapProgram((byte *) address, ramBuffer,count);
-
-                        d2(crc,HEX,8);
-                        d1("\n\r");
-                    }
-                    else
-                        lastError = UDP_CRC_ERROR;
-                }
-                else
-                    lastError = UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
-            }
+            	lastError = request_flashWrite(data, 1);
             else
                 lastError = UPD_DEVICE_LOCKED;
-            //ramLocation = 0;
-            crc = 0xFFFFFFFF;
+            //crc = 0xFFFFFFFF;	//Todo, remove this line
             sendLastError = true;
             break;
 
@@ -508,7 +528,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
              else
                  lastError = UPD_DEVICE_LOCKED;
              ramLocation = 0;
-             crc = 0xFFFFFFFF;
+             //crc = 0xFFFFFFFF;
              sendLastError = true;
              break;
 #endif
@@ -592,7 +612,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 lastError = UPD_DEVICE_LOCKED;
                 d1("Lock\n\r");
             }
-            crc = 0xFFFFFFFF;
+            //crc = 0xFFFFFFFF;
             sendLastError = true;
             break;
 
@@ -609,9 +629,11 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 				break;
 			}
 			else
+			{
 				lastError = UPD_DEVICE_LOCKED;
-			sendLastError = true;
-			break;
+				sendLastError = true;
+				break;
+			}
 
 		case UPD_REQUEST_BL_IDENTITY:
 			d1("BL_Identity ?\n\r");
@@ -627,9 +649,11 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 				break;
 			}
 			else
+			{
 				lastError = UPD_DEVICE_LOCKED;
-			sendLastError = true;
-			break;
+				sendLastError = true;
+				break;
+			}
 
         case UPD_REQ_DATA:
             if (deviceLocked == DEVICE_UNLOCKED)
