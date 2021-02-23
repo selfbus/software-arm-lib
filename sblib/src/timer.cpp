@@ -24,17 +24,25 @@ void delay(unsigned int msec)
 {
     unsigned int lastSystemTime = systemTime;
 
-    while (msec)
+    if (__get_IPSR() == 0x0) // check that no interrupt is active, otherwise "while" will end in a infinite loop
     {
-        if (lastSystemTime == systemTime)
+        while (msec)
         {
-            __WFI();
+            if (lastSystemTime == systemTime)
+            {
+                __WFI();
+            }
+            else
+            {
+                lastSystemTime = systemTime;
+                --msec;
+            }
         }
-        else
-        {
-            lastSystemTime = systemTime;
-            --msec;
-        }
+    }
+    else
+    {
+        // fall-back to waiting SysTick's
+        delayMicroseconds(msec);
     }
 }
 
