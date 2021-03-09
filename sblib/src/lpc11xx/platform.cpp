@@ -13,7 +13,7 @@
 #include <sblib/digital_pin.h>
 
 
-LPC_GPIO_TypeDef (* const gpioPorts[4]) = { LPC_GPIO0, LPC_GPIO1, LPC_GPIO2, LPC_GPIO3 };
+LPC_GPIO_TypeDef* const gpioPorts[4] = { LPC_GPIO0, LPC_GPIO1, LPC_GPIO2, LPC_GPIO3 };
 
 // Get the offset of the pin in the structure LPC_IOCON_TypeDef
 #define OFFSET_OF_IOCON(pin)  (OFFSET_OF(LPC_IOCON_TypeDef, pin) >> 2)

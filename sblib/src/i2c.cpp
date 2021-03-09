@@ -394,7 +394,8 @@ uint16_t I2C::I2CEngine( void )
 uint8_t I2C::I2CScan(uint8_t StartAdrr, uint8_t EndAdrr)
 {
   uint8_t iScanAddr, iFoundDevices=0;
-  if(EndAdrr > 0xff ) EndAdrr = 0xff; if(StartAdrr > 0xff ) StartAdrr = 0xff;
+  if(EndAdrr > 0xff ) EndAdrr = 0xff;
+  if(StartAdrr > 0xff ) StartAdrr = 0xff;
   for( iScanAddr = StartAdrr; iScanAddr < EndAdrr && iFoundDevices < MAX_SCAN_DEVICES ; iScanAddr++ )
   {
     this->ClearBuffer(true, false); // clear MasterBuffer Only
