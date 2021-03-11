@@ -24,9 +24,15 @@ void reverseCopy(byte* dest, const byte* src, int len);
 
 /**
  * Call when a fatal application error happens. This function will never
- * return and the program LED will blink rapidly to indicate the error.
+ * return and the program LED (can be changed with setFatalErrorPin) will blink rapidly to indicate the error.
  */
 void fatalError();
+
+/**
+ * Set the Pin for fatalError()
+ * @param newPin - the new Pin
+ */
+void setFatalErrorPin(int newPin);
 
 /**
  * Get the offset of a field in a class, structure or type.
