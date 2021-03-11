@@ -12,7 +12,9 @@
 
 #include <sblib/digital_pin.h>
 #include <sblib/platform.h>
+#include <sblib/io_pin_names.h>
 
+static int fatalErrorPin = PIN_PROG;
 
 void reverseCopy(byte* dest, const byte* src, int len)
 {
@@ -28,12 +30,17 @@ void fatalError()
 {
     // We use only low level functions here as a fatalError() could happen
     // anywhere in the lib and we want to ensure that the function works
-    pinMode(PIO0_7, OUTPUT);
+    pinMode(fatalErrorPin, OUTPUT);
     SysTick_Config(0x1000000);
 
     while (1)
     {
         // Blink the LED on the LPCxpresso board
-        digitalWrite(PIO0_7, (SysTick->VAL & 0x800000) == 0 ? 1 : 0);
+        digitalWrite(fatalErrorPin, (SysTick->VAL & 0x200000) == 0 ? 1 : 0);
     }
+}
+
+void setFatalErrorPin(int newPin)
+{
+    fatalErrorPin = newPin;
 }

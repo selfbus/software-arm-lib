@@ -32,6 +32,7 @@ BcuBase::BcuBase()
 :progButtonDebouncer()
 {
     progPin = PIN_PROG;
+    setFatalErrorPin(progPin);
     progPinInv = true;
     enabled = false;
 }

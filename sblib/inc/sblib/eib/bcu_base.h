@@ -85,6 +85,7 @@ public:
      */
     void setProgPin(int prgPin) {
         progPin=prgPin;
+        setFatalErrorPin(progPin);
     }
     /**
      * Set ProgPin output inverted, must be called before begin method
