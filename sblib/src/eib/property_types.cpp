@@ -13,11 +13,18 @@
 
 #if BCU_TYPE != BCU1_TYPE
 
-
-// The property sizes in bytes
+/**
+ * PropertyDataType sizes in bytes
+ */
 const byte propertySizes[] =
 {
-    1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 4, 8, 10, 3, 5, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+    1, 1, 1, 2, 2, 2, 3, 3, 4, 4, // PDT_CONTROL -> PDT_UNSIGNED_LONG
+    4, 8, 10, 3, 5, 8, 0, // PDT_FLOAT - >PDT_VARIABLE_LENGTH
+    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, // PDT_GENERIC_01 -> PDT_GENERIC_20
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // PDT_RESERVED_0x25 -> PDT_RESERVED_0x2e
+    0, 2, 6, 1, 1, 2, 1, 1, // PDT_UTF_8 -> PDT_SCALING
+    0, 0, 0, 0, 0, // PDT_RESERVED_0x37 -> PDT_RESERVED_0x3b
+    0, 0, 0, 0 // PDT_NE_VL -> PDT_ESCAPE
 };
 
 

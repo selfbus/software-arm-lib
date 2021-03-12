@@ -14,13 +14,14 @@
 
 #if BCU_TYPE != BCU1_TYPE
 
-/*
+/**
  * Load / configure a property. Called when a "load control" property-write telegram
  * is received.
  *
- * @param objectIdx - the ID of the interface object.
+ * @param objectIdx - the object type ID of the interface object.
  * @param data - the data bytes
  * @param len - the length of the data.
+ *
  * @return The load state.
  */
 int loadProperty(int objectIdx, const byte* data, int len);
@@ -36,7 +37,8 @@ int loadProperty(int objectIdx, const byte* data, int len);
 const PropertyDef* findProperty(PropertyID id, const PropertyDef* table);
 
 /**
- * Interface object type ID
+ * Interface object type ID / Identifiers for System Interface Object Types
+ * See KNX Spec 3/7/3 2.2 Overview System Interface Objects
  */
 enum ObjectType
 {
@@ -50,7 +52,43 @@ enum ObjectType
     OT_ASSOC_TABLE = 2,
 
     /** Application program object. */
-    OT_APPLICATION = 3
+    OT_APPLICATION = 3,
+
+    /** Interface program object. */
+    OT_INTERFACE_PROGRAM = 4,
+
+    /** KNX object association table object */
+    OT_KNX_OBJECT_ASSOCIATATION_TABLE = 5,
+
+    /** Router object */
+    OT_ROUTER = 6,
+
+    /** LTE Address routing table object */
+    OT_LTE_ADDRESS_ROUTING_TABLE = 7,
+
+    /** Common External Message (cEMI) server object */
+    OT_CEMI_SERVER = 8,
+
+    /** Group object table object */
+    OT_GROUP_OBJECT_TABLE  = 9,
+
+    /** Polling master object */
+    OT_POLLING_MASTER = 10,
+
+    /** KNXnet/IP parameter object */
+    OT_KNXNET_IP_PARAMETER = 11,
+
+    /** Application controller object */
+    OT_APPLICATION_CONTROLLER = 12,
+
+    /** File server object */
+    OT_FILE_SERVER = 13,
+
+    /** Security object */
+    OT_SECURITY = 17,
+
+    /** Radio frequency (RF) medium object */
+    OT_RF_MEDIUM = 19
 };
 
 /**
@@ -58,23 +96,53 @@ enum ObjectType
  */
 enum LoadState
 {
-    // No data is loaded
+    /** No data is loaded */
     LS_UNLOADED = 0,
 
-    // Valid data is loaded
+    /** Valid data is loaded */
     LS_LOADED = 1,
 
-    // Load process is active
+    /** Load process is active */
     LS_LOADING = 2,
 
-    // Error in data detected or error during load process
+    /** Error in data detected or error during load process */
     LS_ERROR = 3,
 
-    // Optional state: Unload process is active
+    /** Optional state: Unload process is active */
     LS_UNLOADING = 4,
 
-    // Optional state: Intermediate state between Loading and Loaded
+    /** Optional state: Intermediate state between Loading and Loaded */
     LS_LOADCOMPLETING = 5
+};
+
+/**
+ * Segment types for Load controls, See KNX Spec 2/3/1 p.8 and KNX 3/5/2 p.84
+ */
+enum SegmentType
+{
+    /** allocates a data/code segment */
+    ST_ALLOC_ABS_DATA_SEG = 0,
+
+    /** allocates a stack segment */
+    ST_ALLOC_ABS_STACK_SEG = 1,
+
+    /** sets the Resource start address or the AP’s main function entry address, PEI type, AP ID = Manufacturer ID, Device Type, AP Version */
+    ST_ALLOC_ABS_TASK_SEG = 2,
+
+    /** sets the initialization function entry address, the save function entry address and the Serial PEI handler function entry address */
+    ST_TASK_PTR = 3,
+
+    /** sets the user KNX object table start address and the number of user KNX objects */
+    ST_TASK_CTRL_1 = 4,
+
+    /** sets the start address of the AP’s callback procedure, CO table start address, address of CO segment #0, address of CO segment #2 */
+    ST_TASK_CTRL_2 = 5,
+
+    /** relative allocation */
+    ST_RELATIVE_ALLOCATION = 0x0A,
+
+    /** data relative allocation */
+    ST_DATA_RELATIVE_ALLOCATION = 0x0B
 };
 
 #endif /*BCU_TYPE != BCU1_TYPE*/
