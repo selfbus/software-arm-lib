@@ -66,6 +66,18 @@ public:
     int print(int value, Base base = DEC, int digits = -1);
 
     /**
+     * Print a zero terminated string followed by a number.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int print(const char* str, int value, Base base = DEC, int digits = -1);
+
+    /**
      * Print an unsigned number.
      *
      * @param value - the number to print
@@ -75,6 +87,18 @@ public:
      * @return The number of bytes that were written.
      */
     int print(unsigned int value, Base base = DEC, int digits = -1);
+
+    /**
+     * Print a zero terminated string followed by an unsigned number.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int print(const char* str, unsigned int value, Base base = DEC, int digits = -1);
 
     /**
      * Print a new line by sending a carriage return '\r' (ASCII 13) followed
@@ -105,6 +129,18 @@ public:
     int println(int value, Base base = DEC, int digits = -1);
 
     /**
+     * Print a zero terminated string followed by a number and a new line.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int println(const char* str, int value, Base base = DEC, int digits = -1);
+
+    /**
      * Print an unsigned number followed by a new line.
      *
      * @param value - the number to print
@@ -114,6 +150,18 @@ public:
      * @return The number of bytes that were written.
      */
     int println(unsigned int value, Base base = DEC, int digits = -1);
+
+    /**
+     * Print a zero terminated string followed by an unsigned number and a new line.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int println(const char* str, unsigned int value, Base base = DEC, int digits = -1);
 
     /**
      * Write a zero terminated string.
