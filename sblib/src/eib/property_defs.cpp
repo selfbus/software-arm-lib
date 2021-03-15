@@ -124,7 +124,31 @@ static const PropertyDef appObjectProps[] =
 };
 
 /**
- * The mandatory interface objects for
+ * The properties of the KNX object association table object, could not find the specification in KNX Spec 2.1
+ */
+static const PropertyDef knxAssocTabObjectProps[] =
+{
+    // TODO check correct properties for object OT_KNX_OBJECT_ASSOCIATATION_TABLE
+    /** Interface object type: 2 bytes */
+    { PID_OBJECT_TYPE, PDT_UNSIGNED_INT, OT_KNX_OBJECT_ASSOCIATATION_TABLE },
+
+    /** Load state control */
+    { PID_LOAD_STATE_CONTROL, PDT_CONTROL|PC_WRITABLE|PC_POINTER, PD_USER_EEPROM_OFFSET(loadState[OT_KNX_OBJECT_ASSOCIATATION_TABLE]) },
+
+    /** Pointer to the communication objects table */
+    { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsTabAddr) },
+
+    /** Error code */
+    { PID_ERROR_CODE, PDT_GENERIC_01, 0 }, // TODO implement PID_ERROR_CODE handling
+
+    // TODO implement properties PID_TABLE, PID_MCB_TABLE and maybe more
+
+    /** End of table */
+    PROPERTY_DEF_TABLE_END
+};
+
+/**
+ * The interface objects for
  * BCU2   (MASK_VERSIONs 0x0020, 0x0021, 0x0025)
  * BIM112 (MASK_VERSIONs 0x0701, 0x0705)
  */
@@ -134,6 +158,7 @@ const PropertyDef* const propertiesTab[NUM_PROP_OBJECTS] =
     addrTabObjectProps,    //!> Interface Object 1, mandatory
     assocTabObjectProps,   //!> Interface Object 2, mandatory
     appObjectProps,        //!> Interface Object 3, mandatory
+    knxAssocTabObjectProps //!> Interface Object 5, some newer MASK_VERSIONs (>= 0x0701) use this to set the address of the communication object table
 };
 
 #endif /*BCU_TYPE != BCU1_TYPE*/

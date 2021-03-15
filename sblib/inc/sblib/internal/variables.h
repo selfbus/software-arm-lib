@@ -26,7 +26,7 @@ extern byte userEepromData[USER_EEPROM_SIZE];
 extern byte userEepromDirty;
 
 // Number of interface/property objects
-#define NUM_PROP_OBJECTS 4
+#define NUM_PROP_OBJECTS 5
 
 
 #if BCU_TYPE != BCU1_TYPE
