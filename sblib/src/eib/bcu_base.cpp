@@ -119,7 +119,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 #ifdef DUMP_SERIAL
         // dump the guid received from iapReadUID
         serial.print("GUID  : ");
-        for (int i = 0; i < sizeof(uniqueID); ++i)
+        for (unsigned int i = 0; i < sizeof(uniqueID); ++i)
         {
             if (i) serial.print(" ");
             serial.print(uniqueID[i], HEX, 2);
@@ -146,7 +146,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 #ifdef DUMP_SERIAL
         // dump the generated hash/serial
         serial.print("Serial: ");
-        for (int i = 0; i < sizeof(userEeprom.serial); ++i)
+        for (unsigned int i = 0; i < sizeof(userEeprom.serial); ++i)
         {
             if (i) serial.print(" ");
             serial.print(userEeprom.serial[i], HEX, 2);
@@ -206,7 +206,7 @@ void BcuBase::loop()
         if (telLength > 0)
         {
             serial.print("RCV: ");
-            for (int i = 0; i < telLength; ++i)
+            for (unsigned int i = 0; i < telLength; ++i)
             {
                 if (i) serial.print(" ");
                 serial.print(telBuffer[i], HEX, 2);
