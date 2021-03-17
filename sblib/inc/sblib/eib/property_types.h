@@ -157,6 +157,8 @@ struct PropertyDef
 /**
  * Property ID.
  * <p>See KNX 3/7/3 3.3 p.12 Interface Object Type specific Standardized Property Identifiers</p>
+ *
+ * <b>changes in PropertyID must also be represented in *propertyID_str[] (properties_dump.cpp)</b>
  */
 enum PropertyID
 {

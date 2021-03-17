@@ -56,7 +56,21 @@ void printLoadState(int loadstate);
  */
 void printSegmentType(int segmenttype);
 
-#endif
+/**
+ * Prints a propertyid (in hex) and its clear name
+ *
+ * @param propertyid - property id to print
+ */
+void printPropertyID(int propertyid);
+
+/**
+ * Prints the data
+ * @param data - pointer to data to print
+ * @param len - length of data
+ */
+void printData(const byte* data, int len);
+
+#endif /*DUMP_PROPERTIES*/
 
 #endif /*BCU_TYPE != BCU1_TYPE*/
 
