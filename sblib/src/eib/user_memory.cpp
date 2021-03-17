@@ -63,7 +63,7 @@ void readUserEeprom()
     if (page)
         memcpy(userEepromData, page, USER_EEPROM_SIZE);
     else
-        memset(userEepromData, 0, USER_EEPROM_SIZE); // TODO should filling with zeros indicate a readError? if yes, then it should be somewhere populated
+        memset(userEepromData, 0, USER_EEPROM_SIZE); // TODO should filling with zeros indicate a readError? if yes, then it should be somewhere reported
 
     userEepromModified = false;
 }

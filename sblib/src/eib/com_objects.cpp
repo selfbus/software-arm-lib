@@ -313,6 +313,10 @@ int nextUpdatedObject()
 void processGroupWriteTelegram(int objno, byte* tel)
 {
     byte* valuePtr = objectValuePtr(objno);
+
+    if (valuePtr == nullptr) // TODO valuePtr == nullptr will raise a hardware fault
+        IF_DEBUG(fatalError(););
+
     int count = telegramObjectSize(objno);
 
     if (count > 0) reverseCopy(valuePtr, tel + 8, count);
