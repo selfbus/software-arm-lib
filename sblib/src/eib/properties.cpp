@@ -23,6 +23,15 @@
 
 #include <sblib/eib/property_dump.h>
 
+
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH  10 //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_IO telegram
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_LENGTH  11 //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_Mem telegram (deprecated)
+
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_PAYLOAD_OFFSET 2 //!> offset for RCo_IO mode, where the real data for Additional Load Controls starts
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_PAYLOAD_OFFSET 3 //!> offset for RCo_Mem mode, where the real data for Additional Load Controls starts
+
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_PAYLOAD_LENGTH 7 //!> the length of the payload for both implementations
+
 // Documentation:
 // see KNX 6/6 Profiles, p. 94+
 // see KNX 3/7/3 Standardized Identifier Tables, p. 11+
@@ -40,18 +49,10 @@ const PropertyDef* findProperty(PropertyID propertyId, const PropertyDef* table)
         }
     }
 
-#ifdef DUMP_PROPERTIES
     if (defFound == nullptr)
     {
-        printObjectIdx(table->id);
-        serial.print(" propertyId=0x", propertyId, HEX, 2);
-        if (propertyId == PID_MAX_APDULENGTH) // this is a quite common property, so lets print their name
-        {
-            serial.print(" PID_MAX_APDULENGTH");
-        }
-        serial.println(" not implemented");
+        IF_DUMP_PROPERTIES(serial.print("findProperty: "); printObjectIdx(table->id); serial.print(" "); printPropertyID(propertyId); serial.println(" not implemented"););
     }
-#endif
 
     return defFound;
 }
@@ -68,7 +69,7 @@ const PropertyDef* propertyDef(int objectIdx, PropertyID propertyId)
 {
     if (objectIdx >= NUM_PROP_OBJECTS)
     {
-        IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.println(" not implemented!"););
+        IF_DUMP_PROPERTIES(serial.print("propertyDef: ");printObjectIdx(objectIdx); serial.println(" not implemented!"););
         return 0;
     }
     return findProperty(propertyId, propertiesTab[objectIdx]);
@@ -86,7 +87,7 @@ const PropertyDef* propertyDef(int objectIdx, PropertyID propertyId)
  * @param len - the length of the data
  * @return the new LoadState of the interface object
  */
-LoadState handleLoadStateMachine(int objectIdx, const byte* data, int len)
+LoadState handleLoadStateMachine(const int objectIdx, const byte* data, const int len)
 {
     // FIXME at least these "interface objects" should support their load states.
     // userEeprom.loadState[OT_ADDR_TABLE]
@@ -116,45 +117,75 @@ LoadState handleLoadStateMachine(int objectIdx, const byte* data, int len)
 }
 
 /**
- * handles SegmentType ST_ALLOC_ABS_TASK_SEG of a
+ * handles Additional Load Control: LoadEvent: AllocAbsTaskSeg (segment type 2) of a
  *
  * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
- * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3 p.115
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.115
  *
  * @param objectIdx - interface object index (ObjectType)
- * @param data - the telegram data bytes
- * @param len - the length of the data
- * @param offset - optional offset (offset=1 for a APCI_MEMORY_WRITE_PDU, otherwise 0)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
  *
  * @return new LoadState of the interface object objectIdx
  */
-LoadState handleAllocAbsTaskSegment(int objectIdx, const byte* data, int len, int offset)
+LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, const int len)
 {
-    int addr = makeWord(data[2 + offset], data[3 + offset]);
+    // payLoad[0..1] : start address        (SSSS)
+    // payLoad[2]    : PEI type
+    // payLoad[3..4] : software manufacturer id (MMMM)
+    // payLoad[5..6] : manufacturer specific application software id (TTTT)
+    // payLoad[7]    : version of the application software
+
+    if (len < DMP_LOADSTATE_MACHINE_WRITE_RCO_PAYLOAD_LENGTH)
+        return LS_ERROR;
+
+    IF_DUMP_PROPERTIES(
+            serial.print("handleAllocAbsTaskSegment: ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            serial.print("  --> startaddress: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            serial.print(" PEI: 0x", payLoad[2], HEX, 2);
+            serial.print(" Manufacturer: 0x", makeWord(payLoad[3], payLoad[4]), HEX, 4);
+            serial.print(" AppID: 0x", makeWord(payLoad[5], payLoad[6]), HEX, 4);
+            serial.println(" Vers.: 0x", payLoad[7], HEX, 2);
+    );
+
+    int addr = makeWord(payLoad[0], payLoad[1]);
     // addr is used for address table, association table and communication object table
     switch (objectIdx)
     {
         case OT_ADDR_TABLE:
             userEeprom.addrTabAddr = addr;
-            IF_DUMP_PROPERTIES(serial.println(" userEeprom.addrTabAddr=0x", userEeprom.addrTabAddr, HEX, 2););
+            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.addrTabAddr=0x", userEeprom.addrTabAddr, HEX, 4););
             break;
 
         case OT_ASSOC_TABLE:
             userEeprom.assocTabAddr = addr;
-            IF_DUMP_PROPERTIES(serial.println(" userEeprom.assocTabAddr=0x", userEeprom.assocTabAddr, HEX, 2););
+            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.assocTabAddr=0x", userEeprom.assocTabAddr, HEX, 4););
             break;
 
         case OT_APPLICATION:
 #           if BCU_TYPE == BIM112_TYPE
                 userEeprom.commsTabAddr = addr;
-                IF_DUMP_PROPERTIES(serial.println(" userEeprom.commsTabAddr == 0x", userEeprom.commsTabAddr, HEX, 2););
+                IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr == 0x", userEeprom.commsTabAddr, HEX, 4););
 #           endif
-            userEeprom.appPeiType = data[4 + offset];
-            userEeprom.manufacturerH = data[5 + offset];
-            userEeprom.manufacturerL = data[6 + offset];
-            userEeprom.deviceTypeH = data[7 + offset];
-            userEeprom.deviceTypeL = data[8 + offset];
-            userEeprom.version = data[9 + offset];
+            userEeprom.appPeiType = payLoad[2];
+            userEeprom.manufacturerH = payLoad[3];
+            userEeprom.manufacturerL = payLoad[4];
+            userEeprom.deviceTypeH = payLoad[5];
+            userEeprom.deviceTypeL = payLoad[6];
+            userEeprom.version = payLoad[7];
+            IF_DUMP_PROPERTIES(
+                    serial.println("  ----> userEeprom.appPeiType == 0x", userEeprom.appPeiType, HEX, 2);
+                    serial.println("  ----> userEeprom.manufacturerH == 0x", userEeprom.manufacturerH, HEX, 2);
+                    serial.println("  ----> userEeprom.manufacturerL == 0x", userEeprom.manufacturerL, HEX, 2);
+                    serial.println("  ----> userEeprom.deviceTypeH == 0x", userEeprom.deviceTypeH, HEX, 2);
+                    serial.println("  ----> userEeprom.deviceTypeL == 0x", userEeprom.deviceTypeL, HEX, 2);
+                    serial.println("  ----> userEeprom.version == 0x", userEeprom.version, HEX, 2);
+            );
+
             break;
 
         // TODO this actually doesn't work with MemoryWrite APCI_MEMORY_WRITE_PDU
@@ -162,15 +193,262 @@ LoadState handleAllocAbsTaskSegment(int objectIdx, const byte* data, int len, in
         case OT_KNX_OBJECT_ASSOCIATATION_TABLE:
 #           if BCU_TYPE == BIM112_TYPE
                 userEeprom.commsTabAddr = addr;
-                IF_DUMP_PROPERTIES(serial.println(" userEeprom.commsTabAddr = 0x", userEeprom.commsTabAddr, HEX, 2));
+                IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr = 0x", userEeprom.commsTabAddr, HEX, 4));
 #           endif
+            break;
 
         default:
-            IF_DUMP_PROPERTIES(serial.println(" unknown objectIdx"););
+            IF_DUMP_PROPERTIES(serial.println("  ----> unknown objectIdx"););
             return LS_ERROR;
 
         userEeprom.modified();
     }
+    return LS_LOADING;
+}
+
+/**
+ * NOT IMPLEMENTED!
+ * should handle Additional Load Control: LoadEvent: AllocAbsDataSeg (segment type 0)
+ *
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.114
+ *
+ * @param objectIdx - interface object index (ObjectType)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
+ *
+ * @return new LoadState of the interface object objectIdx
+ */
+LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, const int len)
+{
+    // payLoad[0..1] : start address        (SSSS)
+    // payLoad[2..3] : length               (EEEE-SSSS+1)
+    // payLoad[4]    : access attributes    (bit 0-3 write access, bit 4-7 read access level)
+    // payLoad[5]    : memory type          (bit 0-2,  1=zero page RAM, 2=RAM, 3=EEPROM, bit 3-7 reserved)
+    // payLoad[6]    : memory attributes    (bit 0-6 reserved, bit 7=0: checksum control disabled
+    // payLoad[7]    : reserved
+    IF_DUMP_PROPERTIES(
+            serial.print("handleAllocAbsDataSegment NOT IMPLEMENTED! ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            serial.print("  --> start: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            serial.print(" length: 0x", makeWord(payLoad[2], payLoad[3]), HEX, 4);
+            serial.print(" access: 0x", payLoad[4], HEX, 2);
+            serial.print(" memtype: 0x", payLoad[5], HEX, 2);
+            serial.println(" attrib: 0x", payLoad[6], HEX, 2);
+            serial.println();
+    );
+    return LS_LOADING;
+}
+
+/**
+ * NOT IMPLEMENTED!
+ * should handle Additional Load Control: LoadEvent: AllocAbsStackSeg (segment type 1) of a
+ *
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.115
+ *
+ * @param objectIdx - interface object index (ObjectType)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
+ *
+ * @return new LoadState of the interface object objectIdx
+ */
+LoadState handleAllocAbsStackSeg(const int objectIdx, const byte* payLoad, const int len)
+{
+    // payLoad[0..1] : start address        (SSSS)
+    // payLoad[2..3] : length               (EEEE-SSSS+1)
+    // payLoad[4]    : access attributes    (bit 0-3 write access, bit 4-7 read access level)
+    // payLoad[5]    : memory type          (bit 0-2,  1=zero page RAM, 2=RAM, 3=EEPROM, bit 3-7 reserved)
+    // payLoad[6]    : memory attributes    (bit 0-6 reserved, bit 7=0: checksum control disabled
+    // payLoad[7]    : reserved
+    IF_DUMP_PROPERTIES(
+            serial.print("handleAllocAbsStackSeg NOT IMPLEMENTED! ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            serial.print("  --> start: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            serial.print(" length: 0x", makeWord(payLoad[2], payLoad[3]), HEX, 4);
+            serial.print(" access: 0x", payLoad[4], HEX, 2);
+            serial.print(" memtype: 0x", payLoad[5], HEX, 2);
+            serial.println("attrib: 0x", payLoad[6], HEX, 2);
+            serial.println();
+    );
+    return LS_LOADING;
+}
+
+/**
+ * NOT IMPLEMENTED!
+ * should handle Additional Load Control: LoadEvent: TaskPtr (segment type 3)
+ *
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.116
+ *
+ * @param objectIdx - interface object index (ObjectType)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
+ *
+ * @return new LoadState of the interface object objectIdx
+ */
+LoadState handleTaskPtr(const int objectIdx, const byte* payLoad, const int len)
+{
+    // payLoad[0..1] : app init address           (IIII)
+    // payLoad[2..3] : app save address           (SSSS)
+    // payLoad[4..5] : custom PEIhandler function (PPPP)
+    // payLoad[6..7] : reserved
+    IF_DUMP_PROPERTIES(
+            serial.print("handleTaskPtr NOT IMPLEMENTED! ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            serial.print("  --> init: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            serial.print(" save: 0x", makeWord(payLoad[2], payLoad[3]), HEX, 4);
+            serial.println(" PEI: 0x", makeWord(payLoad[2], payLoad[3]), HEX, 2);
+            serial.println();
+    );
+    return LS_LOADING;
+}
+
+/**
+ * NOT IMPLEMENTED!
+ * for more information https://www.auto.tuwien.ac.at/~mkoegler/eib/doc/Bcu2Help_v12.chm
+ * "System Architecture->Interface Objects->User Interface Objects->BCU2 User EIB Objects"
+ *
+ * should handle Additional Load Control: LoadEvent: TaskCtrl1 (segment type 4)
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.116
+ *
+ * @param objectIdx - interface object index (ObjectType)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
+ *
+ * @return new LoadState of the interface object objectIdx
+ */
+LoadState handleTaskCtrl1(const int objectIdx, const byte* payLoad, const int len)
+{
+    // payLoad[0..1] : interface object address
+    // payLoad[2]    : nr. of interface objects
+    // payLoad[3..7] : reserved
+    userEeprom.eibObjAddr = makeWord(payLoad[0], payLoad[1]);
+    userEeprom.eibObjCount = payLoad[2];
+    IF_DUMP_PROPERTIES(
+            serial.print("handleTaskCtrl1 ONLY PARTLY IMPLEMENTED! ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            serial.print("  --> userEeprom.eibObjAddr: 0x", userEeprom.eibObjAddr, HEX, 4);
+            serial.print(" userEeprom.eibObjCount: 0x", userEeprom.eibObjCount, HEX, 2);
+            serial.println();
+    );
+    return LS_LOADING;
+}
+
+/**
+ * ONLY PARTLY IMPLEMENTED!
+ * should handle Additional Load Control: LoadEvent: TaskCtrl2 (segment type 5)
+ *
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.116
+ *
+ * @param objectIdx - interface object index (ObjectType)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
+ *
+ * @return new LoadState of the interface object objectIdx
+ */
+LoadState handleTaskCtrl2(const int objectIdx, const byte* payLoad, const int len)
+{
+    // payLoad[0..1] : app callbackAddr (CCCC)
+    // payLoad[2..3] : CommObjPtr (OOOO)
+    // payLoad[4..5] : CommObjSegPtr1 (1111h)
+    // payLoad[6..7] : CommObjSegPtr2 (2222h)
+    userEeprom.commsTabAddr = makeWord(payLoad[2], payLoad[3]);
+    userEeprom.commsSeg0Addr = makeWord(payLoad[4], payLoad[5]); // commsSeg0Addr is nowhere used in sblib
+    userEeprom.commsSeg1Addr = makeWord(payLoad[6], payLoad[7]); // commsSeg1Addr is nowhere used in sblib
+
+    IF_DUMP_PROPERTIES(serial.print  (" userEeprom.commsTabAddr=0x", userEeprom.commsTabAddr, HEX, 4););
+    IF_DUMP_PROPERTIES(serial.print  (" userEeprom.commsSeg0Addr=0x", userEeprom.commsSeg0Addr, HEX, 4););
+    IF_DUMP_PROPERTIES(serial.println(" userEeprom.commsSeg1Addr=0x", userEeprom.commsSeg1Addr, HEX, 4););
+    IF_DUMP_PROPERTIES(
+            serial.print("handleTaskCtrl2 ONLY PARTLY IMPLEMENTED! ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            serial.print("  --> callbackAddr: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            serial.print(" userEeprom.commsTabAddr: 0x", userEeprom.commsTabAddr, HEX, 4);
+            serial.print(" userEeprom.commsSeg0Addr: 0x", userEeprom.commsSeg0Addr, HEX, 4);
+            serial.print(" userEeprom.commsSeg1Addr: 0x", userEeprom.commsSeg1Addr, HEX, 4);
+            serial.println();
+    );
+    return LS_LOADING;
+}
+
+/**
+ * NOT IMPLEMENTED!
+ * should handle Additional Load Control: LoadEvent: RelativeAllocation (segment type 0x0A)
+ *
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.116
+ *
+ * @param objectIdx - interface object index (ObjectType)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
+ *
+ * @return new LoadState of the interface object objectIdx
+ */
+LoadState handleRelativeAllocation(const int objectIdx, const byte* payLoad, const int len)
+{
+    // payLoad[0..1] : data
+    // payLoad[2..7] : fill octects (0x00)
+    IF_DUMP_PROPERTIES(
+            serial.print("handleRelativeAllocation NOT IMPLEMENTED! ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            serial.print("  --> data: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            serial.println();
+    );
+    return LS_LOADING;
+}
+
+/**
+ * NOT IMPLEMENTED!
+ * should handle Additional Load Control: LoadEvent: DataRelativeAllocation (segment type 0x0B)
+ *
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.116
+ *
+ * @param objectIdx - interface object index (ObjectType)
+ * @param payLoad - the telegram data bytes
+ * @param len - the length of the payLoad
+ *
+ * @return new LoadState of the interface object objectIdx
+ */
+LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad, const int len)
+{
+    // payLoad[0..3] : requested memory size
+    // payLoad[4]    : mode (0x00)
+    // payLoad[5]    : fill (0x00)
+    // payLoad[6..7] : reserved
+    IF_DUMP_PROPERTIES(
+            serial.print("handleDataRelativeAllocation NOT IMPLEMENTED! ");
+            printObjectIdx(objectIdx);
+            serial.print(" ");
+            printData(payLoad, len);
+            serial.println();
+            unsigned int reqMemSize = ((payLoad[0] << 16) | (payLoad[1] << 8) | (payLoad[2]));
+            serial.print("  --> requested memory size: 0x", reqMemSize, HEX, 6);
+            serial.print(" mode: 0x", payLoad[4], HEX, 2);
+            serial.print(" fill: 0x", payLoad[5], HEX, 2);
+            serial.println();
+    );
     return LS_LOADING;
 }
 
@@ -180,86 +458,84 @@ int loadProperty(int objectIdx, const byte* data, int len)
     // See KNX 6/6 Profiles, p. 101 for load states
     // See BCU2 help System Architecture > Load Procedure
 
-    LoadState newLoadState = handleLoadStateMachine(objectIdx, data, len);
+    // DMP_LoadStateMachineWrite_RCo_IO length of data must be 10  (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3 p.115
+    // DMP_LoadStateMachineWrite_RCo_Mem length of data must be 11 (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated)
+    if ((len > DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_LENGTH) || (len < DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH))
+    {
+        IF_DUMP_PROPERTIES(serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" invalid ");printData(data, len););
+        return LS_ERROR;
+    }
 
-    IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState););
+    LoadState newLoadState = handleLoadStateMachine(objectIdx, data, len);
 
     if (newLoadState != LS_LOADCOMPLETING)
     {
-        IF_DUMP_PROPERTIES(serial.println(););
         return newLoadState;
     }
+    // IF_DUMP_PROPERTIES(serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.print(" "););
+    // IF_DUMP_PROPERTIES(printData(data, len););
 
     //
-    // Load data (newLoadState == LS_LOADCOMPLETING )
+    // from here newLoadState == LS_LOADCOMPLETING
     //
-    int segmentType = data[1];
-    int addr = makeWord(data[2 + PROP_LOAD_OFFSET], data[3 + PROP_LOAD_OFFSET]);
+    // Additional Load Control: LoadEvent: segmentType
+    //
+    int segmentType = data[1]; // this is in both versions always the 2.octet
 
-    IF_DUMP_PROPERTIES(serial.print(" ");printSegmentType(segmentType););
+    byte payloadOffset;
+    bool apciPropertyValueWrite = (len == DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH); // determine the realization type of DMP_LoadStateMachineWrite_RCo
+    if (apciPropertyValueWrite)
+        payloadOffset = DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_PAYLOAD_OFFSET; // offset for RCo_IO mode, where the real data for Additional Load Controls starts
+    else
+        payloadOffset = DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_PAYLOAD_OFFSET; // offset for RCo_Mem mode, where the real data for Additional Load Controls starts
 
+
+    const byte *payload  = data + payloadOffset; // "move" to start of payload data
+    len -= payloadOffset; // reduce len by payloadOffset
+
+    // IF_DUMP_PROPERTIES(serial.println();serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.print(" ");printData(payload, len););
+    // IF_DUMP_PROPERTIES(serial.println();serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.print(" ");printData(data, len););
+
+    // IF_DUMP_PROPERTIES(serial.print(" ");printSegmentType(segmentType););
     switch (segmentType)
     {
     case ST_ALLOC_ABS_DATA_SEG:  // ignored, Allocate absolute code/data segment (LdCtrlAbsSegment)
-        // See KNX 3/5/2 p.84 (A_Memory_Write) and KNX 3/5/2 p.113 (A_PropertyValue_Write)
-        // data[2..3]: address
-        // data[4..5]: length
-        // data[6]: read/write access level
-        // data[7]: memory type (1=Low RAM, 2=RAM, 3=EEPROM)
-        // data[8]: bit 7: enable checksum control
-        IF_DUMP_PROPERTIES(serial.println(" ignored!"););
-        break;
+        return handleAllocAbsDataSegment(objectIdx, payload, len);
 
-    case ST_ALLOC_ABS_STACK_SEG:  // Allocate absolute stack segment (ignored)
-        IF_DUMP_PROPERTIES(serial.println(" ignored!"););
-        break;
+    case ST_ALLOC_ABS_STACK_SEG:  // ignored, Allocate absolute stack segment
+        return handleAllocAbsStackSeg(objectIdx, payload, len);
 
     case ST_ALLOC_ABS_TASK_SEG:  // Segment control record (LdCtrlTaskSegment)
-        return handleAllocAbsTaskSegment(objectIdx, data, len, PROP_LOAD_OFFSET);
+        // See KNX 3/5/2 p.115
+        // Additional Load Control: LoadEvent: AllocAbsTaskSeg (segment type 2)
+        return handleAllocAbsTaskSegment(objectIdx, payload, len);
 
     case ST_TASK_PTR:  // Task pointer (ignored)
-        // data[2+3]: app init function
-        // data[4+5]: app save function
-        // data[6+7]: custom PEI handler function
-        IF_DUMP_PROPERTIES(serial.println(" ignored!"););
-        break;
+        return handleTaskPtr(objectIdx, payload, len);
 
     case ST_TASK_CTRL_1:  // Task control 1
-        userEeprom.eibObjAddr = addr;       // nowhere used
-        userEeprom.eibObjCount = data[4];   // nowhere used
-        IF_DUMP_PROPERTIES(serial.print  (" userEeprom.eibObjAddr=0x", userEeprom.eibObjAddr, HEX, 2););
-        IF_DUMP_PROPERTIES(serial.println(" userEeprom.eibObjCount=0x", userEeprom.eibObjCount, HEX, 2););
-        break;
+        return handleTaskCtrl1(objectIdx, payload, len);
 
     case ST_TASK_CTRL_2:  // Task control 2
-        // data[2+3]: app callback function
-        userEeprom.commsTabAddr = makeWord(data[4], data[5]);
-        userEeprom.commsSeg0Addr = makeWord(data[6], data[7]); // commsSeg0Addr & commsSeg1Addr are nowhere used
-        userEeprom.commsSeg1Addr = makeWord(data[8], data[9]); // TODO was .commsSeg0Addr, which would override above assignment of it, maybe bug?
-        IF_DUMP_PROPERTIES(serial.print  (" userEeprom.commsTabAddr=0x", userEeprom.commsTabAddr, HEX, 2););
-        IF_DUMP_PROPERTIES(serial.print  (" userEeprom.commsSeg0Addr=0x", userEeprom.commsSeg0Addr, HEX, 2););
-        IF_DUMP_PROPERTIES(serial.println(" userEeprom.commsSeg1Addr=0x", userEeprom.commsSeg1Addr, HEX, 2););
-        break;
+        return handleTaskCtrl2(objectIdx, payload, len);
 
     case ST_RELATIVE_ALLOCATION: // relative allocation (ignored)
-        IF_DUMP_PROPERTIES(serial.println(" ignored!"););
-        break;
+        return handleRelativeAllocation(objectIdx, payload, len);
 
     case ST_DATA_RELATIVE_ALLOCATION: // data relative allocation (ignored)
-        IF_DUMP_PROPERTIES(serial.println(" ignored!"););
-        break;
+        return handleDataRelativeAllocation(objectIdx, payload, len);
 
     default:
         IF_DUMP_PROPERTIES(serial.println(" FATAL ERROR."););
         IF_DEBUG(fatalError());
         return LS_ERROR; // reply: Error
     }
-
     return LS_LOADING;
 }
 
 bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start)
 {
+    // IF_DUMP_PROPERTIES(serial.print("propertyValueReadTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def) return false; // not found
 
@@ -282,12 +558,16 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
 
 bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start)
 {
+    // IF_DUMP_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def)
         return false; // not found
 
     if (!(def->control & PC_WRITABLE))
+    {
+        IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.println(" "); printPropertyID(propertyId); serial.println(" not writable!"););
         return false; // not writable
+    }
 
     PropertyDataType type = def->type();
     byte* valuePtr = def->valuePointer();
@@ -307,7 +587,7 @@ bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count,
     {
         len = count * def->size();
         --start;
-
+        IF_DUMP_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
         reverseCopy(valuePtr + start * type, data, len);
         reverseCopy(bcu.sendTelegram + 12, valuePtr + start * type, len);
 

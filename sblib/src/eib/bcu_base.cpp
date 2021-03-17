@@ -91,7 +91,13 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 #if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
     IF_DEBUG(serial.print("dump enabled BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
     IF_DEBUG(serial.print(" MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
-    IF_DEBUG(serial.println(" PROP_LOAD_OFFSET: 0x", PROP_LOAD_OFFSET, HEX, 2));
+#   ifdef LOAD_CONTROL_ADDR
+        IF_DEBUG(serial.print(" LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4););
+#   endif
+#   ifdef LOAD_STATE_ADDR
+        IF_DEBUG(serial.print(" LOAD_STATE_ADDR: 0x", LOAD_STATE_ADDR, HEX, 4););
+#   endif
+    IF_DEBUG(serial.println());
 #endif
 
     sendTelegram[0] = 0;

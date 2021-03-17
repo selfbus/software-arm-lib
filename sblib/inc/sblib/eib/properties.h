@@ -158,10 +158,10 @@ enum LoadControl
  */
 enum SegmentType
 {
-    /** allocates a data/code segment */
+    /** allocate absolute data or code */
     ST_ALLOC_ABS_DATA_SEG = 0,
 
-    /** allocates a stack segment */
+    /** allocates a stack */
     ST_ALLOC_ABS_STACK_SEG = 1,
 
     /** sets the Resource start address or the AP’s main function entry address, PEI type, AP ID = Manufacturer ID, Device Type, AP Version */

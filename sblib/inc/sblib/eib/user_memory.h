@@ -169,10 +169,10 @@ public:
     word addrTabAddr;    //!< 0x0478: Address of the address table
     word assocTabAddr;   //!< 0x047a: Address of the association table
     word commsTabAddr;   //!< 0x047c: Address of the communication object table
-    word commsSeg0Addr;  //!< 0x047e: Address of communication object memory segment 0
-    word commsSeg1Addr;  //!< 0x0480: Address of communication object memory segment 1
-    word eibObjAddr;     //!< 0x047c: Address of the application program EIB objects, 0 if unused.
-    byte eibObjCount;    //!< 0x047e: Number of application program EIB objects.
+    word commsSeg0Addr;  //!< 0x047e: Address of communication object memory segment 0 // TODO needs implementation, see handleTaskCtrl2(...) in properties.cpp
+    word commsSeg1Addr;  //!< 0x0480: Address of communication object memory segment 1 // TODO needs implementation, see handleTaskCtrl2(...) in properties.cpp
+    word eibObjAddr;     //!< 0x047c: Address of the application program EIB objects, 0 if unused. // TODO needs implementation, see handleTaskCtrl1(...) in properties.cpp
+    byte eibObjCount;    //!< 0x047e: Number of application program EIB objects. // TODO needs implementation, see handleTaskCtrl1(...) in properties.cpp
     byte padding1;       //!< 0x047f: Padding
     word serviceControl; //!< 0x0480: Service control
     word padding2;       //!< 0x0482: Padding
