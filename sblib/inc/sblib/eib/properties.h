@@ -15,14 +15,17 @@
 #if BCU_TYPE != BCU1_TYPE
 
 /**
- * Load / configure a property. Called when a "load control" property-write telegram
- * is received.
+ * Load / configure a property of a interface object. Called when a "load control" property-write telegram is received.
  *
- * @param objectIdx - the object type ID of the interface object.
- * @param data - the data bytes
+ * e.g.
+ * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
+ * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3 p.115
+ *
+ * @param objectIdx - the interface object type ID.
+ * @param data - the telegram data bytes
  * @param len - the length of the data.
  *
- * @return The load state.
+ * @return The new load state.
  */
 int loadProperty(int objectIdx, const byte* data, int len);
 
@@ -38,7 +41,9 @@ const PropertyDef* findProperty(PropertyID id, const PropertyDef* table);
 
 /**
  * Interface object type ID / Identifiers for System Interface Object Types
- * See KNX Spec 3/7/3 2.2 Overview System Interface Objects
+ * <b>See KNX Spec 3/7/3 2.2 Overview System Interface Objects</b>
+ *
+ * <b>changes in ObjectType must also be represented in *objectType_str[] (properties_dump.cpp)</b>
  */
 enum ObjectType
 {
@@ -93,6 +98,9 @@ enum ObjectType
 
 /**
  * Load states
+ * <b>See KNX Spec 3/5/1 4.17.2.3.1 p. 200</b>
+ *
+ * <b>changes in LoadState must also be represented in *loadState_str[] (properties_dump.cpp)</b>
  */
 enum LoadState
 {
@@ -116,7 +124,37 @@ enum LoadState
 };
 
 /**
- * Segment types for Load controls, See KNX Spec 2/3/1 p.8 and KNX 3/5/2 p.84
+ * Load controls
+ * <b>See KNX Spec 3/5/1 4.17.2.3.1 p. 201</b>
+ */
+enum LoadControl
+{
+    /** No Operation */
+    LC_NO_OPERATION = 0,
+
+    /** start the loading of the loadable part */
+    LC_START_LOADING = 1,
+
+    /** complete the Loading of the loadable part */
+    LC_LOAD_COMPLETED  = 2,
+
+    /**
+     * used to transfer additional load information
+     * like memory allocation (absolute or relative),
+     * application entry points or special run conditions.
+     * See clause 3.27 “DM_LoadStateMachineWrite”
+     */
+    LC_ADDITIONAL_LOAD_CONTROLS = 3,
+
+    /** request to unload the loadable part */
+    LC_UNLOAD = 4
+};
+
+/**
+ * Segment types for Load controls
+ * <b>See  KNX Spec 2/3/1 p.8 and KNX 3/5/2 p.84 </b>
+ *
+ * <b>changes in SegmentType must also be represented in *segmentType_str[] (properties_dump.cpp)</b>
  */
 enum SegmentType
 {

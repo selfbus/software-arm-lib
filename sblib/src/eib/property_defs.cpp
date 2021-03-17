@@ -1,5 +1,5 @@
 /*
- *  property_defs.cpp - Definitions of BCU2, BIM112 (or newer) properties of EIB interface objects.
+ *  property_defs.cpp - Definitions of BCU2, BIM112 (or newer) EIB interface objects with their properties.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *

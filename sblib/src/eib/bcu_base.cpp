@@ -18,8 +18,8 @@
 #include <sblib/internal/iap.h>
 #include <string.h>
 
-#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL
-#include <sblib/serial.h>
+#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
+#   include <sblib/serial.h>
 #endif
 
 // The interrupt handler for the EIB bus access object
@@ -72,16 +72,26 @@ int BcuBase::hashUID(byte* uid, const int len_uid, byte* hash, const int len_has
 void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
     _begin();
-#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL
-    serial.begin(115200);
+#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
+    IF_DEBUG(serial.begin(115200));
 #endif
 
 #ifdef DUMP_TELEGRAMS
-    serial.println("Telegram dump enabled");
+    IF_DEBUG(serial.print("Telegram "));
 #endif
 
 #ifdef DUMP_SERIAL
-    serial.println("Serialnumber dump enabled");
+    IF_DEBUG(serial.print("Serialnumber "));
+#endif
+
+#ifdef DUMP_PROPERTIES
+    IF_DEBUG(serial.print("Properties "));
+#endif
+
+#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
+    IF_DEBUG(serial.print("dump enabled BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
+    IF_DEBUG(serial.print(" MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
+    IF_DEBUG(serial.println(" PROP_LOAD_OFFSET: 0x", PROP_LOAD_OFFSET, HEX, 2));
 #endif
 
     sendTelegram[0] = 0;

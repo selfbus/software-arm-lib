@@ -17,8 +17,8 @@
 #include <sblib/internal/variables.h>
 #include <sblib/mem_mapper.h>
 
-#if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS
-#include <sblib/serial.h>
+#if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS || defined DUMP_PROPERTIES || defined DUMP_SERIAL
+#   include <sblib/serial.h>
 #endif
 
 extern unsigned int writeUserEepromTime;
