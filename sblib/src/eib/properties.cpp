@@ -94,26 +94,36 @@ LoadState handleLoadStateMachine(const int objectIdx, const byte* data, const in
     // userEeprom.loadState[OT_ASSOC_TABLE]
     // userEeprom.loadState[OT_APPLICATION]
 
+    LoadState newLoadState = LS_ERROR;
+
     LoadControl loadcontrol = LoadControl(data[0] & 7);
     switch (loadcontrol) // the control state
     {
     case LC_START_LOADING: // Load
-        return LS_LOADING; // reply: Loading
+        newLoadState = LS_LOADING; // reply: Loading
+        break;
 
     case LC_LOAD_COMPLETED: // Load completed
-        return LS_LOADED; // reply: Loaded
+        newLoadState =  LS_LOADED; // reply: Loaded
+        break;
 
     case LC_ADDITIONAL_LOAD_CONTROLS: // Load data: handled below
-        return LS_LOADCOMPLETING; // returning LS_LOADCOMPLETING is a hack for flow control in int loadProperty()
+        newLoadState =  LS_LOADCOMPLETING; // returning LS_LOADCOMPLETING is a hack for flow control in int loadProperty()
+        break;
 
     case LC_UNLOAD: // Unload
-        return LS_UNLOADED;  // reply: Unloaded
+        newLoadState =  LS_UNLOADED;  // reply: Unloaded
+        break;
 
     default:
-        IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.println(" unknown loadcontrol=0x", loadcontrol, HEX, 2););
+        newLoadState =  LS_ERROR;  // reply: Error
+        IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.println(" unknown loadcontrol=0x", loadcontrol, HEX, 2);serial.println(););
         IF_DUMP_PROPERTIES(fatalError()); // this will "halt the cpu"
-        return LS_ERROR;  // reply: Error
+        break;
     }
+
+    IF_DUMP_PROPERTIES(serial.print("handleLoadStateMachine: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.println(););
+    return newLoadState;
 }
 
 /**
@@ -158,12 +168,12 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
     {
         case OT_ADDR_TABLE:
             userEeprom.addrTabAddr = addr;
-            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.addrTabAddr=0x", userEeprom.addrTabAddr, HEX, 4););
+            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.addrTabAddr=0x", userEeprom.addrTabAddr, HEX, 4); serial.println(););
             break;
 
         case OT_ASSOC_TABLE:
             userEeprom.assocTabAddr = addr;
-            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.assocTabAddr=0x", userEeprom.assocTabAddr, HEX, 4););
+            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.assocTabAddr=0x", userEeprom.assocTabAddr, HEX, 4); serial.println(););
             break;
 
         case OT_APPLICATION:
@@ -179,13 +189,11 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
             userEeprom.version = payLoad[7];
             IF_DUMP_PROPERTIES(
                     serial.println("  ----> userEeprom.appPeiType == 0x", userEeprom.appPeiType, HEX, 2);
-                    serial.println("  ----> userEeprom.manufacturerH == 0x", userEeprom.manufacturerH, HEX, 2);
-                    serial.println("  ----> userEeprom.manufacturerL == 0x", userEeprom.manufacturerL, HEX, 2);
-                    serial.println("  ----> userEeprom.deviceTypeH == 0x", userEeprom.deviceTypeH, HEX, 2);
-                    serial.println("  ----> userEeprom.deviceTypeL == 0x", userEeprom.deviceTypeL, HEX, 2);
+                    serial.println("  ----> userEeprom.manufacturerH & L == 0x", makeWord(userEeprom.manufacturerH, userEeprom.manufacturerL), HEX, 4);
+                    serial.println("  ----> userEeprom.deviceTypeH & L == 0x", makeWord(userEeprom.deviceTypeH, userEeprom.deviceTypeL), HEX, 4);
                     serial.println("  ----> userEeprom.version == 0x", userEeprom.version, HEX, 2);
+                    serial.println();
             );
-
             break;
 
         // TODO this actually doesn't work with MemoryWrite APCI_MEMORY_WRITE_PDU
@@ -193,12 +201,12 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
         case OT_KNX_OBJECT_ASSOCIATATION_TABLE:
 #           if BCU_TYPE == BIM112_TYPE
                 userEeprom.commsTabAddr = addr;
-                IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr = 0x", userEeprom.commsTabAddr, HEX, 4));
+                IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr = 0x", userEeprom.commsTabAddr, HEX, 4); serial.println(););
 #           endif
             break;
 
         default:
-            IF_DUMP_PROPERTIES(serial.println("  ----> unknown objectIdx"););
+            IF_DUMP_PROPERTIES(serial.println("  ----> unknown objectIdx");serial.println(););
             return LS_ERROR;
 
         userEeprom.modified();
@@ -342,7 +350,7 @@ LoadState handleTaskCtrl1(const int objectIdx, const byte* payLoad, const int le
             printData(payLoad, len);
             serial.println();
             serial.print("  --> userEeprom.eibObjAddr: 0x", userEeprom.eibObjAddr, HEX, 4);
-            serial.print(" userEeprom.eibObjCount: 0x", userEeprom.eibObjCount, HEX, 2);
+            serial.println(" userEeprom.eibObjCount: 0x", userEeprom.eibObjCount, HEX, 2);
             serial.println();
     );
     return LS_LOADING;
@@ -383,7 +391,7 @@ LoadState handleTaskCtrl2(const int objectIdx, const byte* payLoad, const int le
             serial.print("  --> callbackAddr: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
             serial.print(" userEeprom.commsTabAddr: 0x", userEeprom.commsTabAddr, HEX, 4);
             serial.print(" userEeprom.commsSeg0Addr: 0x", userEeprom.commsSeg0Addr, HEX, 4);
-            serial.print(" userEeprom.commsSeg1Addr: 0x", userEeprom.commsSeg1Addr, HEX, 4);
+            serial.println(" userEeprom.commsSeg1Addr: 0x", userEeprom.commsSeg1Addr, HEX, 4);
             serial.println();
     );
     return LS_LOADING;
@@ -412,7 +420,7 @@ LoadState handleRelativeAllocation(const int objectIdx, const byte* payLoad, con
             serial.print(" ");
             printData(payLoad, len);
             serial.println();
-            serial.print("  --> data: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            serial.println("  --> data: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
             serial.println();
     );
     return LS_LOADING;
@@ -446,7 +454,7 @@ LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad,
             unsigned int reqMemSize = ((payLoad[0] << 16) | (payLoad[1] << 8) | (payLoad[2]));
             serial.print("  --> requested memory size: 0x", reqMemSize, HEX, 6);
             serial.print(" mode: 0x", payLoad[4], HEX, 2);
-            serial.print(" fill: 0x", payLoad[5], HEX, 2);
+            serial.println(" fill: 0x", payLoad[5], HEX, 2);
             serial.println();
     );
     return LS_LOADING;
@@ -472,8 +480,6 @@ int loadProperty(int objectIdx, const byte* data, int len)
     {
         return newLoadState;
     }
-    // IF_DUMP_PROPERTIES(serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.print(" "););
-    // IF_DUMP_PROPERTIES(printData(data, len););
 
     //
     // from here newLoadState == LS_LOADCOMPLETING
