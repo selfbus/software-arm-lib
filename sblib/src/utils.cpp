@@ -35,11 +35,24 @@ void fatalError()
 
     while (1)
     {
-        // Blink the LED on the LPCxpresso board
-        digitalWrite(fatalErrorPin, (SysTick->VAL & 0x200000) == 0 ? 1 : 0);
+        // Blink the fatalErrorLED
+        digitalWrite(fatalErrorPin, (SysTick->VAL & 0x400000) == 0 ? 1 : 0);
     }
 }
 
+void HardFault_Handler()
+{
+    // We use only low level functions here as a HardFault could happen
+    // anywhere and we want to ensure that the function works
+    pinMode(fatalErrorPin, OUTPUT);
+    SysTick_Config(0x1000000);
+
+    while (1)
+    {
+        // Blink the fatalErrorLED
+        digitalWrite(fatalErrorPin, (SysTick->VAL & 0x200000) == 0 ? 1 : 0);
+    }
+}
 void setFatalErrorPin(int newPin)
 {
     fatalErrorPin = newPin;
