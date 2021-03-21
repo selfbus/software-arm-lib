@@ -9,6 +9,7 @@
  */
 
 #include <sblib/eib/property_dump.h>
+// TODO check possibility to use vsnprintf from stdio.h (how much would it increase lib size?)
 
 #if BCU_TYPE != BCU1_TYPE
 

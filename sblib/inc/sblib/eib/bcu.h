@@ -51,6 +51,12 @@ public:
     void setMemMapper(MemMapper *mapper);
 
     /**
+     * Returns a pointer to the instance of the MemMapper object of the BCU
+     * @return a pointer to the instance of the MemMapper object, in case of error return is nullptr
+     */
+    MemMapper* getMemMapper();
+
+    /**
      * Set a callback class to notify the user program of some events
      */
     void setUsrCallback(UsrCallback *callback);
@@ -145,6 +151,11 @@ inline int BCU::connectedTo()
 inline void BCU::setMemMapper(MemMapper *mapper)
 {
     memMapper = mapper;
+}
+
+inline MemMapper* BCU::getMemMapper()
+{
+    return memMapper;
 }
 
 inline void BCU::setUsrCallback(UsrCallback *callback)

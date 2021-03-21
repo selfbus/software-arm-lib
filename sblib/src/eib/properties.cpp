@@ -230,24 +230,82 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
 LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, const int len)
 {
     // payLoad[0..1] : start address        (SSSS)
-    // payLoad[2..3] : length               (EEEE-SSSS+1)
+    // payLoad[2..3] : length (LLLL)        (EEEE-SSSS+1) --> EEEE = SSSS+LLLL-1 // KNX Spec not really clear about that
     // payLoad[4]    : access attributes    (bit 0-3 write access, bit 4-7 read access level)
     // payLoad[5]    : memory type          (bit 0-2,  1=zero page RAM, 2=RAM, 3=EEPROM, bit 3-7 reserved)
     // payLoad[6]    : memory attributes    (bit 0-6 reserved, bit 7=0: checksum control disabled
     // payLoad[7]    : reserved
+    unsigned int absDataSegmentStartAddress = makeWord(payLoad[0], payLoad[1]);
+    unsigned int absDataSegmentLength = makeWord(payLoad[2], payLoad[3]);
+    unsigned int absDataSegmentEndAddress = absDataSegmentStartAddress + absDataSegmentLength - 1;
+
+
     IF_DUMP_PROPERTIES(
             serial.print("handleAllocAbsDataSegment NOT IMPLEMENTED! ");
             printObjectIdx(objectIdx);
             serial.print(" ");
             printData(payLoad, len);
             serial.println();
-            serial.print("  --> start: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
-            serial.print(" length: 0x", makeWord(payLoad[2], payLoad[3]), HEX, 4);
+            serial.print("  --> start: 0x", absDataSegmentStartAddress, HEX, 4);
+            serial.print(" length: 0x", absDataSegmentLength, HEX, 4);
+            serial.print(" end: 0x", absDataSegmentEndAddress, HEX, 4);
             serial.print(" access: 0x", payLoad[4], HEX, 2);
             serial.print(" memtype: 0x", payLoad[5], HEX, 2);
             serial.println(" attrib: 0x", payLoad[6], HEX, 2);
-            serial.println();
     );
+
+
+    byte* memPtrStart = nullptr;
+    byte* memPtrEnd= nullptr;
+
+    // TODO this check is not complete, memType is ignored & MemMapperMod has no memoryPtr(...)
+    // so it will return always 0
+    MemMapper* bcuMemMapper = ((BCU *) &bcu)->getMemMapper();
+
+    if ((bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress)))
+    {
+        memPtrStart = bcuMemMapper->memoryPtr(absDataSegmentStartAddress, false);
+    }
+    else if ((absDataSegmentStartAddress >= USER_EEPROM_START) && (absDataSegmentStartAddress < USER_EEPROM_END))
+    {
+        memPtrStart = userMemoryPtr(absDataSegmentStartAddress);
+    }
+    /*
+    else if ((absDataSegmentStartAddress >= getUserRamStart()) && (absDataSegmentStartAddress < (getUserRamStart() + USER_RAM_SIZE)))
+    {
+        memPtrStart =
+    }
+    */
+
+    if((bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress)))
+    {
+        memPtrEnd = bcuMemMapper->memoryPtr(absDataSegmentEndAddress, false);
+    }
+    else if ((absDataSegmentEndAddress >= USER_EEPROM_START) && (absDataSegmentEndAddress < USER_EEPROM_END))
+    {
+        memPtrEnd = userMemoryPtr(absDataSegmentEndAddress);
+    }
+    /*
+    else if ((absDataSegmentEndAddress >= getUserRamStart()) && (absDataSegmentEndAddress < (getUserRamStart() + USER_RAM_SIZE)))
+    {
+        memPtrEnd =
+    }
+    */
+
+    if (!memPtrStart)
+    {
+        IF_DUMP_PROPERTIES(serial.println("  ------> invalid start: 0x", absDataSegmentStartAddress, HEX, 4);serial.println(););
+        // return LS_ERROR; // TODO report the error
+        return LS_LOADING;
+    }
+
+    if ( !memPtrEnd)
+    {
+        IF_DUMP_PROPERTIES(serial.println("  ------> invalid end: 0x", absDataSegmentEndAddress, HEX, 4);serial.println(););
+        // return LS_ERROR; // TODO report the error
+        return LS_LOADING;
+    }
+    IF_DUMP_PROPERTIES(serial.println(););
     return LS_LOADING;
 }
 
