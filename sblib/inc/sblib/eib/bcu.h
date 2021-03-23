@@ -75,7 +75,7 @@ public:
     void enableGroupTelSend(bool enable);
 
     /**
-     * Set a limit for group telegram tramsissions per second.
+     * Set a limit for group telegram transmissions per second.
      * If the parameter is not zero, there is a minimum delay
      * of 1/limit (in seconds) between subsequent group telegram
      * transmissions.
