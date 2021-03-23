@@ -305,7 +305,7 @@ LoadState handleAllocAbsStackSeg(const int objectIdx, const byte* payLoad, const
             serial.print(" length: 0x", makeWord(payLoad[2], payLoad[3]), HEX, 4);
             serial.print(" access: 0x", payLoad[4], HEX, 2);
             serial.print(" memtype: 0x", payLoad[5], HEX, 2);
-            serial.println("attrib: 0x", payLoad[6], HEX, 2);
+            serial.println(" attrib: 0x", payLoad[6], HEX, 2);
             serial.println();
     );
     return LS_LOADING;
