@@ -195,16 +195,6 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
                     serial.println();
             );
             break;
-
-        // TODO this actually doesn't work with MemoryWrite APCI_MEMORY_WRITE_PDU
-        // should work for most of the apps using <LdCtrlTaskSegment LsmIdx="5" Address="xxxx" />
-        case OT_KNX_OBJECT_ASSOCIATATION_TABLE:
-#           if BCU_TYPE == BIM112_TYPE
-                userEeprom.commsTabAddr = addr;
-                IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr = 0x", userEeprom.commsTabAddr, HEX, 4); serial.println(););
-#           endif
-            break;
-
         default:
             IF_DUMP_PROPERTIES(serial.println("  ----> unknown objectIdx");serial.println(););
             return LS_ERROR;
@@ -254,56 +244,31 @@ LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, co
             serial.println(" attrib: 0x", payLoad[6], HEX, 2);
     );
 
+    byte memStartValid = false;
+    byte memEndValid = false;
 
-    byte* memPtrStart = nullptr;
-    byte* memPtrEnd= nullptr;
+    // TODO this check should be done in class BCU and is not complete, e.g. memType is ignored
 
-    // TODO this check is not complete, memType is ignored & MemMapperMod has no memoryPtr(...)
-    // so it will return always 0
     MemMapper* bcuMemMapper = ((BCU *) &bcu)->getMemMapper();
 
-    if ((bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress)))
-    {
-        memPtrStart = bcuMemMapper->memoryPtr(absDataSegmentStartAddress, false);
-    }
-    else if ((absDataSegmentStartAddress >= USER_EEPROM_START) && (absDataSegmentStartAddress < USER_EEPROM_END))
-    {
-        memPtrStart = userMemoryPtr(absDataSegmentStartAddress);
-    }
-    /*
-    else if ((absDataSegmentStartAddress >= getUserRamStart()) && (absDataSegmentStartAddress < (getUserRamStart() + USER_RAM_SIZE)))
-    {
-        memPtrStart =
-    }
-    */
+    memStartValid =  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));
+    memStartValid |= (absDataSegmentStartAddress >= USER_EEPROM_START) && (absDataSegmentStartAddress < USER_EEPROM_END);
+    memStartValid |= (absDataSegmentStartAddress >= (unsigned int) getUserRamStart()) && (absDataSegmentStartAddress < ((unsigned int) getUserRamStart() + USER_RAM_SIZE));
 
-    if((bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress)))
-    {
-        memPtrEnd = bcuMemMapper->memoryPtr(absDataSegmentEndAddress, false);
-    }
-    else if ((absDataSegmentEndAddress >= USER_EEPROM_START) && (absDataSegmentEndAddress < USER_EEPROM_END))
-    {
-        memPtrEnd = userMemoryPtr(absDataSegmentEndAddress);
-    }
-    /*
-    else if ((absDataSegmentEndAddress >= getUserRamStart()) && (absDataSegmentEndAddress < (getUserRamStart() + USER_RAM_SIZE)))
-    {
-        memPtrEnd =
-    }
-    */
+    memEndValid =  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress));
+    memEndValid |= (absDataSegmentEndAddress >= USER_EEPROM_START) && (absDataSegmentEndAddress < USER_EEPROM_END);
+    memEndValid |= (absDataSegmentEndAddress >= (unsigned int) getUserRamStart()) && (absDataSegmentEndAddress < ((unsigned int) getUserRamStart() + USER_RAM_SIZE));
 
-    if (!memPtrStart)
+    if (!memStartValid)
     {
         IF_DUMP_PROPERTIES(serial.println("  ------> invalid start: 0x", absDataSegmentStartAddress, HEX, 4);serial.println(););
-        // return LS_ERROR; // TODO report the error
-        return LS_LOADING;
+        return LS_ERROR;
     }
 
-    if ( !memPtrEnd)
+    if ( !memEndValid)
     {
         IF_DUMP_PROPERTIES(serial.println("  ------> invalid end: 0x", absDataSegmentEndAddress, HEX, 4);serial.println(););
-        // return LS_ERROR; // TODO report the error
-        return LS_LOADING;
+        return LS_ERROR;
     }
     IF_DUMP_PROPERTIES(serial.println(););
     return LS_LOADING;
