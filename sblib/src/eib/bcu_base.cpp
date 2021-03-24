@@ -89,13 +89,38 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 #endif
 
 #if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
-    IF_DEBUG(serial.print("dump enabled BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
-    IF_DEBUG(serial.print(" MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
+    IF_DEBUG(serial.println("dump enabled.");)
+    IF_DEBUG(serial.print("BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
+    IF_DEBUG(serial.println(" MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
 #   ifdef LOAD_CONTROL_ADDR
-        IF_DEBUG(serial.print(" LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4););
+        IF_DEBUG(serial.print("LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4););
 #   endif
 #   ifdef LOAD_STATE_ADDR
-        IF_DEBUG(serial.print(" LOAD_STATE_ADDR: 0x", LOAD_STATE_ADDR, HEX, 4););
+        IF_DEBUG(serial.println(" LOAD_STATE_ADDR: 0x", LOAD_STATE_ADDR, HEX, 4););
+#   endif
+#   ifdef USER_RAM_START_DEFAULT
+        IF_DEBUG(serial.print("USER_RAM_START_DEFAULT: 0x", USER_RAM_START_DEFAULT, HEX, 4););
+#   endif
+#   ifdef EXTRA_USER_RAM_SIZE
+        IF_DEBUG(serial.print(" EXTRA_USER_RAM_SIZE: 0x", EXTRA_USER_RAM_SIZE, HEX, 4););
+#   endif
+#   ifdef USER_RAM_SIZE
+        IF_DEBUG(serial.print(" USER_RAM_SIZE: 0x", USER_RAM_SIZE, HEX, 4););
+#   endif
+#   ifdef USER_RAM_SHADOW_SIZE
+        IF_DEBUG(serial.println(" USER_RAM_SHADOW_SIZE: 0x", USER_RAM_SHADOW_SIZE, HEX, 4););
+#   endif
+#   ifdef USER_EEPROM_START
+        IF_DEBUG(serial.print("USER_EEPROM_START: 0x", USER_EEPROM_START, HEX, 4););
+#   endif
+#   ifdef USER_EEPROM_SIZE
+        IF_DEBUG(serial.print(" USER_EEPROM_SIZE: 0x", USER_EEPROM_SIZE, HEX, 4););
+#   endif
+#   ifdef USER_EEPROM_END
+        IF_DEBUG(serial.print(" USER_EEPROM_END: 0x", USER_EEPROM_END, HEX, 4););
+#   endif
+#   ifdef USER_EEPROM_FLASH_SIZE
+        IF_DEBUG(serial.println(" USER_EEPROM_FLASH_SIZE: 0x", USER_EEPROM_FLASH_SIZE, HEX, 4););
 #   endif
     IF_DEBUG(serial.println());
 #endif

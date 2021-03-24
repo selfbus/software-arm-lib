@@ -41,6 +41,18 @@ class BcuBase
 public:
     BcuBase();
 
+#if BCU_TYPE == BCU1_TYPE
+    /**
+     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
+     * program version and a optional read-only CommObjectTable address which
+     * can't be changed by ETS/KNX telegrams
+     *
+     * @param manufacturer - the manufacturer ID (16 bit)
+     * @param deviceType - the device type (16 bit)
+     * @param version - the version of the application program (8 bit)
+     */
+    void begin(int manufacturer, int deviceType, int version);
+#else
     /**
      * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
      * program version and a optional read-only CommObjectTable address which
@@ -62,6 +74,7 @@ public:
      *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
      */
     void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress = 0);
+#endif
 
     /**
      * Set RxPin of board, must be called before begin method
@@ -229,6 +242,22 @@ private:
 //
 //  Inline functions
 //
+#if BCU_TYPE == BCU1_TYPE
+    /**
+     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
+     * program version and a optional read-only CommObjectTable address which
+     * can't be changed by ETS/KNX telegrams
+     *
+     * @param manufacturer - the manufacturer ID (16 bit)
+     * @param deviceType - the device type (16 bit)
+     * @param version - the version of the application program (8 bit)
+     */
+inline void BcuBase::begin(int manufacturer, int deviceType, int version)
+{
+    begin_BCU(manufacturer, deviceType, version);
+    commObjectTableAddressStatic = 0;
+}
+#else
 
 /**
  * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
@@ -254,7 +283,13 @@ inline void BcuBase::begin(int manufacturer, int deviceType, int version, word r
 {
     begin_BCU(manufacturer, deviceType, version);
     commObjectTableAddressStatic = readOnlyCommObjectTableAddress;
+    if ((commObjectTableAddressStatic != 0) && ( userEeprom.commsTabAddr != commObjectTableAddressStatic))
+    {
+        userEeprom.commsTabAddr = commObjectTableAddressStatic;
+        userEeprom.modified();
+    }
 }
+#endif
 
 inline bool BcuBase::programmingMode() const
 {

@@ -421,13 +421,20 @@ LoadState handleTaskCtrl2(const int objectIdx, const byte* payLoad, const int le
     // payLoad[2..3] : CommObjPtr (OOOO)
     // payLoad[4..5] : CommObjSegPtr1 (1111h)
     // payLoad[6..7] : CommObjSegPtr2 (2222h)
-    userEeprom.commsTabAddr = makeWord(payLoad[2], payLoad[3]);
+
+    word addr = makeWord(payLoad[2], payLoad[3]);
+    // we need this newAddress workaround, see comment @void BcuBase::begin(...) in bcu_base.h
+    word newAddress = bcu.getCommObjectTableAddressStatic();
+    if (newAddress == 0) // set newAddress, in case bcu doesnt provide a read-only address
+    {
+        newAddress = addr;
+    }
+
+    // TODO is it ok to set .commsTabAddr, .commsSeg0Addr & .commsSeg1Addr without checking objectIdx???
+    userEeprom.commsTabAddr = newAddress;
     userEeprom.commsSeg0Addr = makeWord(payLoad[4], payLoad[5]); // commsSeg0Addr is nowhere used in sblib
     userEeprom.commsSeg1Addr = makeWord(payLoad[6], payLoad[7]); // commsSeg1Addr is nowhere used in sblib
 
-    IF_DUMP_PROPERTIES(serial.print  (" userEeprom.commsTabAddr=0x", userEeprom.commsTabAddr, HEX, 4););
-    IF_DUMP_PROPERTIES(serial.print  (" userEeprom.commsSeg0Addr=0x", userEeprom.commsSeg0Addr, HEX, 4););
-    IF_DUMP_PROPERTIES(serial.println(" userEeprom.commsSeg1Addr=0x", userEeprom.commsSeg1Addr, HEX, 4););
     IF_DUMP_PROPERTIES(
             serial.print("handleTaskCtrl2 ONLY PARTLY IMPLEMENTED! ");
             printObjectIdx(objectIdx);
@@ -435,6 +442,12 @@ LoadState handleTaskCtrl2(const int objectIdx, const byte* payLoad, const int le
             printData(payLoad, len);
             serial.println();
             serial.print("  --> callbackAddr: 0x", makeWord(payLoad[0], payLoad[1]), HEX, 4);
+            if (userEeprom.commsTabAddr != addr)
+            {
+                serial.println();
+                serial.println("  ----> userEeprom.commsTabAddr MARKED AS READ-ONLY, WON'T CHANGE TO 0x", addr, HEX, 4);
+                serial.println();
+            }
             serial.print(" userEeprom.commsTabAddr: 0x", userEeprom.commsTabAddr, HEX, 4);
             serial.print(" userEeprom.commsSeg0Addr: 0x", userEeprom.commsSeg0Addr, HEX, 4);
             serial.println(" userEeprom.commsSeg1Addr: 0x", userEeprom.commsSeg1Addr, HEX, 4);
