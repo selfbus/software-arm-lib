@@ -99,27 +99,33 @@ LoadState handleLoadStateMachine(const int objectIdx, const byte* data, const in
     LoadControl loadcontrol = LoadControl(data[0] & 7);
     switch (loadcontrol) // the control state
     {
-    case LC_START_LOADING: // Load
-        newLoadState = LS_LOADING; // reply: Loading
-        break;
-
-    case LC_LOAD_COMPLETED: // Load completed
-        newLoadState =  LS_LOADED; // reply: Loaded
-        break;
-
-    case LC_ADDITIONAL_LOAD_CONTROLS: // Load data: handled below
-        newLoadState =  LS_LOADCOMPLETING; // returning LS_LOADCOMPLETING is a hack for flow control in int loadProperty()
-        break;
-
-    case LC_UNLOAD: // Unload
-        newLoadState =  LS_UNLOADED;  // reply: Unloaded
-        break;
-
-    default:
-        newLoadState =  LS_ERROR;  // reply: Error
-        IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.println(" unknown loadcontrol=0x", loadcontrol, HEX, 2);serial.println(););
-        IF_DUMP_PROPERTIES(fatalError()); // this will "halt the cpu"
-        break;
+        case LC_START_LOADING: // Load
+        {
+            newLoadState = LS_LOADING; // reply: Loading
+            break;
+        }
+        case LC_LOAD_COMPLETED: // Load completed
+        {
+            newLoadState =  LS_LOADED; // reply: Loaded
+            break;
+        }
+        case LC_ADDITIONAL_LOAD_CONTROLS: // Load data: handled below
+        {
+            newLoadState =  LS_LOADCOMPLETING; // returning LS_LOADCOMPLETING is a hack for flow control in int loadProperty()
+            break;
+        }
+        case LC_UNLOAD: // Unload
+        {
+            newLoadState =  LS_UNLOADED;  // reply: Unloaded
+            break;
+        }
+        default:
+        {
+            newLoadState =  LS_ERROR;  // reply: Error
+            IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.println(" unknown loadcontrol=0x", loadcontrol, HEX, 2);serial.println(););
+            IF_DUMP_PROPERTIES(fatalError()); // this will "halt the cpu"
+            break;
+        }
     }
 
     IF_DUMP_PROPERTIES(serial.print("handleLoadStateMachine: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.println(););
@@ -167,19 +173,33 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
     switch (objectIdx)
     {
         case OT_ADDR_TABLE:
+        {
             userEeprom.addrTabAddr = addr;
             IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.addrTabAddr=0x", userEeprom.addrTabAddr, HEX, 4); serial.println(););
             break;
-
+        }
         case OT_ASSOC_TABLE:
+        {
             userEeprom.assocTabAddr = addr;
             IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.assocTabAddr=0x", userEeprom.assocTabAddr, HEX, 4); serial.println(););
             break;
-
+        }
         case OT_APPLICATION:
+        {
 #           if BCU_TYPE == BIM112_TYPE
-                userEeprom.commsTabAddr = addr;
-                IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr == 0x", userEeprom.commsTabAddr, HEX, 4););
+                // we need this newAddress workaround, see comment @void BcuBase::begin(...) in bcu_base.h
+                word newAddress = bcu.getCommObjectTableAddressStatic();
+                if (newAddress == 0) // set newAddress, in case bcu doesnt provide a read-only address
+                {
+                    newAddress = addr;
+                }
+
+                userEeprom.commsTabAddr = newAddress;
+
+                if (userEeprom.commsTabAddr != addr)
+                    IF_DUMP_PROPERTIES(serial.println();serial.println("  ----> userEeprom.commsTabAddr MARKED AS READ-ONLY, WON'T CHANGE TO 0x", addr, HEX, 4);serial.println(););
+
+                IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr = 0x", userEeprom.commsTabAddr, HEX, 4););
 #           endif
             userEeprom.appPeiType = payLoad[2];
             userEeprom.manufacturerH = payLoad[3];
@@ -188,16 +208,19 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
             userEeprom.deviceTypeL = payLoad[6];
             userEeprom.version = payLoad[7];
             IF_DUMP_PROPERTIES(
-                    serial.println("  ----> userEeprom.appPeiType == 0x", userEeprom.appPeiType, HEX, 2);
-                    serial.println("  ----> userEeprom.manufacturerH & L == 0x", makeWord(userEeprom.manufacturerH, userEeprom.manufacturerL), HEX, 4);
-                    serial.println("  ----> userEeprom.deviceTypeH & L == 0x", makeWord(userEeprom.deviceTypeH, userEeprom.deviceTypeL), HEX, 4);
-                    serial.println("  ----> userEeprom.version == 0x", userEeprom.version, HEX, 2);
+                    serial.println("  ----> userEeprom.appPeiType = 0x", userEeprom.appPeiType, HEX, 2);
+                    serial.println("  ----> userEeprom.manufacturerH & L = 0x", makeWord(userEeprom.manufacturerH, userEeprom.manufacturerL), HEX, 4);
+                    serial.println("  ----> userEeprom.deviceTypeH & L = 0x", makeWord(userEeprom.deviceTypeH, userEeprom.deviceTypeL), HEX, 4);
+                    serial.println("  ----> userEeprom.version = 0x", userEeprom.version, HEX, 2);
                     serial.println();
             );
             break;
+        }
         default:
+        {
             IF_DUMP_PROPERTIES(serial.println("  ----> unknown objectIdx");serial.println(););
             return LS_ERROR;
+        }
 
         userEeprom.modified();
     }
@@ -509,7 +532,7 @@ int loadProperty(int objectIdx, const byte* data, int len)
     //
     // Additional Load Control: LoadEvent: segmentType
     //
-    int segmentType = data[1]; // this is in both versions always the 2.octet
+    int segmentType = data[1]; // this is in both versions of DMP_LoadStateMachineWrite_RCo always the 2.octet
 
     byte payloadOffset;
     bool apciPropertyValueWrite = (len == DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH); // determine the realization type of DMP_LoadStateMachineWrite_RCo
@@ -528,36 +551,34 @@ int loadProperty(int objectIdx, const byte* data, int len)
     // IF_DUMP_PROPERTIES(serial.print(" ");printSegmentType(segmentType););
     switch (segmentType)
     {
-    case ST_ALLOC_ABS_DATA_SEG:  // ignored, Allocate absolute code/data segment (LdCtrlAbsSegment)
-        return handleAllocAbsDataSegment(objectIdx, payload, len);
+        case ST_ALLOC_ABS_DATA_SEG:  // Allocate absolute code/data segment (LdCtrlAbsSegment)
+            return handleAllocAbsDataSegment(objectIdx, payload, len);
 
-    case ST_ALLOC_ABS_STACK_SEG:  // ignored, Allocate absolute stack segment
-        return handleAllocAbsStackSeg(objectIdx, payload, len);
+        case ST_ALLOC_ABS_STACK_SEG:  // ignored, Allocate absolute stack segment
+            return handleAllocAbsStackSeg(objectIdx, payload, len);
 
-    case ST_ALLOC_ABS_TASK_SEG:  // Segment control record (LdCtrlTaskSegment)
-        // See KNX 3/5/2 p.115
-        // Additional Load Control: LoadEvent: AllocAbsTaskSeg (segment type 2)
-        return handleAllocAbsTaskSegment(objectIdx, payload, len);
+        case ST_ALLOC_ABS_TASK_SEG:  // Segment control record (LdCtrlTaskSegment)
+            return handleAllocAbsTaskSegment(objectIdx, payload, len);
 
-    case ST_TASK_PTR:  // Task pointer (ignored)
-        return handleTaskPtr(objectIdx, payload, len);
+        case ST_TASK_PTR:  // Task pointer (ignored)
+            return handleTaskPtr(objectIdx, payload, len);
 
-    case ST_TASK_CTRL_1:  // Task control 1
-        return handleTaskCtrl1(objectIdx, payload, len);
+        case ST_TASK_CTRL_1:  // Task control 1
+            return handleTaskCtrl1(objectIdx, payload, len);
 
-    case ST_TASK_CTRL_2:  // Task control 2
-        return handleTaskCtrl2(objectIdx, payload, len);
+        case ST_TASK_CTRL_2:  // Task control 2
+            return handleTaskCtrl2(objectIdx, payload, len);
 
-    case ST_RELATIVE_ALLOCATION: // relative allocation (ignored)
-        return handleRelativeAllocation(objectIdx, payload, len);
+        case ST_RELATIVE_ALLOCATION: // relative allocation (ignored)
+            return handleRelativeAllocation(objectIdx, payload, len);
 
-    case ST_DATA_RELATIVE_ALLOCATION: // data relative allocation (ignored)
-        return handleDataRelativeAllocation(objectIdx, payload, len);
+        case ST_DATA_RELATIVE_ALLOCATION: // data relative allocation (ignored)
+            return handleDataRelativeAllocation(objectIdx, payload, len);
 
-    default:
-        IF_DUMP_PROPERTIES(serial.println(" FATAL ERROR."););
-        IF_DEBUG(fatalError());
-        return LS_ERROR; // reply: Error
+        default:
+            IF_DUMP_PROPERTIES(serial.println(" FATAL ERROR."););
+            IF_DEBUG(fatalError());
+            return LS_ERROR; // reply: Error
     }
     return LS_LOADING;
 }

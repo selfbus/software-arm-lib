@@ -39,17 +39,29 @@ extern BcuBase& bcu;
 class BcuBase
 {
 public:
-	BcuBase();
+    BcuBase();
 
     /**
-     * Begin using the EIB bus coupling unit, and set the  manufacturer-ID, device type,
-     * and program version.
+     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
+     * program version and a optional read-only CommObjectTable address which
+     * can't be changed by ETS/KNX telegrams
      *
      * @param manufacturer - the manufacturer ID (16 bit)
      * @param deviceType - the device type (16 bit)
      * @param version - the version of the application program (8 bit)
+     * @param readOnlyCommObjectTableAddress - optional (16bit), to set a read-only CommObjectTable address which won't be changed by KNX telegrams
+     *                                         This is a workaround for ETS product databases, which send the "wrong" ComObjectTable address.
+     *                                         Compare inside the extracted *.knxprod product database M-xxxx_x_xxxx-xx-xxxx.xml
+     *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/ComObjectTable CodeSegment="M-xxxx_x-xxxx-xx-xxxx_xx-HHHH"
+     *                                         HHHH = communication object table address in hexadecimal
+     *                                         and
+     *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/LoadProcedures/LdCtrlTaskSegment LsmIdx="3" Address="dddddd" />
+     *                                         dddddd = communication object table address in decimal ETS wants us to use
+     *                                         convert dddddd to hexadecimal => WWWW
+     *                                         in case HHHH != WWWW ,
+     *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
      */
-    void begin(int manufacturer, int deviceType, int version);
+    void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress = 0);
 
     /**
      * Set RxPin of board, must be called before begin method
@@ -155,6 +167,12 @@ public:
     virtual void loop();
 
     /**
+     * Get the read-only CommObjectTable address, which can be set calling Begin(...)
+     * @return The read-only CommObjectTable address which can't be changed by KNX telegrams
+     */
+    word getCommObjectTableAddressStatic() const;
+
+    /**
      * A buffer for sending telegrams. This buffer is considered library private
      * and should rather not be used by the application program.
      */
@@ -202,6 +220,9 @@ protected:
     unsigned int connectedTime;    //!< System time of the last connected telegram.
     bool incConnectedSeqNo;        //!< True if the sequence number shall be incremented on ACK.
     int lastAckSeqNo;              //!< Last acknowledged sequence number
+
+private:
+    word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
 };
 
 
@@ -209,9 +230,30 @@ protected:
 //  Inline functions
 //
 
-inline void BcuBase::begin(int manufacturer, int deviceType, int version)
+/**
+ * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
+ * program version and a optional read-only CommObjectTable address which
+ * can't be changed by ETS/KNX telegrams
+ *
+ * @param manufacturer - the manufacturer ID (16 bit)
+ * @param deviceType - the device type (16 bit)
+ * @param version - the version of the application program (8 bit)
+ * @param readOnlyCommObjectTableAddress - optional (16bit), to set a read-only CommObjectTable address which can't be changed by KNX telegrams
+ *                                         This is a workaround for ETS product databases, which send the "wrong" ComObjectTable address.
+ *                                         Compare inside the extracted *.knxprod product database M-xxxx_x_xxxx-xx-xxxx.xml
+ *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/ComObjectTable CodeSegment="M-xxxx_x-xxxx-xx-xxxx_xx-HHHH"
+ *                                         HHHH = communication object table address in hexadecimal
+ *                                         and
+ *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/LoadProcedures/LdCtrlTaskSegment LsmIdx="3" Address="dddddd" />
+ *                                         dddddd = communication object table address in decimal ETS wants us to use
+ *                                         convert dddddd to hexadecimal => WWWW
+ *                                         in case HHHH != WWWW ,
+ *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
+ */
+inline void BcuBase::begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress)
 {
     begin_BCU(manufacturer, deviceType, version);
+    commObjectTableAddressStatic = readOnlyCommObjectTableAddress;
 }
 
 inline bool BcuBase::programmingMode() const
@@ -248,6 +290,11 @@ inline int BcuBase::maskVersion() const
 inline bool BcuBase::directConnection() const
 {
     return connectedAddr != 0;
+}
+
+inline word BcuBase::getCommObjectTableAddressStatic() const
+{
+    return commObjectTableAddressStatic;
 }
 
 #ifndef INSIDE_BCU_CPP
