@@ -229,7 +229,7 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
 
 /**
  * NOT IMPLEMENTED!
- * should handle Additional Load Control: LoadEvent: AllocAbsDataSeg (segment type 0)
+ * should handle Additional Load Control: LoadEvent: AllocAbsDataSeg (segment type 0) <LdCtrlAbsSegment>
  *
  * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
  * DMP_LoadStateMachineWrite_RCo_IO (ApciPropertyValueWrite) See KNX Spec. 3/5/2 3.28.3.4 p.114
@@ -251,10 +251,10 @@ LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, co
     unsigned int absDataSegmentStartAddress = makeWord(payLoad[0], payLoad[1]);
     unsigned int absDataSegmentLength = makeWord(payLoad[2], payLoad[3]);
     unsigned int absDataSegmentEndAddress = absDataSegmentStartAddress + absDataSegmentLength - 1;
-
+    MemoryType memType = MemoryType(payLoad[5] & 0x07); // take only bits 0..2
 
     IF_DUMP_PROPERTIES(
-            serial.print("handleAllocAbsDataSegment NOT IMPLEMENTED! ");
+            serial.print("handleAllocAbsDataSegment only partly implemented! ");
             printObjectIdx(objectIdx);
             serial.print(" ");
             printData(payLoad, len);
@@ -264,23 +264,40 @@ LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, co
             serial.print(" end: 0x", absDataSegmentEndAddress, HEX, 4);
             serial.print(" access: 0x", payLoad[4], HEX, 2);
             serial.print(" memtype: 0x", payLoad[5], HEX, 2);
-            serial.println(" attrib: 0x", payLoad[6], HEX, 2);
+            serial.print(" checksum: ", ((payLoad[6] & 0x80) >> 7), DEC, 1);
+            serial.println(" attrib: 0x", (payLoad[6]), HEX, 2);
     );
 
-    byte memStartValid = false;
-    byte memEndValid = false;
+    bool memStartValid = false;
+    bool memEndValid = false;
 
-    // TODO this check should be done in class BCU and is not complete, e.g. memType is ignored
-
-    MemMapper* bcuMemMapper = ((BCU *) &bcu)->getMemMapper();
-
-    memStartValid =  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));
-    memStartValid |= (absDataSegmentStartAddress >= USER_EEPROM_START) && (absDataSegmentStartAddress < USER_EEPROM_END);
-    memStartValid |= (absDataSegmentStartAddress >= (unsigned int) getUserRamStart()) && (absDataSegmentStartAddress < ((unsigned int) getUserRamStart() + USER_RAM_SIZE));
-
-    memEndValid =  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress));
-    memEndValid |= (absDataSegmentEndAddress >= USER_EEPROM_START) && (absDataSegmentEndAddress < USER_EEPROM_END);
-    memEndValid |= (absDataSegmentEndAddress >= (unsigned int) getUserRamStart()) && (absDataSegmentEndAddress < ((unsigned int) getUserRamStart() + USER_RAM_SIZE));
+    // FIXME this check should be done in class BCU, and if its not available it should be allocated
+    switch (memType)
+    {
+        // there is no real reason to differentiate between memory types,
+        // important is, that we can reach it.
+        case MT_ZERO_PAGE_RAM:
+        case MT_RAM:
+        case MT_EEPROM:
+        {
+            // check against user ram
+            memStartValid = (absDataSegmentStartAddress >= (unsigned int) getUserRamStart()) && (absDataSegmentStartAddress < ((unsigned int) getUserRamEnd()));
+            memEndValid = (absDataSegmentEndAddress >= (unsigned int) getUserRamStart()) && (absDataSegmentEndAddress < ((unsigned int) getUserRamEnd()));
+            // check against user EEPROM
+            memStartValid |= (absDataSegmentStartAddress >= USER_EEPROM_START) && (absDataSegmentStartAddress < USER_EEPROM_END);
+            memEndValid |= (absDataSegmentEndAddress >= USER_EEPROM_START) && (absDataSegmentEndAddress < USER_EEPROM_END);
+            // check against MemMapper
+            MemMapper* bcuMemMapper = ((BCU *) &bcu)->getMemMapper();
+            memStartValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));
+            memEndValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress));
+            break;
+        }
+        default:
+        {
+            return LS_ERROR;
+            break;
+        }
+    }
 
     if (!memStartValid)
     {
@@ -425,7 +442,7 @@ LoadState handleTaskCtrl2(const int objectIdx, const byte* payLoad, const int le
     word addr = makeWord(payLoad[2], payLoad[3]);
     // we need this newAddress workaround, see comment @void BcuBase::begin(...) in bcu_base.h
     word newAddress = bcu.getCommObjectTableAddressStatic();
-    if (newAddress == 0) // set newAddress, in case bcu doesnt provide a read-only address
+    if (newAddress == 0) // set newAddress, in case bcu doesn't provide a read-only address
     {
         newAddress = addr;
     }
@@ -558,10 +575,6 @@ int loadProperty(int objectIdx, const byte* data, int len)
     const byte *payload  = data + payloadOffset; // "move" to start of payload data
     len -= payloadOffset; // reduce len by payloadOffset
 
-    // IF_DUMP_PROPERTIES(serial.println();serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.print(" ");printData(payload, len););
-    // IF_DUMP_PROPERTIES(serial.println();serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" "); printLoadState(newLoadState);serial.print(" ");printData(data, len););
-
-    // IF_DUMP_PROPERTIES(serial.print(" ");printSegmentType(segmentType););
     switch (segmentType)
     {
         case ST_ALLOC_ABS_DATA_SEG:  // Allocate absolute code/data segment (LdCtrlAbsSegment)
@@ -621,7 +634,6 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
 
 bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start)
 {
-    // IF_DUMP_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def)
         return false; // not found

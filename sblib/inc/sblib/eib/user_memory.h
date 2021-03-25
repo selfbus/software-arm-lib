@@ -308,4 +308,11 @@ inline int getUserRamStart(void)
     return userRamStart;
 }
 
+inline int getUserRamEnd(void)
+{
+    extern int userRamStart;
+
+    return (userRamStart + USER_RAM_SIZE - 1);
+}
+
 #endif /*sblib_user_memory_h*/

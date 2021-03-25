@@ -183,6 +183,26 @@ enum SegmentType
     ST_DATA_RELATIVE_ALLOCATION = 0x0B
 };
 
+/**
+ * Memory types send in Additional Load Control: LoadEvent: AllocAbsDataSeg (segment type 0)
+ * <b>See  KNX Spec 3/5/2 p.111</b>
+ */
+enum MemoryType
+{
+    /**
+     * Zero page RAM, mostly found in product databases using <.../LoadProcedure/LdCtrlAbsSegment> with
+     * MaskVersions 0x0020, 0x0021, 0x0025 in two variants:
+     * start 0xBD (189) length 0x18 (24) or start 0xC8 (200) length 0x23 (35)
+     */
+    MT_ZERO_PAGE_RAM = 1,
+    MT_RAM = 2, //!> RAM
+    MT_EEPROM = 3 //!> EEPROM
+    // these memory types there found in 38 product databases (all Siemens HVAC) with MaskVersion MV-0300-01000000000000000000
+    // and interface object ID OT_INTERFACE_PROGRAM = 4
+    // MT_SPECIAL_6 = 6,
+    // MT_SPECIAL_8 = 8
+};
+
 #endif /*BCU_TYPE != BCU1_TYPE*/
 
 #endif /*sblib_properties_h*/
