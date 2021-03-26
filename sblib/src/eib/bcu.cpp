@@ -226,6 +226,12 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
     const int addressEnd = addressStart + lengthPayLoad - 1;
     bool startNotFound = false; // we need this as a exit condition, in case memory range is no where found
 
+    if (lengthPayLoad == 0)
+    {
+        IF_DUMP_MEM_OPS(serial.println(" Error processApciMemoryOperation : lengthPayLoad: 0x", lengthPayLoad , HEX, 2););
+        return false;
+    }
+
     while ((!startNotFound) && (addressStart <= addressEnd))
     {
         startNotFound = true;
@@ -394,7 +400,7 @@ IF_DUMP_MEM_OPS(
     if (addressStart == LOAD_CONTROL_ADDR)
     {
         unsigned int objectIdx = payLoad[0] >> 4;
-        IF_DUMP_MEM_OPS(serial.print(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX););
+        IF_DUMP_MEM_OPS(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX););
         if (objectIdx < INTERFACE_OBJECT_COUNT)
         {
             userEeprom.loadState[objectIdx] = loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
@@ -430,7 +436,7 @@ IF_DUMP_MEM_OPS(
         return true;
     }
 #endif
-    memset(payLoad, 0xFE, lengthPayLoad); // TODO remove after testing
+
     bool result = processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, true);
 
 IF_DUMP_MEM_OPS(
@@ -503,18 +509,19 @@ void BCU::processDirectTelegram(int apci)
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            // FIXME check that we really only allowed to send when we could read the requested bytes.
-            // ETS is requesting 0x60 and we don't respond, that makes the proccess of getting "device info" rly slow
-            if (processApciMemoryReadPDU(address, &sendTelegram[10], count))
+            if (!processApciMemoryReadPDU(address, &sendTelegram[10], count))
             {
-                // send only on successful read a response
-                sendTelegram[5] = 0x63 + count;
-                sendTelegram[6] = 0x42;
-                sendTelegram[7] = 0x40 | count;
-                sendTelegram[8] = address >> 8;
-                sendTelegram[9] = address;
-                sendTel = true;
+                // address space unreachable, need to respond with count 0
+                count = 0;
             }
+
+            // send a the read response
+            sendTelegram[5] = 0x63 + count;
+            sendTelegram[6] = 0x42;
+            sendTelegram[7] = 0x40 | count;
+            sendTelegram[8] = address >> 8;
+            sendTelegram[9] = address;
+            sendTel = true;
         }
         break;
 

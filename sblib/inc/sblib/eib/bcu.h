@@ -140,7 +140,7 @@ public: // FIXME remove "public:" after testing to make them protected again
 
     /**
      * Process a APCI_MEMORY_READ_PDU
-     * see KNX Spec. 3/3/7 $3.5.3 p.71 A_Memory_Read-service
+     * see KNX Spec. 3/3/7 §3.5.3 p.71 A_Memory_Read-service
      *
      * @param addressStart - memory start address
      * @param payLoad - buffer to write data read from memory

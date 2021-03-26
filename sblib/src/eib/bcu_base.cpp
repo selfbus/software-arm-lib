@@ -184,6 +184,14 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
         userEeprom.serial[5] = SBLIB_VERSION;
     }
 
+/*
+ * this is maybe a workaround for ETS checking the serial number
+ * it seems that the first two bytes are the Manufacturer-ID
+ * and setting the last 4 bytes to 0xFF seems, that ETS doesn't check the serial number
+    memset (userEeprom.serial, 0xFF, 6); // FIXME remove its just for testing
+    userEeprom.serial[0] = userEeprom.manufacturerH;
+    userEeprom.serial[1] = userEeprom.manufacturerL;
+*/
 #ifdef DUMP_SERIAL
         // dump the generated hash/serial
         serial.print("Serial: ");
