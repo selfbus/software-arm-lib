@@ -125,6 +125,42 @@ protected:
      * @return True on success, false on failure
      */
     bool processDeviceDescriptorReadTelegram(int id);
+public: // FIXME remove "public:" after testing to make them protected again
+    /**
+     * Process a APCI_MEMORY_WRITE_PDU
+     * see KNX Spec. 3/3/7 §3.5.4 p.73 A_Memory_Write-service
+     *
+     * @param addressStart - memory start address
+     * @param payLoad - data to write into the memory
+     * @param lengthPayLoad - length of data/payload
+     *
+     * @return true if successfully written, otherwise false
+     */
+    bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
+
+    /**
+     * Process a APCI_MEMORY_READ_PDU
+     * see KNX Spec. 3/3/7 $3.5.3 p.71 A_Memory_Read-service
+     *
+     * @param addressStart - memory start address
+     * @param payLoad - buffer to write data read from memory
+     * @param lengthPayLoad - length of data/payload to read
+     *
+     * @return true if successfully read, otherwise false
+     */
+    bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
+
+    /**
+     * Process a APCI_MEMORY_READ_PDU or APCI_MEMORY_WRITE_PDU depending on
+     *
+     * @param addressStart - memory start address
+     * @param payLoad - data to write into the memory
+     * @param lengthPayLoad - length of data/payload
+     * @param readMem - operation mode, if true memory will be read, if false memory will be written
+     *
+     * @return true if successfully, otherwise false
+     */
+    bool processApciMemoryOperation(int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem);
 
     // The method begin_BCU() is renamed during compilation to indicate the BCU type.
     // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.

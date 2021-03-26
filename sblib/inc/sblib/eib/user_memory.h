@@ -16,6 +16,8 @@
 class UserRam;
 class UserEeprom;
 
+/** number of interface objects supported */
+#define INTERFACE_OBJECT_COUNT 8
 
 /**
  * The user RAM.
@@ -165,7 +167,7 @@ public:
     byte addrTab[2];     //!< 0x0117+:Address table, 2 bytes per entry. Real array size is addrTabSize*2
     byte user[855];      //!< 0x0119+:User EEPROM: 856 bytes (BCU2)
                          //!< ------  System EEPROM below (BCU2)
-    byte loadState[8];   //!< 0x0470: Load state of the system interface objects
+    byte loadState[INTERFACE_OBJECT_COUNT];   //!< 0x0470: Load state of the system interface objects
     word addrTabAddr;    //!< 0x0478: Address of the address table
     word assocTabAddr;   //!< 0x047a: Address of the association table
     word commsTabAddr;   //!< 0x047c: Address of the communication object table

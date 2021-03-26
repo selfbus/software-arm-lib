@@ -21,6 +21,12 @@
 #   include <sblib/serial.h>
 #endif
 
+#ifdef DUMP_MEM_OPS
+#  define IF_DUMP_MEM_OPS(code) { code; }
+#else
+#  define IF_DUMP_MEM_OPS(code)
+#endif
+
 extern unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
 
@@ -215,6 +221,233 @@ static void cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigne
     }
 }
 
+bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem)
+{
+    const int addressEnd = addressStart + lengthPayLoad - 1;
+    bool startNotFound = false; // we need this as a exit condition, in case memory range is no where found
+
+    while ((!startNotFound) && (addressStart <= addressEnd))
+    {
+        startNotFound = true;
+        // check if we have a memMapper and if payLoad is handled by it
+        if (memMapper != nullptr)
+        {
+            if (memMapper->isMappedRange(addressStart, addressEnd))
+            {
+                // start & end fit into memMapper
+                bool operationResult = false;
+                if (readMem)
+                    operationResult = memMapper->readMemPtr(addressStart, &payLoad[0], lengthPayLoad) == MEM_MAPPER_SUCCESS;
+                else
+                    operationResult = memMapper->writeMemPtr(addressStart, &payLoad[0], lengthPayLoad) == MEM_MAPPER_SUCCESS;
+
+                if (operationResult)
+                {
+                    IF_DUMP_MEM_OPS(serial.println(" -> memmapped ", lengthPayLoad, DEC););
+                    return true;
+                }
+                else
+                    return false;
+            }
+            else if (memMapper->isMapped(addressStart))
+            {
+                // we only know that start is mapped so lets do memory operation byte by byte
+                for (int i = 0; i < lengthPayLoad; i++)
+                {
+                    bool operationResult = memMapper->isMapped(addressStart);
+                    if (operationResult)
+                    {
+                        if (readMem)
+                            operationResult = memMapper->readMemPtr(addressStart, &payLoad[0], 1) == MEM_MAPPER_SUCCESS;
+                        else
+                            operationResult = memMapper->writeMemPtr(addressStart, &payLoad[0], 1) == MEM_MAPPER_SUCCESS;
+                    }
+
+                    if (operationResult)
+                    {
+                        // address is mapped and memory operation was successful
+                        addressStart++;
+                        payLoad++;
+                        startNotFound = false;
+                    }
+                    else
+                    {
+                        IF_DUMP_MEM_OPS(serial.println(" -> memmapped processed : ", i , DEC););
+                        break;
+                    }
+                }
+            }
+        }
+
+        // check if payLoad is in USER_EEPROM
+        if (addressStart <= addressEnd)
+        {
+            if ((addressStart >= USER_EEPROM_START) &&  (addressEnd < USER_EEPROM_END))
+            {
+                // start & end are in USER_EEPROM
+                if (readMem)
+                {
+                    memcpy(&payLoad[0], userEepromData + (addressStart - USER_EEPROM_START), addressEnd - addressStart + 1);
+                }
+                else
+                {
+                    memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], addressEnd - addressStart + 1);
+                    userEeprom.modified();
+                }
+                IF_DUMP_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC););
+                return true;
+            }
+            else if ((addressStart >= USER_EEPROM_START) && (addressStart < USER_EEPROM_END))
+            {
+                // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
+                const int copyCount = USER_EEPROM_END - addressStart;
+                if (readMem)
+                {
+                    memcpy(&payLoad[0], userEepromData + (addressStart - USER_EEPROM_START), copyCount);
+                }
+                else
+                {
+                    memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], copyCount);
+                    userEeprom.modified();
+                }
+                addressStart += copyCount;
+                payLoad += copyCount;
+                startNotFound = false;
+                IF_DUMP_MEM_OPS(serial.println(" -> EEPROM processed: ", copyCount, DEC););
+            }
+        }
+
+        // check if payLoad is in UserRam
+        if (addressStart <= addressEnd)
+        {
+            if ((addressStart >= getUserRamStart()) && (addressEnd <= getUserRamEnd()))
+            {
+                // start & end are in UserRAM
+                if (readMem)
+                    cpyFromUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
+                else
+                    cpyToUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
+                IF_DUMP_MEM_OPS(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC););
+                return true;
+            }
+            else if ((addressStart >= getUserRamStart()) && (addressStart <= getUserRamEnd()))
+            {
+                // start is in UserRAM, but payLoad is too long, we need to cut it down to fit
+                const int copyCount = getUserRamEnd() - addressStart + 1;
+                if (readMem)
+                    cpyFromUserRam(addressStart, &payLoad[0], copyCount);
+                else
+                    cpyToUserRam(addressStart, &payLoad[0], copyCount);
+                addressStart += copyCount;
+                payLoad += copyCount;
+                startNotFound = false;
+                IF_DUMP_MEM_OPS(serial.println(" -> UserRAM processed: ", copyCount, DEC););
+            }
+        }
+
+        // ok, lets prepare for another try, maybe we find the remaining bytes in another memory
+        lengthPayLoad = addressEnd - addressStart + 1;
+        if (!startNotFound)
+        {
+            IF_DUMP_MEM_OPS(
+                if (readMem)
+                    serial.print(" -> MemoryRead :", addressStart, HEX, 4);
+                else
+                    serial.print(" -> MemoryWrite:", addressStart, HEX, 4);
+                serial.print(" Data:");
+                for(int i=0; i<lengthPayLoad ; i++)
+                {
+                    serial.print(" ", payLoad[i], HEX, 2);
+                }
+                serial.println(" count: ", lengthPayLoad, DEC);
+            );
+        }
+    }
+
+    IF_DUMP_MEM_OPS(
+            if (lengthPayLoad != 0)
+            {
+                serial.print(" not found start: 0x", addressStart, HEX, 4);
+                serial.print(" end: 0x", addressEnd, HEX, 4);
+                serial.println(" lengthPayLoad:", lengthPayLoad);
+            }
+    );
+
+    return (lengthPayLoad == 0);
+}
+
+bool BCU::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad)
+{
+IF_DUMP_MEM_OPS(
+    serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
+    serial.print(" Data:");
+    for(int i=0; i<lengthPayLoad ; i++)
+    {
+        serial.print(" ", payLoad[i], HEX, 2);
+    }
+    serial.print(" count: ", lengthPayLoad, DEC);
+);
+
+#ifdef LOAD_CONTROL_ADDR
+    // special handling of DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU)
+    // See KNX Spec. 3/5/2 3.28.2 p.109 (deprecated)
+    if (addressStart == LOAD_CONTROL_ADDR)
+    {
+        unsigned int objectIdx = payLoad[0] >> 4;
+        IF_DUMP_MEM_OPS(serial.print(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX););
+        if (objectIdx < INTERFACE_OBJECT_COUNT)
+        {
+            userEeprom.loadState[objectIdx] = loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
+            userEeprom.modified();
+            IF_DUMP_MEM_OPS(serial.println(););
+            return true;
+        }
+        else
+        {
+            IF_DUMP_MEM_OPS(serial.println(" not found"););
+            return false;
+        }
+    }
+#endif
+
+    return processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, false);
+}
+
+bool BCU::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
+{
+IF_DUMP_MEM_OPS(
+        serial.print("ApciMemoryReadPDU :", addressStart, HEX, 4);
+        serial.print(" count: ", lengthPayLoad, DEC);
+    );
+
+#ifdef LOAD_STATE_ADDR
+    // special handling of DMP_LoadStateMachineRead_RCo_Mem (APCI_MEMORY_READ_PDU)
+    // See KNX Spec. 3/5/2 3.30.2 p.121  (deprecated)
+    if (addressStart >= LOAD_STATE_ADDR && addressStart < LOAD_STATE_ADDR + INTERFACE_OBJECT_COUNT)
+    {
+        memcpy(payLoad, userEeprom.loadState + (addressStart - LOAD_STATE_ADDR), lengthPayLoad);
+        IF_DUMP_MEM_OPS(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX););
+        return true;
+    }
+#endif
+    memset(payLoad, 0xFE, lengthPayLoad); // TODO remove after testing
+    bool result = processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, true);
+
+IF_DUMP_MEM_OPS(
+        if (result)
+        {
+            serial.print("           result :", addressStart, HEX, 4);
+            serial.print(" Data:");
+            for(int i=0; i<lengthPayLoad ; i++)
+            {
+                serial.print(" ", payLoad[i], HEX, 2);
+            }
+            serial.println(" count: ", lengthPayLoad, DEC);
+        }
+    );
+    return result;
+}
+
 void BCU::processDirectTelegram(int apci)
 {
     const int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
@@ -250,83 +483,38 @@ void BCU::processDirectTelegram(int apci)
 
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
-        count = bus.telegram[7] & 0x0f; // number of data byes
+        count = bus.telegram[7] & 0x0f; // number of data bytes
         address = (bus.telegram[8] << 8) | bus.telegram[9]; // address of the data block
 
         if (apciCmd == APCI_MEMORY_WRITE_PDU)
         {
-#ifdef DUMP_MEM_OPS
-            serial.print("writeMem:");
-            serial.print(address, HEX, 4);
-            serial.print(" Data:");
-            for(int i=0;i<count; i++) {
-                serial.print(bus.telegram[10 + i], HEX, 2);
-                serial.print(" ");
-            }
-            serial.println("");
-#endif
-            if(memMapper && memMapper->isMapped(address))
+            if (processApciMemoryWritePDU(address, &bus.telegram[10], count))
             {
-                memMapper->writeMemPtr(address, bus.telegram + 10, count);
-            }
-
-            if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
-            {
-                memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, count);
-                userEeprom.modified();
-            }
-            else if (address >= getUserRamStart() && address < (getUserRamStart() + USER_RAM_SIZE))
-                cpyToUserRam(address, bus.telegram + 10, count);
-
-            sendAck = T_ACK_PDU;
-
-#ifdef LOAD_CONTROL_ADDR
-            if (address == LOAD_CONTROL_ADDR)
-            {
-                int objectIdx = bus.telegram[10] >> 4;
-                userEeprom.loadState[objectIdx] = loadProperty(objectIdx, bus.telegram + 10, count);
-                userEeprom.modified();
-                break;
-            }
-#endif
-
 #if BCU_TYPE != BCU1_TYPE
-            if (userRam.deviceControl & DEVCTRL_MEM_AUTO_RESPONSE)
-                apciCmd = APCI_MEMORY_READ_PDU;
+                if (userRam.deviceControl & DEVCTRL_MEM_AUTO_RESPONSE)
+                {
+                    // only on successful write
+                    apciCmd = APCI_MEMORY_READ_PDU;
+                }
 #endif
+            }
+            sendAck = T_ACK_PDU;
         }
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            if (address >= USER_EEPROM_START && address < USER_EEPROM_END) {
-                  memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
-            }
-            else if (address >= getUserRamStart() && address < (getUserRamStart() + USER_RAM_SIZE))
-                cpyFromUserRam(address, sendTelegram + 10, count);
-#ifdef LOAD_STATE_ADDR
-            else if (address >= LOAD_STATE_ADDR && address < LOAD_STATE_ADDR + 8)
-                memcpy(sendTelegram + 10, userEeprom.loadState + (address - LOAD_STATE_ADDR), count);
-#endif
-            if(memMapper && memMapper->isMapped(address))
+            // FIXME check that we really only allowed to send when we could read the requested bytes.
+            // ETS is requesting 0x60 and we don't respond, that makes the proccess of getting "device info" rly slow
+            if (processApciMemoryReadPDU(address, &sendTelegram[10], count))
             {
-                memMapper->readMemPtr(address, sendTelegram + 10, count);
+                // send only on successful read a response
+                sendTelegram[5] = 0x63 + count;
+                sendTelegram[6] = 0x42;
+                sendTelegram[7] = 0x40 | count;
+                sendTelegram[8] = address >> 8;
+                sendTelegram[9] = address;
+                sendTel = true;
             }
-#ifdef DUMP_MEM_OPS
-            serial.print("readMem: ");
-            serial.print(address, HEX, 4);
-            serial.print(" Data:");
-            for(int i=0;i<count; i++) {
-                serial.print(sendTelegram[10 + i], HEX, 2);
-                serial.print(" ");
-            }
-            serial.println("");
-#endif
-            sendTelegram[5] = 0x63 + count;
-            sendTelegram[6] = 0x42;
-            sendTelegram[7] = 0x40 | count;
-            sendTelegram[8] = address >> 8;
-            sendTelegram[9] = address;
-            sendTel = true;
         }
         break;
 
