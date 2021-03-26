@@ -128,7 +128,7 @@ static const PropertyDef appObjectProps[] =
  */
 // static const PropertyDef knxAssocTabObjectProps[] =
 //{
-    // TODO check correct properties for object OT_KNX_OBJECT_ASSOCIATATION_TABLE
+    // XXX check correct properties for object OT_KNX_OBJECT_ASSOCIATATION_TABLE
     /** Interface object type: 2 bytes */
 //    { PID_OBJECT_TYPE, PDT_UNSIGNED_INT, OT_KNX_OBJECT_ASSOCIATATION_TABLE },
 
@@ -139,9 +139,9 @@ static const PropertyDef appObjectProps[] =
 //    { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsTabAddr) },
 
     /** Error code */
-//    { PID_ERROR_CODE, PDT_GENERIC_01, 0 }, // TODO implement PID_ERROR_CODE handling
+//    { PID_ERROR_CODE, PDT_GENERIC_01, 0 }, // XXX implement PID_ERROR_CODE handling
 
-    // TODO implement properties PID_TABLE, PID_MCB_TABLE and maybe more
+    // XXX implement properties PID_TABLE, PID_MCB_TABLE and maybe more
 
     /** End of table */
 //    PROPERTY_DEF_TABLE_END

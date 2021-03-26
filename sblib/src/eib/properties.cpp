@@ -447,7 +447,7 @@ LoadState handleTaskCtrl2(const int objectIdx, const byte* payLoad, const int le
         newAddress = addr;
     }
 
-    // TODO is it ok to set .commsTabAddr, .commsSeg0Addr & .commsSeg1Addr without checking objectIdx???
+    // XXX is it ok to set .commsTabAddr, .commsSeg0Addr & .commsSeg1Addr without checking objectIdx???
     userEeprom.commsTabAddr = newAddress;
     userEeprom.commsSeg0Addr = makeWord(payLoad[4], payLoad[5]); // commsSeg0Addr is nowhere used in sblib
     userEeprom.commsSeg1Addr = makeWord(payLoad[6], payLoad[7]); // commsSeg1Addr is nowhere used in sblib

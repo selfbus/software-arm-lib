@@ -314,7 +314,7 @@ void processGroupWriteTelegram(int objno, byte* tel)
 {
     byte* valuePtr = objectValuePtr(objno);
 
-    if (valuePtr == nullptr) // TODO valuePtr == nullptr will raise a hardware fault
+    if (valuePtr == nullptr) // TODO valuePtr = nullptr will raise a hardware fault
         IF_DEBUG(fatalError(););
 
     int count = telegramObjectSize(objno);
