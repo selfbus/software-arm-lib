@@ -178,6 +178,15 @@ public:
      */
     virtual bool isMapped(int virtAddress);
 
+    /**
+     * Query about range mapping
+     *
+     * @param virtStartAddress - the virtual start address of the data block
+     * @param virtEndAddress - the virtual start address of the data block
+     * @return true if virtual address range is mapped
+     */
+    virtual bool isMappedRange(int virtStartAddress, int virtEndAddress);
+
 private:
     int allocatePage(int virtPage);
     int getFlashPageNum(int virtAddress) const;

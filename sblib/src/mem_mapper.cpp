@@ -240,6 +240,18 @@ bool MemMapper::isMapped(int virtAddress)
     return getFlashPageNum(virtAddress) > 0 || autoAddPage ? true : false;
 }
 
+bool MemMapper::isMappedRange(int virtStartAddress, int virtEndAddress)
+{
+    if (!autoAddPage)
+    {
+        return ((getFlashPageNum(virtStartAddress) > 0) && (getFlashPageNum(virtEndAddress) > 0));
+    }
+    else
+    {
+        return true;
+    }
+}
+
 byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash) const
 {
     int flashPageNum = getFlashPageNum(virtAddress);
