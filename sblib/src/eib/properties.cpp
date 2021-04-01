@@ -189,7 +189,7 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
 #           if BCU_TYPE == BIM112_TYPE
                 // we need this newAddress workaround, see comment @void BcuBase::begin(...) in bcu_base.h
                 word newAddress = bcu.getCommObjectTableAddressStatic();
-                if (newAddress == 0) // set newAddress, in case bcu doesnt provide a read-only address
+                if (newAddress == 0) // set newAddress, in case bcu doesn't provide a read-only address
                 {
                     newAddress = addr;
                 }
@@ -242,12 +242,27 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
  */
 LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, const int len)
 {
+/*
+ *  from KNX Spec. 06 Profiles 4.2.9 RAM cleared
+ *  RAM to be cleared by the Management Client during download of an application program:
+ *
+ *  0x00CE-0x00DF   BCU1, RAM
+ *
+ *  0x00BD-0x00DF   BCU2, Zero-Page-RAM
+ *  0x0972-0x0989   BCU2, High RAM
+ *
+ *  0x0700-0x????   BIM112, RAM
+ *
+ *  //XXX sblib ignores this
+ */
+
     // payLoad[0..1] : start address        (SSSS)
     // payLoad[2..3] : length (LLLL)        (EEEE-SSSS+1) --> EEEE = SSSS+LLLL-1 // KNX Spec not really clear about that
     // payLoad[4]    : access attributes    (bit 0-3 write access, bit 4-7 read access level)
     // payLoad[5]    : memory type          (bit 0-2,  1=zero page RAM, 2=RAM, 3=EEPROM, bit 3-7 reserved)
     // payLoad[6]    : memory attributes    (bit 0-6 reserved, bit 7=0: checksum control disabled
     // payLoad[7]    : reserved
+    LoadState newLoadState = LS_ERROR;
     unsigned int absDataSegmentStartAddress = makeWord(payLoad[0], payLoad[1]);
     unsigned int absDataSegmentLength = makeWord(payLoad[2], payLoad[3]);
     unsigned int absDataSegmentEndAddress = absDataSegmentStartAddress + absDataSegmentLength - 1;
@@ -290,11 +305,20 @@ LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, co
             MemMapper* bcuMemMapper = ((BCU *) &bcu)->getMemMapper();
             memStartValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));
             memEndValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress));
+
+#           if (BCU_TYPE != BIM112_TYPE)
+                // special handling of the High RAM (BCU 2.0/ 2.1) (0x0900 - 0x09BB),
+                // see BCU 2 Help from https://www.auto.tuwien.ac.at/~mkoegler/index.php/bcudoc
+                memStartValid |= (absDataSegmentStartAddress >= HIGH_RAM_START) && (absDataSegmentStartAddress < (HIGH_RAM_START + HIGH_RAM_LENGTH));
+                memEndValid |= (absDataSegmentEndAddress >= HIGH_RAM_START) && (absDataSegmentEndAddress < (HIGH_RAM_START + HIGH_RAM_LENGTH));
+#           endif
+
+            newLoadState = LS_LOADING;
             break;
         }
         default:
         {
-            return LS_ERROR;
+            newLoadState = LS_ERROR;
             break;
         }
     }
@@ -302,16 +326,15 @@ LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, co
     if (!memStartValid)
     {
         IF_DUMP_PROPERTIES(serial.println("  ------> invalid start: 0x", absDataSegmentStartAddress, HEX, 4);serial.println(););
-        return LS_ERROR;
+        newLoadState = LS_ERROR;
     }
-
     if ( !memEndValid)
     {
         IF_DUMP_PROPERTIES(serial.println("  ------> invalid end: 0x", absDataSegmentEndAddress, HEX, 4);serial.println(););
-        return LS_ERROR;
+        newLoadState = LS_ERROR;
     }
     IF_DUMP_PROPERTIES(serial.println(););
-    return LS_LOADING;
+    return newLoadState;
 }
 
 /**

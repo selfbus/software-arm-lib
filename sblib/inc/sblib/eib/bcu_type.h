@@ -95,6 +95,12 @@
     /** The size of the user EEPROM in bytes. */
 #   define USER_EEPROM_SIZE 1024
 
+    /** The start of the HighRam, will be ignored by us, its only needed for device programming */
+#   define HIGH_RAM_START 0x0900
+
+    /** The length of the HighRam */
+#   define HIGH_RAM_LENGTH 0xBC
+
 #elif BCU_TYPE == 0x701 || BCU_TYPE == 0x705 /* BIM 112, v7.1 and v7.5*/
 
     /** Address for load control */
