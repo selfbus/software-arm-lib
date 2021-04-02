@@ -19,7 +19,7 @@
 #define DEBUG_OUT8_BI       //!>
 
 #define DUMP_MEM_OPS    //!> dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
-#define DEBUG_SERIAL    //!> dump KNX-serialnumber over serial interface
+#define DUMP_SERIAL     //!> dump KNX-serialnumber over serial interface
 #define DUMP_PROPERTIES //!> dump interface object and property handling over serial interface
 
 
