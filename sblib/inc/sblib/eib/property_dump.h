@@ -12,6 +12,7 @@
 
 #include <sblib/eib/properties.h>
 #include <sblib/eib/property_types.h>
+#include <sblib/config.h>
 
 #ifdef DUMP_PROPERTIES
 #   include <sblib/serial.h>
