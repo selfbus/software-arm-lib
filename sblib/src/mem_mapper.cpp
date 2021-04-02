@@ -28,6 +28,32 @@ MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAd
     allocTableModified = false;
     flashMemModified = false;
     memcpy(allocTable, (byte *)flashBase, FLASH_PAGE_SIZE);
+    // Quick check if there is more than one zero on the allocTable, a certain
+    // sign of table corruption. In this case, clear the table (set all 0xff).
+    // This is necessary because a corrupted table leads to all sorts of
+    // malfunction.
+    // (A more thorough test would be to check for any value (except 0xff) to
+    // appear more than once, but this simpler version catches the most likely
+    // form of corruption.)
+    bool zeroentry = false;
+    bool err = false;
+    for (int i=0; i<FLASH_PAGE_SIZE; i++)
+    {
+        if (allocTable[i] == 0)
+            if (zeroentry)
+            {
+                err = true;
+            	   break;
+            } else
+            	   zeroentry = true;
+    }
+    if (err) {
+       	allocTableModified = true;
+        for (int i=0; i<FLASH_PAGE_SIZE; i++)
+        {
+     	      allocTable[i] = 0xff;
+        }
+    }
 }
 
 int MemMapper::doFlash(void) const
