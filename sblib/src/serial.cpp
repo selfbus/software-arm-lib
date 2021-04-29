@@ -83,8 +83,8 @@ void Serial::begin(int baudRate, SerialConfig config)
     LPC_UART->IER |= UART_IE_RBR;  // Enable RX/TX interrupts
 
     // Ensure a clean start, no data in either TX or RX FIFO
-    flush();
     clearBuffers();
+    flush();
 
     // Drop data from the RX FIFO
     while (LPC_UART->LSR & LSR_RDR)
