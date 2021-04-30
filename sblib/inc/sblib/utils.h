@@ -24,7 +24,7 @@ void reverseCopy(byte* dest, const byte* src, int len);
 
 /**
  * Call when a fatal application error happens. This function will never
- * return and the program LED (can be changed with setFatalErrorPin) will blink rapidly to indicate the error.
+ * return and the program/fatalError LED (can be changed with setFatalErrorPin) will blink rapidly to indicate the error.
  */
 void fatalError();
 
@@ -109,5 +109,12 @@ void setFatalErrorPin(int newPin);
  * @brief Example:  CPP_QUOTE_EXPAND(BCU_NAME) results in "BCU2"  (if BCU_NAME is defined as BCU2)
  */
 #define CPP_QUOTE_EXPAND(str) CPP_QUOTE(str)
+
+/**
+ * Interrupt service routine to override the default HardFault exception handler in cr_startup_lpc11xx.cpp
+ * This function will never return and the program/fatalError LED
+ * will blink rapidly to indicate the error.
+ */
+extern "C" void HardFault_Handler();
 
 #endif /*sblib_utils_h*/
