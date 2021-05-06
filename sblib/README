@@ -1,3 +1,44 @@
+
+last review:
+
+ com_objects.cpp:
+            - added sending buffer free check before new data is loaded 
+            - fixed possible loop when app was writing an object and lib was searching to update local object in same group  
+  bus.cpp:
+            - limit rate of sending telegram to 28 per second to avoid thermal breakdown of sending circuit
+
+review on
+   bus.cpp:
+ 				- added some comments
+  				- fixed collision detection issue while sending ACK/NACK/BUSY
+  				- introduction of collision detection window according to spec for pulse duration of 25us - 70us due to propagation delay
+  				- added some states to SM for better readability of the code, Busy handling,...
+  				- added error handling, convey info to upper layers
+  				- added local rx buffer for parallel processing of rx telegram and bus-receiving and reply with busy to remote sender
+  				- added busy acknowledgment handling
+  				- added some debug macros, use of timer32_0 for debugging of state machine timing
+           
+ 	serial I/F
+  				- debugging with high speed serial terminal interface (1.5Mbaud) at PIO2_7 and PIO2_8
+ 
+
+old review to fixe some issues
+in bus.cpp:
+- collision detection, introduction of windows to avoid detection of refelctions of low bit pulse which can extend the bit duration up to
+70us
+- handling of default phy addr.  (e.g. in case of uninitialized SW), set to default 15.15.255 for normal device or allow 0.0.0 for router
+-compiled with ROUTER definition
+- setting correct waiting time for reply and prio telegrams (according to bits in control byte of telegram)
+
+in com_objects.cpp:
+- handling of read/write of object by the APP, check for correct flag before send telegram to bus or local object (in case they share same
+group addr.)
+  (not completed yet)
+- added default telegram rate limit in order to avoid sending stage overload
+
+
+
+
 Selfbus EIB Library
 ===================
 

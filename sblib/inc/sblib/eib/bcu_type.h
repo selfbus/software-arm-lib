@@ -60,8 +60,7 @@
 #endif
 
 
-#define BCU1_TYPE 0x10      //!> The BCU 1 type, for comparison between a BCU 1 or newer BCU's, do not change it
-#define SYSTEMB_TYPE 0x7B0  //!> The SYSTEM_B type, for comparison for SYSTEM_B, do not change it
+#define BCU1_TYPE 0x10 //!> The BCU 1 type, for comparison between a BCU 1 or newer BCU's, do not change it
 
 
 //

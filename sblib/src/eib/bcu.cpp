@@ -3,6 +3,10 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ *  last change: 10. April 2021 HoRa:
+ *  	call to bus:setSendAck() in "connect/disconnect command at Layer4" removed- not needed, will lead to undefined effects when the
+ *  	bus state machine is sending an ack in parallel due to asynchronous interrupt process
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -27,6 +31,13 @@
 #  define IF_DUMP_MEM_OPS(code)
 #endif
 
+// Enable informational debug statements
+#if defined (DEBUG_BUS) || defined (DUMP_TELEGRAMS)
+#define DB(x) x
+#else
+#define DB(x)
+#endif
+
 extern unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
 
@@ -35,7 +46,9 @@ void BCU::_begin()
     readUserEeprom();
     sendGrpTelEnabled = true;
     groupTelSent = millis();
-    groupTelWaitMillis = 0; // 0 disables limit
+
+    // set limit to max of 28 telegrams per second (wait 35ms) -  to avoid risk of thermal destruction of the sending circuit
+    groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
 }
 
 void BCU::end()
@@ -50,21 +63,32 @@ void BCU::end()
     }
 }
 
+
+/**
+ *  main loop for Receiving and transmitting and receiving telegrams toward the interrupt driven bus/physical layer
+ *
+ *  todo mapp sending results to the objects error state
+ *
+ */
 void BCU::loop()
 {
     if (!enabled)
         return;
     BcuBase::loop();
 
+    // if bus is not sending (telegramm buffer is empty) check for next telegram to be send
     if (sendGrpTelEnabled && !bus.sendingTelegram())
     {
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
         {
+        	// check in com_objects method for waiting objects from user app and store in telegrambuffer
+        	// and call bus.sendTelegram
          if (sendNextGroupTelegram())
              groupTelSent = millis();
+
         }
-        // To prevent overflows if no telegrams are sent for a long time
+        // To prevent overflows if no telegrams are sent for a long time - todo: better reload with systemTime - groupTelWaitMillis
         if (elapsed(groupTelSent) >= 2000)
         {
             groupTelSent += 1000;
@@ -112,11 +136,26 @@ void BCU::sendConControlTelegram(int cmd, int senderSeqNo)
     bus.sendTelegram(sendCtrlTelegram, 7);
 }
 
+
+/**
+ * BUS process has receive a telegram - now process it
+ *
+ * called from BCUBase-loop
+ *
+ * todo check for RX status and inform upper layer if needed
+ *
+ */
 void BCU::processTelegram()
 {
     unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
     unsigned short apci = ((bus.telegram[6] & 3) << 8) | bus.telegram[7];
+
+    DB(serial.println());
+	DB(serial.print("BCU1 grp addr: ");)
+	DB(serial.print((unsigned int)destAddr, HEX, 4);)
+	DB(serial.print(" error state:  ");)
+	DB(serial.println((unsigned int)bus.receivedTelegramState(), HEX, 4);)
 
     if (destAddr == 0) // a broadcast
     {
@@ -475,7 +514,7 @@ void BCU::processDirectTelegram(int apci)
     int apciCmd = apci & APCI_GROUP_MASK;
     switch (apciCmd)  // ADC / memory commands use the low bits for data
     {
-    case APCI_ADC_READ_PDU:
+    case APCI_ADC_READ_PDU: // todo adc service  to be implemented for bus voltage and PEI
         index = bus.telegram[7] & 0x3f;  // ADC channel
         count = bus.telegram[8];         // number of samples
         sendTelegram[5] = 0x64;
@@ -668,7 +707,7 @@ void BCU::processConControlTelegram(int tpci)
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
                 lastAckSeqNo = -1;
-                bus.setSendAck (0);
+                //bus.setSendAck (0); // todo check in spec if needed
             }
         }
         else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
@@ -676,7 +715,7 @@ void BCU::processConControlTelegram(int tpci)
             if (connectedAddr == senderAddr)
             {
                 connectedAddr = 0;
-                bus.setSendAck (0);
+                //bus.setSendAck (0);  // todo check in spec if needed
             }
         }
     }

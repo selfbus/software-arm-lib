@@ -307,8 +307,8 @@ inline bool BcuBase::applicationRunning() const
         return false;
 
 #if BCU_TYPE == BCU1_TYPE
-    return (userRam.status & (BCU_STATUS_PROG|BCU_STATUS_AL)) == BCU_STATUS_AL &&
-        userRam.runState == 1 && userEeprom.runError == 0xff; // ETS sets the run error to 0 when programming
+    return ((userRam.status & (BCU_STATUS_PROG|BCU_STATUS_AL)) == BCU_STATUS_AL &&
+        userRam.runState == 1 && userEeprom.runError == 0xff); // ETS sets the run error to 0 when programming
 #else
     return userRam.runState == 1 &&
         userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADED &&  // Address table object

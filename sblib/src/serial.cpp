@@ -3,6 +3,11 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ *
+ *  updated  March 2021 by HoRa:
+ *       	Interrupt priority set to lowest level in order to avoid conflicts with the time critical knx bus interrupt source
+ *       	value for high speed baud rates for debugging of bus timing
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -74,6 +79,17 @@ void Serial::begin(int baudRate, SerialConfig config)
     unsigned int val = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
         LPC_SYSCON->UARTCLKDIV / 16 / baudRate;
 
+// added by Hora for high speed uart for debug of bus timing
+	if (baudRate == 460800){
+		val = 5;
+		LPC_UART->FDR = ( 0x00a3);  //DIVADDVAL = 3, MULVAL = 10
+
+	}else if( baudRate == 576000) {
+		val = 3;
+		LPC_UART->FDR = (0x00fb);  //DIVADDVAL = 11, MULVAL = 15
+	}
+//
+
     LPC_UART->DLM  = val / 256;
     LPC_UART->DLL  = val % 256;
 
@@ -89,6 +105,9 @@ void Serial::begin(int baudRate, SerialConfig config)
     // Drop data from the RX FIFO
     while (LPC_UART->LSR & LSR_RDR)
         val = LPC_UART->RBR;
+
+    //added by Hora in order to provide the highest interrupt level to the bus timer of the lib
+    NVIC_SetPriority (UART_IRQn, 3);
 
     enableInterrupt(UART_IRQn);
 }

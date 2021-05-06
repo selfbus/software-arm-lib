@@ -74,7 +74,7 @@ static const PropertyDef addrTabObjectProps[] =
     /** Pointer to the address table */
     { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(addrTabAddr) },
 
-    /** */
+    /** Pointer to the memory control block */
     { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(addrTabMcb) },
 
     /** End of table */
@@ -99,7 +99,7 @@ static const PropertyDef assocTabObjectProps[] =
     /** */
     { PID_TABLE, PDT_GENERIC_04|PC_WRITABLE, 0x00FF },
 
-    /** */
+    /** Pointer to the memory control block */
     { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(assocTabMcb) },
 
     /** End of table */
@@ -127,7 +127,7 @@ static const PropertyDef appObjectProps[] =
     /** Pointer to the communication objects table */
     { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsTabAddr) },
 
-    /** */
+    /** Pointer to the memory control block */
     { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(commsTabMcb) },
 
     /** ABB_CUSTOM */
@@ -154,7 +154,7 @@ static const PropertyDef interfaceObjectProps[] =
     /** */
     { PID_PROG_VERSION, PDT_GENERIC_05|PC_WRITABLE|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(eibObjVer) },
 
-    /** */
+    /** Pointer to the memory control block */
     { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(eibObjMcb) },
 
     /** Error code */

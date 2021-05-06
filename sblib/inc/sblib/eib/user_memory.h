@@ -10,6 +10,7 @@
 #ifndef sblib_user_memory_h
 #define sblib_user_memory_h
 
+#include <sblib/config.h>
 #include <sblib/types.h>
 #include <sblib/eib/bcu_type.h>
 
@@ -183,15 +184,13 @@ public:
     byte serial[6];      //!< 0x0484: Hardware serial number (4 byte aligned)
     byte order[10];      //!< 0x048a: Hardware Type
     byte orderInfo[10];  //!< 0x0494: Ordering information
-#if BCU_TYPE == SYSTEM_B_TYPE
-    byte addrTabMcb[8];    //!< 0x0494: MCB Table
-    byte assocTabMcb[8];    //!< 0x0494: MCB Table
-    byte commsTabMcb[8];    //!< 0x0494: MCB Table
-    byte eibObjMcb[8];    //!< 0x0494: MCB Table
-    byte commsSeg0Mcb[8];    //!< 0x0494: MCB Table
+    byte addrTabMcb[8];
+    byte assocTabMcb[8];
+    byte commsTabMcb[8];
+    byte eibObjMcb[8];
+    byte commsSeg0Mcb[8];
     byte eibObjVer[5];      //!< Application programm 1 version
-    byte commsSeg0Ver[5];    //!< Application programm 2 version
-#endif
+    byte commsSeg0Ver[5];   //!< Application programm 2 version
 #endif /*BCU_TYPE*/
 
     /**

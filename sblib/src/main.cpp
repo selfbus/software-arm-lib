@@ -24,9 +24,13 @@
  */
 static inline void lib_setup()
 {
-    // Configure the system timer to call SysTick_Handler once every 1 msec
-    SysTick_Config(SystemCoreClock / 1000);
-    systemTime = 0;
+	// Configure the system timer to call SysTick_Handler once every 1 msec
+	SysTick_Config(SystemCoreClock / 1000);
+	systemTime = 0;
+  /*  serial.print(" libsetup Systemclock: ");
+	serial.print((unsigned int)SystemCoreClock, DEC, 9);
+	serial.println(" Hz");
+*/
 }
 
 #define WEAK __attribute__ ((weak))

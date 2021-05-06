@@ -77,54 +77,57 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 #endif
 
 #ifdef DUMP_TELEGRAMS
-    IF_DEBUG(serial.print("Telegram "));
+    IF_DEBUG(serial.println("Telegram "));
 #endif
 
 #ifdef DUMP_SERIAL
-    IF_DEBUG(serial.print("Serialnumber "));
+    IF_DEBUG(serial.println("Serialnumber "));
 #endif
 
 #ifdef DUMP_PROPERTIES
-    IF_DEBUG(serial.print("Properties "));
+    IF_DEBUG(serial.println("Properties "));
 #endif
 
 #if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
-    IF_DEBUG(serial.println("dump enabled.");)
-    IF_DEBUG(serial.print("BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
+    IF_DEBUG(serial.println("Telegram dump enabled.");)
+    IF_DEBUG(serial.println("BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
     IF_DEBUG(serial.println(" MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
 #   ifdef LOAD_CONTROL_ADDR
-        IF_DEBUG(serial.print("LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4););
+        IF_DEBUG(serial.println("LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4););
 #   endif
 #   ifdef LOAD_STATE_ADDR
         IF_DEBUG(serial.println(" LOAD_STATE_ADDR: 0x", LOAD_STATE_ADDR, HEX, 4););
 #   endif
 #   ifdef USER_RAM_START_DEFAULT
-        IF_DEBUG(serial.print("USER_RAM_START_DEFAULT: 0x", USER_RAM_START_DEFAULT, HEX, 4););
+        IF_DEBUG(serial.println("USER_RAM_START_DEFAULT: 0x", USER_RAM_START_DEFAULT, HEX, 4););
 #   endif
 #   ifdef EXTRA_USER_RAM_SIZE
-        IF_DEBUG(serial.print(" EXTRA_USER_RAM_SIZE: 0x", EXTRA_USER_RAM_SIZE, HEX, 4););
+        IF_DEBUG(serial.println(" EXTRA_USER_RAM_SIZE: 0x", EXTRA_USER_RAM_SIZE, HEX, 4););
 #   endif
 #   ifdef USER_RAM_SIZE
-        IF_DEBUG(serial.print(" USER_RAM_SIZE: 0x", USER_RAM_SIZE, HEX, 4););
+        IF_DEBUG(serial.println(" USER_RAM_SIZE: 0x", USER_RAM_SIZE, HEX, 4););
 #   endif
 #   ifdef USER_RAM_SHADOW_SIZE
         IF_DEBUG(serial.println(" USER_RAM_SHADOW_SIZE: 0x", USER_RAM_SHADOW_SIZE, HEX, 4););
 #   endif
 #   ifdef USER_EEPROM_START
-        IF_DEBUG(serial.print("USER_EEPROM_START: 0x", USER_EEPROM_START, HEX, 4););
+        IF_DEBUG(serial.println("USER_EEPROM_START: 0x", USER_EEPROM_START, HEX, 4););
 #   endif
 #   ifdef USER_EEPROM_SIZE
-        IF_DEBUG(serial.print(" USER_EEPROM_SIZE: 0x", USER_EEPROM_SIZE, HEX, 4););
+        IF_DEBUG(serial.println(" USER_EEPROM_SIZE: 0x", USER_EEPROM_SIZE, HEX, 4););
 #   endif
 #   ifdef USER_EEPROM_END
-        IF_DEBUG(serial.print(" USER_EEPROM_END: 0x", USER_EEPROM_END, HEX, 4););
+        IF_DEBUG(serial.println(" USER_EEPROM_END: 0x", USER_EEPROM_END, HEX, 4););
 #   endif
 #   ifdef USER_EEPROM_FLASH_SIZE
         IF_DEBUG(serial.println(" USER_EEPROM_FLASH_SIZE: 0x", USER_EEPROM_FLASH_SIZE, HEX, 4););
 #   endif
     IF_DEBUG(serial.println());
+	_begin(); // load flash/rom data to usereeprom, init bcu
+
 #endif
 
+    // set sending buffer to free
     sendTelegram[0] = 0;
     sendCtrlTelegram[0] = 0;
 
@@ -245,42 +248,166 @@ void BcuBase::setOwnAddress(int addr)
 
 void BcuBase::loop()
 {
-    if (!enabled)
-        return;
+	if (!enabled)
+		return;
+
 
 #ifdef DUMP_TELEGRAMS
-    {
-        extern unsigned char telBuffer[];
-        extern unsigned int telLength ;
-        if (telLength > 0)
-        {
-            serial.print("RCV: ");
-            for (unsigned int i = 0; i < telLength; ++i)
-            {
-                if (i) serial.print(" ");
-                serial.print(telBuffer[i], HEX, 2);
-            }
-            serial.println();
-            telLength = 0;
-        }
-    }
+	extern unsigned char telBuffer[];
+	extern unsigned int telLength ; // db_state;
+	extern unsigned int telRXtime;
+	extern bool telcollision;
+
+	if (telLength > 0)
+	{
+		//serial.println();
+		serial.print("RCV: (");
+
+		serial.print(telRXtime, DEC, 8);
+		serial.print(") ");
+		if (telcollision)  serial.print("collision ");
+
+		for (unsigned int i = 0; i < telLength; ++i)
+		{
+			if (i) serial.print(" ");
+			serial.print(telBuffer[i], HEX, 2);
+		}
+		serial.println();
+		telLength = 0;
+	}
 #endif
 
-    if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
-        processTelegram();
+#ifdef DEBUG_BUS
+	// trace buffer contend:
+	// trace point id (start with s) followed by trace data, coding: sittee
+	// i: state machine trace point code
+	//  0000-3999  one timer value
+	//  4000-5999 one hex value
+	//  6000-7999 one dec value
+	//  8000-8999 all timer values at interrupt
+	//  9000 - rx tel data values
+	// tt: trace point number within certain state
+	// ee: state of state machine at trace point
 
-    if (progPin)
-    {
-        // Detect the falling edge of pressing the prog button
-        pinMode(progPin, INPUT|PULL_UP);
-        int oldValue = progButtonDebouncer.value();
-        if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
-        {
-            userRam.status ^= 0x81;  // toggle programming mode and checksum bit
-        }
-        pinMode(progPin, OUTPUT);
-        digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
-    }
+
+
+	static unsigned int t,l, l1, lt,lt1, s, cv,tv, tmv;
+	bool cf;
+	l=0; l1=0;
+	while (tb_in != tb_out && l1 < 5) {
+	//while (tb_in != tb_out) {
+		l1++;
+		s= td_b[tb_out].ts;
+		t= td_b[tb_out].tt;
+		tv= td_b[tb_out].ttv;
+		cv= td_b[tb_out].tcv;
+		tmv= td_b[tb_out].ttmv;
+		cf= td_b[tb_out].tc;
+		if ((s>=8000 && s<=8999) ) {
+			serial.println();
+			serial.print("s");
+			serial.print( (unsigned int) s, DEC, 3);
+			serial.print(" t");
+			serial.print( (unsigned int) t, DEC, 6);
+			serial.print(" dt");
+			serial.print( (unsigned int) t-lt, DEC,4);
+			serial.print(" f");
+			serial.print((unsigned int)cf, DEC, 1);
+			serial.print(" c");
+			serial.print((unsigned int)cv, DEC, 4);
+			serial.print(" t");
+			serial.print((unsigned int)tv, DEC, 4);
+			serial.print(" m");
+			serial.print((unsigned int)tmv, DEC,4);
+/*			serial.print(" i");
+			serial.print((unsigned int)tb_in, DEC,3);
+			serial.print(" o");
+			serial.print((unsigned int)tb_out, DEC,3);
+*/
+			//			serial.print("*");
+			l=1;
+			lt = t;
+			lt1= t;
+		}
+		else if ( s>=9000) {
+			serial.println();
+			serial.print("s");
+			serial.print( (unsigned int) s, DEC, 3);
+			serial.print(" c/v");
+			serial.print((unsigned int)cf, HEX, 2);
+			serial.print(" L");
+			serial.print((unsigned int)tmv, DEC, 2);
+			serial.print(" t");
+			serial.print( (unsigned int) t, HEX, 8);
+			serial.print(" ");
+			serial.print((unsigned int)cv, HEX, 4);
+			serial.print(" ");
+			serial.print((unsigned int)tv, HEX, 4);
+			//serial.print("*");
+		}else if ( s>=9005) {
+			serial.println();
+			serial.print("s");
+			serial.print( (unsigned int) s, DEC, 3);
+			serial.print(" ");
+			serial.print((unsigned int)tmv, HEX,4);
+			serial.print(" ");
+			serial.print( (unsigned int) t, HEX, 8);
+			serial.print(" ");
+			serial.print((unsigned int)cv, HEX, 4);
+			serial.print(" ");
+			serial.print((unsigned int)tv, HEX, 4);
+			serial.print(" d");
+			serial.print((unsigned int)cf, HEX, 4);
+			//serial.print("*");
+		}
+		else  if (s < 4000) { // one  delta timer
+			serial.print("s");
+			serial.print( (unsigned int) s -2000, DEC, 3);
+			serial.print(" dt");
+			serial.print( (unsigned int) t-lt1, DEC, 6);
+			lt1 = t;
+			l++;
+		}
+		else if (s < 5000) { // one hex
+			serial.print("s");
+			serial.print( (unsigned int) s- 4000, DEC, 3);
+			serial.print(" h");
+			serial.print( (unsigned int) t,HEX,4);
+			l++;
+		}
+		else if (s < 6000) { // one dec
+			serial.print("s");
+			serial.print( (unsigned int) s- 5000, DEC, 3);
+			serial.print(" d");
+			serial.print( (unsigned int) t,DEC,4);
+			l++;
+		}
+		if(l >5) {
+			l=0;
+			serial.println();
+//			serial.print("* ");
+		} else  serial.print(" ");
+		if (++tb_out >= tb_lngth){ tb_out =0; tb_in_ov = false;}
+		if(tb_in_ov && tb_out <= tb_in)  serial.print(" !!OV**");
+	}
+#endif
+
+
+	if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
+		processTelegram();
+
+	if (progPin)
+	{
+		// Detect the falling edge of pressing the prog button
+		pinMode(progPin, INPUT|PULL_UP);
+		int oldValue = progButtonDebouncer.value();
+		if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
+		{
+			userRam.status ^= 0x81;  // toggle programming mode and checksum bit
+		}
+		pinMode(progPin, OUTPUT);
+		digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
+	}
 }
 
 void BcuBase::processTelegram()

@@ -23,4 +23,10 @@ void setup();
  */
 void loop();
 
+
+#ifdef DEBUG
+void debug_loop();  // debugging terminal loop
+#endif
+
+
 #endif /*sblib_main_h*/

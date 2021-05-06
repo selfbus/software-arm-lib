@@ -3,6 +3,9 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ *
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -175,6 +178,9 @@ private:
 };
 
 
+#define  MAX_GROUP_TEL_PER_SECOND  28
+#define  DEFAULT_GROUP_TEL_WAIT_MILLIS  1000/MAX_GROUP_TEL_PER_SECOND
+
 //
 //  Inline functions
 //
@@ -203,13 +209,21 @@ inline void BCU::enableGroupTelSend(bool enable)
 {
     sendGrpTelEnabled = enable;
 }
-
+/**
+ * The sending circuit of the Controller has limited capability for sending low bits.
+ *
+ * In order to avoid a thermal destruction (more than 1W power dissipation of the Transistor and 150mW of the 5R6 Resistor
+ * a limit of max 28 telegrams per second should be set (assuming an average distribution of 50% low bits within telegrams
+ * of max length).
+ *
+ * @param limit
+ */
 inline void BCU::setGroupTelRateLimit(unsigned int limit)
 {
- if ((limit > 0) && (limit <= 1000))
+ if ((limit > 0) && (limit <= MAX_GROUP_TEL_PER_SECOND))
      groupTelWaitMillis = 1000/limit;
  else
-     groupTelWaitMillis = 0;
+     groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
 }
 
 #ifndef INSIDE_BCU_CPP
