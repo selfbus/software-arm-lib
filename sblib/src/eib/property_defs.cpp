@@ -74,12 +74,16 @@ static const PropertyDef addrTabObjectProps[] =
     /** Pointer to the address table */
     { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(addrTabAddr) },
 
+    /** */
+    { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(addrTabMcb) },
+
     /** End of table */
     PROPERTY_DEF_TABLE_END
 };
 
 /**
- * The properties of the association table object, See KNX Spec 06 Profiles/Annex A p.103 and 9/4/1 p.51
+ * The properties of the association table object,
+ * See KNX Spec 06 Profiles/Annex A p.103 and 9/4/1 p.51
  */
 static const PropertyDef assocTabObjectProps[] =
 {
@@ -92,12 +96,19 @@ static const PropertyDef assocTabObjectProps[] =
     /** Pointer to the association table */
     { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(assocTabAddr) },
 
+    /** */
+    { PID_TABLE, PDT_GENERIC_04|PC_WRITABLE, 0x00FF },
+
+    /** */
+    { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(assocTabMcb) },
+
     /** End of table */
     PROPERTY_DEF_TABLE_END
 };
 
 /**
- * The properties of the application program object, See KNX Spec 9/4/1 p.52
+ * The properties of the application program object,
+ * See KNX Spec 9/4/1 p.52
  */
 static const PropertyDef appObjectProps[] =
 {
@@ -116,6 +127,9 @@ static const PropertyDef appObjectProps[] =
     /** Pointer to the communication objects table */
     { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsTabAddr) },
 
+    /** */
+    { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(commsTabMcb) },
+
     /** ABB_CUSTOM */
     { PID_ABB_CUSTOM, PDT_GENERIC_10|PC_POINTER|PC_WRITABLE, PD_USER_RAM_OFFSET(user2) },
 
@@ -124,33 +138,63 @@ static const PropertyDef appObjectProps[] =
 };
 
 /**
- * The properties of the KNX object association table object, could not find the specification in KNX Spec 2.1
+ *
  */
-// static const PropertyDef knxAssocTabObjectProps[] =
-//{
-    // XXX check correct properties for object OT_KNX_OBJECT_ASSOCIATATION_TABLE
+static const PropertyDef interfaceObjectProps[] =
+{
     /** Interface object type: 2 bytes */
-//    { PID_OBJECT_TYPE, PDT_UNSIGNED_INT, OT_KNX_OBJECT_ASSOCIATATION_TABLE },
+    { PID_OBJECT_TYPE, PDT_UNSIGNED_INT, OT_INTERFACE_PROGRAM },
 
     /** Load state control */
-//    { PID_LOAD_STATE_CONTROL, PDT_CONTROL|PC_WRITABLE|PC_POINTER, PD_USER_EEPROM_OFFSET(loadState[OT_KNX_OBJECT_ASSOCIATATION_TABLE]) },
+    { PID_LOAD_STATE_CONTROL, PDT_CONTROL|PC_WRITABLE|PC_POINTER, PD_USER_EEPROM_OFFSET(loadState[OT_INTERFACE_PROGRAM]) },
 
-    /** Pointer to the communication objects table */
-//    { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsTabAddr) },
+    /** Pointer to the interface objects table */
+    { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(eibObjAddr) },
+
+    /** */
+    { PID_PROG_VERSION, PDT_GENERIC_05|PC_WRITABLE|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(eibObjVer) },
+
+    /** */
+    { PID_MCB_TABLE, PDT_GENERIC_08|PC_POINTER|PC_WRITABLE, PD_USER_EEPROM_OFFSET(eibObjMcb) },
 
     /** Error code */
-//    { PID_ERROR_CODE, PDT_GENERIC_01, 0 }, // XXX implement PID_ERROR_CODE handling
+    PROPERTY_DEF_TABLE_END
+};
+
+/**
+ * The properties of the KNX object association table object, could not find the specification in KNX Spec 2.1
+ */
+static const PropertyDef knxAssocTabObjectProps[] =
+{
+    // XXX check correct properties for object OT_KNX_OBJECT_ASSOCIATATION_TABLE
+    /** Interface object type: 2 bytes */
+    { PID_OBJECT_TYPE, PDT_UNSIGNED_INT, OT_KNX_OBJECT_ASSOCIATATION_TABLE },
+
+    /** Load state control */
+    { PID_LOAD_STATE_CONTROL, PDT_CONTROL|PC_WRITABLE|PC_POINTER, PD_USER_EEPROM_OFFSET(loadState[OT_KNX_OBJECT_ASSOCIATATION_TABLE]) },
+
+    /** Pointer to the communication objects table */
+    { PID_TABLE_REFERENCE, PDT_UNSIGNED_INT|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsSeg0Addr) },
+
+    /** */
+    { PID_PROG_VERSION, PDT_GENERIC_05|PC_WRITABLE|PC_ARRAY_POINTER, PD_USER_EEPROM_OFFSET(commsSeg0Ver) },
+
+    /** Error code */
+    { PID_ERROR_CODE, PDT_GENERIC_01, 0 }, // XXX implement PID_ERROR_CODE handling
 
     // XXX implement properties PID_TABLE, PID_MCB_TABLE and maybe more
 
     /** End of table */
-//    PROPERTY_DEF_TABLE_END
-//};
+    PROPERTY_DEF_TABLE_END
+};
+
+
 
 /**
  * The interface objects for
- * BCU2   (MASK_VERSIONs 0x0020, 0x0021, 0x0025)
- * BIM112 (MASK_VERSIONs 0x0701, 0x0705)
+ * BCU2     (MASK_VERSIONs 0x0020, 0x0021, 0x0025)
+ * BIM112   (MASK_VERSIONs 0x0701, 0x0705)
+ * SYSTEM_B (MASK_VERSIONs 0x07B0)
  */
 const PropertyDef* const propertiesTab[NUM_PROP_OBJECTS] =
 {
@@ -158,7 +202,8 @@ const PropertyDef* const propertiesTab[NUM_PROP_OBJECTS] =
     addrTabObjectProps,    //!> Interface Object 1, mandatory
     assocTabObjectProps,   //!> Interface Object 2, mandatory
     appObjectProps,        //!> Interface Object 3, mandatory
-    // knxAssocTabObjectProps //!> Interface Object 5, some newer MASK_VERSIONs (>= 0x0701) use this to set the address of the communication object table
+	interfaceObjectProps,  //!> Interface Object 4, required for SYSTEM_B
+	knxAssocTabObjectProps //!> Interface Object 5, some newer MASK_VERSIONs (>= 0x0701) use this to set the address of the communication object table
 };
 
 #endif /*BCU_TYPE != BCU1_TYPE*/

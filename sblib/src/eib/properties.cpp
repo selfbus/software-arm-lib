@@ -306,7 +306,7 @@ LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, co
             memStartValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));
             memEndValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentEndAddress));
 
-#           if (BCU_TYPE != BIM112_TYPE)
+#           if ((BCU_TYPE != BIM112_TYPE) && (BCU_TYPE != SYSTEM_B_TYPE))
                 // special handling of the High RAM (BCU 2.0/ 2.1) (0x0900 - 0x09BB),
                 // see BCU 2 Help from https://www.auto.tuwien.ac.at/~mkoegler/index.php/bcudoc
                 memStartValid |= (absDataSegmentStartAddress >= HIGH_RAM_START) && (absDataSegmentStartAddress < (HIGH_RAM_START + HIGH_RAM_LENGTH));
@@ -407,6 +407,9 @@ LoadState handleTaskPtr(const int objectIdx, const byte* payLoad, const int len)
     return LS_LOADING;
 }
 
+
+
+#if BCU_TYPE != SYSTEM_B_TYPE
 /**
  * NOT IMPLEMENTED!
  * for more information https://www.auto.tuwien.ac.at/~mkoegler/eib/doc/Bcu2Help_v12.chm
@@ -441,7 +444,11 @@ LoadState handleTaskCtrl1(const int objectIdx, const byte* payLoad, const int le
     );
     return LS_LOADING;
 }
+#endif
 
+
+
+#if BCU_TYPE != SYSTEM_B_TYPE
 /**
  * ONLY PARTLY IMPLEMENTED!
  * should handle Additional Load Control: LoadEvent: TaskCtrl2 (segment type 5)
@@ -495,6 +502,9 @@ LoadState handleTaskCtrl2(const int objectIdx, const byte* payLoad, const int le
     );
     return LS_LOADING;
 }
+#endif
+
+
 
 /**
  * NOT IMPLEMENTED!
@@ -526,7 +536,7 @@ LoadState handleRelativeAllocation(const int objectIdx, const byte* payLoad, con
 }
 
 /**
- * NOT IMPLEMENTED!
+ * PARTIALLY IMPLEMENTED!
  * should handle Additional Load Control: LoadEvent: DataRelativeAllocation (segment type 0x0B)
  *
  * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
@@ -544,7 +554,9 @@ LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad,
     // payLoad[4]    : mode (0x00)
     // payLoad[5]    : fill (0x00)
     // payLoad[6..7] : reserved
-    IF_DUMP_PROPERTIES(
+    uint32_t reqMemSize = ((payLoad[0] << 24) | (payLoad[1] << 16) | (payLoad[2] << 8) | payLoad[3]);
+
+	IF_DUMP_PROPERTIES(
             serial.print("handleDataRelativeAllocation NOT IMPLEMENTED! ");
             printObjectIdx(objectIdx);
             serial.print(" ");
@@ -556,8 +568,103 @@ LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad,
             serial.println(" fill: 0x", payLoad[5], HEX, 2);
             serial.println();
     );
+
+	word*    tableAddress[] = {&userEeprom.addrTabAddr, &userEeprom.assocTabAddr, &userEeprom.commsTabAddr,
+	                           &userEeprom.eibObjAddr, &userEeprom.commsSeg0Addr};
+
+//    uint32_t* tableSize[] = {(uint32_t*)&userEeprom.addrTabMcb[0], (uint32_t*)&userEeprom.assocTabMcb[0], (uint32_t*)&userEeprom.commsTabMcb[0],
+//                             (uint32_t*)&userEeprom.appProg1Mcb[0], (uint32_t*)&userEeprom.appProg2Mcb[0]};
+
+    byte* tableSize[] = {&userEeprom.addrTabMcb[0], &userEeprom.assocTabMcb[0], &userEeprom.commsTabMcb[0],
+                         &userEeprom.eibObjMcb[0], &userEeprom.commsSeg0Mcb[0]};
+
+
+	//word virtMemAddr = tableAddress[objectIdx -1];
+	word virtMemAddr = 0x3A9E; // USER_EEPROM_START + USER_EEPROM_SIZE
+	for (int i = 0; i < 5; i++)
+	{
+	    if ((*tableAddress[i] != 0) && (*tableAddress[i] < virtMemAddr))
+	        virtMemAddr = *tableAddress[i];
+	}
+	*tableAddress[objectIdx -1] = virtMemAddr - reqMemSize;
+	byte* tabSiz = tableSize[objectIdx -1];
+    tabSiz[0] = payLoad[0];
+    tabSiz[1] = payLoad[1];
+    tabSiz[2] = payLoad[2];
+    tabSiz[3] = payLoad[3];
+    //*tableSize[objectIdx -1] = reqMemSize;
+    //(*tableSize[objectIdx -1])[1] = payLoad[1];
+    //(*tableSize[objectIdx -1])[2] = payLoad[2];
+    //(*tableSize[objectIdx -1])[3] = payLoad[3];
+
+
+
+//    switch (objectIdx)
+//    {
+//        // Group AddressTable
+//        case 1: virtMemStart = 0x3400;
+//                userEeprom.addrTabAddr = virtMemStart;
+//                break;
+//
+//        // Association Table
+//        case 2: virtMemStart = 0x35FE;
+//                userEeprom.assocTabAddr = virtMemStart;
+//                break;
+//
+//        // Group Object Table
+//        case 3: virtMemStart = 0x39FC
+//                userEeprom.commsTabAddr = virtMemStart;
+//                break;
+//
+//        // ApplicationProgram 1
+//        case 4: virtMemStart = 0x3A7E
+//                userEeprom.appProg1Addr = virtMemStart;
+//                break;
+//
+//        // ApplicationProgram 1
+//        case 5: virtMemStart = 0x3A7E
+//                userEeprom.appProg2Addr = virtMemStart;
+//                break;
+//
+//    }
+
+
+    // Mode = 0x01 => fill allocated memory
+    if (payLoad[4] > 0)
+    {
+        byte* physMemAddr = (byte*)(userEepromData + (virtMemAddr - USER_EEPROM_START));
+        byte fillByte = payLoad[5];
+        for (uint32_t i = 0; i < reqMemSize; i++)
+            physMemAddr[i] = fillByte;
+    }
     return LS_LOADING;
 }
+
+
+
+uint16_t crc16(uint8_t* ptr, int len)
+{
+  //int len = 9;
+  //uint8_t data[] = {0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38,  0x39};
+  //uint8_t* ptr = &data[0];
+    char i;
+    uint16_t crc = 0x1D0F;
+    while (--len >= 0)
+    {
+       crc = crc ^ (uint16_t) *ptr++ << 8;
+       i = 8;
+       do
+       {
+          if (crc & 0x8000)
+             crc = crc << 1 ^ 0x1021;
+          else
+             crc = crc << 1;
+       } while(--i);
+    }
+  return crc;
+}
+
+
 
 int loadProperty(int objectIdx, const byte* data, int len)
 {
@@ -574,6 +681,35 @@ int loadProperty(int objectIdx, const byte* data, int len)
     }
 
     LoadState newLoadState = handleLoadStateMachine(objectIdx, data, len);
+
+    // When memory load is complete, calculate the crc 16 and store it in the mcb
+    if ((newLoadState == LS_LOADED) && (BCU_TYPE == SYSTEM_B_TYPE))
+    {
+        const PropertyDef* def = propertyDef(objectIdx, PID_TABLE_REFERENCE);
+        byte* valuePtr = def->valuePointer();
+        uint16_t virtMemStart = ((valuePtr[1] << 8) + valuePtr[0]);
+        byte* memStart = (byte*)(userEepromData + (virtMemStart - USER_EEPROM_START));
+
+        def = propertyDef(objectIdx, PID_MCB_TABLE);
+        byte* mcbPtr = def->valuePointer();
+        uint16_t memSize = (mcbPtr[2] << 8) + mcbPtr[3];
+
+        uint16_t crc = crc16(memStart, memSize);
+        mcbPtr[6] = (byte)(crc >> 8);
+        mcbPtr[7] = (byte)crc;
+
+        return newLoadState;
+    }
+
+    if ((newLoadState == LS_UNLOADED) && (BCU_TYPE == SYSTEM_B_TYPE))
+    {
+        // clear table reference address on unload
+        const PropertyDef* def = propertyDef(objectIdx, PID_TABLE_REFERENCE);
+        byte* valuePtr = def->valuePointer();
+        valuePtr[1] = 0;
+        valuePtr[0] = 0;
+        return newLoadState;
+    }
 
     if (newLoadState != LS_LOADCOMPLETING)
     {
@@ -612,13 +748,17 @@ int loadProperty(int objectIdx, const byte* data, int len)
         case ST_TASK_PTR:  // Task pointer (ignored)
             return handleTaskPtr(objectIdx, payload, len);
 
+#if BCU_TYPE != SYSTEM_B_TYPE
+
         case ST_TASK_CTRL_1:  // Task control 1
             return handleTaskCtrl1(objectIdx, payload, len);
 
         case ST_TASK_CTRL_2:  // Task control 2
             return handleTaskCtrl2(objectIdx, payload, len);
 
-        case ST_RELATIVE_ALLOCATION: // relative allocation (ignored)
+#endif
+
+        case ST_RELATIVE_ALLOCATION: // relative allocation
             return handleRelativeAllocation(objectIdx, payload, len);
 
         case ST_DATA_RELATIVE_ALLOCATION: // data relative allocation (ignored)
@@ -634,6 +774,9 @@ int loadProperty(int objectIdx, const byte* data, int len)
 
 bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start)
 {
+//    if ((propertyId == 27) && (objectIdx == 4))
+//        propertyId = (PropertyID)27;
+
     // IF_DUMP_PROPERTIES(serial.print("propertyValueReadTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def) return false; // not found
@@ -647,7 +790,17 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
     if(len > 12) return false; // length error
 
     if (type < PDT_CHAR_BLOCK)
-        reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);
+    {
+        if ((propertyId == 7) && (BCU_TYPE == SYSTEM_B_TYPE))
+        {
+            bcu.sendTelegram[12] = 0;
+            bcu.sendTelegram[13] = 0;
+            reverseCopy(bcu.sendTelegram + 14, valuePtr + start * size, len);
+            len += 2;
+        }
+        else
+            reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);
+    }
     else memcpy(bcu.sendTelegram + 12, valuePtr + start * size, len);
 
     bcu.sendTelegram[5] += len;
@@ -657,6 +810,9 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
 
 bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start)
 {
+    if ((propertyId == 27) && (objectIdx == 4) && (start == 2))
+        propertyId = (PropertyID)27;
+
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def)
         return false; // not found
@@ -673,6 +829,10 @@ bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count,
     const byte* data = bus.telegram + 12;
     int state, len;
 
+//    if ((propertyId == 5) && (objectIdx == 4))
+//    	if (data[0] == 0x04)
+//    		propertyId = (PropertyID)5;
+
     if (type == PDT_CONTROL)
     {
         len = bus.telegramLen - 13;
@@ -683,12 +843,21 @@ bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count,
     }
     else
     {
-        len = count * def->size();
         --start;
+        int size = def->size();
+        len = count * size;
         IF_DUMP_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
-        reverseCopy(valuePtr + start * type, data, len);
-        reverseCopy(bcu.sendTelegram + 12, valuePtr + start * type, len);
 
+        if ((propertyId == 27) && (BCU_TYPE == SYSTEM_B_TYPE))
+        {
+            memcpy(valuePtr + start * size, data, len);
+            memcpy(bcu.sendTelegram + 12, valuePtr + start * size, len);
+        }
+        else
+        {
+            reverseCopy(valuePtr + start * size, data, len);
+            reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);
+        }
         if (def->isEepromPointer())
             userEeprom.modified();
     }

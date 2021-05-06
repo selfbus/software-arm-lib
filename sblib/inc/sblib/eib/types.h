@@ -135,10 +135,12 @@ typedef byte DataPtrType;
  */
 struct ComConfig
 {
+#if BCU_TYPE != SYSTEM_B_TYPE
     /** Data pointer, low byte. Depending on the COMCONF_VALUE_TYPE flag in the
      * config byte, this pointer points to userRam or userEeprom.
      */
     DataPtrType dataPtr;
+#endif
 
     /** Configuration flags. See enum ComConfigFlag. */
     byte config;

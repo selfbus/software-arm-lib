@@ -252,7 +252,11 @@ inline ComType objectType(int objno)
 
 inline const ComConfig& objectConfig(int objno)
 {
+#if BCU_TYPE != SYSTEM_B_TYPE
     return *(const ComConfig*) (objectConfigTable() + 1 + sizeof(DataPtrType) + objno * sizeof(ComConfig) );
+#else
+    return *(const ComConfig*) (objectConfigTable() + 2 + (objno -1) * sizeof(ComConfig) );
+#endif
 }
 
 inline void requestObjectRead(int objno)

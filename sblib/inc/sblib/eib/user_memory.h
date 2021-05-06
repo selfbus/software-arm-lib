@@ -165,7 +165,9 @@ public:
     byte appType;        //!< 0x0115: Application program type: 0=BCU2, else BCU1
     byte addrTabSize;    //!< 0x0116: Size of the address table
     byte addrTab[2];     //!< 0x0117+:Address table, 2 bytes per entry. Real array size is addrTabSize*2
+#if BCU_TYPE != SYSTEM_B_TYPE
     byte user[855];      //!< 0x0119+:User EEPROM: 856 bytes (BCU2)
+#endif
                          //!< ------  System EEPROM below (BCU2)
     byte loadState[INTERFACE_OBJECT_COUNT];   //!< 0x0470: Load state of the system interface objects
     word addrTabAddr;    //!< 0x0478: Address of the address table
@@ -179,7 +181,17 @@ public:
     word serviceControl; //!< 0x0480: Service control
     word padding2;       //!< 0x0482: Padding
     byte serial[6];      //!< 0x0484: Hardware serial number (4 byte aligned)
-    byte order[10];      //!< 0x048a: Ordering information
+    byte order[10];      //!< 0x048a: Hardware Type
+    byte orderInfo[10];  //!< 0x0494: Ordering information
+#if BCU_TYPE == SYSTEM_B_TYPE
+    byte addrTabMcb[8];    //!< 0x0494: MCB Table
+    byte assocTabMcb[8];    //!< 0x0494: MCB Table
+    byte commsTabMcb[8];    //!< 0x0494: MCB Table
+    byte eibObjMcb[8];    //!< 0x0494: MCB Table
+    byte commsSeg0Mcb[8];    //!< 0x0494: MCB Table
+    byte eibObjVer[5];      //!< Application programm 1 version
+    byte commsSeg0Ver[5];    //!< Application programm 2 version
+#endif
 #endif /*BCU_TYPE*/
 
     /**

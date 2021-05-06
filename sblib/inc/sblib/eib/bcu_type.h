@@ -38,6 +38,14 @@
 #   define MASK_VERSION 0x705
 #   define BIM112_TYPE 0x705  //!> The BIM-112 type, for comparison between a BIM 112 7.5 and other BCU's, do not change it
 
+#elif defined(SYSTEM_B) || BCU_TYPE == 0x7B0
+//  SYSTEM B
+#   undef BCU_TYPE
+#   define BCU_TYPE 0x7B0
+#   define BCU_NAME SYSTEM_B
+#   define MASK_VERSION 0x7B0
+#   define SYSTEM_B_TYPE 0x7B0  //!> For comparison between a SYSTEM_B and other BCU's, do not change it
+
 #elif defined(BCU1) || defined(BCU1_12) || BCU_TYPE == 0x10 || BCU_TYPE == 10 || !defined(BCU_TYPE)
 //  BCU 1, mask version 1.2
 //  Also use BCU 1 if no BCU type is set
@@ -52,7 +60,8 @@
 #endif
 
 
-#define BCU1_TYPE 0x10 //!> The BCU 1 type, for comparison between a BCU 1 or newer BCU's, do not change it
+#define BCU1_TYPE 0x10      //!> The BCU 1 type, for comparison between a BCU 1 or newer BCU's, do not change it
+#define SYSTEMB_TYPE 0x7B0  //!> The SYSTEM_B type, for comparison for SYSTEM_B, do not change it
 
 
 //
@@ -133,8 +142,43 @@
 #       define USER_EEPROM_SIZE       3072  // was reduced from 4096 to 3072 to support LPC11Uxx. see commit 3194e058a850bdacb33cd068222647f1dbf19488
 #       define USER_EEPROM_FLASH_SIZE 4096
 #   endif
+
+#elif BCU_TYPE == 0x7B0 /* SYSTEM_B */
+
+    /** Address for load control */
+#   define LOAD_CONTROL_ADDR 0x104
+
+    /** Address for load state */
+#   define LOAD_STATE_ADDR 0xb6e9
+
+    /** Start address of the user RAM when ETS talks with us. */
+#   define USER_RAM_START_DEFAULT 0x5FC
+
+#   ifndef EXTRA_USER_RAM_SIZE
+#       define EXTRA_USER_RAM_SIZE 0
+#   endif
+
+    /** The size of the user RAM in bytes. */
+#   define USER_RAM_SIZE (0x304 + EXTRA_USER_RAM_SIZE)
+
+    /** How many bytes have to be allocated at the end of the RAM for shadowed values */
+#   define USER_RAM_SHADOW_SIZE 3
+
+    /** Start address of the user EEPROM when ETS talks with us. */
+#   define USER_EEPROM_START 0x3300
+
+    /** The size of the user EEPROM in bytes. */
+#   ifndef __LPC11UXX__
+#       define USER_EEPROM_SIZE       3072
+#       define USER_EEPROM_FLASH_SIZE 4096
+#   else
+#       define USER_EEPROM_SIZE       3072  // was reduced from 4096 to 3072 to support LPC11Uxx. see commit 3194e058a850bdacb33cd068222647f1dbf19488
+#       define USER_EEPROM_FLASH_SIZE 4096
+#   endif
 #else
-    // BCU_TYPE contains an invalid value and no other BCU type define is set
+
+
+// BCU_TYPE contains an invalid value and no other BCU type define is set
 #   error "Unsupported BCU type"
 #endif
 

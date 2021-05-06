@@ -19,13 +19,20 @@ int indexOfAddr(int addr)
 {
     byte* tab = addrTable();
     int num = 0;
+
+#if  BCU_TYPE != SYSTEM_B_TYPE
     if (tab)
         num = *tab;
+    tab += 3;
+#else
+    if (tab)
+        num = (tab[0] << 8) + tab[1];
+    tab += 2;
+#endif
 
     int addrHigh = addr >> 8;
     int addrLow = addr & 255;
 
-    tab += 3;
     for (int i = 1; i <= num; ++i, tab += 2)
     {
         if (tab[0] == addrHigh && tab[1] == addrLow)

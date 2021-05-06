@@ -25,7 +25,11 @@
 
 
 // The size of the object types BIT_7...VARDATA in bytes
-const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 15 };
+#if  BCU_TYPE != SYSTEM_B_TYPE
+    const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 15 };
+#else
+    const byte objectTypeSizes[] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 5, 7, 9, 11, 12, 13};
+#endif
 
 int le_ptr = BIG_ENDIAN;
 
@@ -33,7 +37,15 @@ int objectSize(int objno)
 {
     int type = objectType(objno);
     if (type < BIT_7) return 1;
+#if  BCU_TYPE != SYSTEM_B_TYPE
     return objectTypeSizes[type - BIT_7];
+#else
+    if (type < 21)
+        return objectTypeSizes[type - BIT_7];
+    if (type < 255)
+        return (type -6);
+    return 252;
+#endif
 }
 
 /*
@@ -97,6 +109,7 @@ void setObjectFlags(int objno, int flags)
 
 byte* objectValuePtr(int objno)
 {
+#if BCU_TYPE != SYSTEM_B_TYPE
     // The object configuration
     const ComConfig& cfg = objectConfig(objno);
 
@@ -112,6 +125,14 @@ byte* objectValuePtr(int objno)
         return userMemoryPtr(makeWord(addr[1], addr[0]));
     else
         return userMemoryPtr(makeWord(addr[0], addr[1]));
+#endif
+
+#else
+
+    int ramAddr = getUserRamStart() + 2;
+    for (int i = 1; i < objno; i++)
+        ramAddr += objectSize(i);
+    return userMemoryPtr(ramAddr);
 #endif
 }
 
@@ -327,6 +348,11 @@ void processGroupWriteTelegram(int objno, byte* tel)
 
 void processGroupTelegram(int addr, int apci, byte* tel)
 {
+#if BCU_TYPE != SYSTEM_B_TYPE
+
+/**
+ * Spec: Resources 4.11.2 Group Object Association Table - Realisation Type 1
+ */
     const ComConfig* configTab = &objectConfig(0);
     const byte* assocTab = assocTable();
     const int endAssoc = 1 + (*assocTab) * 2;
@@ -360,6 +386,47 @@ void processGroupTelegram(int addr, int apci, byte* tel)
             }
         }
     }
+
+#else
+
+    //
+    // Spec: Resources 4.11.4 Group Object Association Table - Realisation Type 6
+    //
+    const ComConfig* configTab = &objectConfig(0);
+    const byte* assocTab = assocTable();
+    const int endAssoc = 2 +  makeWord(assocTab[0], assocTab[1]) * 4;   // length field has 2 octets and each entry has 4 octets on SYSTEM B
+    int objno, objConf;
+
+    // Convert the group address into the index into the group address table
+    const int gapos = indexOfAddr(addr);
+    if (gapos < 0) return;
+
+    // Loop over all entries in the association table, as one group address
+    // could be assigned to multiple com-objects.
+    for (int idx = 2; idx < endAssoc; idx += 4)
+    {
+        // Check if grp-address index in assoc table matches the dest grp address index
+        int gadest = makeWord(assocTab[idx], assocTab[idx +1]); // get destination group address index
+        if (gapos == gadest) // We found an association for our addr
+        {
+            objno = makeWord(assocTab[idx +2], assocTab[idx +3]);  // Get the com-object number from the assoc table
+            objConf = configTab[objno].config;
+
+            if (apci == APCI_GROUP_VALUE_WRITE_PDU || apci == APCI_GROUP_VALUE_RESPONSE_PDU)
+            {
+                // Check if communication and write are enabled
+                if ((objConf & COMCONF_WRITE_COMM) == COMCONF_WRITE_COMM)
+                    processGroupWriteTelegram(objno, tel);
+            }
+            else if (apci == APCI_GROUP_VALUE_READ_PDU)
+            {
+                // Check if communication and read are enabled
+                if ((objConf & COMCONF_READ_COMM) == COMCONF_READ_COMM)
+                    sendGroupWriteTelegram(objno, addr, true);
+            }
+        }
+    }
+#endif
 }
 
 byte* objectConfigTable()
