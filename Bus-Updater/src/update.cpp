@@ -2,7 +2,7 @@
  *  app_main.cpp - The application's main.
  *
  *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2020 Stefan Haller
+ *  Copyright (c) 2021 Stefan Haller
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -110,35 +110,35 @@ enum UPD_Status
 {
     UDP_UNKONW_COMMAND = 0x100       //<! received command is not defined
     ,
-    UDP_CRC_ERROR                     //<! CRC calculated on the device
-                                      //<! and by the updater don't match
+    UDP_CRC_ERROR                    //<! CRC calculated on the device
+                                     //<! and by the updater don't match
     ,
     UPD_ADDRESS_NOT_ALLOWED_TO_FLASH //<! specifed address cannot be programmed
     ,
-    UPD_SECTOR_NOT_ALLOWED_TO_ERASE  //<! the specified sector cannot be erased
+    UPD_SECTOR_NOT_ALLOWED_TO_ERASE //<! the specified sector cannot be erased
     ,
-    UPD_RAM_BUFFER_OVERFLOW          //<! internal buffer for storing the data
-                                     //<! would overflow
+    UPD_RAM_BUFFER_OVERFLOW         //<! internal buffer for storing the data
+                                    //<! would overflow
     ,
-    UPD_WRONG_DESCRIPTOR_BLOCK     //<! the boot descriptor block does not exist
+    UPD_WRONG_DESCRIPTOR_BLOCK      //<! the boot descriptor block does not exist
     ,
-    UPD_APPLICATION_NOT_STARTABLE //<! the programmed application is not startable
+    UPD_APPLICATION_NOT_STARTABLE   //<! the programmed application is not startable
     ,
-    UPD_DEVICE_LOCKED                //<! the device is still locked
+    UPD_DEVICE_LOCKED               //<! the device is still locked
     ,
-    UPD_UID_MISMATCH               //<! UID sent to unlock the device is invalid
+    UPD_UID_MISMATCH                //<! UID sent to unlock the device is invalid
 	,
 	UPD_ERASE_FAILED				// page erase failed
 	,
 	UPD_FLASH_ERROR					// page program (flash) failed
-    ,
+	,
     UDP_NOT_IMPLEMENTED = 0xFFFF    //<! this command is not yet implemented
 };
 
 unsigned char ramBuffer[4096];
 
 #ifdef DECOMPRESSOR
-Decompressor decompressor(FIRST_SECTOR);	// application base address
+Decompressor decompressor((AppDescriptionBlock*) BOOT_DSCR_ADDRESS);	// get application base address from boot descriptor
 #endif
 
 Timeout mcu_restart_request;
@@ -152,8 +152,6 @@ bool restartRequestExpired(void)
 {
 	return mcu_restart_request.expired();
 }
-
-
 
 /*
  * a direct cast does not work due to possible miss aligned addresses.
@@ -249,6 +247,62 @@ inline bool addressAllowedToProgram(unsigned int start, unsigned int length)
     return !((start >= __vectors_start__) && (end <= _etext));
 }
 
+/*
+ * Handle flash writing
+ * write_req controls if flash information is pre-loaded and write request is registered
+ */
+unsigned int request_flashWrite(unsigned char * data, bool write_request)
+{
+	static volatile bool ready2write = false;
+	unsigned int crc;
+	static volatile unsigned int flash_count;
+	static volatile unsigned int address;
+
+	if (write_request)
+	{
+		flash_count = streamToUIn32(data + 3);
+		address = streamToUIn32(data + 3 + 4);
+		if (addressAllowedToProgram(address, flash_count))
+		{
+			crc = crc32(0xFFFFFFFF, ramBuffer, flash_count);
+			if (crc == streamToUIn32(data + 3 + 4 + 4))
+			{
+				// Select smallest possible sector size
+				if (flash_count > 1024)
+					flash_count = 4096;
+				else if (flash_count > 512)
+					flash_count = 1024;
+				else if (flash_count > 256)
+					flash_count = 512;
+				else
+					flash_count = 256;
+
+				// Debug: write CRC
+				d2(crc,HEX,8);
+				d1(" Prepare... ");
+
+				// Everything is setup, ready to write to flash
+				ready2write = true;
+
+				return IAP_SUCCESS;	//UDP_FLASH_WRITE_SETUP;
+			}
+			else
+				return UDP_CRC_ERROR;
+		}
+		else
+			return UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
+	}
+	else if (ready2write)
+	{
+		ready2write = false;
+		d1(" flash!\n\r");
+		return iapProgram((byte *) address, ramBuffer,flash_count);
+	}
+	return 0;
+}
+
+
+
 unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
         unsigned char * data)
 {
@@ -262,6 +316,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
     static unsigned int lastError = 0;
     unsigned int sendLastError = 0;
 
+    static unsigned char bl_id_string[13] = BL_ID_STRING;
     digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
     switch (data[2])
     {
@@ -299,7 +354,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             }
             sendLastError = true;
             ramLocation = 0;
-            crc = 0xFFFFFFFF;
+            //crc = 0xFFFFFFFF; // Todo, check if this can be removed, it's initialized always to same value
             break;
         case UPD_REQUEST_UID:
         	d1("UID? ");
@@ -319,8 +374,9 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             {
                 lastError = UPD_DEVICE_LOCKED;
             	d1("LOCK\n\r");
+            	sendLastError = true;
+            	break;
             }
-            break;
         case UPD_RESET:
         	d1("Restart!");
             if (deviceLocked == DEVICE_UNLOCKED)
@@ -339,18 +395,17 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             unsigned char * appversion;
             appversion = getAppVersion(
                     (AppDescriptionBlock *) (FIRST_SECTOR - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
-            if (((unsigned int) appversion) < 0x50000)
+            if (((unsigned int) appversion) > 0xFFFF) // Limit to our 64k flash
             {
-                *sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
-                memcpy(bcu.sendTelegram + 10, appversion, 12);
-                lastError = IAP_SUCCESS;
-                d1("OK\n\r");
+                d1("Outside range!\n\r");
+                appversion = bl_id_string;			// Bootloader ID if invalid (address out of range)
             }
             else
             {
-                lastError = UPD_APPLICATION_NOT_STARTABLE;
-                d1("Fail!\n\r");
+                d1("OK\n\r");
             }
+            *sendTel = _prepareReturnTelegram(12, UPD_APP_VERSION_RESPONSE);
+            memcpy(bcu.sendTelegram + 10, appversion, 12);
             break;
         case UPD_ERASE_SECTOR:
         	d1("Erase Sector ");
@@ -374,17 +429,24 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             sendLastError = true;
             break;
         case UPD_SEND_DATA:
-        	//d1("Data ");
+        	d1("Receive Data: ");
             if (deviceLocked == DEVICE_UNLOCKED)
             {
-                if ((ramLocation + count) <= sizeof(ramBuffer))
+            	ramLocation = data[3];// * 11;	// Current Byte position as message number with 11 Bytes payload each
+            	count --; 					// 1 Bytes abziehen, da diese für die Nachrichtennummer verwendet wird
+            	if ((ramLocation + count) <= sizeof(ramBuffer))	// Space left
                 {
-                    memcpy((void *) &ramBuffer[ramLocation], data + 3, count);
-                    crc = crc32(crc, data + 3, count);
-                    ramLocation += count;
+            		memcpy((void *) &ramBuffer[ramLocation], data + 4, count); //ab dem 4. Byte sind die Daten verfügbar
+                    //crc = crc32(crc, data + 3, count);
                     lastError = IAP_SUCCESS;
                     //d1("OK\n\r");
-                    //d2(crc,HEX,8);
+                    for(unsigned int i=0; i<count; i++){
+                    	d2(data[i+4],HEX,2);
+                    	d1(" ");
+                    }
+                    d1("at data location: ");
+                    d2(ramLocation,DEC,3);
+                    d1("\r\n");
                 }
                 else
                 {
@@ -399,69 +461,34 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
             sendLastError = true;
             break;
         case UPD_PROGRAM:
-        	d1("Flash Sector, CRC 0x");
+        	d1("\n\rFlash Sector, CRC 0x");
             if (deviceLocked == DEVICE_UNLOCKED)
-            {
-                count = streamToUIn32(data + 3);
-                address = streamToUIn32(data + 3 + 4);
-                if (addressAllowedToProgram(address, count))
-                {
-                    crc = crc32(0xFFFFFFFF, ramBuffer, count);
-                    if (crc == streamToUIn32(data + 3 + 4 + 4))
-                    {
-                        if (count > 1024)
-                        {
-                            count = 4096;
-                        }
-                        else if (count > 512)
-                        {
-                            count = 1024;
-                        }
-                        else if (count > 256)
-                        {
-                            count = 512;
-                        }
-                        else
-                        {
-                            count = 256;
-                        }
-                        lastError = iapProgram((byte *) address, ramBuffer,
-                                count);
-
-                        d2(crc,HEX,8);
-                    }
-                    else
-                        lastError = UDP_CRC_ERROR;
-                }
-                else
-                    lastError = UPD_ADDRESS_NOT_ALLOWED_TO_FLASH;
-            }
+            	lastError = request_flashWrite(data, 1);
             else
                 lastError = UPD_DEVICE_LOCKED;
-            ramLocation = 0;
-            crc = 0xFFFFFFFF;
+            //crc = 0xFFFFFFFF;	//Todo, remove this line
             sendLastError = true;
             break;
 
 #ifdef DECOMPRESSOR
-	case UPD_SEND_DATA_TO_DECOMPRESS:
-		d1("#");
-		if (deviceLocked == DEVICE_UNLOCKED)
-		{
-			if ((ramLocation + count) <= sizeof(ramBuffer))
+		case UPD_SEND_DATA_TO_DECOMPRESS:
+			d1("#");
+			if (deviceLocked == DEVICE_UNLOCKED)
 			{
-				for (unsigned int i = 0; i < count; i++) {
-					decompressor.putByte(data[i + 3]);
-				};
-				lastError = IAP_SUCCESS;
+				if ((ramLocation + count) <= sizeof(ramBuffer)) // Check if this can be removed. Overflow protection should be in decompressor class instead!
+				{
+					for (unsigned int i = 0; i < count; i++) {
+						decompressor.putByte(data[i + 3]);
+					};
+					lastError = IAP_SUCCESS;
+				}
+				else
+					lastError = UPD_RAM_BUFFER_OVERFLOW;
 			}
 			else
-				lastError = UPD_RAM_BUFFER_OVERFLOW;
-		}
-		else
-			lastError = UPD_DEVICE_LOCKED;
-		sendLastError = true;
-		break;
+				lastError = UPD_DEVICE_LOCKED;
+			sendLastError = true;
+			break;
 
         case UPD_PROGRAM_DECOMPRESSED_DATA:
              if (deviceLocked == DEVICE_UNLOCKED)
@@ -501,37 +528,37 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
              else
                  lastError = UPD_DEVICE_LOCKED;
              ramLocation = 0;
-             crc = 0xFFFFFFFF;
+             //crc = 0xFFFFFFFF;
              sendLastError = true;
              break;
 #endif
 
         case UPD_UPDATE_BOOT_DESC:
-        	d1("BOOT_Desc ");
+        	d1("\n\rBOOT_Desc ");
             if ((deviceLocked == DEVICE_UNLOCKED))// && (data[7] < 2)) // Test boot descriptor block number for valid value
             {
             	d1("Unlocked, ");
             	count = streamToUIn32(data + 3);			// length of the descriptor
                 crc = crc32(0xFFFFFFFF, ramBuffer, count);	// checksum on used length only
                 //address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
-                address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
+                address = BOOT_DSCR_ADDRESS;				// Address of boot block descriptor
 
-                d1("Desc. CRC ");
+                d1("Desc. CRC 0x");
                 d2(crc,HEX,8);
 
-                d1("  Desc. Address ");
-                d2(address,HEX,8);
+                d1("  Desc. at address 0x");
+                d2(address,HEX,4);
 
-                d1("\n\rRamBuffer[0-3] ");
-				d2(streamToUIn32(ramBuffer),HEX,8);
-				d1("\n\rRamBuffer[4-7] ");
-				d2(streamToUIn32(ramBuffer+4),HEX,8);
-				d1("\n\rRamBuffer[8-11] ");
-				d2(streamToUIn32(ramBuffer+8),HEX,8);
-				d1("\n\rRamBuffer[12-15] ");
-				d2(streamToUIn32(ramBuffer+12),HEX,8);
-				d1("\n\rRamBuffer[16-20] ");
-				d2(streamToUIn32(ramBuffer+16),HEX,8);
+                d1("\n\rFW start@ 0x");
+				d2(streamToUIn32(ramBuffer),HEX,4);		// FW start address
+				d1("\n\rFW end  @ 0x");
+				d2(streamToUIn32(ramBuffer+4),HEX,4);	// FW end address
+				d1("\n\rFWs CRC : 0x");
+				d2(streamToUIn32(ramBuffer+8),HEX,8);	// FW CRC
+				d1("\n\rFW Desc.@ 0x");
+				d2(streamToUIn32(ramBuffer+12),HEX,4);	// FW App descriptor address
+				//d1("\n\rRamBuffer[16-20] ");
+				//d2(streamToUIn32(ramBuffer+16),HEX,8);// This is beyond the descriptor block
 
 				d1("\n\rReceived CRC 0x");
 				d2(streamToUIn32(data + 7),HEX,8);
@@ -549,7 +576,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 							d2(lastError,DEC,2);
 							if (lastError == IAP_SUCCESS)
 							{
-								d1("OK, Flash Page: ");
+								d1(" OK, Flash Page: ");
 								lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
 								d2(lastError,DEC,2);
 							}
@@ -585,8 +612,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
                 lastError = UPD_DEVICE_LOCKED;
                 d1("Lock\n\r");
             }
-            ramLocation = 0;
-            crc = 0xFFFFFFFF;
+            //crc = 0xFFFFFFFF;
             sendLastError = true;
             break;
 
@@ -594,19 +620,20 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 			d1("BOOT_Desc ?\n\r");
 			if (deviceLocked == DEVICE_UNLOCKED)
 			{
-				address = FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE;	// end of bootloader is application - BL descriptor size
-				AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) address;
+				AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) BOOT_DSCR_ADDRESS;	// Address of boot block descriptor
 				if (lastError == IAP_SUCCESS)
 				{
 					*sendTel = _prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
-					memcpy(bcu.sendTelegram + 10, &(bootDescr->startAddress), 12); // startAddress, endAddress, crc
+					memcpy(bcu.sendTelegram + 10, bootDescr, 12); // startAddress, endAddress, crc
 				}
 				break;
 			}
 			else
+			{
 				lastError = UPD_DEVICE_LOCKED;
-			sendLastError = true;
-			break;
+				sendLastError = true;
+				break;
+			}
 
 		case UPD_REQUEST_BL_IDENTITY:
 			d1("BL_Identity ?\n\r");
@@ -618,16 +645,15 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 					UIn32ToStream(bcu.sendTelegram + 10, bl_identity);	// Bootloader identity
 					UIn32ToStream(bcu.sendTelegram + 14, bl_features);	// Bootloader features
 					UIn32ToStream(bcu.sendTelegram + 18, FIRST_SECTOR);	// Bootloader size
-					//memcpy(bcu.sendTelegram + 10, &(bl_identity), 4);
-					//memcpy(bcu.sendTelegram + 14, &(bl_features), 4);
-					//memcpy(bcu.sendTelegram + 18, &(address), 4);
 				}
 				break;
 			}
 			else
+			{
 				lastError = UPD_DEVICE_LOCKED;
-			sendLastError = true;
-			break;
+				sendLastError = true;
+				break;
+			}
 
         case UPD_REQ_DATA:
             if (deviceLocked == DEVICE_UNLOCKED)

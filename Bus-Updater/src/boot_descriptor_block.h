@@ -1,6 +1,6 @@
 /*
  *  Copyright (c) 2014 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2020 Stefan Haller
+ *  Copyright (c) 2021 Stefan Haller
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -15,16 +15,18 @@ extern "C"
 {
 #endif
 
-#define BL_IDENTITY			 0x1043		// Version 0.43
-#define FIRST_SECTOR		 0x3000		// where the application starts (BL size)
+#define BL_IDENTITY			 0x1055		// Version 0.55
+#define BL_ID_STRING         "[SB KNX BL ]"
 #define BOOT_BLOCK_DESC_SIZE 0x100		// 1 flash page
 #define BOOT_BLOCK_PAGE   ((FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
+#define BOOT_DSCR_ADDRESS 	(FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE)	// Descriptor uses last page of bootloader
 
 #ifdef DUMP_TELEGRAMS
 	#define	BL_FEATURES  	 0x8100
+	#define FIRST_SECTOR	 0x3000		// where the application starts (BL size)
 #else
 	#define BL_FEATURES		 0x0100		// Feature list of BL
-
+	#define FIRST_SECTOR	 0x2000		// where the application starts (BL size)
 #endif
 
 typedef struct
@@ -38,6 +40,7 @@ typedef struct
 unsigned int checkApplication(AppDescriptionBlock * block);
 
 unsigned char * getAppVersion(AppDescriptionBlock * block);
+unsigned char * getFWstartAddress(AppDescriptionBlock * block);
 
 #ifdef __cplusplus
 }

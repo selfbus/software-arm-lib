@@ -16,6 +16,7 @@
 #include "sblib/eib/user_memory.h"
 #include "sblib/eib/bcu.h"
 #include "sblib/internal/iap.h"
+#include <sblib/eib/sblib_default_objects.h>
 #include "iap_emu.h"
 
 static const unsigned char pattern[] = {0xCA, 0xFF, 0xEE, 0xAF, 0xFE, 0xDE, 0xAD};

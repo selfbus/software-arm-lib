@@ -272,8 +272,20 @@ void BCU::processDirectTelegram(int apci)
 
             if (address >= USER_EEPROM_START && address < USER_EEPROM_END)
             {
-                memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, count);
-                userEeprom.modified();
+                if (address+count <= USER_EEPROM_END) {
+                    // All fits in the User-EEPROM
+                    memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, count);
+                    userEeprom.modified();
+                } else {
+                    // Memory write starts in User-EEPROM, but goes beyond it
+                    int CntInUsrEe = USER_EEPROM_END-address;
+                    memcpy(userEepromData + (address - USER_EEPROM_START), bus.telegram + 10, CntInUsrEe);
+                    userEeprom.modified();
+                    if (memMapper && memMapper->isMapped(USER_EEPROM_END)) {
+                        // Memory access ends in a memory mapped area
+                        memMapper->writeMemPtr(USER_EEPROM_END, bus.telegram + 10 + CntInUsrEe, count-CntInUsrEe);
+                    }
+                }
             }
             else if (address >= getUserRamStart() && address < (getUserRamStart() + USER_RAM_SIZE))
                 cpyToUserRam(address, bus.telegram + 10, count);
@@ -299,7 +311,21 @@ void BCU::processDirectTelegram(int apci)
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
             if (address >= USER_EEPROM_START && address < USER_EEPROM_END) {
-                  memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
+                if (address+count <= USER_EEPROM_END) {
+                    // All fits in the User-EEPROM
+                    memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), count);
+                } else {
+                    // Memory read starts in User-EEPROM, but goes beyond it
+                    int CntInUsrEe = USER_EEPROM_END-address;
+                    memcpy(sendTelegram + 10, userEepromData + (address - USER_EEPROM_START), CntInUsrEe);
+                    if (memMapper && memMapper->isMapped(USER_EEPROM_END)) {
+                        // Memory access ends in a memory mapped area
+                        memMapper->readMemPtr(USER_EEPROM_END, sendTelegram + 10 + CntInUsrEe, count-CntInUsrEe);
+                    } else {
+                        // Memory access ends in nirvana. Set the remaining bytes to zero.
+                        memset(sendTelegram + 10 + CntInUsrEe, 0, count-CntInUsrEe);
+                    }
+                }
             }
             else if (address >= getUserRamStart() && address < (getUserRamStart() + USER_RAM_SIZE))
                 cpyFromUserRam(address, sendTelegram + 10, count);

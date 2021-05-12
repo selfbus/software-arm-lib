@@ -49,7 +49,7 @@ bool CCS811Class::begin(uint8_t I2C_ADDR, int WAKE_PIN) {
 	}
 
 	byte status = readStatus();
-	uint8_t bit = (status & (1 << 5 - 1)) != 0; // black magic to read APP_VALID bit from STATUS register
+	uint8_t bit = (status & (1 << 4)) != 0; // black magic to read APP_VALID bit from STATUS register
 	if (bit != 1)
 	{
 		readErrorID(status);
@@ -63,7 +63,7 @@ bool CCS811Class::begin(uint8_t I2C_ADDR, int WAKE_PIN) {
 	digitalWrite(_WAKE_PIN, true);
 
 	status = readStatus();
-	bit = (status & (1 << 8 - 1)) != 0; // black magic to read FW_MODE bit from STATUS register
+	bit = (status & (1 << 7)) != 0; // black magic to read FW_MODE bit from STATUS register
 	if (bit != 1)
 	{
 		readErrorID(status);
@@ -106,8 +106,11 @@ char CCS811Class::readErrorID(char _status) {
 	char error_id = ERROR_ID;
 	i2c_CCS811->Read(_I2C_ADDR, &error_id, 1);
 	digitalWrite(_WAKE_PIN, true);
-	uint8_t bit = (_status & (1 << 1 - 1)) != 0; // black magic to read ERROR bit from STATUS register
-	return error_id;
+	uint8_t bit = (_status & 1) != 0; // black magic to read ERROR bit from STATUS register
+	if (bit)
+	    return error_id;
+	else
+	    return 0;
 }
 
 void CCS811Class::sleep() {
@@ -144,9 +147,9 @@ void CCS811Class::compensate(float t, float rh)    // compensate for temperature
 	_digitalWrite(_WAKE_PIN, false);
 	delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
 	int _temp, _rh;
-	if (t > 0)
+	if (t >= 0)
 		_temp = (int) t + 0.5;  // this will round off the floating point to the nearest integer value
-	else if (t < 0) // account for negative temperatures
+	else // account for negative temperatures
 		_temp = (int) t - 0.5;
 	_temp = _temp + 25; // temperature high byte is stored as T+25°C in the sensor's memory so the value of byte is positive
 	_rh = (int) rh + 0.5;  // this will round off the floating point to the nearest integer value

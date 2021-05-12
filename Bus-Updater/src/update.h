@@ -10,7 +10,7 @@
 
 // Handle delayed restart request
 bool restartRequestExpired(void);
-
+unsigned int request_flashWrite(unsigned char *, bool);
 
 
 #endif /* UPDATE_H_ */

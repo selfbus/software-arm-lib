@@ -85,6 +85,7 @@ public:
      */
     void setProgPin(int prgPin) {
         progPin=prgPin;
+        setFatalErrorPin(progPin);
     }
     /**
      * Set ProgPin output inverted, must be called before begin method
@@ -161,7 +162,7 @@ public:
 
     /**
      * The pin where the programming LED + button are connected. The default pin
-     * is PIO1_5. This variable may be changed in setup(), if required. If set
+     * is PIO2_0. This variable may be changed in setup(), if required. If set
      * to 0, the programming LED + button are not handled by the library.
      */
     int progPin;
@@ -180,6 +181,18 @@ protected:
      * Special initialization for the BCU
      */
     virtual void _begin();
+
+    /**
+     * Creates a len_hash wide hash of the uid.
+     * Hash will be generated in provided hash buffer
+     *
+     * @param uid - LPC-serial (128bit GUID) returned by iapReadUID() which will be hashed
+     * @param len_uid - size of uid  (normally 16 byte)
+     * @param hash - buffer for generated hash
+     * @param len_hash - size of provided hash buffer (normally 6byte/48bit for EIB)
+     * @return True if hash successfully created, false if not.
+     */
+    int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
 
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
     bool enabled;                  //!< The BCU is enabled. Set by bcu.begin().

@@ -15,7 +15,7 @@
 /**
  * Low level table of the IO ports
  */
-extern LPC_GPIO_TypeDef * const gpioPorts[4];
+extern LPC_GPIO_TypeDef* const gpioPorts[4];
 
 #elif defined(__LPC11UXX__)
 #include <LPC11Uxx.h>

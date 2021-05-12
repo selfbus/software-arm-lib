@@ -6,6 +6,7 @@
 #define _DECOMPRESSOR_H_
 
 #include <stdint.h>
+#include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 //#include "../src/platform.h"
 
@@ -40,7 +41,7 @@ class Decompressor
 		uint8_t* startAddrOfFlash = 0;
 
 	public:
-		Decompressor(int startAddrOfFirstPageToBeFlashed);
+		Decompressor(AppDescriptionBlock* BaseAddress);
 
 	private:
 		int getLength();
