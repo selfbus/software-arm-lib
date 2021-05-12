@@ -45,7 +45,7 @@ void analogEnd()
     LPC_SYSCON->SYSAHBCLKCTRL &= ~(1<<13);
 }
 
-int analogRead(int channel)
+static unsigned int analogPoll(int channel)
 {
     LPC_ADC->CR &= 0xffffff00;
     LPC_ADC->DR[channel]; // read the channel to clear the "done" flag
@@ -60,11 +60,27 @@ int analogRead(int channel)
     while (!(regVal & ADC_DONE));
 
     LPC_ADC->CR &= 0xf8ffffff;  // Stop ADC
+    return regVal;
+}
 
+int analogRead(int channel)
+{
+    unsigned int regVal = analogPoll(channel);
     // This bit is 1 if the result of one or more conversions was lost and
     // overwritten before the conversion that produced the result.
     if (regVal & ADC_OVERRUN)
         return 0;
 
-    return (regVal >> 6) & 0x3ff;
+    return (int)(regVal >> 6) & 0x3ff;
+}
+
+int analogValidRead(int channel)
+{
+    unsigned int regVal = analogPoll(channel);
+    // This bit is 1 if the result of one or more conversions was lost and
+    // overwritten before the conversion that produced the result.
+    if (regVal & ADC_OVERRUN)
+        return -1;
+
+    return (int)(regVal >> 6) & 0x3ff;
 }

@@ -43,6 +43,23 @@ void analogEnd();
 int analogRead(int channel);
 
 /**
+ * Read the value of the specified analog input channel.
+ * Call analogBegin() once before using this function.
+ *
+ * @param channel - the analog channel to read from: AD0, AD1, ... AD7
+ * @return The read value (0..1023) or -1 on read error.
+ *
+ * @brief The ARM processor has a A/D converter with 10 bit resolution that
+ * can read from 8 pins. The following pins can be used as analog input:
+ * PIO0_11 (channel AD0), PIO1_0 (AD1), PIO1_1 (AD2), PIO1_2 (AD3), PIO1_3 (AD4),
+ * PIO1_4 (AD5), PIO1_10 (AD6), PIO1_11 (AD7).
+ *
+ * The pin to read from shall be set to analog input mode with:
+ * pinMode(pin, ANALOG_INPUT)
+ */
+int analogValidRead(int channel);
+
+/**
  * Write an analog value to a pin.
  *
  * NOT YET IMPLEMENTED.
