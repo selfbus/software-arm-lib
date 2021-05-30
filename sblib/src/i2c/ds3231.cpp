@@ -14,8 +14,6 @@
 
 #include <sblib/i2c/ds3231.h>
 
-I2C *i2c_ds32;
-
 /*****************************************************************************
 ** Function name:  Ds3231Init
 **
@@ -26,13 +24,9 @@ I2C *i2c_ds32;
 ** Returned value: true on success, false on failure
 **
 *****************************************************************************/
-bool Ds3231::Ds3231Init()
+void Ds3231::Ds3231Init()
 {
-  i2c_ds32= I2C::Instance();
-  if(!i2c_ds32->bI2CIsInitialized) {
-      i2c_ds32->I2CInit();
-  }
-  return (i2c_ds32 ? true:false);
+  i2c_lpcopen_init();
 }
 
 /*****************************************************************************
@@ -80,10 +74,11 @@ bool Ds3231::SetTime(ds3231_time_t time)
   data_length++;
 
   //Make sure data is within range.
-  if(! ((time.seconds > 59) || (time.minutes > 59) || (time.hours > max_hour)) )
-  {
-    return ((i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, data_length)));
-  } else return false;
+  if(! ((time.seconds > 59) || (time.minutes > 59) || (time.hours > max_hour)) ) {
+    return Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS,
+                               (const uint8_t*) data, data_length) == data_length;
+  }
+  return false;
 }
 
 /*****************************************************************************
@@ -107,8 +102,8 @@ bool Ds3231::GetTime(ds3231_time_t* time)
   uint8_t data[3];
 
   data[0] = SECONDS;
-  if( i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, 1) &&
-      i2c_ds32->Read(DS3231_I2C_ADRS, (char *)data, 3, 0) )
+  if(Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS, (const uint8_t*) data, 1) == 1 &&
+     Chip_I2C_MasterRead(I2C0, DS3231_I2C_ADRS, data, 3) == 3)
   {
     time->seconds = bcd_2_uchar(data[0]);
     time->minutes = bcd_2_uchar(data[1]);
@@ -149,11 +144,14 @@ bool Ds3231::SetCalendar(ds3231_calendar_t calendar)
   data[data_length++] = uchar_2_bcd(calendar.year);
 
   //Make sure data is within range.
-  if(! (((calendar.day < 1) || (calendar.day > 7)) || ((calendar.date < 1) || (calendar.date > 31)) ||
-        ((calendar.month < 1) || (calendar.month > 12)) || (calendar.year > 99) ) )
+  if(! (((calendar.day < 1) || (calendar.day > 7)) || ((calendar.date < 1) ||
+    (calendar.date > 31)) || ((calendar.month < 1) || (calendar.month > 12)) ||
+    (calendar.year > 99) ) )
   {
-    return (i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, data_length));
-  } else return false;
+    return Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS,
+                               (const uint8_t*) data, data_length) == data_length;
+  }
+  return false;
 }
 
 /*****************************************************************************
@@ -177,8 +175,8 @@ bool Ds3231::GetCalendar(ds3231_calendar_t* calendar)
   uint8_t data[4];
 
   data[0] = DAY;
-  if( i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, 1) &&
-      i2c_ds32->Read(DS3231_I2C_ADRS, (char *)data, 4, 0) )
+  if( Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS, (const uint8_t*) data, 1) == 1 &&
+      Chip_I2C_MasterRead(I2C0, DS3231_I2C_ADRS, data, 4) == 4)
   {
     calendar->day = bcd_2_uchar(data[0]);
     calendar->date = bcd_2_uchar(data[1]);
@@ -324,10 +322,12 @@ bool Ds3231::SetAlarm(ds3231_alrm_t alarm, bool bAlarmNumber)
   }
 
   //Make sure data is within range.
-  if( !( (bAlarmNumber && alarm.seconds > 59) || (alarm.minutes > 59) || (alarm.hours > max_hour) || (alarm.day < 1) ||
-        (alarm.day > 7) || (alarm.date < 1) || (alarm.date > 31) ))
+  if( !( (bAlarmNumber && alarm.seconds > 59) || (alarm.minutes > 59) ||
+      (alarm.hours > max_hour) || (alarm.day < 1) || (alarm.day > 7) ||
+      (alarm.date < 1) || (alarm.date > 31) ))
   {
-    return (i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, data_length));
+    return Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS,
+                               (const uint8_t*) data, data_length) == data_length;
   } else return false;
 }
 
@@ -356,9 +356,10 @@ bool Ds3231::GetAlarm(ds3231_alrm_t* alarm, bool bAlarmNumber)
   if(bAlarmNumber)
   {
     data[0] = ALRM1_SECONDS;
-    if( (bRet = i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, 1)) &&
-        (bRet = i2c_ds32->Read(DS3231_I2C_ADRS, (char *)data, 4, 0)) )
+    if( Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS, (const uint8_t*) data, 1) == 1 &&
+        Chip_I2C_MasterRead(I2C0, DS3231_I2C_ADRS, data, 4) == 4)
     {
+      bRet = true;
       alarm->seconds = bcd_2_uchar(data[0]&0x7F);
       alarm->am1 = (data[0]&ALRM_MASK);
       alarm->minutes = bcd_2_uchar(data[1]&0x7F);
@@ -382,9 +383,11 @@ bool Ds3231::GetAlarm(ds3231_alrm_t* alarm, bool bAlarmNumber)
   else
   {
     data[0] = ALRM2_MINUTES;
-    if( (bRet = i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, 1)) &&
-        (bRet = i2c_ds32->Read(DS3231_I2C_ADRS, (char *)data, 3, 0)) )
+
+    if( Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS, (const uint8_t*) data, 1) == 1 &&
+        Chip_I2C_MasterRead(I2C0, DS3231_I2C_ADRS, data, 3) == 3)
     {
+      bRet = true;
       alarm->minutes = bcd_2_uchar(data[0]&0x7F);
       alarm->am2 = (data[0]&ALRM_MASK);
 
@@ -431,7 +434,8 @@ bool Ds3231::SetCtrlStatReg(ds3231_cntl_stat_t data, bool bSetControl, bool bSet
   if( bSetStatus ) local_data[data_length++] = data.status;
 
   // users responsibility to make sure data is logical
-  return (i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) local_data, 3));
+  return Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS,
+                             (const uint8_t*) local_data, 3) == 3;
 }
 
 /*****************************************************************************
@@ -457,8 +461,8 @@ bool Ds3231::GetCtrlStatReg(ds3231_cntl_stat_t* data)
   local_data[1] = data->control;
   local_data[2] = data->status;
 
-  if( ( i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) local_data, 1)) &&
-      ( i2c_ds32->Read(DS3231_I2C_ADRS, (char *) local_data, 2, 0)) )
+  if( Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS, (const uint8_t*) local_data, 1) == 1 &&
+      Chip_I2C_MasterRead(I2C0, DS3231_I2C_ADRS, local_data, 2) == 2)
   {
     data->control = local_data[0];
     data->status = local_data[1];
@@ -519,12 +523,21 @@ time_t Ds3231::GetEpoch(void)
 *****************************************************************************/
 bool Ds3231::CheckAlarm(bool bAlarmNumber)
 {
-  bool bRet=0;
-  ds3231_cntl_stat_t data; if(bAlarmNumber) { data.control=A1IE; data.status=A1F; } else { data.control=A2IE; data.status=A2F; }
-  if( this->GetCtrlStatReg(&data) )
-  {
-    if( bAlarmNumber ) bRet= /*(data.control & 0x01) && */(data.status & 0x01 ); // ALARM_1
-    else bRet= /*(data.control & 0x02) &&*/ (data.status & 0x02 ); // ALARM_2
+  bool bRet = 0;
+  ds3231_cntl_stat_t data;
+  if (bAlarmNumber) {
+    data.control = A1IE;
+    data.status = A1F;
+  } else {
+    data.control = A2IE;
+    data.status = A2F;
+  }
+  if (this->GetCtrlStatReg(&data)) {
+    if (bAlarmNumber) {
+      bRet = /*(data.control & 0x01) && */(data.status & 0x01); // ALARM_1
+    } else {
+      bRet = /*(data.control & 0x02) &&*/ (data.status & 0x02); // ALARM_2
+    }
   }
   return bRet;
 }
@@ -541,13 +554,19 @@ bool Ds3231::CheckAlarm(bool bAlarmNumber)
 *****************************************************************************/
 bool Ds3231::ResetAlarm(bool bAlarmNumber)
 {
-  bool bRet=0;
-  ds3231_cntl_stat_t data; if(bAlarmNumber) { data.control=A1IE; data.status=A1F; } else { data.control=A2IE; data.status=A2F; }
-  if( this->GetCtrlStatReg(&data) )
-  {
-    data.control = data.control & ( bAlarmNumber ? 0xFE : 0xFD);
-    data.status = data.status & ( bAlarmNumber ? 0xFE : 0xFD);
-    bRet= this->SetCtrlStatReg(data);
+  bool bRet = 0;
+  ds3231_cntl_stat_t data;
+  if (bAlarmNumber) {
+    data.control = A1IE;
+    data.status = A1F;
+  } else {
+    data.control = A2IE;
+    data.status = A2F;
+  }
+  if (this->GetCtrlStatReg(&data)) {
+    data.control = data.control & (bAlarmNumber ? 0xFE : 0xFD);
+    data.status = data.status & (bAlarmNumber ? 0xFE : 0xFD);
+    bRet = this->SetCtrlStatReg(data);
   }
   return bRet;
 }
@@ -564,13 +583,19 @@ bool Ds3231::ResetAlarm(bool bAlarmNumber)
 *****************************************************************************/
 bool Ds3231::TurnOnAlarm(bool bAlarmNumber)
 {
-  bool bRet=0;
-  ds3231_cntl_stat_t data; if(bAlarmNumber) { data.control=A1IE; data.status=A1F; } else { data.control=A2IE; data.status=A2F; }
-  if( this->GetCtrlStatReg(&data) )
-  {
-    data.control = data.control & ( bAlarmNumber ?  0x05 : 0x06);
-    data.status = data.status & ( bAlarmNumber ?  0x05 : 0x06);
-    bRet= this->SetCtrlStatReg(data);
+  bool bRet = 0;
+  ds3231_cntl_stat_t data;
+  if (bAlarmNumber) {
+    data.control = A1IE;
+    data.status = A1F;
+  } else {
+    data.control = A2IE;
+    data.status = A2F;
+  }
+  if (this->GetCtrlStatReg(&data)) {
+    data.control = data.control & (bAlarmNumber ? 0x05 : 0x06);
+    data.status = data.status & (bAlarmNumber ? 0x05 : 0x06);
+    bRet = this->SetCtrlStatReg(data);
   }
   return bRet;
 }
@@ -594,15 +619,27 @@ bool Ds3231::EnableOscillator(bool TF, bool bBattery, uint8_t RS_bit_SQW)
 
   if( this->GetCtrlStatReg(&data) )
   {
-    data.control= data.control & 0xE7;                // read control byte, but zero out current state of RS2 and RS1.
-    if (bBattery) data.control = data.control | 0x40; // turn on BBSQW flag
-    else data.control = data.control & 0xBF;          // turn off BBSQW flag
+    // read control byte, but zero out current state of RS2 and RS1.
+    data.control= data.control & 0xE7;
+    if (bBattery) {
+      // turn on BBSQW flag
+      data.control = data.control | 0x40;
+    } else {
+      // turn off BBSQW flag
+      data.control = data.control & 0xBF;
+    }
 
-    if (TF) data.control = data.control & 0x7B;       // set ~EOSC to 0 and INTCN to zero.
-    else data.control = data.control | 0x80;          // set ~EOSC to 1, leave INTCN as is.
+    if (TF) {
+      // set ~EOSC to 0 and INTCN to zero.
+      data.control = data.control & 0x7B;
+    } else {
+      // set ~EOSC to 1, leave INTCN as is.
+      data.control = data.control | 0x80;
+    }
 
     data.control = data.control | RS_bit_SQW;
-    bRet= this->SetCtrlStatReg(data, true, false);     // Write the control bits
+    // Write the control bits
+    bRet= this->SetCtrlStatReg(data, true, false);
   }
   return bRet;
 }
@@ -622,8 +659,8 @@ float Ds3231::GetTemperature()
   float fRet=-999;
   uint8_t data[2];
   data[0] = MSB_TEMP;
-  if( i2c_ds32->Write(DS3231_I2C_ADRS, (const char*) data, 1) &&
-      i2c_ds32->Read(DS3231_I2C_ADRS, (char *)data, 4, 0) )
+  if( Chip_I2C_MasterSend(I2C0, DS3231_I2C_ADRS, (const uint8_t*) data, 1) == 1 &&
+      Chip_I2C_MasterRead(I2C0, DS3231_I2C_ADRS, data, 4) == 4)
   {
     //iRet= int(data[0] << 8); iRet |= int(data[1]);  //HEX
     //iRet= int(data[0]+data[1]/256.0);                 //approx.

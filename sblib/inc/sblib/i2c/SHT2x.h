@@ -23,6 +23,7 @@
  * <http://www.gnu.org/licenses/>.
  *
  * Adapted to Selfbus Library by Oliver Stefan (2019)
+ * Adapted to lpcopen I2C functions by Oliver Stefan (2021)
  */
 
 
@@ -33,22 +34,22 @@
 
 class SHT2xClass
 {
-  private:
-    uint16_t readSensor(uint8_t command);
+private:
+  uint16_t readSensor(uint8_t command);
 
-  public:
-    bool Init(void);
-    /*
-     * get Humidity from SHT2x sensor
-     * returns the humidity with factor 100 (2045 = 20,45%RH)
-     */
-    int GetHumidity(void);
-    /*
-     * get Temperature from SHT2x sensor
-     * returns the temperature with factor 100 (2045 = 20,45°C)
-     */
-    int GetTemperature(void);
-    float GetDewPoint(void);
+public:
+  void Init(void);
+  /*
+   * get Humidity from SHT2x sensor
+   * returns the humidity with factor 100 (2045 = 20,45%RH)
+   */
+  int GetHumidity(void);
+  /*
+   * get Temperature from SHT2x sensor
+   * returns the temperature with factor 100 (2045 = 20,45°C)
+   */
+  int GetTemperature(void);
+  float GetDewPoint(void);
 };
 
 #endif
