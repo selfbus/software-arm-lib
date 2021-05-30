@@ -226,8 +226,6 @@
 								<option id="com.crt.advproject.cpp.hdrlib.1017303962" name="Library headers" superClass="com.crt.advproject.cpp.hdrlib" useByScannerDiscovery="false"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.988853660" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
-									<listOptionValue builtIn="false" value="LOGGING"/>
-									<listOptionValue builtIn="false" value="SERIAL_WRITE_DIRECT"/>
 									<listOptionValue builtIn="false" value="SPI_BLOCK_TRANSFER"/>
 									<listOptionValue builtIn="false" value="BCU_TYPE=10"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
@@ -254,7 +252,6 @@
 								<option id="com.crt.advproject.gcc.hdrlib.2100824608" name="Library headers" superClass="com.crt.advproject.gcc.hdrlib" useByScannerDiscovery="false" value="com.crt.advproject.gcc.hdrlib.newlib" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.preprocessor.def.symbols.821751673" name="Defined symbols (-D)" superClass="gnu.c.compiler.option.preprocessor.def.symbols" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
-									<listOptionValue builtIn="false" value="SERIAL_WRITE_DIRECT"/>
 									<listOptionValue builtIn="false" value="SPI_BLOCK_TRANSFER"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="__CODE_RED"/>
