@@ -55,7 +55,7 @@
 #define I2C_FASTPLUS_BIT IOCON_FASTI2C_EN
 #endif
 
-
+bool i2c_initialized = false;
 
 /* Configuration of standard I2C Pins on LPC1115 */
 static void Init_I2C_PinMux(void)
@@ -118,7 +118,10 @@ void I2C_IRQHandler(void)
 
 
 void i2c_lpcopen_init(){
-  i2c_app_init(DEFAULT_I2C, I2C_DEFAULT_SPEED);
+  	if(!i2c_initialized){
+		i2c_app_init(DEFAULT_I2C, I2C_DEFAULT_SPEED);
+		i2c_initialized = true;
+	}
 }
 
 

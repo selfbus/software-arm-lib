@@ -314,6 +314,8 @@ typedef enum {
  */
 typedef void (*I2C_EVENTHANDLER_T)(I2C_ID_T, I2C_EVENT_T);
 
+extern bool i2c_initialized;
+
 /**
  * @brief	Initializes the LPC_I2C peripheral with standard parameter and standard Pins (PIO0.4 = SCL, PIO0.5 = SDA).
  * @return	Nothing
