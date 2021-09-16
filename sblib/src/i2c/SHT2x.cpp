@@ -23,14 +23,13 @@
  * <http://www.gnu.org/licenses/>.
  *
  *  Adapted to Selfbus Library by Oliver Stefan (2019)
- *  Adapted to lpcopen I2C functions by Oliver Stefan (2021)
  */
 
 #include <stdint.h>
 #include <math.h>
-#include "i2c_lpcopen.h"
+#include <sblib/i2c.h>
 #include <sblib/timer.h>
-#include "SHT2x_lpcopen_i2c.h"
+#include <sblib/i2c/SHT2x.h>
 
 // Specify the constants for water vapor and barometric pressure.
 #define WATER_VAPOR 17.62f
