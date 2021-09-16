@@ -22,8 +22,8 @@
  Adapted to lpcopen I2C functions by Oliver Stefan (2021)
  ****************************************************/
 
-#include "CCS811_lpcopen_i2c.h"
-#include "i2c_lpcopen.h"
+#include <sblib/i2c/CCS811.h>
+#include <sblib/i2c.h>
 #include <sblib/timer.h>
 #include <sblib/digital_pin.h>
 

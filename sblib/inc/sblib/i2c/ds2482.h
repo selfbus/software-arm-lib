@@ -9,8 +9,7 @@
 #define __ONEWIRE_H__
 
 #include <sblib/core.h>
-//#include <sblib/i2c.h>
-#include "i2c_lpcopen.h"
+#include <sblib/i2c.h>
 
 // Chose between a table based CRC (flash expensive, fast)
 // or a computed CRC (smaller, slow)

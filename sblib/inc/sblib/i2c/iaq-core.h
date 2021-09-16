@@ -8,6 +8,11 @@
  *  Adapted to Selfbus Library by Oliver Stefan (2019)
  */
 
+/*
+ * IAQ-CORE Funktionen werden aktuell in keinem Projekt benötigt und wurden noch nicht an die neuen I2C Funktionen angepasst.
+ * Daher sind alle IAQ-CORE Funktionen vorerst deaktiviert
+ *
+
 #ifndef IAQ_CORE_H
 #define IAQ_CORE_H
 
@@ -23,3 +28,5 @@ public:
 };
 
 #endif
+
+*/

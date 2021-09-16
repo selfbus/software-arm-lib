@@ -5,7 +5,7 @@
  * Ported to selfbus by Oliver Stefan (2021)
  */
 
-#include "ds2482.h"
+#include <sblib/i2c/ds2482.h>
 
 //I2C *i2c_DS2842;
 
