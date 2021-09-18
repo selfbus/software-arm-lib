@@ -590,13 +590,13 @@ int nextUpdatedObject()
         	flagsTab[objno >> 1] &= ~flags;
             startIdx = objno + 1;
 
-            int nflags = flagsTab[objno >> 1];
+            d(int nflags = flagsTab[objno >> 1];)
 
             d(serial.print(" fo: ");)
      		d(serial.print(nflags, HEX, 2);)
 			d(serial.println();)
 
-        return objno;
+			return objno;
         }
     }
 

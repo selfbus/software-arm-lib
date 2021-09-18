@@ -10,6 +10,8 @@
 #ifndef SBLIB_CONFIG_H_
 #define SBLIB_CONFIG_H_
 
+// for every debugging or dumping #define, make sure to add a #undef so it won't make it into the release version
+
 // for serial output it is recommended to use PIO2_7 and PIO2_8 at high baud rate e.g 1.5MB
 //   serial.setRxPin(PIO2_7);
 //   serial.setTxPin(PIO2_8);
@@ -26,5 +28,16 @@
 #define DUMP_SERIAL     //!> dump KNX-serialnumber over serial interface
 #define DUMP_PROPERTIES //!> dump interface object and property handling over serial interface
 
+// remove any debugging and dumping stuff from release versions
+// for every debugging or dumping #define above, make sure to add a #undef below
+#ifndef DEBUG
+#   undef DEBUG_BUS
+#   undef DEBUG_BUS_BITLEVEL
+#   undef DUMP_TELEGRAMS
+#   undef DUMP_COM_OBJ
+#   undef DUMP_MEM_OPS
+#   undef DUMP_SERIAL
+#   undef DUMP_PROPERTIES
+#endif
 
 #endif /* SBLIB_CONFIG_H_ */

@@ -29,7 +29,7 @@
  * @brief Example:  DUMP_PROPERTIES(fatalError())
  */
 #ifdef DUMP_PROPERTIES
-#  define IF_DUMP_PROPERTIES(code) { code; }
+#  define IF_DUMP_PROPERTIES(code) code
 #else
 #  define IF_DUMP_PROPERTIES(code)
 #endif

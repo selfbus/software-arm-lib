@@ -554,8 +554,7 @@ LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad,
     // payLoad[4]    : mode (0x00)
     // payLoad[5]    : fill (0x00)
     // payLoad[6..7] : reserved
-    unsigned int reqMemSize = ((payLoad[0] << 24) | (payLoad[1] << 16) | (payLoad[2] << 8) | payLoad[3]);
-
+    IF_DUMP_PROPERTIES(unsigned int reqMemSize = ((payLoad[0] << 24) | (payLoad[1] << 16) | (payLoad[2] << 8) | payLoad[3]););
     IF_DUMP_PROPERTIES(
             serial.print("handleDataRelativeAllocation NOT IMPLEMENTED! ");
             printObjectIdx(objectIdx);
