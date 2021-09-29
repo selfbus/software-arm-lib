@@ -8,11 +8,10 @@
  *  Adapted to Selfbus Library by Oliver Stefan (2019)
  */
 
-#if 0
 /*
  * IAQ-CORE Funktionen werden aktuell in keinem Projekt benötigt und wurden noch nicht an die neuen I2C Funktionen angepasst.
  * Daher sind alle IAQ-CORE Funktionen vorerst deaktiviert
- */
+ *
 
 #include <sblib/i2c.h>
 #include <sblib/i2c/iaq-core.h>
@@ -20,11 +19,11 @@
 
 I2C *i2c_iaq_core;
 
-/******************************************************************************
+/ ******************************************************************************
  * Global Functions
- ******************************************************************************/
+ ******************************************************************************
 
-/*****************************************************************************
+/ *****************************************************************************
 ** Function name:  Init
 **
 ** Descriptions:   Initialize the IAQ core
@@ -33,7 +32,7 @@ I2C *i2c_iaq_core;
 **
 ** Returned value: true on success, false on failure
 **
-*****************************************************************************/
+*****************************************************************************
 bool IAQcoreClass::Init(void)
 {
 	i2c_iaq_core= I2C::Instance();
@@ -43,7 +42,7 @@ bool IAQcoreClass::Init(void)
 	return (i2c_iaq_core ? true:false);
 }
 
-/*****************************************************************************
+/ *****************************************************************************
 ** Function name:  GetIAQ
 **
 ** Descriptions:   Get all values from the IAQ core sensor
@@ -58,7 +57,7 @@ bool IAQcoreClass::Init(void)
 **
 ** Returned value: true on success, false on failure
 **
-*****************************************************************************/
+*****************************************************************************
 bool IAQcoreClass::GetIAQ(uint16_t &CO2eq, uint8_t &status, uint32_t &resistance, uint16_t &Tvoc)
 {
 	uint8_t result[9];
@@ -84,4 +83,4 @@ bool IAQcoreClass::GetIAQco2(uint16_t &CO2eq){
 	return 1;
 }
 
-#endif
+*/
