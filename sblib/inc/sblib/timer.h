@@ -18,15 +18,23 @@ class Timer;
 
 /**
  * Delay the program execution by sleeping a number of milliseconds.
+ * SysTick Interrupt must be enabled.
  *
  * @param msec - the number of milliseconds to sleep.
  */
 void delay(unsigned int msec);
 
 /**
+ * The number of maximal  Microseconds possible for delay by delayMicroseconds().
+ */
+#define MAX_delayMicroseconds ((((2^31) - 1) / SystemCoreClock * 1000000) + 2)
+
+/**
  * Delay the program execution a number of microseconds. You should use delay() when
  * possible, as this function does a busy wait which consumes more power than delay().
  * The minimum delay is roughly 3 usec. Everything below will result in a 3 usec delay.
+ *
+ * Do not expect high accuracy, as the function can be interrupted at any time.
  *
  * @param usec - the number of microseconds to wait.
  */

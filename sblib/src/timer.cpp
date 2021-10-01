@@ -24,7 +24,7 @@ void delay(unsigned int msec)
 {
     unsigned int lastSystemTime = systemTime;
 
-    if (__get_IPSR() == 0x0) // check that no interrupt is active, otherwise "while" will end in a infinite loop
+    if (__get_IPSR() == 0x0) // check that no interrupt is active, otherwise "while" will end in an infinite loop
     {
         while (msec)
         {
@@ -42,7 +42,11 @@ void delay(unsigned int msec)
     else
     {
         // fall-back to waiting SysTick's
-        delayMicroseconds(msec);
+        while (msec)
+        {
+        	delayMicroseconds(1000);
+        	--msec;
+        }
     }
 }
 
@@ -50,6 +54,7 @@ void delay(unsigned int msec)
 void delayMicroseconds(unsigned int usec)
 {
     unsigned int val, lastVal = SysTick->VAL;
+    if (usec > MAX_delayMicroseconds) usec = MAX_delayMicroseconds;
     int ticksToWait = (usec - 2) * (SystemCoreClock / 1000000);
     int elapsed;
 
