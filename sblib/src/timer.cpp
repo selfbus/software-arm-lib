@@ -32,6 +32,7 @@ void delay(unsigned int msec)
             delayMicroseconds(1000);
             --msec;
         }
+        return;
     }
 #endif
 
