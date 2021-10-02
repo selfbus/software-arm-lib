@@ -24,7 +24,7 @@ void delay(unsigned int msec)
 {
 #ifndef IAP_EMULATION
     // if any interrupt is active, fall-back to delayMicroseconds() (waiting SysTick's)
-    // otherwise "while" will end in a infinite loop
+    // otherwise "while" will end in an infinite loop
     if (__get_IPSR() != 0x0)
     {
         while (msec)
