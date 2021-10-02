@@ -27,7 +27,7 @@ void delay(unsigned int msec);
 /**
  * The number of maximal  Microseconds possible for delay by delayMicroseconds().
  */
-#define MAX_delayMicroseconds ((((2^31) - 1) / SystemCoreClock * 1000000) + 2)
+#define MAX_DELAY_MICROSECONDS (unsigned int)((INT32_MAX * 1000000.0 / SystemCoreClock) + 2)
 
 /**
  * Delay the program execution a number of microseconds. You should use delay() when

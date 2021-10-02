@@ -22,30 +22,30 @@ static LPC_TMR_TypeDef* const timers[4] = { LPC_TMR16B0, LPC_TMR16B1, LPC_TMR32B
 
 void delay(unsigned int msec)
 {
-    unsigned int lastSystemTime = systemTime;
-
-    if (__get_IPSR() == 0x0) // check that no interrupt is active, otherwise "while" will end in an infinite loop
+#ifndef IAP_EMULATION
+    // if any interrupt is active, fall-back to delayMicroseconds() (waiting SysTick's)
+    // otherwise "while" will end in a infinite loop
+    if (__get_IPSR() != 0x0)
     {
         while (msec)
         {
-            if (lastSystemTime == systemTime)
-            {
-                __WFI();
-            }
-            else
-            {
-                lastSystemTime = systemTime;
-                --msec;
-            }
+            delayMicroseconds(1000);
+            --msec;
         }
     }
-    else
+#endif
+
+    unsigned int lastSystemTime = systemTime;
+    while (msec)
     {
-        // fall-back to waiting SysTick's
-        while (msec)
+        if (lastSystemTime == systemTime)
         {
-        	delayMicroseconds(1000);
-        	--msec;
+            __WFI();
+        }
+        else
+        {
+            lastSystemTime = systemTime;
+            --msec;
         }
     }
 }
@@ -54,7 +54,10 @@ void delay(unsigned int msec)
 void delayMicroseconds(unsigned int usec)
 {
     unsigned int val, lastVal = SysTick->VAL;
-    if (usec > MAX_delayMicroseconds) usec = MAX_delayMicroseconds;
+    if (usec > MAX_DELAY_MICROSECONDS)
+    {
+        usec = MAX_DELAY_MICROSECONDS;
+    }
     int ticksToWait = (usec - 2) * (SystemCoreClock / 1000000);
     int elapsed;
 
