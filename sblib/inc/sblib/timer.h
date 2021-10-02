@@ -26,9 +26,14 @@ class Timer;
 void delay(unsigned int msec);
 
 /**
- * The number of maximal  Microseconds possible for delay by delayMicroseconds().
+ * The number of maximal Microseconds possible for delay by delayMicroseconds().
  */
-#define MAX_DELAY_MICROSECONDS (unsigned int)((INT_MAX * 1000000.0 / SystemCoreClock) + 2)
+#define MAX_DELAY_MICROSECONDS ((unsigned int)((INT_MAX * 1000000.0 / SystemCoreClock) + 2))
+
+/**
+ * The number of maximal Milliseconds possible for delay by delayMicroseconds().
+ */
+#define MAX_DELAY_MILLISECONDS ((unsigned int)(MAX_DELAY_MICROSECONDS /1000))
 
 /**
  * Delay the program execution a number of microseconds. You should use delay() when
