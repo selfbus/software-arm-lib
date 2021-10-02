@@ -10,6 +10,7 @@
 #ifndef sblib_timer_h
 #define sblib_timer_h
 
+#include <limits.h>
 #include <sblib/platform.h>
 #include <sblib/types.h>
 
@@ -27,7 +28,7 @@ void delay(unsigned int msec);
 /**
  * The number of maximal  Microseconds possible for delay by delayMicroseconds().
  */
-#define MAX_DELAY_MICROSECONDS (unsigned int)((INT32_MAX * 1000000.0 / SystemCoreClock) + 2)
+#define MAX_DELAY_MICROSECONDS (unsigned int)((INT_MAX * 1000000.0 / SystemCoreClock) + 2)
 
 /**
  * Delay the program execution a number of microseconds. You should use delay() when
