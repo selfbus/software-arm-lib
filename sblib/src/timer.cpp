@@ -27,11 +27,20 @@ void delay(unsigned int msec)
     // otherwise "while" will end in an infinite loop
     if (__get_IPSR() != 0x0)
     {
-        while (msec)
-        {
-            delayMicroseconds(1000);
-            --msec;
-        }
+    	while (msec)
+    	{
+    		if (msec > MAX_DELAY_MILLISECONDS)
+			{
+    			delayMicroseconds(MAX_DELAY_MILLISECONDS * 1000);
+				msec -= (MAX_DELAY_MILLISECONDS);
+			}
+			else
+			{
+				delayMicroseconds(msec * 1000);
+				msec = 0;
+			}
+    	}
+
         return;
     }
 #endif
