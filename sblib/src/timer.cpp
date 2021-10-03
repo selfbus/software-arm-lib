@@ -27,13 +27,13 @@ void delay(unsigned int msec)
     // otherwise "while" will end in an infinite loop
     if (__get_IPSR() != 0x0)
     {
-    	while (msec > MAX_DELAY_MILLISECONDS)
+        while (msec > MAX_DELAY_MILLISECONDS)
     	{
-    		delayMicroseconds(MAX_DELAY_MILLISECONDS * 1000);
+            delayMicroseconds(MAX_DELAY_MILLISECONDS * 1000);
 			msec -= (MAX_DELAY_MILLISECONDS);
-    	}
+        }
 
-		delayMicroseconds(msec * 1000);
+        delayMicroseconds(msec * 1000);
 
         return;
     }
@@ -57,13 +57,29 @@ void delay(unsigned int msec)
 #ifndef IAP_EMULATION
 void delayMicroseconds(unsigned int usec)
 {
-    unsigned int val, lastVal = SysTick->VAL;
+    unsigned int val;
+    unsigned int lastVal = SysTick->VAL;
+    int ticksToWait;
+    int elapsed;
+
     if (usec > MAX_DELAY_MICROSECONDS)
     {
         usec = MAX_DELAY_MICROSECONDS;
     }
-    int ticksToWait = (usec - 2) * (SystemCoreClock / 1000000);
-    int elapsed;
+
+#ifdef DEBUG
+    // only for debugging, uncommment this to "speed-up" from microseconds to milliseconds
+    // if (usec > 1000) usec = usec/1000;
+#endif
+
+    if (usec > 1)
+    {
+        ticksToWait = (usec - 2) * (SystemCoreClock / 1000000.0);
+    }
+    else
+    {
+        ticksToWait = 1;
+    }
 
     // SysTick is counting down and is reset to SysTick->LOAD when
     // it reaches zero.
