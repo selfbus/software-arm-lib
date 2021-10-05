@@ -26,9 +26,14 @@ class Timer;
 void delay(unsigned int msec);
 
 /**
+ * The number of minimal Microseconds possible for delayMicroseconds().
+ */
+#define MIN_DELAY_MICROSECONDS 2
+
+/**
  * The number of maximal Microseconds possible for delay by delayMicroseconds().
  */
-#define MAX_DELAY_MICROSECONDS ((unsigned int)((INT_MAX * 1000000.0 / SystemCoreClock) + 2))
+#define MAX_DELAY_MICROSECONDS ((unsigned int)((INT_MAX * 1000000.0 / SystemCoreClock) + MIN_DELAY_MICROSECONDS))
 
 /**
  * The number of maximal Milliseconds possible for delay by delayMicroseconds().
@@ -36,13 +41,20 @@ void delay(unsigned int msec);
 #define MAX_DELAY_MILLISECONDS ((unsigned int)(MAX_DELAY_MICROSECONDS /1000))
 
 /**
+ * The limit of Microseconds delayMicroseconds() will use the faster calculation.
+ */
+#define PROCESS_FAST_DELAY_MILLISECONDS 50
+
+/**
  * Delay the program execution a number of microseconds. You should use delay() when
  * possible, as this function does a busy wait which consumes more power than delay().
- * The minimum delay is roughly 3 usec. Everything below will result in a 3 usec delay.
+ * The minimum delay is MIN_DELAY_MICROSECONDS ~3μs. Everything below will result in a ~3μs delay.
+ * The maximum delay is MAX_DELAY_MICROSECONDS ~44s. Everything above will result in a ~44s delay.
  *
  * Do not expect high accuracy, as the function can be interrupted at any time.
+ * The function is optimized for a SystemCoreClock of 48MHz
  *
- * @param usec - the number of microseconds to wait.
+ * @param[in] usec - the number of microseconds to wait.
  */
 void delayMicroseconds(unsigned int usec);
 

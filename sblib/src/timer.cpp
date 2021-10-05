@@ -19,7 +19,6 @@ volatile unsigned int systemTime;
 // The timers
 static LPC_TMR_TypeDef* const timers[4] = { LPC_TMR16B0, LPC_TMR16B1, LPC_TMR32B0, LPC_TMR32B1 };
 
-
 void delay(unsigned int msec)
 {
 #ifndef IAP_EMULATION
@@ -55,45 +54,74 @@ void delay(unsigned int msec)
 }
 
 #ifndef IAP_EMULATION
+/**
+ * @fn      unsigned int getSysTickValue()
+ * @brief   Returns the current value of the System tick timer.
+ *
+ * @return  current value of System tick timer
+ */
+ALWAYS_INLINE unsigned int getSysTickValue()
+{
+    return SysTick->VAL & 0xFFFFFF; // result in bits 0...23
+}
+
+/**
+ * @fn              unsigned int getSysTicksElapsed(unsigned int&)
+ * @brief           Returns the number of system ticks since lastSystemTickValue
+ *
+ * @post            lastSystemTickValue is updated to current system timer
+ * @param[in,out]   lastSystemTickValue
+ * @return          count of system ticks since lastSystemTickValue
+ */
+ALWAYS_INLINE unsigned int getSysTicksElapsed(unsigned int& lastSystemTickValue)
+{
+    // SysTick is counting down and is reset to SysTick->LOAD when
+    // it reaches zero.
+    int elapsed;
+    unsigned int sysTickValue = getSysTickValue();
+    elapsed = lastSystemTickValue - sysTickValue;
+    lastSystemTickValue = sysTickValue;
+    if (elapsed < 0)
+        elapsed += SysTick->LOAD;
+    return elapsed;
+}
+
 void delayMicroseconds(unsigned int usec)
 {
-    unsigned int val;
-    unsigned int lastVal = SysTick->VAL;
+    unsigned int lastSysTickValue = getSysTickValue();
     int ticksToWait;
-    int elapsed;
 
-    if (usec > MAX_DELAY_MICROSECONDS)
+    if (usec > MIN_DELAY_MICROSECONDS)
     {
-        usec = MAX_DELAY_MICROSECONDS;
-    }
-
-#ifdef DEBUG
-    // only for debugging, uncommment this to "speed-up" from microseconds to milliseconds
-    // if (usec > 1000) usec = usec/1000;
-#endif
-
-    if (usec > 1)
-    {
-        ticksToWait = (usec - 2) * (SystemCoreClock / 1000000.0);
+        usec -= MIN_DELAY_MICROSECONDS; // usec's we lost till now @48MHz
+        if (usec <= PROCESS_FAST_DELAY_MILLISECONDS)
+        {
+            // fast calculation of ticksToWait
+            usec -= 1; // ~1usec to calculate the next step @48MHz
+            ticksToWait = (usec * SystemCoreClock) / 1000000;
+        }
+        else
+        {
+            // precise calculation of ticksToWait
+            ticksToWait = (double)usec * ((double)SystemCoreClock / 1000000);
+            if (ticksToWait < 0)
+            {
+                // we run into a overflow => set ticksToWait to maximum
+                ticksToWait = MAX_DELAY_MICROSECONDS * (SystemCoreClock / 1000000);
+            }
+            // subtract the system ticks needed for above calculation
+            ticksToWait -= getSysTicksElapsed(lastSysTickValue);
+        }
     }
     else
     {
+        // as fast as we can go
         ticksToWait = 1;
     }
 
-    // SysTick is counting down and is reset to SysTick->LOAD when
-    // it reaches zero.
-
     while (ticksToWait > 0)
     {
-        val = SysTick->VAL;
-
-        elapsed = lastVal - val;
-        if (elapsed < 0)
-            elapsed += SysTick->LOAD;
-
-        ticksToWait -= elapsed;
-        lastVal = val;
+        ticksToWait -= getSysTicksElapsed(lastSysTickValue);
     }
 }
 #endif
