@@ -5,7 +5,8 @@
 //     |     |  
 //   +-+--+  |   
 //   | +--+--+  
-//   +----+    Copyright (c) 2009-12 Code Red Technologies Ltd.
+//   +----+    Copyright (c) 2009-2012 Code Red Technologies Ltd.
+//   +----+    Copyright 2013, 2019 NXP
 //
 // Minimal implementations of the new/delete operators and the verbose 
 // terminate handler for exceptions suitable for embedded use,

@@ -10,6 +10,7 @@
 #ifndef sblib_timer_h
 #define sblib_timer_h
 
+#include <limits.h>
 #include <sblib/platform.h>
 #include <sblib/types.h>
 
@@ -18,17 +19,44 @@ class Timer;
 
 /**
  * Delay the program execution by sleeping a number of milliseconds.
+ * SysTick Interrupt must be enabled.
  *
  * @param msec - the number of milliseconds to sleep.
  */
 void delay(unsigned int msec);
 
 /**
+ * The number of minimal Microseconds possible for delayMicroseconds().
+ */
+#define MIN_DELAY_MICROSECONDS 2
+
+/**
+ * The number of maximal Microseconds possible for delay by delayMicroseconds().
+ */
+#define MAX_DELAY_MICROSECONDS ((unsigned int)((INT_MAX * 1000000.0 / SystemCoreClock) + MIN_DELAY_MICROSECONDS))
+
+/**
+ * The number of maximal Milliseconds possible for delay by delayMicroseconds().
+ */
+#define MAX_DELAY_MILLISECONDS ((unsigned int)(MAX_DELAY_MICROSECONDS /1000))
+
+/**
+ * The limit of Microseconds delayMicroseconds() will use the faster calculation.
+ */
+#define PROCESS_FAST_DELAY_MILLISECONDS 50
+
+/**
  * Delay the program execution a number of microseconds. You should use delay() when
  * possible, as this function does a busy wait which consumes more power than delay().
- * The minimum delay is roughly 3 usec. Everything below will result in a 3 usec delay.
+ * The minimum delay is MIN_DELAY_MICROSECONDS ~3μs. Everything below will result in a ~3μs delay.
+ * The maximum delay is MAX_DELAY_MICROSECONDS ~44s. Everything above will result in a ~44s delay.
  *
- * @param usec - the number of microseconds to wait.
+ * Do not expect high accuracy, as the function can be interrupted at any time.
+ * The function is optimized for a SystemCoreClock of 48MHz
+ * In case you need higher precision for 0 < usec < 10, try to use
+ * EXPERIMENTAL macro DELAY_USEC_HIGH_PRECISION(usec) instead.
+ *
+ * @param[in] usec - the number of microseconds to wait.
  */
 void delayMicroseconds(unsigned int usec);
 
@@ -69,6 +97,21 @@ unsigned int elapsed(unsigned int ref);
  */
 #define microsecondsToClockCycles(msec) ((msec) * clockCyclesPerMicrosecond())
 
+/**
+ * @def CPU frequency in Hz
+ */
+#ifndef F_CPU
+#   define F_CPU (48000000UL)
+#endif
+
+/**
+ * @def DELAY_USEC_HIGH_PRECISION macro for higher precision microsecond delay
+ *      0 < usec < 10
+ *      works only with fixed F_CPU (default 48MHz)
+ *      !! THIS FEATURE IS EXPERIMENTAL !!
+ *      from: https://www.mikrocontroller.net/topic/378584#4302525
+ */
+#define DELAY_USEC_HIGH_PRECISION(usec) delay_cycles((double)F_CPU * (usec) / 1E6 / 6.0+1)
 
 /**
  * The 16bit timer #0.
@@ -596,4 +639,29 @@ ALWAYS_INLINE bool Timer::getMatchChannelLevel(int channel)
     return (bool)(timer->EMR & (1 << channel));
 }
 
+/**
+ * @fn void delay_cycles(unsigned int)
+ * @brief Delay for "cycles" CPU cycles
+ *        The subs and cmp instructions both take one CPU cycle, the jump
+ *        back takes two cycles, yielding four CPU cycles per loop iteration.
+ *        from: https://www.mikrocontroller.net/topic/378584#4302525
+ *
+ * @param[in] cycles cpu cycles to delay
+ */
+static inline void delay_cycles(unsigned int cycles) __attribute__((always_inline));
+
+static inline void delay_cycles(unsigned int cycles)
+{
+  __asm__ volatile (".syntax unified" "\n\t"
+        " .align 4\n"
+        "1: subs %[cycles], %[cycles], #1" "\n\t"
+        "cmp %[cycles], #0" "\n\t"
+        "bne 1b"
+        : [cycles] "=l" (cycles)
+          // not really used as output, but the register
+          // is modified so the compiler must not rely on
+          // the old contents
+        : "0" (cycles) // this is also an input value
+        : "cc");
+}
 #endif /*sblib_timer_h*/
