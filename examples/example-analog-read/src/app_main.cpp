@@ -3,7 +3,7 @@
  * @brief   A simple application that reads the analog channel AD0 (PIO0.11) and
  *          prints the read value to the serial port.
  *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.6, Rx-pin is PIO1.7
+ *          Tx-pin is PIO1.7, Rx-pin is PIO1.6
  *
  *          needs BCU1 version of the sblib library
  *

@@ -3,7 +3,7 @@
  * @brief   A simple application that blinks the RUN/INFO LED's
  *          and sends a simple message over RS232.
  *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.6, Rx-pin is PIO1.7
+ *          Tx-pin is PIO1.7, Rx-pin is PIO1.6
  *
  *          needs BCU1 version of the sblib library
  *          used on the Selfbus 4TE-ARM-Controller the RUN (PIO3.3) and INFO (PIO2.6) LED will blink
