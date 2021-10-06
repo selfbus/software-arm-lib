@@ -35,24 +35,28 @@ MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAd
     // (A more thorough test would be to check for any value (except 0xff) to
     // appear more than once, but this simpler version catches the most likely
     // form of corruption.)
-    bool zeroentry = false;
-    bool err = false;
+    bool zeroEntryFound = false;
+    bool errorFound = false;
     for (int i=0; i<FLASH_PAGE_SIZE; i++)
     {
         if (allocTable[i] == 0)
-            if (zeroentry)
-            {
-                err = true;
-            	   break;
-            } else
-            	   zeroentry = true;
-    }
-    if (err) {
-       	allocTableModified = true;
-        for (int i=0; i<FLASH_PAGE_SIZE; i++)
         {
-     	      allocTable[i] = 0xff;
+            if (zeroEntryFound)
+            {
+                errorFound = true;
+                break;
+            }
+            else
+            {
+                zeroEntryFound = true;
+            }
         }
+    }
+
+    if (errorFound)
+    {
+        allocTableModified = true;
+       	memset(allocTable, 0xff, FLASH_PAGE_SIZE);
     }
 }
 
