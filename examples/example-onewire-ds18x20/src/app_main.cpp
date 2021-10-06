@@ -104,7 +104,7 @@ void setup()
 bool ReadOneWireDS18xTemp()
 {
   bool bRet=false;
-  if(ds.readTemperatureAll())                              // Read all temperatures from .m_dsDev
+  if(ds.startConversionAll())                              // Read all temperatures from .m_dsDev
   {
       digitalWrite(PIN_RUN, 1);                            // Switch on the green LED to signal that we read the temperatures
       for(uint8_t j=0; j < ds.m_foundDevices; j++ )        // Iterate then devices and extract and print the temperatures.

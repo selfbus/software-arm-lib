@@ -4,8 +4,14 @@
  *          LPC1115 Dev Board using I2C class with a timer and the timer interrupt.
  *
  *          needs BCU1 version of the sblib library
+ *          needs at least a 64KB LPC111x.
+ *
+ *          for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT
+ *          "Enable printf float" in Prj settings -> Managed Linker Script
+ *
  *
  * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
+ * @author Mario Theodoridis Copyright (c) 2021
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
  ******************************************************************************/
@@ -23,17 +29,17 @@
 #include <sblib/i2c.h>
 
 #define DBG_LUX             1 ///< BH1750 Lux
-#define DBG_PRINT_LUX       0
+#define DBG_PRINT_LUX       1
 
 #define DBG_RTC             1 ///< Ds3231 RTC
-#define DBG_PRINT_RTC       0
-#define DBG_PRINT_RTC_ALARM 0
+#define DBG_PRINT_RTC       1
+#define DBG_PRINT_RTC_ALARM 1
 
 #define SET_RTC_INITIAL_TIME  0  ///< Change this from "1" to "0" after the time was set successfully
 #define SET_RTC_ALARM1_ALARM2 0  ///< Change this from "1" to "0" after the ALARM1|2 was set successfully
 
-#define DBG_DHT             1 // DHT22
-#define DBG_PRINT_DHT       0
+#define DBG_DHT             1 ///< DHT22
+#define DBG_PRINT_DHT       1
 
 #if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
 # include <stdio.h>          // "Enable printf float" in Prj settings -> Managed Linker Script
@@ -158,6 +164,11 @@ bool SetRTCAlarm()
  */
 void setup()
 {
+
+#if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
+    printf("Example-i2c application started\n");
+#endif
+
 #if DBG_RTC
     rtc.Ds3231Init();           // Initialize Ds3231
     // WriteInitTime();         // Comment in, if you want setup the RTC TIME/Calendar
@@ -227,7 +238,12 @@ bool ReadTempHum()
 #if DBG_PRINT_DHT
     printf("     Temperature: %4.2f C \n", dht._lastTemperature );
     printf("        Humidity: %4.2f\n",dht._lastHumidity);
-    printf("       Dew point: %4.2f (FastCalc: %4.2f)\r\n", dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+    printf("Dew point (fast): %4.2f\n",dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+/*
+    printf("       Dew point: %4.2f (FastCalc: %4.2f)\r\n",
+            dht.CalcdewPoint(dht._lastTemperature, dht._lastHumidity),
+            dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+*/
     bRet= true;
   } else printf("Err %i \r\n",dht._lastError);
 #else
