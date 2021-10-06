@@ -53,6 +53,8 @@ void delay(unsigned int msec);
  *
  * Do not expect high accuracy, as the function can be interrupted at any time.
  * The function is optimized for a SystemCoreClock of 48MHz
+ * In case you need higher precision for 0 < usec < 10, try to use
+ * EXPERIMENTAL macro DELAY_USEC_HIGH_PRECISION(usec) instead.
  *
  * @param[in] usec - the number of microseconds to wait.
  */
@@ -95,6 +97,21 @@ unsigned int elapsed(unsigned int ref);
  */
 #define microsecondsToClockCycles(msec) ((msec) * clockCyclesPerMicrosecond())
 
+/**
+ * @def CPU frequency in Hz
+ */
+#ifndef F_CPU
+#   define F_CPU (48000000UL)
+#endif
+
+/**
+ * @def DELAY_USEC_HIGH_PRECISION macro for higher precision microsecond delay
+ *      0 < usec < 10
+ *      works only with fixed F_CPU (default 48MHz)
+ *      !! THIS FEATURE IS EXPERIMENTAL !!
+ *      from: https://www.mikrocontroller.net/topic/378584#4302525
+ */
+#define DELAY_USEC_HIGH_PRECISION(usec) delay_cycles((double)F_CPU * (usec) / 1E6 / 4.0-4)
 
 /**
  * The 16bit timer #0.
@@ -620,6 +637,32 @@ ALWAYS_INLINE bool Timer::is32bitTimer(void)
 ALWAYS_INLINE bool Timer::getMatchChannelLevel(int channel)
 {
     return (bool)(timer->EMR & (1 << channel));
+}
+
+/**
+ * @fn void delay_cycles(unsigned int)
+ * @brief Delay for "cycles" CPU cycles
+ *        The subs and cmp instructions both take one CPU cycle, the jump
+ *        back takes two cycles, yielding four CPU cycles per loop iteration.
+ *        from: https://www.mikrocontroller.net/topic/378584#4302525
+ *
+ * @param[in] cycles cpu cycles to delay
+ */
+static inline void delay_cycles(unsigned int cycles) __attribute__((always_inline));
+
+static inline void delay_cycles(unsigned int cycles)
+{
+  __asm__ volatile (".syntax unified" "\n\t"
+        " .align 4\n"
+        "1: subs %[cycles], %[cycles], #1" "\n\t"
+        "cmp %[cycles], #0" "\n\t"
+        "bne 1b"
+        : [cycles] "=l" (cycles)
+          /* not really used as output, but the register
+             is modified so the compiler must not rely on
+             the old contents */
+        : "0" (cycles) /* this is also an input value */
+        : "cc");
 }
 
 #endif /*sblib_timer_h*/

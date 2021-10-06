@@ -39,12 +39,37 @@
 ///< Pause between tests in milliseconds
 #define TEST_PAUSE 500
 
-///< macro to set the test pin high
+/**
+ * @def SET_TESTPIN_HIGH macro to set the test pin high
+ * @brief To be as accurate as possible, we directly access the IO pin and do not
+ *        use digitalWrite().
+ *
+ *        with compiling "Optimize None" (-O0)
+ *          pin-state change takes ~0,3 microseconds at 48MHz SystemCoreClock
+ *          ==> toggle on and off ~0,6 microseconds
+ *
+ *        with compiling "Optimize for size" (-OS)
+ *          pin-state change takes ~20 nanoseconds at 48MHz SystemCoreClock
+ *          ==> toggle on and off ~40 nanoseconds
+ */
 #define SET_TESTPIN_HIGH port->MASKED_ACCESS[mask] = mask
 
-///< macro to set the test pin low
+/**
+ * @def SET_TESTPIN_LOW macro to set the test pin low
+ * @brief To be as accurate as possible, we directly access the IO pin and do not
+ *        use digitalWrite().
+ *
+ *        with compiling "Optimize None" (-O0)
+ *          pin-state change takes ~0,3 microseconds at 48MHz SystemCoreClock
+ *          ==> toggle on and off ~0,6 microseconds
+ *
+ *        with compiling "Optimize for size" (-OS)
+ *          pin-state change takes ~20 nanoseconds at 48MHz SystemCoreClock
+ *          ==> toggle on and off ~40 nanoseconds
+ */
 #define SET_TESTPIN_LOW port->MASKED_ACCESS[mask] = 0
 
+///< SystemCoreClock in MHz
 enum SystemSpeed {mhz12, mhz24, mhz36, mhz48};
 
 /**
@@ -141,19 +166,8 @@ void setup()
 /**
  * Test of delayMicroseconds() method.
  */
-void test_delayMicroseconds()
+void test_delayMicroseconds(void)
 {
-    /* To be as accurate as possible, we directly access the IO pin and do not
-     * use digitalWrite().
-     *
-     * pin-state changed takes ~0,3 microseconds at 48MHz SystemCoreClock
-     * ==> toggle on and off ~0,6 microseconds
-     *
-     * This is for exact testing of delayMicroseconds() and should not be used
-     * in your own code!
-     *
-     */
-
     unsigned int microSecondToTest = START_MICROSECOND_TO_TEST;
 
     while (microSecondToTest <= END_MICROSECOND_TO_TEST)
@@ -183,9 +197,25 @@ void test_delayMicroseconds()
 }
 
 /**
+ * Test of macro DELAY_USEC_HIGH_PRECISION(usec) method.
+ * works only with cpu @48MHz
+ */
+void test_delayUSecHighPrecision(void)
+{
+#define TEST_USEC 1
+    for (unsigned int i = 0; i< 1E6;i++)
+    {
+        SET_TESTPIN_LOW; // same as port->MASKED_ACCESS[mask] = 0;
+        DELAY_USEC_HIGH_PRECISION(TEST_USEC);
+        SET_TESTPIN_HIGH; // same as port->MASKED_ACCESS[mask] = mask;
+        DELAY_USEC_HIGH_PRECISION(TEST_USEC);
+    }
+}
+
+/**
  * The old test of delayMicroseconds() method.
  */
-void test_old_delayMicroseconds()
+void test_old_delayMicroseconds(void)
 {
     /* To be as accurate as possible, we directly access the IO pin and do not
      * use digitalWrite().
@@ -229,6 +259,7 @@ void test_old_delayMicroseconds()
 void loop_noapp()
 {
     test_delayMicroseconds();
+    // test_delayUSecHighPrecision();
     // test_old_delayMicroseconds(); //uncomment to use the old testing method
 }
 

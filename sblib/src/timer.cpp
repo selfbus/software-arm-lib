@@ -26,10 +26,11 @@ void delay(unsigned int msec)
     // otherwise "while" will end in an infinite loop
     if (__get_IPSR() != 0x0)
     {
-        while (msec > MAX_DELAY_MILLISECONDS)
-    	{
-            delayMicroseconds(MAX_DELAY_MILLISECONDS * 1000);
-			msec -= (MAX_DELAY_MILLISECONDS);
+        unsigned int maxDelayMs = MAX_DELAY_MILLISECONDS;
+        while (msec > maxDelayMs)
+        {
+            delayMicroseconds(maxDelayMs * 1000);
+            msec -= (maxDelayMs);
         }
 
         delayMicroseconds(msec * 1000);
@@ -89,7 +90,7 @@ ALWAYS_INLINE unsigned int getSysTicksElapsed(unsigned int& lastSystemTickValue)
 void delayMicroseconds(unsigned int usec)
 {
     unsigned int lastSysTickValue = getSysTickValue();
-    int ticksToWait;
+    int ticksToWait = 1;  // as fast as we can go
 
     if (usec > MIN_DELAY_MICROSECONDS)
     {
@@ -112,11 +113,6 @@ void delayMicroseconds(unsigned int usec)
             // subtract the system ticks needed for above calculation
             ticksToWait -= getSysTicksElapsed(lastSysTickValue);
         }
-    }
-    else
-    {
-        // as fast as we can go
-        ticksToWait = 1;
     }
 
     while (ticksToWait > 0)
