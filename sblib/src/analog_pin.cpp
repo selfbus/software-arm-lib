@@ -32,8 +32,9 @@ void analogBegin()
 
     // Enable AHB clock to the ADC.
     LPC_SYSCON->SYSAHBCLKCTRL |= (1<<13);
-
+#ifndef IAP_EMULATION
     LPC_ADC->CR = ((SystemCoreClock / LPC_SYSCON->SYSAHBCLKDIV) / ADC_CLOCK - 1) << 8;
+#endif
 }
 
 void analogEnd()
@@ -47,6 +48,9 @@ void analogEnd()
 
 static unsigned int analogPoll(int channel)
 {
+#ifdef IAP_EMULATION
+    return 0;
+#endif
     LPC_ADC->CR &= 0xffffff00;
     LPC_ADC->DR[channel]; // read the channel to clear the "done" flag
 

@@ -43,8 +43,12 @@ extern "C" {
 
 
 // aus lpcopen chip.h
-#if !defined(CHIP_LPC110x)
-#define LPCOPEN_I2C                   ((LPC_I2C_T              *) LPC_I2C_BASE)
+#ifndef IAP_EMULATION
+#   if !defined(CHIP_LPC110x)
+#      define LPCOPEN_I2C                   ((LPC_I2C_T              *) LPC_I2C_BASE)
+#   endif
+#else
+#   define LPCOPEN_I2C 0 ///> FIXME not sure if this is correct for unit testing
 #endif
 
 

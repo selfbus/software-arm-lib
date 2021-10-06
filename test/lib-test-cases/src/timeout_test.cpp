@@ -45,7 +45,7 @@ static Telegram testCaseTelegrams[] =
 , {TIMER_TICK,   1, 0, _check_expired_no,  {}}
 , {TIMER_TICK,   1, 0, _check_expired_yes, {}}
 // force a wrap-around of the systemTime
-, {TIMER_TICK, (unsigned int) -38, 0, _start_to_20,       {}}
+, {TIMER_TICK, (int)((unsigned int) -38), 0, _start_to_20, {}}
 , {TIMER_TICK,  18, 0, _check_expired_no,  {}}
 , {TIMER_TICK,   1, 0, _check_time_wrap,   {}}
 , {TIMER_TICK,   1, 0, _check_expired_yes, {}}

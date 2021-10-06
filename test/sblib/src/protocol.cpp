@@ -150,7 +150,7 @@ void executeTest(Test_Case * tc)
         INFO("Step " << tn << " of test case " << tc->name);
         if (BREAK == tel->type)
                 tn = _handleBreak (tc, tel, tn);
-        else         if (TEL_RX == tel->type)
+        else if (TEL_RX == tel->type)
                 _handleRx(tc, tel, tn);
         else if (TEL_TX == tel->type)
                 _handleTx(tc, tel, tn);
