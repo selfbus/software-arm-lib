@@ -82,8 +82,8 @@ extern "C" void TIMER32_0_IRQHandler()
 bool WriteInitTime()
 {
   bool bRet= false;
-
-  ds3231_cntl_stat_t rtc_control_status = {0,0};           // default, use bit masks in ds3231.h for desired operation
+  // default, use bit masks in ds3231.h for desired operation
+  ds3231_cntl_stat_t rtc_control_status = {0,0};
   rtc.SetCtrlStatReg(rtc_control_status);
 
   ds3231_time_t rtc_time;
@@ -165,7 +165,7 @@ void setup()
 #endif
 
 #if DBG_LUX
-    bh.BH1750Init();            // Initialize BH1750
+  bh.begin();            // Initialize BH1750
 #endif
 
 #if DBG_DHT
@@ -196,22 +196,19 @@ void setup()
     timer32_0.start();                                  // Start now the timer
 }
 
-
 #if DBG_LUX
 /**
  * Read LUX
  */
-void ReadLux()
-{
-  if( bh.bBH1750InitState && bh.GetLux() )                 // Read I2C LUX From BH1750! if bBH1750InitState is false, something goes wrong during BH1750Init()! Do a I2CSearch()!
-  {
-      bReadTimer= false;                                   // Reset Read Timer
-      digitalWrite(PIN_INFO, (bh.uLuxCurrent == 0));       // Switch off the Info LED! If LUX is 0! (Just for Testing)
-      if( (bh.uLuxCurrent >= 0) ) {
-        digitalWrite(PIN_INFO,!digitalRead(PIN_INFO));     // Blink if Read was OK!
-      }
+void ReadLux() {
+  // Read I2C LUX From BH1750!
+  if (bh.measurementReady(true)) {
+    bReadTimer = false;   // Reset Read Timer
+    float light = bh.readLightLevel();
+    // Switch off the info LED if light is low else on
+    digitalWrite(PIN_INFO, (light < 50));
 #if DBG_PRINT_LUX
-      printf("Lux: %d\n",bh.uLuxCurrent );
+    printf("Lux: %d\n", (int)light);
 #endif
   }
 }

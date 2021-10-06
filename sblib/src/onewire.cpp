@@ -54,6 +54,8 @@ bool OneWire::OneWireReset()
   uint8_t retries= 125;
 
   pinDisableInterrupt(this->_pin);
+    // note if the bus was low to start with
+    bool bHigh = digitalRead(this->_pin);
     pinMode(this->_pin, INPUT |PULL_UP);
 #if ONEWIRE_INTERNAL_PULLUP
     digitalWrite(this->_pin, 1);       // enable pull-up resistor
@@ -62,6 +64,8 @@ bool OneWire::OneWireReset()
       if (--retries == 0) return 0;
       delayMicroseconds(2);
     } while ( !digitalRead(this->_pin));
+    // stay high long enough for the chip to get it in case bus was low
+    if (!bHigh) delayMicroseconds(60);
     pinMode(this->_pin,OUTPUT);         // drive output low
     digitalWrite(this->_pin, 0);
     delayMicroseconds(480);
@@ -378,76 +382,78 @@ void OneWire::OneWireTargetSearch(uint8_t family_code)
 bool OneWire::OneWireSearch(uint8_t *newAddr)
 {
   bool bRet= false;
+  // if the last call was not the last one
+  if(this->_bLastDeviceFlag) return bRet;
 
-  if(!this->_bLastDeviceFlag)                              // if the last call was not the last one
+  if(!this->OneWireReset())                              // 1-Wire reset
   {
-    if(!this->OneWireReset())                              // 1-Wire reset
-    {
-      this->_LastDiscrepancy= 0;                           // reset the search
-      this->_bLastDeviceFlag= false;
-      this->_LastFamilyDiscrepancy= 0;
-    }
+    this->_LastDiscrepancy= 0;                           // reset the search
+    this->_bLastDeviceFlag= false;
+    this->_LastFamilyDiscrepancy= 0;
+    return bRet;
+  }
+
+  // initialize for search
+  uint8_t id_bit_number= 1, rom_byte_mask=1, last_zero=0, rom_byte_number=0;
+  uint8_t search_direction, id_bit, cmp_id_bit;
+
+  this->OneWireWrite(0xF0);                            // issue the search command
+
+  do {                                                 // loop to do the search
+    id_bit= this->OneWireReadBit();                    // read a bit and its complement
+    cmp_id_bit= this->OneWireReadBit();
+    if((id_bit == 1) && (cmp_id_bit == 1)) break;      // check for no devices on 1-wire
     else
     {
-      // initialize for search
-      uint8_t id_bit_number= 1, rom_byte_mask=1, last_zero=0, rom_byte_number=0;
-      uint8_t search_direction, id_bit, cmp_id_bit;
-
-      this->OneWireWrite(0xF0);                            // issue the search command
-
-      do {                                                 // loop to do the search
-        id_bit= this->OneWireReadBit();                    // read a bit and its complement
-        cmp_id_bit= this->OneWireReadBit();
-        if((id_bit == 1) && (cmp_id_bit == 1)) break;      // check for no devices on 1-wire
-        else
-        {
-          if(id_bit != cmp_id_bit)                         // all devices coupled have 0 or 1
-          {
-            search_direction= id_bit;                      // bit write value for search
-          }
-          else
-          {                                                // if this discrepancy if before the Last Discrepancy
-            if(id_bit_number < this->_LastDiscrepancy) {   // on a previous next then pick the same as last time
-              search_direction= ((this->ROM_NO[rom_byte_number] & rom_byte_mask) > 0);
-            } else search_direction= (id_bit_number == this->_LastDiscrepancy); // if equal to last pick 1, if not then pick 0
-
-            if (search_direction == 0)                     // if 0 was picked then record its position in LastZero
-            {
-              last_zero= id_bit_number;
-              if (last_zero < 9) this->_LastFamilyDiscrepancy= last_zero; // check for Last discrepancy in family
-            }
-          }
-          if(search_direction == 1) this->ROM_NO[rom_byte_number] |= rom_byte_mask;
-          else this->ROM_NO[rom_byte_number] &= ~rom_byte_mask;  // set or clear the bit in the ROM byte rom_byte_number with mask rom_byte_mask
-
-          this->OneWireWriteBit(search_direction);         // serial number search direction write bit
-
-          id_bit_number++;                                 // increment the byte counter id_bit_number and shift the mask rom_byte_mask
-          rom_byte_mask <<= 1;
-
-          if(rom_byte_mask == 0)                           // if the mask is 0 then go to new SerialNum byte rom_byte_number and reset mask
-          {
-            rom_byte_number++;
-            rom_byte_mask = 1;
-          }
-        }
-      } while(rom_byte_number < 8);                        // loop until through all ROM bytes 0-7
-
-      if(!(id_bit_number < 65))                            // if the search was successful then
+      if(id_bit != cmp_id_bit)                         // all devices coupled have 0 or 1
       {
-        this->_LastDiscrepancy= last_zero;                 // search successful so set _LastDiscrepancy,_bLastDeviceFlag,search_result
-        if(this->_LastDiscrepancy == 0) this->_bLastDeviceFlag= true; // check for last device
-        bRet= true;
+        search_direction= id_bit;                      // bit write value for search
+      }
+      else
+      {                                                // if this discrepancy if before the Last Discrepancy
+        if(id_bit_number < this->_LastDiscrepancy) {   // on a previous next then pick the same as last time
+          search_direction= ((this->ROM_NO[rom_byte_number] & rom_byte_mask) > 0);
+        } else search_direction= (id_bit_number == this->_LastDiscrepancy); // if equal to last pick 1, if not then pick 0
+
+        if (search_direction == 0)                     // if 0 was picked then record its position in LastZero
+        {
+          last_zero= id_bit_number;
+          if (last_zero < 9) this->_LastFamilyDiscrepancy= last_zero; // check for Last discrepancy in family
+        }
+      }
+      if(search_direction == 1) this->ROM_NO[rom_byte_number] |= rom_byte_mask;
+      else this->ROM_NO[rom_byte_number] &= ~rom_byte_mask;  // set or clear the bit in the ROM byte rom_byte_number with mask rom_byte_mask
+
+      this->OneWireWriteBit(search_direction);         // serial number search direction write bit
+
+      id_bit_number++;                                 // increment the byte counter id_bit_number and shift the mask rom_byte_mask
+      rom_byte_mask <<= 1;
+
+      if(rom_byte_mask == 0)                           // if the mask is 0 then go to new SerialNum byte rom_byte_number and reset mask
+      {
+        rom_byte_number++;
+        rom_byte_mask = 1;
       }
     }
+  } while(rom_byte_number < 8);                        // loop until through all ROM bytes 0-7
 
-    if(!bRet || !this->ROM_NO[0])                          // if no device found then reset counters so next 'search' will be like a first
-    {
-      this->_LastDiscrepancy= 0;
-      this->_bLastDeviceFlag= false;
-      this->_LastFamilyDiscrepancy= 0;
-    } else for (uint8_t i = 0; i < 8; i++) newAddr[i] = this->ROM_NO[i];
+  if(!(id_bit_number < 65))                            // if the search was successful then
+  {
+    this->_LastDiscrepancy= last_zero;                 // search successful so set _LastDiscrepancy,_bLastDeviceFlag,search_result
+    if(this->_LastDiscrepancy == 0) this->_bLastDeviceFlag= true; // check for last device
+    bRet= true;
   }
+
+  if(!bRet || !this->ROM_NO[0])                          // if no device found then reset counters so next 'search' will be like a first
+  {
+    this->_LastDiscrepancy= 0;
+    this->_bLastDeviceFlag= false;
+    this->_LastFamilyDiscrepancy= 0;
+  } else
+  {
+    for (uint8_t i = 0; i < 8; i++) newAddr[i] = this->ROM_NO[i];
+  }
+
   return bRet;
 }
 #endif // #if ONEWIRE_SEARCH
