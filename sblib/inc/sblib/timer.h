@@ -111,7 +111,7 @@ unsigned int elapsed(unsigned int ref);
  *      !! THIS FEATURE IS EXPERIMENTAL !!
  *      from: https://www.mikrocontroller.net/topic/378584#4302525
  */
-#define DELAY_USEC_HIGH_PRECISION(usec) delay_cycles((double)F_CPU * (usec) / 1E6 / 4.0-4)
+#define DELAY_USEC_HIGH_PRECISION(usec) delay_cycles((double)F_CPU * (usec) / 1E6 / 6.0+1)
 
 /**
  * The 16bit timer #0.
@@ -658,11 +658,10 @@ static inline void delay_cycles(unsigned int cycles)
         "cmp %[cycles], #0" "\n\t"
         "bne 1b"
         : [cycles] "=l" (cycles)
-          /* not really used as output, but the register
-             is modified so the compiler must not rely on
-             the old contents */
-        : "0" (cycles) /* this is also an input value */
+          // not really used as output, but the register
+          // is modified so the compiler must not rely on
+          // the old contents
+        : "0" (cycles) // this is also an input value
         : "cc");
 }
-
 #endif /*sblib_timer_h*/
