@@ -166,7 +166,7 @@
 								</option>
 								<option id="com.crt.advproject.cpp.exe.release.option.optimization.level.1269544540" name="Optimization Level" superClass="com.crt.advproject.cpp.exe.release.option.optimization.level" useByScannerDiscovery="true" value="gnu.cpp.compiler.optimization.level.size" valueType="enumerated"/>
 								<option id="com.crt.advproject.cpp.specs.342573066" name="Specs" superClass="com.crt.advproject.cpp.specs" useByScannerDiscovery="false" value="com.crt.advproject.cpp.specs.newlibnano" valueType="enumerated"/>
-								<option id="com.crt.advproject.cpp.fpu.38541995" superClass="com.crt.advproject.cpp.fpu"/>
+								<option id="com.crt.advproject.cpp.fpu.38541995" superClass="com.crt.advproject.cpp.fpu" useByScannerDiscovery="true"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.239183216" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.release.137679665" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.release">

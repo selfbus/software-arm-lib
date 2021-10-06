@@ -90,29 +90,12 @@ void setup()
     digitalWrite(PIN_RUN, 1);  // Run LED (green), will be toggled with OneWire function (blinks on read success)
     digitalWrite(PIN_PROG, 0); // Prog LED (red), will be used as a heartbeat, that we are still alive
 
-    /* Doumanix debug start: first yellow LED should blink 2 times then the green LED
-    * --> indicates that code and controller board work properly (at least until this point)
-    * */
-    digitalWrite(PIN_INFO, 0); delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));delay(2*START_UP_BLINK_DELAY);
-
-    digitalWrite(PIN_RUN, 0); delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));delay(START_UP_BLINK_DELAY);
-    digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));delay(2*START_UP_BLINK_DELAY);
-    /* Doumanix debug end*/
-/*
-    enableInterrupt(TIMER_32_0_IRQn);                        // Enable the timer interrupt
-    timer32_0.begin();                                       // Begin using the timer
+    enableInterrupt(TIMER_32_0_IRQn);                      // Enable the timer interrupt
+    timer32_0.begin();                                     // Begin using the timer
     timer32_0.prescaler((SystemCoreClock / 1000) - 1);     // Let the timer count milliseconds
     timer32_0.matchMode(MAT1, RESET | INTERRUPT);          // On match of MAT1, generate an interrupt and reset the timer
     timer32_0.match(MAT1, READ_TIMER);                     // Match MAT1 when the timer reaches this value (in milliseconds)
-    timer32_0.start();                                       // Start now the timer
-    */
+    timer32_0.start();                                     // Start now the timer
 }
 
 /**
@@ -154,8 +137,9 @@ bool ReadOneWireDS18xTemp()
  * Handler for the timer interrupt.
  */
 extern "C" void TIMER32_0_IRQHandler()
-{                            // Clear the timer interrupt flags.
-    timer32_0.resetFlags();    // Otherwise the interrupt handler is called again immediately after returning.
+{
+    // clear the timer interrupt flags, otherwise the interrupt handler is called again immediately after returning.
+    timer32_0.resetFlags();
     bLastRead= true;
 }
 
