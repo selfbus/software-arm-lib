@@ -128,8 +128,14 @@ void setSystemSpeed(SystemSpeed newSystemSpeed)
 void setup()
 {
     pinMode(testPin, OUTPUT);
-    // setSystemSpeed(mhz48); // test different SystemCoreClocks
-    connectSystemOscillatorToClkOutPin();
+
+    // test different SystemCoreClocks
+    // setSystemSpeed(mhz48);
+
+    // Connect the system oscillator to clock-out pin (PIO0.1)
+    // This allows measurement with oscilloscope.
+    // USE WITH CAUTION !
+    // connectSystemOscillatorToClkOutPin();
 }
 
 /**
