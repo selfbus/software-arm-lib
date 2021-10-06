@@ -92,7 +92,7 @@ bool BH1750::configure(Mode mode) {
       xfer.txBuff = (uint8_t *) &mode;
       xfer.txSz = 1;
       while ((ack = Chip_I2C_MasterTransfer(I2C0, &xfer)) == I2C_STATUS_ARBLOST) {
-        // i wonder whether a timeout condition might be of use here
+        // FIXME i wonder whether a timeout condition might be of use here
       }
       // Wait a few moments to wake up
       delay(10);

@@ -252,7 +252,7 @@ const char* DS18x20::TypeStr(int deviceNum)
 }
 
 /*****************************************************************************
-** Function name:  ConvertTemperature
+** Function name: ConvertTemperature
 **
 ** Descriptions:  Will convert given fTemperature to given scale
 **

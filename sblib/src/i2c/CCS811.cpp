@@ -109,7 +109,10 @@ char CCS811Class::readErrorID(char _status) {
   Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, ERROR_ID, &error_id, 1);
   digitalWrite(_WAKE_PIN, true);
   uint8_t bit = (_status & 1) != 0; // black magic to read ERROR bit from STATUS register
-  return error_id;
+  if (bit)
+        return error_id;
+    else
+        return 0;
 }
 
 void CCS811Class::sleep() {
@@ -147,7 +150,8 @@ void CCS811Class::compensate(float t, float rh)    // compensate for temperature
 {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
-  int _temp, _rh;
+  int _temp = 0;
+  int _rh;
   if (t > 0)
     _temp = (int) t + 0.5;  // this will round off the floating point to the nearest integer value
   else if (t < 0) // account for negative temperatures
