@@ -28,14 +28,13 @@
 *****************************************************************************/
 void DS18x20::DS18x20Init(int pin, bool bParasiteMode)
 {
-  this->_OW_DS18x= new OneWire;
-  this->_OW_DS18x->OneWireInit(pin, bParasiteMode);
+  this->_OW_DS18x.OneWireInit(pin, bParasiteMode);
 }
 
 /*****************************************************************************
 ** Function name:  ds18x20DeInit
 **
-** Descriptions:   DeInitialize the ds18x20
+** Descriptions:   No op
 **
 ** parameters:     none
 **
@@ -44,7 +43,6 @@ void DS18x20::DS18x20Init(int pin, bool bParasiteMode)
 *****************************************************************************/
 void DS18x20::DS18x20DeInit()
 {
-  if(this->_OW_DS18x) delete _OW_DS18x;
 }
 #if DS18X20_SEARCH
 /*****************************************************************************
@@ -54,19 +52,23 @@ void DS18x20::DS18x20DeInit()
 **
 ** parameters:     uMaxDeviceSearch Maximal count of devices to find.
 **
-** Returned value: true, if one or more devices are found. Then, the
-**                 following global Parameters will be filled:
+** Returned value: 0, one or more devices were found.
+**                 1, unknown device type on at least one device
+**                 2, CRC8 failed on at least one device
+**                 4, the search failed no devices
+**
+**                 On Success, the following global Parameters will be filled:
 **                 m_foundDevices - Includes the number of found devices
 **                 m_dsDev        - Includes the Information about the devices
 **
 *****************************************************************************/
-bool DS18x20::Search(uint8_t uMaxDeviceSearch)
+uint8_t DS18x20::Search(uint8_t uMaxDeviceSearch)
 {
-  bool bRet= false;
+  uint8_t bRet= 4;
   this->m_foundDevices= 0;
-  this->_OW_DS18x->OneWireResetSearch(); // do a reset to start the search
+  this->_OW_DS18x.OneWireResetSearch(); // do a reset to start the search
   sDS18x20 sDevTmp;
-  for(uint8_t j=0; this->_OW_DS18x->OneWireSearch(sDevTmp.addr) > 0 && j < uMaxDeviceSearch; j++)
+  for(uint8_t j=0; this->_OW_DS18x.OneWireSearch(sDevTmp.addr) > 0 && j < uMaxDeviceSearch; j++)
   {
     sDevTmp.crcOK= (OneWire::OneWireCRC8(sDevTmp.addr, 7) == sDevTmp.addr[7]);
     if( sDevTmp.crcOK )
@@ -81,100 +83,122 @@ bool DS18x20::Search(uint8_t uMaxDeviceSearch)
       if( sDevTmp.type != DS_UNKNOWN)
       {
         sDevTmp.res_type= (sDevTmp.type == DS18S20)? 1: 0;
+        sDevTmp.conversionStarted = false;
         this->m_dsDev[j]= sDevTmp;
         this->m_foundDevices++;
-        bRet= true; // Found on or more devices! set bRet to true!
-      }
-    }
+        bRet= 0; // Found one or more devices!
+      } else bRet = 1;
+    } else bRet =2;
   }
   return bRet;
 }
 #endif
 
 /*****************************************************************************
-** Function name:  readTemperature
+** Function name:  startConversion
 **
-** Descriptions:   Reads the Temperature of the given sDS18x20 device.
+** Descriptions:   Starts the Temperature conversion of the given sDS18x20
+**                 device.
 **
 ** parameters:     sDS18x20 *sDev: which must include the '.addr' of the
 **                 DS18x20 device.(Is filled automatically by Search() function.)
 **
-** Returned value: true, if one or more devices reads are successful.
+** Returned value: true, if the device was accesed successfully.
 **                 following global Parameter of sDS18x20 will be filled:
-**                 last_temperature - the current read temperature
-**                 lastReadOK       - will be set to true if read was successful
 **
 *****************************************************************************/
-bool DS18x20::readTemperature( sDS18x20 *sDev)
+bool DS18x20::startConversion(int deviceIdx)
 {
-  bool bRet= false;
-  if( ( sDev->type != DS_UNKNOWN || sDev->addr[0] ) && this->_OW_DS18x->OneWireReset() )
+  if (deviceIdx >= this->m_foundDevices) return false;
+  sDS18x20 *sDev = &m_dsDev[deviceIdx];
+  if( ( sDev->type != DS_UNKNOWN || sDev->addr[0] ) && this->_OW_DS18x.OneWireReset() )
   {
-    this->_OW_DS18x->OneWireSelect( sDev->addr );
-    this->_OW_DS18x->OneWireWrite(0x44);       // start conversion, with parasite power on at the end
+    this->_OW_DS18x.OneWireSelect( sDev->addr );
+    // start conversion, with parasite power on at the end
+    this->_OW_DS18x.OneWireWrite(0x44);
+    sDev->conversionStarted = true;
+    // maybe 750ms is enough, maybe not. We might do a
+    // _OW_DS18x.OneWireDePower() here, but the reset will take care of it.
+    sDev->readyAt = millis() + leadTime;
+    return true;
+  }
+  return false;
+}
 
-    delay(750);                        // maybe 750ms is enough, maybe not. We might do a _OW_DS18x.OneWireDePower() here, but the reset will take care of it.
-    if(this->_OW_DS18x->OneWireReset())
+bool DS18x20::readResult(int deviceIdx)
+{
+  if (deviceIdx >= this->m_foundDevices) return false;
+  sDS18x20* sDev = &this->m_dsDev[deviceIdx];
+  if (!sDev->conversionStarted || millis() < sDev->readyAt) return false;
+
+  if(!this->_OW_DS18x.OneWireReset()) return false;
+
+  this->_OW_DS18x.OneWireSelect(sDev->addr);
+  this->_OW_DS18x.OneWireWrite(0xBE);     // Read Scratchpad
+  if( this->_OW_DS18x.IsParasiteMode() ) this->_OW_DS18x.OneWireDePower();
+  for ( uint8_t i = 0; i < 9; i++) // we need 9 bytes
+  {
+    sDev->data[i] = this->_OW_DS18x.OneWireRead();
+  }
+
+  // Convert the data to actual temperature because the result is a 16 bit
+  // signed integer, it should be stored to an "int16_t" type, which is always
+  // 16 bits even when compiled on a 32 bit processor.
+  int16_t raw = (sDev->data[1] << 8) | sDev->data[0];
+  if(sDev->res_type)
+  {
+    raw = raw << 3;                // 9 bit resolution default
+    if (sDev->data[7] == 0x10)  // "count remain" gives full 12 bit resolution
     {
-      this->_OW_DS18x->OneWireSelect(sDev->addr);
-      this->_OW_DS18x->OneWireWrite(0xBE);     // Read Scratchpad
-      if( this->_OW_DS18x->IsParasiteMode() ) this->_OW_DS18x->OneWireDePower();
-      for ( uint8_t i = 0; i < 9; i++) // we need 9 bytes
-      {
-        sDev->data[i] = this->_OW_DS18x->OneWireRead();
-      }
+      raw = (raw & 0xFFF0) + 12 - sDev->data[6];
+    }
+  } else {
+    byte cfg = (sDev->data[4] & 0x60);
 
-      // Convert the data to actual temperature because the result is a 16 bit signed integer, it should
-      // be stored to an "int16_t" type, which is always 16 bits even when compiled on a 32 bit processor.
-      int16_t raw = (sDev->data[1] << 8) | sDev->data[0];
-      if(sDev->res_type)
-      {
-        raw = raw << 3;                // 9 bit resolution default
-        if (sDev->data[7] == 0x10)  // "count remain" gives full 12 bit resolution
-        {
-          raw = (raw & 0xFFF0) + 12 - sDev->data[6];
-        }
-      } else {
-        byte cfg = (sDev->data[4] & 0x60);
+    // at lower res, the low bits are undefined, so let's zero them
+    if(cfg == 0x00) raw = raw & ~7;         // 9 bit resolution, 93.75 ms
+    else if (cfg == 0x20) raw = raw & ~3;   // 10 bit res, 187.5 ms
+    else if (cfg == 0x40) raw = raw & ~1;   // 11 bit res, 375 ms
+    // default is 12 bit resolution, 750 ms conversion time
+  }
+  sDev->current_temperature= (float)raw / 16.0;
+  sDev->lastReadOK= (sDev->current_temperature >=-55 && (sDev->current_temperature) <= 125);
+  if( sDev->lastReadOK ) {
+      sDev->last_temperature= sDev->current_temperature;
+  }
+  sDev->conversionStarted = false;
+  return true;
+}
 
-        // at lower res, the low bits are undefined, so let's zero them
-          if(cfg == 0x00) raw = raw & ~7;         // 9 bit resolution, 93.75 ms
-          else if (cfg == 0x20) raw = raw & ~3;   // 10 bit res, 187.5 ms
-          else if (cfg == 0x40) raw = raw & ~1;   // 11 bit res, 375 ms
-        // default is 12 bit resolution, 750 ms conversion time
-      }
-      sDev->current_temperature= (float)raw / 16.0;
-      sDev->lastReadOK= (sDev->current_temperature >=-55 && (sDev->current_temperature) <= 125);
-      if( sDev->lastReadOK ) sDev->last_temperature= sDev->current_temperature;
-      bRet= true;
-    } // if(_OW_DS18x.OneWireReset(...
-  } // if(sDev->type != DS_UNKNOWN...
-  return bRet;
+bool DS18x20::lastReadOk(int deviceIdx)
+{
+  if (deviceIdx >= this->m_foundDevices) return false;
+  return this->m_dsDev[deviceIdx].lastReadOK;
+}
+
+float DS18x20::temperature(int deviceIdx)
+{
+  if (deviceIdx >= this->m_foundDevices) return -999.9;
+  return this->m_dsDev[deviceIdx].last_temperature;
 }
 
 /*****************************************************************************
-** Function name:  readTemperatureAll
+** Function name:  startConversionAll
 **
 ** Descriptions:   Iterates the the global m_dsDev object and calls
-**                 readTemperature() for each device.
+**                 startConversion() for each device.
 **
-** parameters:    none
-**
-** Returned value: true, if one or more devices reads are successful.
-**                 following global object parameters will be filled:
-**                 last_temperature - the current read temperature
-**                 lastReadOK       - will be set to true if read was successful
+** Returned value: true, if one or more devices started successfully.
 **
 *****************************************************************************/
-bool DS18x20::readTemperatureAll()
+bool DS18x20::startConversionAll()
 {
   bool bRet=false;
 
-  for(uint8_t j=0; this->m_foundDevices >= 1 && j < this->m_foundDevices; j++)
+  for(uint8_t j=0; j < this->m_foundDevices; j++)
   {
-    if( this->readTemperature( &this->m_dsDev[j] ) )
+    if( this->startConversion(j) )
     {
-      this->m_dsDev[j].last_temperature= this->m_dsDev[j].current_temperature;
       bRet= true; // Read one or more was successful.
     }
   }
@@ -182,7 +206,53 @@ bool DS18x20::readTemperatureAll()
 }
 
 /*****************************************************************************
-** Function name:  ConvertTemperature
+** Function name:  readResultAll
+**
+** Descriptions:   Iterates the the global m_dsDev object and calls
+**                 readResult() for each device.
+**
+** Returned value: true, if one or more devices reads are successful.
+**                 following global object parameters will be filled:
+**                 last_temperature - the current read temperature
+**                 lastReadOK       - will be set to true if read was successful
+**
+*****************************************************************************/
+bool DS18x20::readResultAll()
+{
+  bool bRet=false;
+
+  for(uint8_t j=0; j < this->m_foundDevices; j++)
+  {
+    if( this->readResult(j) )
+    {
+      bRet= true; // Read one or more was successful.
+    }
+  }
+  return bRet;
+}
+
+/*
+ * Returns a string representation of the requested sensor
+ */
+const char* DS18x20::TypeStr(int deviceNum)
+{
+  if (deviceNum < this->m_foundDevices)
+  {
+    switch (this->m_dsDev[deviceNum].addr[0])
+    {
+      case DS18S20:
+        return "DS18S20";
+      case DS18B20:
+        return "DS18B20";
+      case DS1822 :
+        return "DS1822";
+    }
+  }
+  return "UNKNOWN";
+}
+
+/*****************************************************************************
+** Function name: ConvertTemperature
 **
 ** Descriptions:  Will convert given fTemperature to given scale
 **
@@ -195,6 +265,6 @@ bool DS18x20::readTemperatureAll()
 float DS18x20::ConvertTemperature(float fTemperature, eScale Scale)
 {
   if (Scale == FARENHEIT) return (fTemperature * 9 / 5 + 32);
-  else if (Scale == KELVIN) return (fTemperature + 273.15);
+  else if (Scale == KELVIN) return (float)(fTemperature + 273.15);
   else return fTemperature;
 }

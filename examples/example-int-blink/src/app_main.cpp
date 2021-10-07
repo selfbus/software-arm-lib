@@ -1,16 +1,26 @@
+/*****************************************************************************************************//**
+ * @file    app_main.cpp
+ * @brief   A simple application that blinks the Info LED of the 4TE-ARM Controller (on pin PIO2.6)
+ *          using a timer and its timer interrupt.
+ *
+ *          needs BCU1 version of the sblib library
+ *
+ * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ *****************************************************************************************************/
+
 /*
- *  A simple application that blinks the LED of the LPCxpresso board (on pin PIO0.7)
- *  using a timer and the timer interrupt.
- *
- *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
- */
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ ---------------------------------------------------------------------------*/
 
 #include <sblib/core.h>
 #include <sblib/eib/sblib_default_objects.h>
+#include <sblib/io_pin_names.h>
+
+#define BLINK_LED PIN_INFO ///> Info LED of the 4TE-ARM Controller
 
 /*
  * Handler for the timer interrupt.
@@ -18,20 +28,19 @@
 extern "C" void TIMER32_0_IRQHandler()
 {
     // Toggle the Info LED
-    digitalWrite(PIO2_6, !digitalRead(PIO2_6));
+    digitalWrite(BLINK_LED, !digitalRead(BLINK_LED));
 
-    // Clear the timer interrupt flags. Otherwise the interrupt handler is called
-    // again immediately after returning.
+    // Clear the timer interrupt flags, otherwise the interrupt handler is called again immediately after returning.
     timer32_0.resetFlags();
 }
 
-/*
+/**
  * Initialize the application.
  */
 void setup()
 {
-	pinMode(PIO2_6, OUTPUT);	// Info LED
-	pinMode(PIO3_3, OUTPUT);	// Run LED
+	pinMode(BLINK_LED, OUTPUT);
+	pinMode(PIN_RUN, OUTPUT);	// Run LED
 
     // Enable the timer interrupt
     enableInterrupt(TIMER_32_0_IRQn);
@@ -51,11 +60,19 @@ void setup()
     timer32_0.start();
 }
 
-/*
+/**
+ * The main processing loop while no KNX-application is loaded.
+ */
+void loop_noapp()
+{
+    // Sleep until the next interrupt happens
+    __WFI();
+}
+
+/**
  * The main processing loop.
  */
 void loop()
 {
-    // Sleep until the next interrupt happens
-    __WFI();
+    // will never be called in this example
 }

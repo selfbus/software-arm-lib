@@ -258,11 +258,11 @@
 								<inputType id="com.crt.advproject.compiler.input.676119279" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.lib.debug.1758175526" name="MCU Assembler" superClass="com.crt.advproject.gas.lib.debug">
-								<option id="com.crt.advproject.gas.arch.1416108525" name="Architecture" superClass="com.crt.advproject.gas.arch" value="com.crt.advproject.gas.target.cm0" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.thumb.356452353" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
-								<option id="gnu.both.asm.option.flags.crt.1898902792" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -D__NEWLIB__ -DDEBUG -D__CODE_RED" valueType="string"/>
-								<option id="com.crt.advproject.gas.hdrlib.1738346839" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlib" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.specs.927469597" name="Specs" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.arch.1416108525" name="Architecture" superClass="com.crt.advproject.gas.arch" useByScannerDiscovery="false" value="com.crt.advproject.gas.target.cm0" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.thumb.356452353" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="gnu.both.asm.option.flags.crt.1898902792" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" useByScannerDiscovery="false" value="-c -x assembler-with-cpp -D__NEWLIB__ -DDEBUG -D__CODE_RED" valueType="string"/>
+								<option id="com.crt.advproject.gas.hdrlib.1738346839" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" useByScannerDiscovery="false" value="com.crt.advproject.gas.hdrlib.newlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.specs.927469597" name="Specs" superClass="com.crt.advproject.gas.specs" useByScannerDiscovery="false" value="com.crt.advproject.gas.specs.newlib" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1700921198" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="com.crt.advproject.assembler.input.1767813301" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
 							</tool>
@@ -1494,9 +1494,6 @@
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 		<project id="sblib-cpp.com.crt.advproject.projecttype.lib.424595309" name="Static Library" projectType="com.crt.advproject.projecttype.lib"/>
-	</storageModule>
-	<storageModule moduleId="scannerConfiguration">
-		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="com.crt.config">

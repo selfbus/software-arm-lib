@@ -189,7 +189,7 @@ public:
     LSB_TEMP              // 0x12 - LSB of Temp
   } ds3231_Regs_t;
 
-  bool Ds3231Init();
+  void Ds3231Init();
   bool SetTime(ds3231_time_t time);
   bool GetTime(ds3231_time_t* time);
   bool SetCalendar(ds3231_calendar_t calendar);

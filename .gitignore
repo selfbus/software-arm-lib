@@ -27,6 +27,11 @@
 *.out
 *.app
 
+# Build folders
+cmake-build*
 Debug*
 Release*
 .settings
+
+# IDE files
+.idea

@@ -10,6 +10,7 @@
 
 #ifndef dht_h
 #define dht_h
+#include <sblib/sensors/units.h>
 
 /****************************************************************************
  *  Works with DHT11, DHT22
@@ -41,18 +42,13 @@ enum eLastError {
   ERROR_TIMER_NOT_REACHED = 8
 };
 
-typedef enum {
-  CELCIUS   = 0,
-  FARENHEIT = 1,
-  KELVIN    = 2
-} eScale;
-
 /****************************************************************************
 * DHT Class
 *****************************************************************************/
 class DHT
 {
 public:
+  static const uint32_t leadTime = 2000; // once every 2 seconds
   float _lastTemperature, _lastHumidity;
   eLastError _lastError;
   uint8_t _DHTtype;

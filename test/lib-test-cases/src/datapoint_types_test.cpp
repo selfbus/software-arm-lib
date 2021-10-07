@@ -9,7 +9,7 @@
  */
 
 #include "catch.hpp"
-#include "sblib/eib/datapoint_types.h"
+#include <sblib/eib/datapoint_types.h>
 
 #include <limits.h>
 

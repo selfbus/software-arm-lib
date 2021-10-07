@@ -19,6 +19,7 @@
   BSD license, all text above must be included in any redistribution
 
   Adapted to Selfbus Library by Oliver Stefan (2018)
+   Adapted to lpcopen I2C functions by Oliver Stefan (2021)
  ****************************************************/
 
 
@@ -33,35 +34,35 @@
 #define CCS_811_ADDR            0x5A   // when I2C_ADDR pin is LOW
 //#define CCS_811_ADDR            0x5B   // when I2C_ADDR pin is HIGH
 
-const char STATUS = 		0x00;
-const char MEAS_MODE =     	0x01;
-const char ALG_RESULT_DATA =0x02;
-const char ENV_DATA =		0x05;
-const char APP_START =     	0xF4;
-const char HW_ID =	        0x20;
-const char ERROR_ID =       0xE0;
-const char SW_RESET =       0xFF;
+const uint8_t STATUS = 		0x00;
+const uint8_t MEAS_MODE =     	0x01;
+const uint8_t ALG_RESULT_DATA =0x02;
+const uint8_t ENV_DATA =		0x05;
+const uint8_t APP_START =     	0xF4;
+const uint8_t HW_ID =	        0x20;
+const uint8_t ERROR_ID =       0xE0;
+const uint8_t SW_RESET =       0xFF;
 
 class CCS811Class
 {
-  public:
-    CCS811Class();     // constructor
-    bool begin(uint8_t I2C_ADDR, int WAKE_PIN);
-    char readStatus(void);
-    char readHW_ID(void);
-    char readErrorID(char _status);
-    int readTVOC(void);
-    int readCO2(void);
-    void getData(void);
-    void compensate(float t, float rh);
-    void _digitalWrite(int WAKE_PIN, bool VAL);
-    void reset(void);
-    void sleep();
-    int TVOC, CO2;
+public:
+  CCS811Class();     // constructor
+  bool begin(uint8_t I2C_ADDR, int WAKE_PIN);
+  char readStatus(void);
+  char readHW_ID(void);
+  char readErrorID(char _status);
+  int readTVOC(void);
+  int readCO2(void);
+  void getData(void);
+  void compensate(float t, float rh);
+  void _digitalWrite(int WAKE_PIN, bool VAL);
+  void reset(void);
+  void sleep();
+  int TVOC, CO2;
 
-  private:
-    int _WAKE_PIN;
-    uint8_t _I2C_ADDR;
+private:
+  int _WAKE_PIN;
+  uint8_t _I2C_ADDR;
 };
 
 #endif

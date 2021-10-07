@@ -1,78 +1,95 @@
+/**************************************************************************//**
+ * @file    app_main.cpp
+ * @brief   A simple application which will read Lux and RTC from
+ *          LPC1115 Dev Board using I2C class with a timer and the timer interrupt.
+ *
+ *          needs BCU1 version of the sblib library
+ *          needs at least a 64KB LPC111x.
+ *
+ *          for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT
+ *          "Enable printf float" in Prj settings -> Managed Linker Script
+ *
+ *
+ * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
+ * @author Mario Theodoridis Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
 /*
- *  A simple application which will read Lux and RTC from LPC1115 Dev Board using
- *  I2C class with a timer and the timer interrupt.
- *
- *  Copyright (c) 2015 Erkan Colak <erkanc@gmx.de>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
- */
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ ---------------------------------------------------------------------------*/
 
-#define DBG_LUX             1 // BH1750 Lux
-#define DBG_PRINT_LUX       0
+#include <sblib/core.h>
+#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/types.h>
+#include <sblib/io_pin_names.h>
+#include <sblib/i2c.h>
 
-#define DBG_RTC             1 // Ds3231 RTC
-#define DBG_PRINT_RTC       0
-#define DBG_PRINT_RTC_ALARM 0
+#define DBG_LUX             1 ///< BH1750 Lux
+#define DBG_PRINT_LUX       1
 
-#define SET_RTC_INITIAL_TIME  0  // Change this from "1" to "0" after the time was set successfully
-#define SET_RTC_ALARM1_ALARM2 0  // Change this from "1" to "0" after the ALARM1|2 was set successfully
+#define DBG_RTC             1 ///< Ds3231 RTC
+#define DBG_PRINT_RTC       1
+#define DBG_PRINT_RTC_ALARM 1
 
-#define DBG_DHT             1 // DHT22
-#define DBG_PRINT_DHT       0
+#define SET_RTC_INITIAL_TIME  0  ///< Change this from "1" to "0" after the time was set successfully
+#define SET_RTC_ALARM1_ALARM2 0  ///< Change this from "1" to "0" after the ALARM1|2 was set successfully
+
+#define DBG_DHT             1 ///< DHT22
+#define DBG_PRINT_DHT       1
 
 #if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
 # include <stdio.h>          // "Enable printf float" in Prj settings -> Managed Linker Script
 #endif
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
-#include <sblib/types.h>
-#include <sblib/i2c.h>
 
 #if DBG_LUX
-# include <sblib/i2c/bh1750.h>
+#   include <sblib/i2c/bh1750.h>
 #endif
 #if DBG_RTC
-# include <sblib/i2c/ds3231.h>
+#   include <sblib/i2c/ds3231.h>
 #endif
 #if DBG_DHT
-# include <sblib/sensors/dht.h>
+#   include <sblib/sensors/dht.h>
 #endif
 
 #if DBG_LUX
   BH1750 bh;                 // BH1750
 #endif
 #if DBG_RTC
-  Ds3231 rtc;                 // Ds3231
+  Ds3231 rtc;                // Ds3231
 #endif
 
 #if DBG_DHT
   DHT dht;                   // DHT 1st
 #endif
 
-#define READ_TIMER 1000      // Read values timer in Milliseconds
-bool bReadTimer= false;      // Condition to read values if timer reached
+#define READ_TIMER 1000      ///> Read values timer in Milliseconds
 
-/*
+bool bReadTimer= false;      ///> Condition to read values if timer reached
+
+/**
  * Handler for the timer interrupt.
  */
 extern "C" void TIMER32_0_IRQHandler()
-{                            // Clear the timer interrupt flags.
-  timer32_0.resetFlags();    // Otherwise the interrupt handler is called again immediately after returning.
-  bReadTimer= true;
+{
+    // Clear the timer interrupt flags, otherwise the interrupt handler is called again immediately after returning.
+    timer32_0.resetFlags();
+    bReadTimer= true;
 }
 
 #if SET_RTC_INITIAL_TIME
-/*
+/**
  * Set the RTC Time and Calender. Set only one time!
  */
 bool WriteInitTime()
 {
   bool bRet= false;
-
-  ds3231_cntl_stat_t rtc_control_status = {0,0};           // default, use bit masks in ds3231.h for desired operation
+  // default, use bit masks in ds3231.h for desired operation
+  ds3231_cntl_stat_t rtc_control_status = {0,0};
   rtc.SetCtrlStatReg(rtc_control_status);
 
   ds3231_time_t rtc_time;
@@ -94,7 +111,7 @@ bool WriteInitTime()
 #endif
 
 #if SET_RTC_ALARM1_ALARM2
-/*
+/**
  * Set the RTC Alarm1 and Alarm 2. Set only one time!
  */
 bool SetRTCAlarm()
@@ -142,83 +159,91 @@ bool SetRTCAlarm()
 }
 #endif
 
-/*
+/**
  * Initialize the application.
  */
 void setup()
 {
+
+#if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
+    printf("Example-i2c application started\n");
+#endif
+
 #if DBG_RTC
-  rtc.Ds3231Init();           // Initialize Ds3231
-  // WriteInitTime();         // Comment in, if you want setup the RTC TIME/Calendar
-  // SetRTCAlarm();           // Comment in, if you want to set the Alarm1|2
+    rtc.Ds3231Init();           // Initialize Ds3231
+    // WriteInitTime();         // Comment in, if you want setup the RTC TIME/Calendar
+    // SetRTCAlarm();           // Comment in, if you want to set the Alarm1|2
 #endif
 
 #if DBG_LUX
-  bh.BH1750Init();            // Initialize BH1750
+  bh.begin();            // Initialize BH1750
 #endif
 
 #if DBG_DHT
-  dht.DHTInit(PIO2_2, DHT22); // Use the DHT22 sensor on PIN
+    dht.DHTInit(PIO2_2, DHT22); // Use the DHT22 sensor on PIN
 #endif
 
-  /*
-  if(I2C::Instance()->bI2CIsInitialized) {  // I2CScan
-      I2C::Instance()->I2CScan();           // check .I2CScan_State ans .I2CScan_uAdress
-  }
-  */
+/*
+    if(I2C::Instance()->bI2CIsInitialized) {  // I2CScan
+        I2C::Instance()->I2CScan();           // check .I2CScan_State ans .I2CScan_uAdress
+    }
+*/
 
-  // LED Initialize
-	pinMode(PIO2_6, OUTPUT);	 // Info LED (yellow)
-	pinMode(PIO3_3, OUTPUT);	 // Run  LED (green)
-	pinMode(PIO2_0, OUTPUT);   // Prog LED (red)
+    // LED Initialize
+    pinMode(PIN_INFO, OUTPUT);	 // Info LED (yellow)
+    pinMode(PIN_RUN, OUTPUT);	 // Run  LED (green)
+    pinMode(PIN_PROG, OUTPUT);   // Prog LED (red)
 
-	// LED Set Initial Value (ON|OFF)
-	digitalWrite(PIO3_3, 0);   // Info LED (yellow)          // Will be toggled with dht function (blink on read success)
-	digitalWrite(PIO2_6, 0);   // Run  LED (green)           // Will be toggled with LUX function (off if Lux == 0)
-	digitalWrite(PIO2_0, 1);   // Prog LED (red)             // Will be toggled with rtc function
+    // LED Set Initial Value (ON|OFF)
+    digitalWrite(PIN_RUN, 0);    // Info LED (yellow), will be toggled with dht function (blink on read success)
+    digitalWrite(PIN_INFO, 0);   // Run  LED (green), will be toggled with LUX function (off if Lux == 0)
+    digitalWrite(PIN_PROG, 1);   // Prog LED (red), will be toggled with rtc function
 
-  enableInterrupt(TIMER_32_0_IRQn);                        // Enable the timer interrupt
-  timer32_0.begin();                                       // Begin using the timer
-    timer32_0.prescaler((SystemCoreClock / 1000) - 1);     // Let the timer count milliseconds
-    timer32_0.matchMode(MAT1, RESET | INTERRUPT);          // On match of MAT1, generate an interrupt and reset the timer
-    timer32_0.match(MAT1, READ_TIMER);                     // Match MAT1 when the timer reaches this value (in milliseconds)
-  timer32_0.start();                                       // Start now the timer
+    enableInterrupt(TIMER_32_0_IRQn);                   // Enable the timer interrupt
+    timer32_0.begin();                                  // Begin using the timer
+    timer32_0.prescaler((SystemCoreClock / 1000) - 1);  // Let the timer count milliseconds
+    timer32_0.matchMode(MAT1, RESET | INTERRUPT);       // On match of MAT1, generate an interrupt and reset the timer
+    timer32_0.match(MAT1, READ_TIMER);                  // Match MAT1 when the timer reaches this value (in milliseconds)
+    timer32_0.start();                                  // Start now the timer
 }
 
-/*
+#if DBG_LUX
+/**
  * Read LUX
  */
-#if DBG_LUX
-void ReadLux()
-{
-  if( bh.bBH1750InitState && bh.GetLux() )                 // Read I2C LUX From BH1750! if bBH1750InitState is false, something goes wrong during BH1750Init()! Do a I2CSearch()!
-  {
-      bReadTimer= false;                                   // Reset Read Timer
-      digitalWrite(PIO2_6, (bh.uLuxCurrent == 0));         // Switch off the Info LED! If LUX is 0! (Just for Testing)
-      if( (bh.uLuxCurrent >= 0) ) {
-        digitalWrite(PIO2_6,!digitalRead(PIO2_6));         // Blink if Read was OK!
-      }
+void ReadLux() {
+  // Read I2C LUX From BH1750!
+  if (bh.measurementReady(true)) {
+    bReadTimer = false;   // Reset Read Timer
+    float light = bh.readLightLevel();
+    // Switch off the info LED if light is low else on
+    digitalWrite(PIN_INFO, (light < 50));
 #if DBG_PRINT_LUX
-      printf("Lux: %d\n",bh.uLuxCurrent );
+    printf("Lux: %d\n", (int)light);
 #endif
   }
 }
 #endif
 
-/*
+#if DBG_DHT
+/**
  * Read the DHT Temperature and Humidity
  */
-#if DBG_DHT
 bool ReadTempHum()
 {
   bool bRet= dht.readData();
   if(bRet)
   {
-    digitalWrite(PIO3_3, !digitalRead(PIO3_3));
+    digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
 #if DBG_PRINT_DHT
     printf("     Temperature: %4.2f C \n", dht._lastTemperature );
     printf("        Humidity: %4.2f\n",dht._lastHumidity);
-    printf("       Dew point: %4.2f (FastCalc: %4.2f)\r\n", dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+    printf("Dew point (fast): %4.2f\n",dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+/*
+    printf("       Dew point: %4.2f (FastCalc: %4.2f)\r\n",
+            dht.CalcdewPoint(dht._lastTemperature, dht._lastHumidity),
+            dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+*/
     bRet= true;
   } else printf("Err %i \r\n",dht._lastError);
 #else
@@ -229,10 +254,10 @@ bool ReadTempHum()
 }
 #endif
 
-/*
+#if DBG_RTC
+/**
  * Read the RTC Time, Calendar, Alarm1, Alarm2 and the RTC Temperature
  */
-#if DBG_RTC
 void ReadTimeDate()
 {
    ds3231_time_t rtc_time;         rtc.GetTime(&rtc_time);
@@ -251,7 +276,7 @@ void ReadTimeDate()
 #if DBG_PRINT_RTC
        printf("++++ Alarm 1 ++++");printf("\n");
 #endif
-       digitalWrite(PIO2_0, !digitalRead(PIO2_0));
+       digitalWrite(PIN_PROG, !digitalRead(PIN_PROG));
        rtc.ResetAlarm(ALARM_1);
      }
 #if DBG_PRINT_RTC_ALARM
@@ -266,7 +291,7 @@ void ReadTimeDate()
 #if DBG_PRINT_RTC
        printf("++++ Alarm 2 ++++");printf("\n");
 #endif
-       digitalWrite(PIO2_0, !digitalRead(PIO2_0));
+       digitalWrite(PIN_PROG, !digitalRead(PIN_PROG));
        rtc.ResetAlarm(ALARM_2);
      }
 #if DBG_PRINT_RTC_ALARM
@@ -276,29 +301,32 @@ void ReadTimeDate()
 }
 #endif
 
-/*
+/**
+ * The main processing loop while no KNX-application is loaded.
+ */
+void loop_noapp()
+{
+    if(bReadTimer)
+    {
+#if DBG_LUX
+        ReadLux();
+#endif
+#if DBG_RTC
+        ReadTimeDate();
+#endif
+#if DBG_DHT
+        ReadTempHum();
+#endif
+        bReadTimer=false;
+    }
+    // Sleep until the next interrupt happens
+    __WFI();
+}
+
+/**
  * The main processing loop.
  */
 void loop()
 {
-  if(bReadTimer)
-  {
-#if DBG_LUX
-    ReadLux();
-#endif
-#if DBG_RTC
-    ReadTimeDate();
-#endif
-#if DBG_DHT
-    ReadTempHum();
-#endif
-
-    bReadTimer=false;
-  }
-  // Sleep until the next interrupt happens
-  __WFI();
+    // will never be called in this example
 }
-
-/******************************************************************************
-**                            End Of File
-******************************************************************************/
