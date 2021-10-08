@@ -89,13 +89,13 @@ LPC_GPIO_TypeDef* port = gpioPorts[digitalPinToPort(testPin)];
 
 /**
  * @fn void connectSystemOscillatorToClkOutPin()
- * @brief Connect the system oscillator to clock-out pin (PIO0.1)
- *        This allows measurement with oscilloscope.
+ * @brief !!!!!!!!!! USE WITH CAUTION !!!!!!!!!!
+ *        Connect the system oscillator to clock-out pin (PIO0.1)
+ *        This allows measurement of the system clock with oscilloscope.
  *
- *        USE WITH CAUTION !
- *        Trying to debug may run into error 'Ee(42). Could not connect to core.'.
+ *        Trying to debug you may run into error 'Ee(42). Could not connect to core.'.
  *        This is due to CLKOUT and ISP_Enable share the same pin.
- *        Use Flashmagic to restore the LPC.
+ *        You can only restore the LPC with a ISP-Programmer and using Flashmagic.
  */
 void connectSystemOscillatorToClkOutPin()
 {
@@ -156,11 +156,6 @@ void setup()
 
     // test different SystemCoreClocks
     // setSystemSpeed(mhz48);
-
-    // Connect the system oscillator to clock-out pin (PIO0.1)
-    // This allows measurement with oscilloscope.
-    // USE WITH CAUTION !
-    // connectSystemOscillatorToClkOutPin();
 }
 
 /**

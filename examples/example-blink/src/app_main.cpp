@@ -3,8 +3,12 @@
  * @brief   A simple application that blinks some LED's
  *
  * needs BCU1 version of the sblib library
- * used on the LPCxpresso board the LED on pin PIO0.7 will blink
- * used on the Selfbus 4TE-ARM-Controller the RUN (PIO3.3) and INFO (PIO2.6) LED will blink
+ * used on a LPCxpresso board the LED on pin PIO0.7 will blink
+ * used on a Selfbus ARM-Controller the
+ *                  PROGRAM (PIO2.0),
+ *                  RUN     (PIO3.3) and
+ *                  INFO (PIO2.6)
+ *                  LED's will blink
  *
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
@@ -32,8 +36,9 @@ void setup()
 {
     // set pins to output mode
     pinMode(PIN_IO2, OUTPUT);  // PIO0.7 on the LPCxpresso board
-    pinMode(PIN_INFO, OUTPUT); // PIO2.6 on the 4TE-ARM controller
-    pinMode(PIN_RUN, OUTPUT);  // PIO3.3 on the 4TE-ARM controller
+    pinMode(PIN_INFO, OUTPUT); // PIO2.6 on a Selfbus-ARM controller
+    pinMode(PIN_RUN, OUTPUT);  // PIO3.3 on a Selfbus-ARM controller
+    pinMode(PIN_PROG, OUTPUT); // PIO2.0 on a Selfbus-ARM controller
 }
 
 /**
@@ -44,8 +49,11 @@ void loop_noapp()
     // toggle output PIO0.7 for the LPCxpresso board LED
     digitalWrite(PIO0_7, !digitalRead(PIO0_7));
 
-    // toggle output PIO3.3 for the Selfbus 4TE-ARM-Controller RUN-LED
+    // toggle output PIO3.3 for a Selfbus 4TE-ARM-Controller RUN-LED
     digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
+
+    // toggle output PIO2.0 for a Selfbus ARM-Controller PROGRAM-LED
+    digitalWrite(PIN_PROG, !digitalRead(PIN_PROG));
 
     // pause the program for BLINK_TIME_1 milliseconds
     delay(BLINK_TIME_1);
