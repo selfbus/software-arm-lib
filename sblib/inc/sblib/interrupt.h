@@ -12,6 +12,7 @@
 
 #include <sblib/platform.h>
 #include <sblib/types.h>
+#include <sblib/utils.h>
 
 /**
  * Interrupt handlers have fixed names. You need to give your interrupt handler the
@@ -84,6 +85,27 @@ void clearPendingInterrupt(IRQn_Type interruptType);
  */
 void setPendingInterrupt(IRQn_Type interruptType);
 
+/**
+ * @fn bool isInsideInterrupt()
+ * @brief Returns if within an Isr
+ *
+ * @return true if called inside a Isr otherwise false
+ */
+bool isInsideInterrupt(void);
+
+/**
+ * @fn bool getInterruptEnabled(IRQn_Type)
+ * @brief Returns the enabled status of an interrupt
+ *        doesnt work for NonMaskableInt_IRQn,
+ *                        HardFault_IRQn,
+ *                        SVCall_IRQn,
+ *                        PendSV_IRQn,
+ *                        SysTick_IRQn
+ *
+ * @param interruptType - the interrupt to get enabled status must be >=0
+ * @return true if interrupt is enabled, otherwise false
+ */
+bool getInterruptEnabled(IRQn_Type interruptType);
 
 /**
  * This define creates an interrupt handler that calls a callback function.
@@ -134,4 +156,20 @@ ALWAYS_INLINE void setPendingInterrupt(IRQn_Type interruptType)
     NVIC->ICPR[0] = 1 << (interruptType & 0x1f);
 }
 
+ALWAYS_INLINE bool isInsideInterrupt(void)
+{
+    return (SCB->ICSR & SCB_ICSR_VECTACTIVE_Msk) != 0 ;
+}
+
+ALWAYS_INLINE bool getInterruptEnabled(IRQn_Type interruptType)
+{
+    if (interruptType >= 0)
+    {
+        return ((NVIC->ICER[0] >> (interruptType & 0x1f)) == 1);
+    }
+    else
+    {
+        fatalError();
+    }
+}
 #endif /*sblib_interrupt_h*/
