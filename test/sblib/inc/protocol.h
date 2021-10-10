@@ -30,12 +30,12 @@ typedef void (StepFunction)  (void * state, unsigned int var);
 
 typedef enum
 {
-  TEL_RX
-, TEL_TX
-, TIMER_TICK
+  TEL_RX            //!> simulated telegram received from the bus
+, TEL_TX            //!> simulated telegram to transmit to the bus
+, TIMER_TICK        //!> simulated timer tick by increasing system time
 , CHECK_TX_BUFFER
 , BREAK
-, END
+, END               //!> test case end
 } TelegramType;
 
 typedef struct

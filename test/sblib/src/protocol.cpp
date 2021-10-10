@@ -16,6 +16,14 @@ extern byte userEepromModified;
 extern int sndStartIdx;
 extern unsigned int wfiSystemTimeInc;
 
+/**
+ * @fn void _handleRx(Test_Case*, Telegram*, unsigned int)
+ * @brief handle a simulated telegram received from the bus
+ *
+ * @param tc
+ * @param tel
+ * @param tn
+ */
 static void _handleRx(Test_Case * tc, Telegram * tel, unsigned int tn)
 {
 	memcpy(bus.telegram, tel->bytes, tel->length);

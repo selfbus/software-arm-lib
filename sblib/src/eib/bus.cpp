@@ -478,7 +478,7 @@ void Bus::begin()
 	if (ownAddr == 0) ownAddr = PHY_ADDR_HI_DEFAULT <<8 | PHY_ADDR_LO_DEFAULT;
 #endif
 
-	//todo load sendtries from eprom
+	//todo load send-retries from eprom
 	//sendTriesMax =  userEeprom.maxRetransmit & 0x03;
 	//sendBusyTriesMax = (userEeprom.maxRetransmit >>5) & 0x03; // default
 

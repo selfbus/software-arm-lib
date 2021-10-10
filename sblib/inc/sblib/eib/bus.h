@@ -424,7 +424,11 @@ private:
 
 inline bool Bus::idle() const
 {
+#ifndef IAP_EMULATION // FIXME make bus states working together with unit-tests
     return state == IDLE && sendCurTelegram == 0;
+#else
+    return sendCurTelegram == 0;
+#endif
 }
 
 inline int Bus::ownAddress() const
