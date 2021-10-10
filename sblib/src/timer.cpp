@@ -79,7 +79,7 @@ void delayMicroseconds(unsigned int usec)
             fatalError(); //stop execution otherwise we can run into a overflow
         };
         ticksToWait = (usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000000);
-        // ticksToWait = ((usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000)) / 1000;
+        // ticksToWait = ((usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000)) / 1000; // this is more precise but also slower
     }
 
     while (ticksToWait > 0)
