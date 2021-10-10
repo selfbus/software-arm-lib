@@ -6,7 +6,6 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sblib/Debug_BCU2"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sblib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -99,7 +98,6 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sblib/Release_BCU2"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sblib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -189,7 +187,6 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sblib/Debug_BCU1"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sblib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -282,7 +279,6 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sblib/Release_BCU1"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sblib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -348,11 +344,11 @@
 								<inputType id="com.crt.advproject.compiler.input.1330801504" superClass="com.crt.advproject.compiler.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gas.lib.release.1223607443" name="MCU Assembler" superClass="com.crt.advproject.gas.lib.release">
-								<option id="com.crt.advproject.gas.arch.1648593629" name="Architecture" superClass="com.crt.advproject.gas.arch" value="com.crt.advproject.gas.target.cm0" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.thumb.1760502297" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" value="true" valueType="boolean"/>
-								<option id="gnu.both.asm.option.flags.crt.1409533758" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" value="-c -x assembler-with-cpp -D__NEWLIB__ -DNDEBUG -D__CODE_RED" valueType="string"/>
-								<option id="com.crt.advproject.gas.hdrlib.901727687" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" value="com.crt.advproject.gas.hdrlib.newlib" valueType="enumerated"/>
-								<option id="com.crt.advproject.gas.specs.1826244171" name="Specs" superClass="com.crt.advproject.gas.specs" value="com.crt.advproject.gas.specs.newlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.arch.1648593629" name="Architecture" superClass="com.crt.advproject.gas.arch" useByScannerDiscovery="false" value="com.crt.advproject.gas.target.cm0" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.thumb.1760502297" name="Thumb mode" superClass="com.crt.advproject.gas.thumb" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="gnu.both.asm.option.flags.crt.1409533758" name="Assembler flags" superClass="gnu.both.asm.option.flags.crt" useByScannerDiscovery="false" value="-c -x assembler-with-cpp -D__NEWLIB__ -DNDEBUG -D__CODE_RED" valueType="string"/>
+								<option id="com.crt.advproject.gas.hdrlib.901727687" name="Library headers" superClass="com.crt.advproject.gas.hdrlib" useByScannerDiscovery="false" value="com.crt.advproject.gas.hdrlib.newlib" valueType="enumerated"/>
+								<option id="com.crt.advproject.gas.specs.1826244171" name="Specs" superClass="com.crt.advproject.gas.specs" useByScannerDiscovery="false" value="com.crt.advproject.gas.specs.newlib" valueType="enumerated"/>
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1433372780" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 								<inputType id="com.crt.advproject.assembler.input.1683974106" name="Additional Assembly Source Files" superClass="com.crt.advproject.assembler.input"/>
 							</tool>
@@ -372,7 +368,6 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sblib/Debug_BIM112"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sblib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -465,7 +460,6 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sblib/Release_BIM112"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sblib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -559,7 +553,6 @@
 				<externalSettings>
 					<externalSetting>
 						<entry flags="VALUE_WORKSPACE_PATH" kind="includePath" name="/sblib"/>
-						<entry flags="VALUE_WORKSPACE_PATH" kind="libraryPath" name="/sblib/Debug_BIM112_11Uxx"/>
 						<entry flags="RESOLVED" kind="libraryFile" name="sblib" srcPrefixMapping="" srcRootPath=""/>
 					</externalSetting>
 				</externalSettings>
@@ -1493,7 +1486,7 @@
 		</cconfiguration>
 	</storageModule>
 	<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-		<project id="sblib-cpp.com.crt.advproject.projecttype.lib.424595309" name="Static Library" projectType="com.crt.advproject.projecttype.lib"/>
+		<project id="sblib.com.crt.advproject.projecttype.lib.424595309" name="Static Library" projectType="com.crt.advproject.projecttype.lib"/>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="com.crt.config">
