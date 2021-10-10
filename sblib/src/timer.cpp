@@ -14,8 +14,8 @@
 #include <sblib/interrupt.h>
 
 
-#define SYSTICK_ENABLED             ((SysTick->CTRL &  SysTick_CTRL_ENABLE_Pos) == SysTick_CTRL_ENABLE_Pos)
-#define SYSTICK_INTERRUPT_ENABLED   ((SysTick->CTRL &  SysTick_CTRL_TICKINT_Pos) == SysTick_CTRL_TICKINT_Pos)
+#define SYSTICK_ENABLED             ((SysTick->CTRL &  SysTick_CTRL_ENABLE_Msk) == SysTick_CTRL_ENABLE_Msk)
+#define SYSTICK_INTERRUPT_ENABLED   ((SysTick->CTRL &  SysTick_CTRL_TICKINT_Msk) == SysTick_CTRL_TICKINT_Msk)
 
 // The number of milliseconds since processor start/reset
 volatile unsigned int systemTime;

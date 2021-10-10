@@ -62,7 +62,7 @@ void loop_noapp()
     digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
 
     // pause the program for BLINK_TIME_2 milliseconds
-    delayMicroseconds(BLINK_TIME_2 * 1000);
+    delay(BLINK_TIME_2);
 }
 
 /**
