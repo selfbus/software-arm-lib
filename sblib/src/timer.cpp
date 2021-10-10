@@ -11,7 +11,11 @@
 #include <sblib/timer.h>
 
 #include <sblib/internal/variables.h>
+#include <sblib/interrupt.h>
 
+
+#define SYSTICK_ENABLED             ((SysTick->CTRL &  SysTick_CTRL_ENABLE_Pos) == SysTick_CTRL_ENABLE_Pos)
+#define SYSTICK_INTERRUPT_ENABLED   ((SysTick->CTRL &  SysTick_CTRL_TICKINT_Pos) == SysTick_CTRL_TICKINT_Pos)
 
 // The number of milliseconds since processor start/reset
 volatile unsigned int systemTime;
@@ -22,9 +26,15 @@ static LPC_TMR_TypeDef* const timers[4] = { LPC_TMR16B0, LPC_TMR16B1, LPC_TMR32B
 void delay(unsigned int msec)
 {
 #ifndef IAP_EMULATION
+    // check that SysTick is enabled, this also reads and resets COUNTFLAG
+    if ((!SYSTICK_ENABLED) && (!SYSTICK_INTERRUPT_ENABLED))
+    {
+        fatalError(); // no SysTick, no delay()
+    }
+
     // if any interrupt is active, fall-back to delayMicroseconds() (waiting SysTick's)
     // otherwise "while" will end in an infinite loop
-    if (__get_IPSR() != 0x0)
+    if (isInsideInterrupt())
     {
         unsigned int maxDelayMs = MAX_DELAY_MILLISECONDS;
         while (msec > maxDelayMs)
@@ -55,69 +65,35 @@ void delay(unsigned int msec)
 }
 
 #ifndef IAP_EMULATION
-/**
- * @fn      unsigned int getSysTickValue()
- * @brief   Returns the current value of the System tick timer.
- *
- * @return  current value of System tick timer
- */
-ALWAYS_INLINE unsigned int getSysTickValue()
-{
-    return SysTick->VAL & 0xFFFFFF; // result in bits 0...23
-}
-
-/**
- * @fn              unsigned int getSysTicksElapsed(unsigned int&)
- * @brief           Returns the number of system ticks since lastSystemTickValue
- *
- * @post            lastSystemTickValue is updated to current system timer
- * @param[in,out]   lastSystemTickValue
- * @return          count of system ticks since lastSystemTickValue
- */
-ALWAYS_INLINE unsigned int getSysTicksElapsed(unsigned int& lastSystemTickValue)
-{
-    // SysTick is counting down and is reset to SysTick->LOAD when
-    // it reaches zero.
-    int elapsed;
-    unsigned int sysTickValue = getSysTickValue();
-    elapsed = lastSystemTickValue - sysTickValue;
-    lastSystemTickValue = sysTickValue;
-    if (elapsed < 0)
-        elapsed += SysTick->LOAD;
-    return elapsed;
-}
-
 void delayMicroseconds(unsigned int usec)
 {
-    unsigned int lastSysTickValue = getSysTickValue();
-    int ticksToWait = 1;  // as fast as we can go
+    uint16_t lastSystemTickValue = SysTick->VAL; // get our start SysTickcount
+    uint16_t sysTickValue;                       // use word access for SysTick register
+    int elapsed;
+    int ticksToWait = 1; // as fast as we can go
 
     if (usec > MIN_DELAY_MICROSECONDS)
     {
-        usec -= MIN_DELAY_MICROSECONDS; // usec's we lost till now @48MHz
-        if (usec <= PROCESS_FAST_DELAY_MILLISECONDS)
+        if (usec > MAX_DELAY_MICROSECONDS)
         {
-            // fast calculation of ticksToWait
-            usec -= 1; // ~1usec to calculate the next step @48MHz
-            ticksToWait = (usec * SystemCoreClock) / 1000000;
-        }
-        else
-        {
-            // precise calculation of ticksToWait
-            ticksToWait = (double)usec * ((double)SystemCoreClock / 1000000);
-            if (ticksToWait < 0)
-            {
-                // we run into a overflow => set ticksToWait to maximum
-                ticksToWait = MAX_DELAY_MICROSECONDS * (SystemCoreClock / 1000000);
-            }
-            // subtract the system ticks needed for above calculation
-            ticksToWait -= getSysTicksElapsed(lastSysTickValue);
-        }
+            fatalError(); //stop execution otherwise we can run into a overflow
+        };
+        ticksToWait = (usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000000);
+        // ticksToWait = ((usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000)) / 1000;
     }
 
     while (ticksToWait > 0)
     {
-        ticksToWait -= getSysTicksElapsed(lastSysTickValue);
+        // don't use SysTick->CTRL COUNTFLAG, by reading and processing it
+        // a undetected overflow can happen
+        sysTickValue = SysTick->VAL;
+        elapsed = lastSystemTickValue - sysTickValue;
+        if (elapsed < 0)
+        {
+            elapsed += SysTick->LOAD;
+        }
+        ticksToWait -= elapsed;
+        lastSystemTickValue = sysTickValue;
     }
 }
 #endif
@@ -232,7 +208,7 @@ void Timer::counterMode(int mode, int clearMode)
 //
 // The original timer handler is used for performance reasons.
 // Use attachInterrupt() to override this handler.
-//
+// TODO there is nothing like attachInterrupt() in the sblib, copy&paste error?
 extern "C" void SysTick_Handler()
 {
     ++systemTime;
