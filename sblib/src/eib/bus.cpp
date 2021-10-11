@@ -1,7 +1,7 @@
 /**
- *  bus.cpp - Low level EIB bus access.
+ * bus.cpp - Low level EIB bus access.
  *
- *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
+ * Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
  * last changes: Jan 2021 by Horst Rauch
  * 				- added some comments
@@ -26,7 +26,6 @@
  *   - support of ETS provided repeat value for normal repeat and busy repeat  (loaded from EPROM)
  *   - support of default phy addr (15.15.255) for normal device in case of uninitialized phy. addr. 0.0.0 from EPROM, 0.0.0 is
  *     only allowed for a Router device
- *   -
  *
  * !!!!The used timer should have the highest priority of the used interrupts in the lib and the app!!!!
  *
@@ -38,13 +37,7 @@
  * and serial support need to be started with a high baud rate (recommended 1.5Mb) in the app module. Usage of timer32_0 for time
  * measurement on bit/byte level
  *
- ** Compile time switches:
- *  ROUTER :  			Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
- *  DEBUG_BUS:			enable dumping of state machine interrupt data e.g timer values, mapping of ports in serial.cpp
- *  DEBUG_BUS_BITLEVEL	extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow
- *  					of the trace buffer
- *  DUMP_TELEGRAMS		dump received and sending telegram data
- *
+ * Compile time switches: see config.h
  *
  * Interface to upper layers (see bus.h for details)
  *
@@ -330,7 +323,7 @@ extern Timer timer32_0;
 #define ALLWAYS0       	   0          //  bit 0 is always 0
 #define ACK_REQ_FLAG       1          // 0 ack is requested
 #define PRIO0_FLAG         2          // 00 system priority, 10 alarm prio, 01 high prio, 11 low prio
-#define PRIO1_FLAG         3	//
+#define PRIO1_FLAG         3          //
 #define ACK_FRAME_FLAG     4          // 1 frame is data or poll, 0 ack frame
 #define REPEAT_FLAG        5          // 1 not repeated, 0 repeated frame
 #define DATA_FRAME_FLAG    6          // 1 poll data frame, 0 data frame
@@ -338,15 +331,15 @@ extern Timer timer32_0;
 #define HEADER_LENGHT      7          // eib msg header lenght by length indicator =0
 
 // telegram control byte bit definitions
-#define SB_TEL_NULL_FLAG 	( 1<< ALLWAYS0)
-#define SB_TEL_ACK_REQ_FLAG 	( 1<< ACK_REQ_FLAG)
-#define SB_TEL_PRIO0_FLAG   	( 1<< PRIO0_FLAG )
-#define SB_TEL_PRIO1_FLAG   	( 1<< PRIO1_FLAG)
+#define SB_TEL_NULL_FLAG        ( 1<< ALLWAYS0)
+#define SB_TEL_ACK_REQ_FLAG     ( 1<< ACK_REQ_FLAG)
+#define SB_TEL_PRIO0_FLAG       ( 1<< PRIO0_FLAG )
+#define SB_TEL_PRIO1_FLAG       ( 1<< PRIO1_FLAG)
 #define SB_TEL_ACK_FRAME_FLAG   ( 1<< ACK_FRAME_FLAG )
-#define SB_TEL_REPEAT_FLAG 		( 1<< REPEAT_FLAG)
-#define SB_TEL_DATA_FRAME_FLAG 	( 1<< DATA_FRAME_FLAG)
-#define SB_TEL_LONG_FRAME_FLAG 	( 1<< LONG_FRAME_FLAG)
-#define SB_TEL_PRIO_FLAG   	    ( SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
+#define SB_TEL_REPEAT_FLAG      ( 1<< REPEAT_FLAG)
+#define SB_TEL_DATA_FRAME_FLAG  ( 1<< DATA_FRAME_FLAG)
+#define SB_TEL_LONG_FRAME_FLAG  ( 1<< LONG_FRAME_FLAG)
+#define SB_TEL_PRIO_FLAG        ( SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
 
 #define VALID_DATA_FRAME_TYPE_MASK (SB_TEL_LONG_FRAME_FLAG | SB_TEL_DATA_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG | SB_TEL_NULL_FLAG)
 #define VALID_DATA_FRAME_TYPE_VALUE  (SB_TEL_LONG_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG )
@@ -357,11 +350,11 @@ extern Timer timer32_0;
 
 //  **************define some default values for dat/link layer based on the knx spec ***********
 
-#define NACK_RETRY_DEFAULT 3 	// default NACK retry
-#define BUSY_RETRY_DEFAULT 3 	// default BUSY retry
-#define ROUTE_CNT_DEFAULT 6 	// default RouteCnt
-#define PHY_ADDR_HI_DEFAULT 0xff	// sets default physical addr in userEprom at compile time to 15.15.255
-#define PHY_ADDR_LO_DEFAULT 0xff	// sets default physical addr in userEprom at compile time c/f knxspec 3/05/01
+#define NACK_RETRY_DEFAULT 3        //!> default NACK retry
+#define BUSY_RETRY_DEFAULT 3        //!> default BUSY retry
+#define ROUTE_CNT_DEFAULT 6         //!> default Route Count
+#define PHY_ADDR_HI_DEFAULT 0xff    //!> default physical address high byte for 15.15.255
+#define PHY_ADDR_LO_DEFAULT 0xff    //!> default physical address low byte for 15.15.255 c/f knxspec 3/05/01
 
 
 //  **************define some  flags and timing values based on the knx spec ***********
@@ -891,6 +884,7 @@ void Bus::sendNextTelegram()
  *  Selecting the right state of SM ?us
  *
  */
+//__attribute__((optimize("Os")))  void Bus::timerInterruptHandler() //XXX check if this works
 void Bus::timerInterruptHandler()
 {
 	D(static unsigned short tick = 0);
@@ -930,7 +924,7 @@ void Bus::timerInterruptHandler()
 
 
 		// The bus is idle. Usually we come here when there is a capture event on bus-in, we continue with initializing the RX process.
-		//A timeout  (after 0xfffe us) should not be received.!!( indicating no bus activity) match interrupt is disabled
+		// A timeout  (after 0xfffe us) should not be received.!!( indicating no bus activity) match interrupt is disabled
 	case Bus::IDLE:
 		tb_d( state+100, ttimer.value(), tb_in);
 
@@ -1421,7 +1415,7 @@ void Bus::timerInterruptHandler()
 			goto STATE_SWITCH;
 		}
 		repeatTelegram = true;
-		tx_error|= TX_ACK_TIMEOUT_ERROR; // todo  ack timeout - inform upper layer on error state and repeat tx  if needed
+		tx_error|= TX_ACK_TIMEOUT_ERROR; // todo  ack timeout - inform upper layer on error state and repeat tx if needed
 		state = Bus::WAIT_FOR_NEXT_RX_OR_PENDING_TX;
 		timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME); // we wait 50 BT- pre-send-time for next rx/tx window, cap intr disabled
 		timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait

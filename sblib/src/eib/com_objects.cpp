@@ -429,7 +429,7 @@ void sendGroupReadTelegram(int objno, int addr)
 	while (bcu.sendTelegram[0]);  // wait for a free buffer
 
     bcu.sendTelegram[0] = 0xbc; // Control byte
-    //todo, set routing cnt and prio according to the parameters set from ETS in the EPROM, add ID/objno for result association from bus-layer
+    // todo, set routing cnt and prio according to the parameters set from ETS in the EPROM, add ID/objno for result association from bus-layer
     // todo check additional associations to Grp Addr for local read and possible response
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
     bcu.sendTelegram[3] = addr >> 8;

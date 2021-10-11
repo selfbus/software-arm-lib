@@ -38,7 +38,7 @@
 #include <sblib/eib/datapoint_types.h>
 
 
-#define invalid_objectno -1
+#define INVALID_OBJECT_NUMBER -1
 
 
 extern int le_ptr;
@@ -281,7 +281,7 @@ byte* objectFlagsTable();
 inline void processGroupTelegram(int addr, int apci, byte* tel)
 { // call with neg/invalid object
 
-	processGroupTelegram(addr, apci, tel, invalid_objectno);
+	processGroupTelegram(addr, apci, tel, INVALID_OBJECT_NUMBER);
 }
 
 inline ComType objectType(int objno)

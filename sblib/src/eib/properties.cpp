@@ -24,13 +24,13 @@
 #include <sblib/eib/property_dump.h>
 
 
-#define DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH  10 //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_IO telegram
-#define DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_LENGTH  11 //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_Mem telegram (deprecated)
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH  10           //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_IO telegram
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_LENGTH  11          //!> Data length of a valid DMP_LoadStateMachineWrite_RCo_Mem telegram (deprecated)
 
-#define DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_PAYLOAD_OFFSET 2 //!> offset for RCo_IO mode, where the real data for Additional Load Controls starts
-#define DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_PAYLOAD_OFFSET 3 //!> offset for RCo_Mem mode, where the real data for Additional Load Controls starts
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_PAYLOAD_OFFSET 2     //!> offset for RCo_IO mode, where the real data for Additional Load Controls starts
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_PAYLOAD_OFFSET 3    //!> offset for RCo_Mem mode, where the real data for Additional Load Controls starts
 
-#define DMP_LOADSTATE_MACHINE_WRITE_RCO_PAYLOAD_LENGTH 7 //!> the length of the payload for both implementations
+#define DMP_LOADSTATE_MACHINE_WRITE_RCO_PAYLOAD_LENGTH 7        //!> the length of the payload for both implementations
 
 // Documentation:
 // see KNX 6/6 Profiles, p. 94+

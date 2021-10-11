@@ -76,7 +76,7 @@ void delayMicroseconds(unsigned int usec)
     {
         if (usec > MAX_DELAY_MICROSECONDS)
         {
-            fatalError(); //stop execution otherwise we can run into a overflow
+            fatalError(); //stop execution otherwise we can run into an overflow
         };
         ticksToWait = (usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000000);
         // ticksToWait = ((usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000)) / 1000; // this is more precise but also slower
@@ -85,7 +85,7 @@ void delayMicroseconds(unsigned int usec)
     while (ticksToWait > 0)
     {
         // don't use SysTick->CTRL COUNTFLAG, by reading and processing it
-        // a undetected overflow can happen
+        // an undetected overflow can happen
         sysTickValue = SysTick->VAL;
         elapsed = lastSystemTickValue - sysTickValue;
         if (elapsed < 0)
