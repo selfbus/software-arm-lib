@@ -12,6 +12,7 @@
 #include <sblib/platform.h>
 #include <sblib/types.h>
 
+#define IAP_UID_LENGTH (16) //!< number of bytes iapReadUID wants as buffer
 
 /**
  * Status code of IAP commands

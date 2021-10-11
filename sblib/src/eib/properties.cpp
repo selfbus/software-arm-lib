@@ -536,7 +536,7 @@ LoadState handleRelativeAllocation(const int objectIdx, const byte* payLoad, con
 }
 
 /**
- * PARTIALLY IMPLEMENTED for System _B !
+ * PARTIALLY IMPLEMENTED for System_B !
  * should handle Additional Load Control: LoadEvent: DataRelativeAllocation (segment type 0x0B)
  *
  * DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated) or
@@ -554,20 +554,20 @@ LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad,
     // payLoad[4]    : mode (0x00)
     // payLoad[5]    : fill (0x00)
     // payLoad[6..7] : reserved
-    IF_DUMP_PROPERTIES(unsigned int reqMemSize = ((payLoad[0] << 24) | (payLoad[1] << 16) | (payLoad[2] << 8) | payLoad[3]););
     IF_DUMP_PROPERTIES(
-            serial.print("handleDataRelativeAllocation NOT IMPLEMENTED! ");
+            serial.print("handleDataRelativeAllocation PARTIALLY IMPLEMENTED for System_B! ");
             printObjectIdx(objectIdx);
             serial.print(" ");
             printData(payLoad, len);
             serial.println();
-            serial.print("  --> requested memory size: 0x", reqMemSize, HEX, 8);
+            serial.print("  --> requested memory size: 0x", ((payLoad[0] << 24) | (payLoad[1] << 16) | (payLoad[2] << 8) | payLoad[3]), HEX, 8);
             serial.print(" mode: 0x", payLoad[4], HEX, 2);
             serial.println(" fill: 0x", payLoad[5], HEX, 2);
             serial.println();
     );
 
 #if BCU_TYPE == SYSTEM_B_TYPE
+    unsigned int reqMemSize = ((payLoad[0] << 24) | (payLoad[1] << 16) | (payLoad[2] << 8) | payLoad[3]);
     word*    tableAddress[] = {&userEeprom.addrTabAddr, &userEeprom.assocTabAddr, &userEeprom.commsTabAddr,
 	                       &userEeprom.eibObjAddr, &userEeprom.commsSeg0Addr};
 

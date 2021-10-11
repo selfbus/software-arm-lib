@@ -155,7 +155,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 #if BCU_TYPE != BCU1_TYPE
     unsigned int partID;
     unsigned int useOldSerialStyle;
-    byte uniqueID[16];
+    byte uniqueID[IAP_UID_LENGTH];
 
     useOldSerialStyle = 1;
     if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
@@ -163,7 +163,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 #ifdef DUMP_SERIAL
         // dump the guid received from iapReadUID
         serial.print("GUID  : ");
-        for (unsigned int i = 0; i < sizeof(uniqueID); ++i)
+        for (unsigned int i = 0; i < (sizeof(uniqueID)/sizeof(uniqueID[0])); ++i)
         {
             if (i) serial.print(" ");
             serial.print(uniqueID[i], HEX, 2);

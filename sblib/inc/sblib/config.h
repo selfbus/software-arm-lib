@@ -18,7 +18,14 @@
  * Things to configure in the sblib
  *
  ******************************************************************************/
-// #define ROUTER /// \todo ROUTER not really implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
+
+// #define SERIAL_RX_PIN PIO2_7 //!> on a 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
+// #define SERIAL_TX_PIN PIO2_8 //!> on a 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
+
+// #define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
+
+
+
 
 
 
@@ -26,8 +33,11 @@
  *
  * Debugging stuff follows below
  *
+ * for every debugging or dumping #define, make sure to add a #undef below,
+ * so it won't make it into the release version
+ *
  ******************************************************************************/
-// for every debugging or dumping #define, make sure to add a #undef below, so it won't make it into the release version
+
 //#define DEBUG_BUS           //!> enable dumping of state machine interrupt data e.g timer values, mapping of ports in serial.cpp
 //#define DEBUG_BUS_BITLEVEL  //!> extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow of the trace buffer
 
@@ -47,10 +57,11 @@
  *
  * Change things below only, if you know what you are doing.
  *
+ * for every debugging or dumping #define above, make sure to add a #undef below
+ *
  ******************************************************************************/
 
 // remove any debugging and dumping stuff from release versions
-// for every debugging or dumping #define above, make sure to add a #undef below
 #ifndef DEBUG
 #   undef DEBUG_BUS
 #   undef DEBUG_BUS_BITLEVEL
