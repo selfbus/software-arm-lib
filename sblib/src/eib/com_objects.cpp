@@ -186,14 +186,15 @@
 #include <sblib/eib/user_memory.h>
 #include <sblib/internal/functions.h>
 
-#include <sblib/serial.h>
-#ifdef DUMP_COM_OBJ
-#define d(x) x
-#else
-#define d(x)
+#if defined(DUMP_COM_OBJ)
+#   include <sblib/serial.h>
 #endif
-//#define d(x)
 
+#ifdef DUMP_COM_OBJ
+#   define d(x) x
+#else
+#   define d(x)
+#endif
 
 // The COMFLAG_UPDATE flag, moved to the high nibble
 #define COMFLAG_UPDATE_HIGH (COMFLAG_UPDATE << 4)
