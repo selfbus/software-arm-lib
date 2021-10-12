@@ -852,19 +852,21 @@ void Bus::handleTelegram(bool valid)
  * Free send-buffer is indicated by "0" in the header byte: send-buffer[0]=0
  *
  */
-
 void Bus::sendNextTelegram()
 {
-	bus_tx_state = tx_error;
-	tx_error = 0;
-	sendCurTelegram[0] = 0;
-	sendCurTelegram = sendNextTel;
-	sendNextTel = 0;
-	sendTries = 0;
-	sendBusyTries = 0;
-	sendTelegramLen = 0;
-	wait_for_ack_from_remote = false;
-	repeatTelegram = false;
+    bus_tx_state = tx_error;
+    tx_error = 0;
+    if (sendCurTelegram)
+    {
+        sendCurTelegram[0] = 0;
+    }
+    sendCurTelegram = sendNextTel;
+    sendNextTel = 0;
+    sendTries = 0;
+    sendBusyTries = 0;
+    sendTelegramLen = 0;
+    wait_for_ack_from_remote = false;
+    repeatTelegram = false;
 }
 
 
