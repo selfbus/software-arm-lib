@@ -245,7 +245,7 @@
 // Enable informational debug statements
 #if defined(INCLUDE_SERIAL)
 #   define DB(x) x
-    int hw_error =0;
+    //int hw_error =0; //XXX why this is here?
 #else
 #   define DB(x)
 #endif
@@ -1148,8 +1148,13 @@ void Bus::timerInterruptHandler()
 			}
 			else  // Send nothing: set idle state
 			{
-				tb_h( state+ 900,sendCurTelegram[0], tb_in);
-				//tb_t( state*100+4, ttimer.value(), tb_in);
+				DB(
+				   if (sendCurTelegram != 0)
+				   {
+				       tb_h( state+ 900,sendCurTelegram[0], tb_in);
+				   }
+				   //tb_t( state*100+4, ttimer.value(), tb_in);
+				);
 				idleState();
 				break;
 			}

@@ -3,7 +3,7 @@
  * @brief LPC11xx Serial port driver
  *
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
- * @author HoRa  Copyright (c) March 2021
+ * @author HoRa Copyright (c) March 2021
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  *
  * @bug No known bugs.
@@ -35,7 +35,7 @@
 #define UART_IE_THRE 0x02   //!> UART transmit-hold-register-empty interrupt
 
 Serial::Serial(int rxPin, int txPin) :
- enabled_(false)
+    enabled_(false)
 {
 	setRxPin(rxPin);
 	setTxPin(txPin);
@@ -43,13 +43,19 @@ Serial::Serial(int rxPin, int txPin) :
 
 void Serial::setRxPin(int rxPin)
 {
-    //FIXME check is it allowed to change the rxPin while port is active?
+    if (enabled())
+    {
+        end();
+    }
     pinMode(rxPin, SERIAL_RXD);
 }
 
 void Serial::setTxPin(int txPin)
 {
-    //FIXME check is it allowed to change the rxPin while port is active?
+    if (enabled())
+    {
+        end();
+    }
     pinMode(txPin, SERIAL_TXD);
 }
 

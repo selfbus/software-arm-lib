@@ -25,7 +25,8 @@
 //#   define SERIAL_TX_PIN PIO2_8 //!> on a 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
 #endif
 
-// #define SERIAL_SPEED 576000 //!> baudrate serial from serial.h should run for debugging
+//#define SERIAL_SPEED 115200 //!> baudrate serial from serial.h should run for debugging
+
 // #define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
 
 
@@ -47,7 +48,6 @@
 //#define DUMP_TELEGRAMS  //!> dump rx and tx telegrams, incl received ack over serial interface
 //#define DUMP_COM_OBJ    //!> dump object handling information on app-server level over serial interface
 //#define DUMP_MEM_OPS    //!> dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
-//#define DUMP_SERIAL     //!> dump KNX-serialnumber over serial interface
 //#define DUMP_PROPERTIES //!> dump interface object and property handling over serial interface
 
 /// \todo following #defines should be moved to this config.h file
@@ -88,9 +88,9 @@
 #   warning "DUMP_TELEGRAMS should not be used in parallel with DEBUG_BUS or DEBUG_BUS_BITLEVEL"
 #endif
 
-// list here all defineds which need the serial port
+// list here all defines which need the serial port
 #if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined(DUMP_TELEGRAMS) || defined(DUMP_COM_OBJ) || \
-    defined(DUMP_MEM_OPS) || defined(DUMP_SERIAL) || defined(DUMP_PROPERTIES)
+    defined(DUMP_MEM_OPS) || defined(DUMP_PROPERTIES)
 #   define INCLUDE_SERIAL
 #endif
 

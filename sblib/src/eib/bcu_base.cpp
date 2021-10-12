@@ -80,15 +80,19 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
     IF_DEBUG(serial.println("Telegram dump enabled."));
 #endif
 
-#ifdef DUMP_SERIAL
-    IF_DEBUG(serial.println("Serialnumber "));
-#endif
-
 #ifdef DUMP_PROPERTIES
-    IF_DEBUG(serial.println("Properties "));
+    IF_DEBUG(serial.println("Properties dump enabled."));
 #endif
 
-#if defined(DUMP_TELEGRAMS) || defined(DUMP_SERIAL) || defined (DUMP_PROPERTIES)
+#ifdef DEBUG_BUS
+    IF_DEBUG(serial.println("DEBUG_BUS dump enabled."));
+#endif
+
+#ifdef DEBUG_BUS_BITLEVEL
+    IF_DEBUG(serial.println("DEBUG_BUS_BITLEVEL dump enabled."));
+#endif
+
+#if defined(DUMP_TELEGRAMS) || defined (DUMP_PROPERTIES)
     IF_DEBUG(serial.println("BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
     IF_DEBUG(serial.println("MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
 #   ifdef LOAD_CONTROL_ADDR
