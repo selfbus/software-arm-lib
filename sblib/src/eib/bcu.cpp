@@ -21,21 +21,15 @@
 #include <sblib/internal/variables.h>
 #include <sblib/mem_mapper.h>
 
-#if defined DUMP_TELEGRAMS || defined DUMP_MEM_OPS || defined DUMP_PROPERTIES || defined DUMP_SERIAL
+#if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
 #endif
 
-#ifdef DUMP_MEM_OPS
-#  define IF_DUMP_MEM_OPS(code) { code; }
-#else
-#  define IF_DUMP_MEM_OPS(code)
-#endif
-
 // Enable informational debug statements
-#if defined (DEBUG_BUS) || defined (DUMP_TELEGRAMS)
-#define DB(x) x
+#if defined(INCLUDE_SERIAL)
+#   define DB(x) x
 #else
-#define DB(x)
+#   define DB(x)
 #endif
 
 extern unsigned int writeUserEepromTime;
@@ -267,7 +261,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
 
     if (lengthPayLoad == 0)
     {
-        IF_DUMP_MEM_OPS(serial.println(" Error processApciMemoryOperation : lengthPayLoad: 0x", lengthPayLoad , HEX, 2););
+        DB(serial.println(" Error processApciMemoryOperation : lengthPayLoad: 0x", lengthPayLoad , HEX, 2));
         return false;
     }
 
@@ -288,7 +282,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
 
                 if (operationResult)
                 {
-                    IF_DUMP_MEM_OPS(serial.println(" -> memmapped ", lengthPayLoad, DEC););
+                    DB(serial.println(" -> memmapped ", lengthPayLoad, DEC));
                     return true;
                 }
                 else
@@ -317,7 +311,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                     }
                     else
                     {
-                        IF_DUMP_MEM_OPS(serial.println(" -> memmapped processed : ", i , DEC););
+                        DB(serial.println(" -> memmapped processed : ", i , DEC));
                         break;
                     }
                 }
@@ -339,7 +333,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                     memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], addressEnd - addressStart + 1);
                     userEeprom.modified();
                 }
-                IF_DUMP_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC););
+                DB(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
                 return true;
             }
             else if ((addressStart >= USER_EEPROM_START) && (addressStart < USER_EEPROM_END))
@@ -358,7 +352,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 addressStart += copyCount;
                 payLoad += copyCount;
                 startNotFound = false;
-                IF_DUMP_MEM_OPS(serial.println(" -> EEPROM processed: ", copyCount, DEC););
+                DB(serial.println(" -> EEPROM processed: ", copyCount, DEC));
             }
         }
 
@@ -372,7 +366,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                     cpyFromUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
                 else
                     cpyToUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
-                IF_DUMP_MEM_OPS(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC););
+                DB(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC));
                 return true;
             }
             else if ((addressStart >= getUserRamStart()) && (addressStart <= getUserRamEnd()))
@@ -386,7 +380,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 addressStart += copyCount;
                 payLoad += copyCount;
                 startNotFound = false;
-                IF_DUMP_MEM_OPS(serial.println(" -> UserRAM processed: ", copyCount, DEC););
+                DB(serial.println(" -> UserRAM processed: ", copyCount, DEC));
             }
         }
 
@@ -394,11 +388,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
         lengthPayLoad = addressEnd - addressStart + 1;
         if (!startNotFound)
         {
-            IF_DUMP_MEM_OPS(
-                if (readMem)
-                    serial.print(" -> MemoryRead :", addressStart, HEX, 4);
-                else
-                    serial.print(" -> MemoryWrite:", addressStart, HEX, 4);
+            DB((readMem) ? serial.print(" -> MemoryRead :", addressStart, HEX, 4) : serial.print(" -> MemoryWrite:", addressStart, HEX, 4);
                 serial.print(" Data:");
                 for(int i=0; i<lengthPayLoad ; i++)
                 {
@@ -409,13 +399,12 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
         }
     }
 
-    IF_DUMP_MEM_OPS(
-            if (lengthPayLoad != 0)
-            {
-                serial.print(" not found start: 0x", addressStart, HEX, 4);
-                serial.print(" end: 0x", addressEnd, HEX, 4);
-                serial.println(" lengthPayLoad:", lengthPayLoad);
-            }
+    DB(if (lengthPayLoad != 0)
+       {
+           serial.print(" not found start: 0x", addressStart, HEX, 4);
+           serial.print(" end: 0x", addressEnd, HEX, 4);
+           serial.println(" lengthPayLoad:", lengthPayLoad);
+       }
     );
 
     return (lengthPayLoad == 0);
@@ -423,15 +412,14 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
 
 bool BCU::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
-IF_DUMP_MEM_OPS(
-    serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
-    serial.print(" Data:");
-    for(int i=0; i<lengthPayLoad ; i++)
-    {
-        serial.print(" ", payLoad[i], HEX, 2);
-    }
-    serial.print(" count: ", lengthPayLoad, DEC);
-);
+    DB(serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
+       serial.print(" Data:");
+       for(int i=0; i<lengthPayLoad ; i++)
+       {
+           serial.print(" ", payLoad[i], HEX, 2);
+       }
+       serial.print(" count: ", lengthPayLoad, DEC);
+    );
 
 #ifdef LOAD_CONTROL_ADDR
     // special handling of DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU)
@@ -460,9 +448,8 @@ IF_DUMP_MEM_OPS(
 
 bool BCU::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
-IF_DUMP_MEM_OPS(
-        serial.print("ApciMemoryReadPDU :", addressStart, HEX, 4);
-        serial.print(" count: ", lengthPayLoad, DEC);
+    DB(serial.print("ApciMemoryReadPDU :", addressStart, HEX, 4);
+       serial.print(" count: ", lengthPayLoad, DEC);
     );
 
 #ifdef LOAD_STATE_ADDR
@@ -478,17 +465,16 @@ IF_DUMP_MEM_OPS(
 
     bool result = processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, true);
 
-IF_DUMP_MEM_OPS(
-        if (result)
-        {
-            serial.print("           result :", addressStart, HEX, 4);
-            serial.print(" Data:");
-            for(int i=0; i<lengthPayLoad ; i++)
-            {
-                serial.print(" ", payLoad[i], HEX, 2);
-            }
-            serial.println(" count: ", lengthPayLoad, DEC);
-        }
+    DB(if (result)
+       {
+           serial.print("           result :", addressStart, HEX, 4);
+           serial.print(" Data:");
+           for(int i=0; i<lengthPayLoad ; i++)
+           {
+               serial.print(" ", payLoad[i], HEX, 2);
+           }
+           serial.println(" count: ", lengthPayLoad, DEC);
+       }
     );
     return result;
 }

@@ -4,7 +4,7 @@
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
  *
- * last update: March 2021, Hora,  added some states and debug data definition
+ *  last update: March 2021, Hora,  added some states and debug data definition
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -17,13 +17,11 @@
 #include <sblib/eib/bcu_type.h>
 
 // dump all received and sent telegrams out on the serial interface
-#if defined (DUMP_TELEGRAMS) || defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
-
-#include <sblib/serial.h>
-
+#if defined(INCLUDE_SERIAL)
+#   include <sblib/serial.h>
 #endif
 
-#if defined (DUMP_TELEGRAMS) || defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
+#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
 
 struct s_td {
 	unsigned short ts; // state
@@ -297,12 +295,12 @@ private:
     void sendNextTelegram();
 
     /**
-     * Prepare the telegram for sending. Set the sender address to our own
-     * address, and calculate the checksum of the telegram.
-     * Stores the checksum at telegram[length].
-     *
-     * @param telegram - the telegram to process
-     * @param length - the length of the telegram
+     * @fn void prepareTelegram(unsigned char*, unsigned short)const
+     * @brief Prepare the telegram for sending. Set the sender address to our own
+     *        address, and calculate the checksum of the telegram.
+     *        Stores the checksum at telegram[length].
+     * @param telegram   the telegram to process
+     * @param length[in] the length of the telegram
      */
     void prepareTelegram(unsigned char* telegram, unsigned short length) const;
 

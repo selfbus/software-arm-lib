@@ -18,7 +18,7 @@
 #include <sblib/internal/iap.h>
 #include <string.h>
 
-#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
+#if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
 #endif
 
@@ -72,12 +72,12 @@ int BcuBase::hashUID(byte* uid, const int len_uid, byte* hash, const int len_has
 void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
     _begin();
-#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
-    IF_DEBUG(serial.begin(115200));
+#if defined(INCLUDE_SERIAL)
+    IF_DEBUG(serial.begin(SERIAL_SPEED));
 #endif
 
 #ifdef DUMP_TELEGRAMS
-    IF_DEBUG(serial.println("Telegram "));
+    IF_DEBUG(serial.println("Telegram dump enabled."));
 #endif
 
 #ifdef DUMP_SERIAL
@@ -88,39 +88,38 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
     IF_DEBUG(serial.println("Properties "));
 #endif
 
-#if defined DUMP_TELEGRAMS || defined DUMP_SERIAL || defined DUMP_PROPERTIES
-    IF_DEBUG(serial.println("Telegram dump enabled.");)
+#if defined(DUMP_TELEGRAMS) || defined(DUMP_SERIAL) || defined (DUMP_PROPERTIES)
     IF_DEBUG(serial.println("BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
-    IF_DEBUG(serial.println(" MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
+    IF_DEBUG(serial.println("MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
 #   ifdef LOAD_CONTROL_ADDR
-        IF_DEBUG(serial.println("LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4););
+        IF_DEBUG(serial.println("LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4));
 #   endif
 #   ifdef LOAD_STATE_ADDR
-        IF_DEBUG(serial.println(" LOAD_STATE_ADDR: 0x", LOAD_STATE_ADDR, HEX, 4););
+        IF_DEBUG(serial.println("LOAD_STATE_ADDR: 0x", LOAD_STATE_ADDR, HEX, 4));
 #   endif
 #   ifdef USER_RAM_START_DEFAULT
-        IF_DEBUG(serial.println("USER_RAM_START_DEFAULT: 0x", USER_RAM_START_DEFAULT, HEX, 4););
+        IF_DEBUG(serial.println("USER_RAM_START_DEFAULT: 0x", USER_RAM_START_DEFAULT, HEX, 4));
 #   endif
 #   ifdef EXTRA_USER_RAM_SIZE
-        IF_DEBUG(serial.println(" EXTRA_USER_RAM_SIZE: 0x", EXTRA_USER_RAM_SIZE, HEX, 4););
+        IF_DEBUG(serial.println("EXTRA_USER_RAM_SIZE: 0x", EXTRA_USER_RAM_SIZE, HEX, 4));
 #   endif
 #   ifdef USER_RAM_SIZE
-        IF_DEBUG(serial.println(" USER_RAM_SIZE: 0x", USER_RAM_SIZE, HEX, 4););
+        IF_DEBUG(serial.println("USER_RAM_SIZE: 0x", USER_RAM_SIZE, HEX, 4));
 #   endif
 #   ifdef USER_RAM_SHADOW_SIZE
-        IF_DEBUG(serial.println(" USER_RAM_SHADOW_SIZE: 0x", USER_RAM_SHADOW_SIZE, HEX, 4););
+        IF_DEBUG(serial.println("USER_RAM_SHADOW_SIZE: 0x", USER_RAM_SHADOW_SIZE, HEX, 4));
 #   endif
 #   ifdef USER_EEPROM_START
-        IF_DEBUG(serial.println("USER_EEPROM_START: 0x", USER_EEPROM_START, HEX, 4););
+        IF_DEBUG(serial.println("USER_EEPROM_START: 0x", USER_EEPROM_START, HEX, 4));
 #   endif
 #   ifdef USER_EEPROM_SIZE
-        IF_DEBUG(serial.println(" USER_EEPROM_SIZE: 0x", USER_EEPROM_SIZE, HEX, 4););
+        IF_DEBUG(serial.println("USER_EEPROM_SIZE: 0x", USER_EEPROM_SIZE, HEX, 4));
 #   endif
 #   ifdef USER_EEPROM_END
-        IF_DEBUG(serial.println(" USER_EEPROM_END: 0x", USER_EEPROM_END, HEX, 4););
+        IF_DEBUG(serial.println("USER_EEPROM_END: 0x", USER_EEPROM_END, HEX, 4));
 #   endif
 #   ifdef USER_EEPROM_FLASH_SIZE
-        IF_DEBUG(serial.println(" USER_EEPROM_FLASH_SIZE: 0x", USER_EEPROM_FLASH_SIZE, HEX, 4););
+        IF_DEBUG(serial.println("USER_EEPROM_FLASH_SIZE: 0x", USER_EEPROM_FLASH_SIZE, HEX, 4));
 #   endif
     IF_DEBUG(serial.println());
 	_begin(); // load flash/rom data to usereeprom, init bcu
@@ -260,8 +259,7 @@ void BcuBase::loop()
 
 	if (telLength > 0)
 	{
-		//serial.println();
-		serial.print("RCV: (");
+	    serial.print("RCV: (");
 
 		serial.print(telRXtime, DEC, 8);
 		serial.print(") ");
@@ -278,7 +276,7 @@ void BcuBase::loop()
 #endif
 
 #ifdef DEBUG_BUS
-	// trace buffer contend:
+	// trace buffer content:
 	// trace point id (start with s) followed by trace data, coding: sittee
 	// i: state machine trace point code
 	//  0000-3999  one timer value
