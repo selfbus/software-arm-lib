@@ -480,7 +480,7 @@ public class Updater implements Runnable {
         int resultCode = 0;
         if (result[3] == UPD_SEND_LAST_ERROR) {
             resultCode = streamToInteger(result, 4);
-            System.out.print(ConColors.BRIGHT_RED);		// Print erros in red
+            System.out.print(ConColors.BRIGHT_RED);		// Print errors in red
             switch (resultCode) {
                 case UPD_UID_MISMATCH:
                     System.out.println("failed, UID mismatch.");
@@ -712,7 +712,7 @@ public class Updater implements Runnable {
                 } else {
                     System.out.println("Reqest UID failed");
                     mc.restart(pd);
-                    throw new RuntimeException("Selfbus udpate failed.");
+                    throw new RuntimeException("Selfbus update failed.");
                 }
             }
 
@@ -728,7 +728,7 @@ public class Updater implements Runnable {
             result = mc.sendUpdateData(pd, UPD_UNLOCK_DEVICE, uid);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
-                throw new RuntimeException("Selfbus udpate failed.");
+                throw new RuntimeException("Selfbus update failed.");
             }
 
             result = mc.sendUpdateData(pd, UPD_REQUEST_BL_IDENTITY, new byte[] {0});
@@ -901,7 +901,7 @@ public class Updater implements Runnable {
                     result = mc.sendUpdateData(pd, UPD_SEND_DATA, txBuf);
                     if (checkResult(result, false) != 0) {
                         mc.restart(pd);
-                        throw new RuntimeException("Selfbus udpate failed.");
+                        throw new RuntimeException("Selfbus update failed.");
                     }
                 }
                 catch(KNXTimeoutException e){
@@ -930,7 +930,7 @@ public class Updater implements Runnable {
                     programBootDescriptor);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
-                throw new RuntimeException("Selfbus udpate failed.");
+                throw new RuntimeException("Selfbus update failed.");
             }
             Thread.sleep(500);
             System.out.println(ConColors.BG_GREEN + "Firmware Update done, Restarting device now ..." + ConColors.RESET + "\n\r\n\r");
@@ -1026,7 +1026,7 @@ public class Updater implements Runnable {
             result = mc.sendUpdateData(pd, UPD_ERASE_PAGES, sector);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
-                throw new RuntimeException("Selfbus udpate failed.");
+                throw new RuntimeException("Selfbus update failed.");
             }
             else {
                 System.out.print(" OK");
@@ -1098,7 +1098,7 @@ public class Updater implements Runnable {
                         if (checkResult(result, false) != 0) {
                             mc.restart(pd);
                             throw new RuntimeException(
-                                    "Selfbus udpate failed.");
+                                    "Selfbus update failed.");
                         }
                     }
                     // wenn eine Timeout Exception gesendet wird, ist ein Fehler bei der Datenübertragung vorgekommen
@@ -1136,7 +1136,7 @@ public class Updater implements Runnable {
                     if (checkResult(result) != 0) {
                         mc.restart(pd);
                         throw new RuntimeException(
-                                "Selfbus udpate failed.");
+                                "Selfbus update failed.");
                     }
                     progAddress += progSize;
                     progSize = 0;	// reset page/sector byte counter

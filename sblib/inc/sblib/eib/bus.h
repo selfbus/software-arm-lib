@@ -226,7 +226,6 @@ public:
     /** The states of the telegram sending/receiving state machine */
     enum State
     {
-
     	INIT,	//! The Lib is initializing, waiting for 50bit time inactivity on the bus
 		IDLE,	//!< The lib is idle. there was no receiving or sending for at least 50 bit times. only cap intr enabled, no timeout intr
 		RECV_WAIT_FOR_STARTBIT_OR_TELEND,	//!< The lib is receiving a byte. cap intr  (low bit received) and timeout (stop bit: char end)) intr enabeld
@@ -422,7 +421,7 @@ private:
 
 inline bool Bus::idle() const
 {
-#ifndef IAP_EMULATION // FIXME make bus states working together with unit-tests
+#ifndef IAP_EMULATION // FIXME make bus states work together with unit-tests
     return (state == IDLE) && (sendCurTelegram == 0);
 #else
     return sendCurTelegram == 0;
