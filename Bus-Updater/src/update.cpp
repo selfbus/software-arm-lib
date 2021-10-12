@@ -70,7 +70,7 @@
  */
 
 
-#ifdef DUMP_TELEGRAMS
+#ifdef DUMP_TELEGRAMS_LVL1
 #define d1(x) {serial.print(x);}
 #define d2(u,v,w) {serial.print(u,v,w);}
 #else

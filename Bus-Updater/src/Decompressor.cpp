@@ -9,7 +9,7 @@
 #include "crc.h"
 #include <sblib/internal/iap.h>
 
-#ifdef DUMP_TELEGRAMS
+#ifdef DUMP_TELEGRAMS_LVL1
 #include <sblib/serial.h>
 #define d1(x) {serial.print(x);}
 #define d2(u,v,w) {serial.print(u,v,w);}

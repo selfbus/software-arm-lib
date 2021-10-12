@@ -70,7 +70,11 @@ void loop()
     }
     digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
-    // Check if there is data to flash when bus is idle
+
+    //FIXME writing to flash may time out the PC_Updater_tool for around 5s
+    //      because a bus timer interrupt may be canceled due to
+    //      iapProgram->IAP_Call_InterruptSafe->noInterrupts();
+    //Check if there is data to flash when bus is idle
     if(bus.idle())
     	request_flashWrite(NULL, 0);
 
@@ -107,11 +111,13 @@ void run_updater()
     lib_setup();
     setup();
 
-#ifdef DUMP_TELEGRAMS
+#ifdef DUMP_TELEGRAMS_LVL1
     //serial.setRxPin(PIO3_1);
     //serial.setTxPin(PIO3_0);
-    serial.begin(19200);
-    serial.clearBuffers();
+    if (!serial.enabled())
+    {
+        serial.begin(19200);
+    }
     serial.println("=======================================================");
     serial.print("Selfbus KNX Bootloader V");
     serial.print(BL_IDENTITY, HEX, 4);

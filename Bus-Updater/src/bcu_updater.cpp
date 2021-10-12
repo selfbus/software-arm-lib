@@ -6,11 +6,13 @@
  */
 
 #include "bcu_updater.h"
+#include <sblib/serial.h>
 
-#ifdef DUMP_TELEGRAMS1
-#define d(x) {serial.println(x);}
+#ifdef DUMP_TELEGRAMS_LVL2
+    #include <sblib/serial.h>
+#   define d(x) {serial.println(x);}
 #else
-#define d(x)
+#   define d(x)
 #endif
 
 void BcuUpdate::processTelegram()
