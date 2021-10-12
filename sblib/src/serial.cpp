@@ -1,57 +1,41 @@
-/*
- *  serial.cpp - Serial port access.
+/**
+ * @file serial.cpp
+ * @brief LPC11xx Serial port driver
  *
- *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
+ * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
+ * @author HoRa  Copyright (c) March 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  *
+ * @bug No known bugs.
  *
- *  updated  March 2021 by HoRa:
- *       	Interrupt priority set to lowest level in order to avoid conflicts with the time critical knx bus interrupt source
- *       	value for high speed baud rates for debugging of bus timing
+ * @note Interrupt priority set to lowest level in order to avoid conflicts
+ *       with the time critical knx bus interrupt source value for high
+ *       speed baud rates for debugging of bus timing
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
+ * @par
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3 as
+ * published by the Free Software Foundation.
  */
 
 #include <sblib/serial.h>
-
 #include <sblib/digital_pin.h>
 #include <sblib/interrupt.h>
 #include <sblib/platform.h>
 
+#define LSR_RDR  0x01   //!> UART line status: receive data ready bit: RBR holds an unread character
+#define LSR_OE   0x02   //!> UART line status: overrun error bit
+#define LSR_PE   0x04   //!> UART line status: parity error bit
+#define LSR_FE   0x08   //!> UART line status: framing error bit
+#define LSR_BI   0x10   //!> UART line status: break interrupt bit
+#define LSR_THRE 0x20   //!> UART line status: the transmitter hold register (THR) is empty
+#define LSR_TEMT 0x40   //!> UART line status: transmitter empty (THR and TSR are empty)
+#define LSR_RXFE 0x80   //!> UART line status: error in RX FIFO
+#define UART_IE_RBR 0x01    //!> UART read-buffer-ready interrupt
+#define UART_IE_THRE 0x02   //!> UART transmit-hold-register-empty interrupt
 
-// UART line status: receive data ready bit: RBR holds an unread character
-#define LSR_RDR  0x01
-
-// UART line status: overrun error bit
-#define LSR_OE   0x02
-
-// UART line status: parity error bit
-#define LSR_PE   0x04
-
-// UART line status: framing error bit
-#define LSR_FE   0x08
-
-// UART line status: break interrupt bit
-#define LSR_BI   0x10
-
-// UART line status: the transmitter hold register (THR) is empty
-#define LSR_THRE 0x20
-
-// UART line status: transmitter empty (THR and TSR are empty)
-#define LSR_TEMT 0x40
-
-// UART line status: error in RX FIFO
-#define LSR_RXFE 0x80
-
-// UART read-buffer-ready interrupt
-#define UART_IE_RBR 0x01
-
-// UART transmit-hold-register-empty interrupt
-#define UART_IE_THRE 0x02
-
-
-Serial::Serial(int rxPin, int txPin)
+Serial::Serial(int rxPin, int txPin) :
+ enabled_(false)
 {
 	setRxPin(rxPin);
 	setTxPin(txPin);
@@ -59,11 +43,13 @@ Serial::Serial(int rxPin, int txPin)
 
 void Serial::setRxPin(int rxPin)
 {
+    //FIXME check is it allowed to change the rxPin while port is active?
     pinMode(rxPin, SERIAL_RXD);
 }
 
 void Serial::setTxPin(int txPin)
 {
+    //FIXME check is it allowed to change the rxPin while port is active?
     pinMode(txPin, SERIAL_TXD);
 }
 
@@ -79,18 +65,18 @@ void Serial::begin(int baudRate, SerialConfig config)
     unsigned int val = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
         LPC_SYSCON->UARTCLKDIV / 16 / baudRate;
 
-// added by Hora for high speed uart for debug of bus timing
-	if (baudRate == 460800){
-		val = 5;
-		LPC_UART->FDR = ( 0x00a3);  //DIVADDVAL = 3, MULVAL = 10
+    if (baudRate == 460800) //FIXME works only with SystemCoreClock=48000000 ?
+    {
+        val = 5;
+        LPC_UART->FDR = ( 0x00a3);  //DIVADDVAL = 3, MULVAL = 10
+    }
+    else if( baudRate == 576000) //FIXME works only with SystemCoreClock=48000000 ?
+    {
+        val = 3;
+        LPC_UART->FDR = (0x00fb);  //DIVADDVAL = 11, MULVAL = 15
+    }
 
-	}else if( baudRate == 576000) {
-		val = 3;
-		LPC_UART->FDR = (0x00fb);  //DIVADDVAL = 11, MULVAL = 15
-	}
-//
-
-    LPC_UART->DLM  = val / 256;
+	LPC_UART->DLM  = val / 256;
     LPC_UART->DLL  = val % 256;
 
     LPC_UART->LCR = (int) config;  // Configure data bits, parity, stop bits
@@ -110,6 +96,7 @@ void Serial::begin(int baudRate, SerialConfig config)
     NVIC_SetPriority (UART_IRQn, 3);
 
     enableInterrupt(UART_IRQn);
+    enabled_ = true;
 }
 
 void Serial::end()
@@ -117,10 +104,16 @@ void Serial::end()
     flush();
     disableInterrupt(UART_IRQn);
     LPC_SYSCON->SYSAHBCLKCTRL &= ~(1 << 12); // Disable UART clock
+    enabled_ = false;
 }
 
 int Serial::write(byte ch)
 {
+    if (!enabled_)
+    {
+        return 0;
+    }
+
 #ifdef SERIAL_WRITE_DIRECT
 
     // wait until the transmitter hold register is free
@@ -128,7 +121,6 @@ int Serial::write(byte ch)
        ;
    LPC_UART->THR = ch;
    return 1;
-
 #else
 
     if (writeHead == writeTail && (LPC_UART->LSR & LSR_THRE))
@@ -154,8 +146,12 @@ int Serial::write(byte ch)
 #endif
 }
 
-void Serial::flush()
+void Serial::flush(void)
 {
+    if (!enabled_)
+    {
+        return;
+    }
 #ifdef SERIAL_WRITE_DIRECT
     while ((LPC_UART->LSR & (LSR_THRE|LSR_TEMT)) != (LSR_THRE|LSR_TEMT))
         ;
@@ -167,6 +163,11 @@ void Serial::flush()
 
 int Serial::read()
 {
+    if (!enabled_)
+    {
+        return -1;
+    }
+
     bool readFull = readBufferFull();
     int ch = BufferedStream::read();
 
@@ -182,6 +183,14 @@ int Serial::read()
 
 void Serial::interruptHandler()
 {
+    //FIXME check if this is save to activate
+    /*
+    if (!enabled_)
+    {
+        return;
+    }
+    */
+
     if (LPC_UART->LSR & LSR_THRE)
     {
         if (writeHead == writeTail)

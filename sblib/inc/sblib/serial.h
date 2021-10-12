@@ -1,17 +1,43 @@
-/*
- *  serial.h - Serial port access.
+/**
+ * @file serial.h
+ * @brief LPC11xx Serial port driver
  *
- *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
+ * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
+ * @author HoRa  Copyright (c) March 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
+ * @note default serial Tx and Rx-pin definitions moved to config.h
+ *
+ * @bug No known bugs.
+ *
+ * @par
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 3 as
+ * published by the Free Software Foundation.
+ *
+ * @warning This is just a testing warning
  */
 #ifndef sblib_serial_h
 #define sblib_serial_h
 
 #include <sblib/buffered_stream.h>
 #include <sblib/interrupt.h>
+#include <sblib/config.h>
+
+/** @defgroup SERIAL_11XX CHIP: LPC11xx Serial port driver
+ * @ingroup CHIP_11XX_Drivers
+ * @{
+ */
+
+#if !defined(SERIAL_TX_PIN) || !defined(SERIAL_RX_PIN)
+#   if defined (__LPC11XX__)
+#       define SERIAL_TX_PIN PIO1_7     //!> default serial Tx-Pin PIO1.7 (LPC11xx)
+#       define SERIAL_RX_PIN PIO1_6     //!> default serial Tx-Pin PIO1.6 (LPC11xx)
+#   elif defined (__LPC11UXX__)
+#       define SERIAL_TX_PIN PIO0_19    //!> default serial Tx-Pin PIO0.19 (LPC11Uxx)
+#       define SERIAL_RX_PIN PIO0_18    //!> default serial Tx-Pin PIO0.18 (LPC11Uxx)
+#   endif
+#endif
 
 class Serial;
 
@@ -124,14 +150,23 @@ public:
     /**
      * Wait until all bytes are written.
      */
-    virtual void flush();
+    virtual void flush(void);
 
     /**
-     * Test if the serial port is ready to being used.
+     * @fn  operator bool()
+     * @brief Check if serial port enabled and available for transmission
      *
-     * @return Always true.
+     * @return true if serial port is enabled, otherwise false
      */
-    operator bool();
+    operator bool() const {return enabled_;}
+
+    /**
+     * @fn const bool enabled(void)
+     * @brief Check if serial port enabled and available for transmission
+     *
+     * @return true if serial port is enabled, otherwise false
+     */
+    const bool enabled(void) {return enabled_;}
 
 protected:
     // Allow the interrupt handler to call our protected methods
@@ -141,19 +176,16 @@ protected:
      * Handle the serial interrupt.
      */
     void interruptHandler();
+
+private:
+    bool enabled_; //!> true if serial port is enabled, otherwise false
+
 };
 
 
 //
 //  Inline functions
 //
-
-inline Serial::operator bool()
-{
-    return true;
-}
-
-
 inline void Serial::begin(int baudRate)
 {
     begin(baudRate, SERIAL_8N1);
