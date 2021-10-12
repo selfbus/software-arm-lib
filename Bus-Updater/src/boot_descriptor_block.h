@@ -24,7 +24,7 @@ extern "C"
 #define LAST_SECTOR          0x10000
 #ifdef DUMP_TELEGRAMS
 	#define	BL_FEATURES  	 0x8100
-	#define FIRST_SECTOR	 0x5000		// where the application starts (BL size)
+	#define FIRST_SECTOR	 0x3000		// where the application starts (BL size)
 #else
 	#define BL_FEATURES		 0x0100		// Feature list of BL
 	#define FIRST_SECTOR	 0x2000		// where the application starts (BL size)
