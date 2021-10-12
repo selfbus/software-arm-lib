@@ -94,4 +94,9 @@
 #   define INCLUDE_SERIAL
 #endif
 
+#if defined(INCLUDE_SERIAL) && !defined(SERIAL_SPEED)
+#   warning "Default debugging serial port speed set to 115200"
+#   define SERIAL_SPEED 115200
+#endif
+
 #endif /* SBLIB_CONFIG_H_ */
