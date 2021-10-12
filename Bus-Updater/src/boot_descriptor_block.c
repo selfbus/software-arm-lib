@@ -39,11 +39,11 @@ unsigned int checkVectorTable(unsigned int start)
 
 unsigned int checkApplication(AppDescriptionBlock * block)
 {
-    if (block->startAddress < FIRST_SECTOR)
+    if ((block->startAddress < FIRST_SECTOR) || (block->startAddress > LAST_SECTOR)) // we have just 64k of Flash
         return 0;
-    if (block->endAddress > 0x10000)	// we have just 64k of Flash
+    if (block->endAddress > LAST_SECTOR)	// we have just 64k of Flash
         return 0;
-    if (block->startAddress == block->endAddress)
+    if (block->startAddress >= block->endAddress)
         return 0;
 
     unsigned int crc = crc32(0xFFFFFFFF, (unsigned char *) block->startAddress,
