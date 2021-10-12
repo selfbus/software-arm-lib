@@ -427,17 +427,17 @@ bool BCU::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthP
     if (addressStart == LOAD_CONTROL_ADDR)
     {
         unsigned int objectIdx = payLoad[0] >> 4;
-        IF_DUMP_MEM_OPS(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX););
+        DB(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
         if (objectIdx < INTERFACE_OBJECT_COUNT)
         {
             userEeprom.loadState[objectIdx] = loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
             userEeprom.modified();
-            IF_DUMP_MEM_OPS(serial.println(););
+            DB(serial.println());
             return true;
         }
         else
         {
-            IF_DUMP_MEM_OPS(serial.println(" not found"););
+            DB(serial.println(" not found"));
             return false;
         }
     }
@@ -458,7 +458,7 @@ bool BCU::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPa
     if (addressStart >= LOAD_STATE_ADDR && addressStart < LOAD_STATE_ADDR + INTERFACE_OBJECT_COUNT)
     {
         memcpy(payLoad, userEeprom.loadState + (addressStart - LOAD_STATE_ADDR), lengthPayLoad);
-        IF_DUMP_MEM_OPS(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX););
+        DB(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX));
         return true;
     }
 #endif

@@ -24,12 +24,12 @@
 #if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
 
 struct s_td {
-	unsigned short ts; // state
-	unsigned int tt;	// system time
-	unsigned short tcv; // capture value
+	unsigned short ts;   // state
+	unsigned int tt;     // system time
+	unsigned short tcv;  // capture value
 	unsigned short ttmv; // timer match value
-	unsigned short ttv; // timer value
-	unsigned short tc; // capture flag
+	unsigned short ttv;  // timer value
+	unsigned short tc;   // capture flag
 };
 
 #define tb_lngth 300
@@ -391,7 +391,7 @@ private:
  *
  * @return The size of the telegram, excluding the checksum byte.
  */
-#define telegramSize(tel) (7 + (tel[5] & 15))
+#define telegramSize(tel) (7 + (tel[5] & 15)) //FIXME telegramSize accesses tel[5] without any check
 
 
 //define some error states
@@ -423,7 +423,7 @@ private:
 inline bool Bus::idle() const
 {
 #ifndef IAP_EMULATION // FIXME make bus states working together with unit-tests
-    return state == IDLE && sendCurTelegram == 0;
+    return (state == IDLE) && (sendCurTelegram == 0);
 #else
     return sendCurTelegram == 0;
 #endif
