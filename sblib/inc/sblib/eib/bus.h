@@ -222,6 +222,39 @@ public:
 
     void maxSendBusyTries(int tries);
 
+    /**
+       * Set the tx bus state.
+       *
+       * @param state - true if state is valid/available
+       */
+
+    void setBusTXStateValid(bool state) ;
+
+    /**
+       * get the tx bus state.
+       *
+       * @return state - true if state is valid/available
+       */
+
+    bool getBusTXStateValid(void)const ;
+
+    /**
+        * Set the rx bus state.
+        *
+        * @param state - true if state is valid/available
+        */
+
+     void setBusRXStateValid(bool state) ;
+
+     /**
+        * get the rx bus state.
+        *
+        * @return state - true if state is valid/available
+        */
+
+     bool getBusRXStateValid(void)const;
+
+
 
     /** The states of the telegram sending/receiving state machine */
     enum State
@@ -262,14 +295,20 @@ public:
      volatile int telegramLen;
 
      /**
-       * The result of the rx process on the bus.
-       */
-      volatile int bus_rx_state;
+      * The result of the rx process on the bus.
+      */
+     volatile int bus_rx_state;
 
-      /**
-        * The result of the tx process on the bus.
-        */
-       volatile int bus_tx_state;
+     /**
+      * The result of the tx process on the bus.
+      */
+     volatile int bus_tx_state;
+
+     /**
+      * The state of the tx/rx process on the bus available and valid.
+      */
+     volatile bool bus_rxstate_valid;
+     volatile bool bus_txstate_valid;
 
 
 #if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined (DUMP_TELEGRAMS)
@@ -463,6 +502,27 @@ inline int Bus::sendTelegramState() const
 {
     return bus_tx_state;
 }
+
+inline void Bus::setBusTXStateValid(bool state)
+{
+    bus_txstate_valid = state;
+	return;
+}
+inline bool Bus::getBusTXStateValid() const
+{
+    return bus_txstate_valid;
+}
+
+inline void Bus::setBusRXStateValid(bool state)
+{
+    bus_rxstate_valid = state;
+	return;
+}
+inline bool Bus::getBusRXStateValid() const
+{
+    return bus_rxstate_valid;
+}
+
 
 inline void Bus::discardReceivedTelegram()
 {

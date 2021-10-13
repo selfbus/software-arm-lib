@@ -784,6 +784,8 @@ void Bus::handleTelegram(bool valid)
 					telegramLen = nextByteIndex;
 					bus_rx_state = rx_error;
 					rx_error = 0;
+					setBusRXStateValid(true);
+
 					lastRXTimeVal = millis();
 					//check if an ACK is requested by the sender of the telegram ->  not needed by bit1=1 in the control field, or poll frame
 					if (! ( (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG)  ||   (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)) )
@@ -856,6 +858,8 @@ void Bus::sendNextTelegram()
 {
     bus_tx_state = tx_error;
     tx_error = 0;
+    setBusTXStateValid(true);
+
     if (sendCurTelegram)
     {
         sendCurTelegram[0] = 0;
