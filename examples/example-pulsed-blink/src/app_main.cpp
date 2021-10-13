@@ -24,17 +24,17 @@
 #include <sblib/io_pin_names.h>
 
 
-#define TEST_MICROSECOND_START 0                        //!> microsecond to start the test
-#define TEST_MICROSECOND_END (MAX_DELAY_MICROSECONDS)   //!> microsecond to end the test
+#define TEST_MICROSECOND_START 0                        //!< microsecond to start the test
+#define TEST_MICROSECOND_END (MAX_DELAY_MICROSECONDS)   //!< microsecond to end the test
 
-#define TEST_MILLISECOND_START 0                        //!> millisecond to start the test
-#define TEST_MILLISECOND_END (100000)                   //!> millisecond to end the test
+#define TEST_MILLISECOND_START 0                        //!< millisecond to start the test
+#define TEST_MILLISECOND_END (100000)                   //!< millisecond to end the test
 
-#define TEST_SPEEDUP_1 100                              //!> threshold 1, to speed up the test
-#define TEST_SPEEDUP_2 10000                            //!> threshold 2, to speed up the test
+#define TEST_SPEEDUP_1 100                              //!< threshold 1, to speed up the test
+#define TEST_SPEEDUP_2 10000                            //!< threshold 2, to speed up the test
 
-#define TEST_PAUSE 500                                  //!> pause between tests in milliseconds
-#define TEST_COUNT 2                                    //!> number of test cycles
+#define TEST_PAUSE 500                                  //!< pause between tests in milliseconds
+#define TEST_COUNT 2                                    //!< number of test cycles
 
 
 /**
@@ -67,7 +67,7 @@
  */
 #define SET_TESTPIN_LOW port->MASKED_ACCESS[mask] = 0
 
-enum SystemSpeed {mhz12, mhz24, mhz36, mhz48};  //!> SystemCoreClock in MHz
+enum SystemSpeed {mhz12, mhz24, mhz36, mhz48};  //!< SystemCoreClock in MHz
 
 /**
  * The pin that is used for this example, see sblib/io_pin_names.h for other options
@@ -78,8 +78,8 @@ int testPin = PIO0_7;
 // int testPin = PIN_RUN;
 // int testPin = PIN_INFO;
 
-int mask = digitalPinToBitMask(testPin);                        //!> bit mask to set the test pin high
-LPC_GPIO_TypeDef* port = gpioPorts[digitalPinToPort(testPin)];  //!> direct access to the gpioPort of the test pin
+int mask = digitalPinToBitMask(testPin);                        //!< bit mask to set the test pin high
+LPC_GPIO_TypeDef* port = gpioPorts[digitalPinToPort(testPin)];  //!< direct access to the gpioPort of the test pin
 
 /**
  * @fn void connectSystemOscillatorToClkOutPin()

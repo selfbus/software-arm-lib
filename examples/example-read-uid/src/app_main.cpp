@@ -1,13 +1,17 @@
 /**************************************************************************//**
  * @file    app_main.cpp
- * @brief   A simple application which reads the UID (GUID) of the
- *          LPCxx processor and sends it to the serial port
+ * @brief   A simple application which:
+ *              - reads the UID (GUID) of the LPCxx processor
+ *              - calculates a hashed serial used for the KNX bus
+ *              - blinks the program led at ~2Hz
+ *              - sends UID, shorted UID (for bus-updater use) and KNX-serial to the serial port
  *
- *          Connect a terminal program to the ARM's serial port:
- *          The serial port is used with 19200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.6, Rx-pin is PIO1.7
+ *          Connect a terminal program to the ARM's serial port. Default Tx-pin is PIO1.7 and Rx-pin is PIO1.6.
+ *          You can change the serial port by commenting/uncommenting
+ *          #define PIN_SERIAL_RX and #define PIN_SERIAL_TX below.
+ *          The connection setting is 19200 8N1 (19200 baud, 8 data bits, no parity, 1 stop bit).
  *
- * needs BCU1 version of the sblib library
+ *          - links against BCU1 version of the sblib library
  *
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -16,35 +20,115 @@
 #include <sblib/core.h>
 #include <sblib/internal/iap.h>
 #include <sblib/eib/sblib_default_objects.h>
+#include <sblib/io_pin_names.h>
 #include <sblib/serial.h>
 #include <sblib/timer.h>
 
-#define PAUSE_MS 1000                   //!> pause in milliseconds between each transmission
+#define PAUSE_MS 1000                   //!< pause in milliseconds between each serial transmission
 
-#define RX_PIN SERIAL_RX_PIN            //!> default serial Rx-Pin, defined in sblib config.h
-#define TX_PIN SERIAL_TX_PIN            //!> default serial Tx-Pin, defined in sblib config.h
+// use serial port on port 1
+//#define PIN_SERIAL_RX PIO1_6            //!< serial Rx-Pin on PIO1.6
+//#define PIN_SERIAL_TX PIO1_7            //!< serial Tx-Pin on PIO1.7
 
-#define SERIAL_SPEED (19200)           //!> serial speed
+// use serial port on port 2
+#define PIN_SERIAL_RX PIO2_7            //!< serial Rx-Pin on PIO2.7
+#define PIN_SERIAL_TX PIO2_8            //!< serial Tx-Pin on PIO2.8
 
-#define UID_BYTES_FOR_BUSUPDATER 12    //!> number of byte the bus-updater needs for option -uid
+// use serial port on port 3
+//#define PIN_SERIAL_RX PIO3_1            //!< serial Rx-Pin on PIO3.1
+//#define PIN_SERIAL_TX PIO3_0            //!< serial Tx-Pin on PIO3.0
+
+#define DEFAULT_SERIAL_SPEED 19200      //!< serial speed in baud
+
+#define UID_BYTES_FOR_BUSUPDATER 12     //!< number of byte the bus-updater needs for option -uid
+
+#define KNX_SERIAL_NUMBER_LENGTH 6      //!< length of a KNX serial number
+
+/// @cond DEVELOPER
+// hashUID is "borrowed" from BcuBase::hashUID(..) and can change anytime
+// so don't take a close look on me :)
+int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
+/// @endcond
+void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int length, char separator='\0');
 
 /**
- * Initialize the application.
+ * @brief This function is called by the Selfbus's library main
+ *        when the processor is started or reset.
+ *
+ * @note  You must implement this function in your code.
  */
 void setup()
 {
-    serial.setRxPin(RX_PIN);
-    serial.setTxPin(TX_PIN);
-    serial.begin(SERIAL_SPEED);
+    pinMode(PIN_PROG, OUTPUT);
+    digitalWrite(PIN_PROG, true);
+    serial.setRxPin(PIN_SERIAL_RX);
+    serial.setTxPin(PIN_SERIAL_TX);
+    serial.begin(DEFAULT_SERIAL_SPEED);
     serial.println("Selfbus read UID example");
 }
 
-void sendUIDtoSerialPort(Serial &serialPort, byte* uid, unsigned int length)
+/**
+ * @brief The processing loop while no KNX-application is loaded.
+ *
+ * @note Because we don't start the bus with bcu.begin(...),
+ *       in this example only this function will be called by the Selfbus library.
+ */
+void loop_noapp()
+{
+    byte uniqueID[IAP_UID_LENGTH]; // buffer for the UID/GUID of the processsor
+    byte knxSerial[KNX_SERIAL_NUMBER_LENGTH]; // buffer for the KNX serial number
+
+    if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
+    {
+        serial.print("Target UID is   :      ");
+        // send the uid/guid we received from iapReadUID
+        sendBytesInHexToSerialPort(serial, &uniqueID[0], IAP_UID_LENGTH, ':');
+        serial.print("Busupdater needs: -uid ");
+        sendBytesInHexToSerialPort(serial, &uniqueID[0], UID_BYTES_FOR_BUSUPDATER, ':');
+
+        // create a 48bit serial/hash from the 128bit GUID
+        if (hashUID(&uniqueID[0], sizeof(uniqueID), &knxSerial[0], sizeof(knxSerial)))
+        {
+            serial.print("KNX-Serial      :      ");
+            sendBytesInHexToSerialPort(serial, &knxSerial[0], sizeof(knxSerial), ':');
+        }
+        else
+        {
+            serial.println("Error hashing the UID.");
+        }
+        serial.println();
+    }
+    else
+    {
+        serial.println("Error reading Target UID.");
+    }
+    digitalWrite(PIN_PROG, !digitalRead(PIN_PROG));
+    delay(PAUSE_MS);
+}
+
+/**
+ * @brief The main processing loop while a KNX-application is loaded.
+ *
+ * @note Will never be called in this example
+ */
+void loop()
+{
+}
+
+/**
+ * @brief Sends the hexadecimal value of bytes from buffer as text to the serial port
+ *
+ * @param serialPort    serial port to use for transmission
+ * @param buffer        buffer containing the bytes
+ * @param length        length of buffer
+ * @param separator     optional separator which will be placed between the bytes
+ */
+void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int length, char separator)
 {
     for (unsigned int i = 0; i < length; ++i)
     {
-        serialPort.print(uid[i], HEX, 2);
-        if (i < (length - 1))
+        serialPort.print(buffer[i], HEX, 2);
+        if ((i < (length - 1)) && (separator != '\0'))
         {
             serialPort.print(":");
         }
@@ -52,33 +136,30 @@ void sendUIDtoSerialPort(Serial &serialPort, byte* uid, unsigned int length)
     serialPort.println();
 }
 
-/**
- * The main processing loop while no KNX-application is loaded.
- */
-void loop_noapp()
+/// @cond DEVELOPER
+int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
 {
-    byte uniqueID[IAP_UID_LENGTH];
+    const int MAX_HASH_WIDE = 16;
+    uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
+    uint64_t a, b;
+    unsigned int mid;
 
-    if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
-    {
-        // send the uid/guid we received from iapReadUID
-        serial.print("Target UID is   :      ");
-        sendUIDtoSerialPort(serial, &uniqueID[0], IAP_UID_LENGTH);
-        serial.print("Busupdater needs: -uid ");
-        sendUIDtoSerialPort(serial, &uniqueID[0], UID_BYTES_FOR_BUSUPDATER);
-        serial.println();
-    }
-    else
-    {
-        serial.println("Error reading Target UID.");
-    }
-    delay(PAUSE_MS);
-}
+    if ((len_uid <= 0) || (len_uid > MAX_HASH_WIDE))  // maximum of 16 bytes can be hashed by this function
+        return 0;
+    if ((len_hash <= 0) || (len_hash > len_uid))
+        return 0;
 
-/**
- * The main processing loop.
- */
-void loop()
-{
-    // will never be called in this example
+    mid = len_uid/2;
+    memcpy (&a, &uid[0], mid);          // copy first half of uid-bytes to a
+    memcpy (&b, &uid[mid], len_uid-mid); // copy second half of uid-bytes to b
+
+    // do some modulo a big primenumber
+    a = a % BigPrime48;
+    b = b % BigPrime48;
+    a = a^b;
+    // copy the generated hash to provided buffer
+    for (int i = 0; i<len_hash; i++)
+        hash[i] = uint64_t(a >> (8*i)) & 0xFF;
+    return 1;
 }
+/// @endcond
