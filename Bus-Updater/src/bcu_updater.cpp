@@ -1,5 +1,5 @@
 /*
- * BCUUpdate.cpp
+ * bcu_updater.cpp
  *
  *  Created on: 15.07.2015
  *      Author: glueck
@@ -8,15 +8,35 @@
 #include "bcu_updater.h"
 #include <sblib/serial.h>
 
-#ifdef DUMP_TELEGRAMS_LVL2
+
+// The EIB bus access object
+Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
+
+#if defined(DUMP_TELEGRAMS_LVL2) && defined(DEBUG)
     #include <sblib/serial.h>
-#   define d(x) {serial.println(x);}
+#endif
+
+#if defined(DUMP_TELEGRAMS_LVL2) && defined(DEBUG)
+#   define dump2(code) code
 #else
-#   define d(x)
+#   define dump2(x)
 #endif
 
 void BcuUpdate::processTelegram()
 {
+    /*
+    dump2(
+        serial.print("RX: ");
+        for (volatile int i = 0; i < bus.telegramLen; i++)
+        {
+            serial.print(bus.telegram[i],HEX,2);
+            serial.print(" ");
+        }
+        serial.print(" LEN: ");
+        serial.println(bus.telegramLen,DEC,4);
+    );
+    */
+
     unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
     unsigned short apci = ((bus.telegram[6] & 3) << 8) | bus.telegram[7];
@@ -27,12 +47,12 @@ void BcuUpdate::processTelegram()
         {
             if (tpci & 0x80)  // A connection control command
             {
-                d("procC-Tel\n");
+                dump2(serial.println("procControlT"));
                 processConControlTelegram(bus.telegram[6]);
             }
             else
             {
-                d("procD-Tel\n");
+                dump2(serial.println("procDirectT"));
                 processDirectTelegram(apci);
             }
         }
@@ -40,9 +60,6 @@ void BcuUpdate::processTelegram()
     // At the end: discard the received telegram
     bus.discardReceivedTelegram();
 }
-
-extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
-        unsigned char * data);
 
 void BcuUpdate::processDirectTelegram(int apci)
 {
@@ -57,27 +74,40 @@ void BcuUpdate::processDirectTelegram(int apci)
     connectedTime = systemTime;
     sendTelegram[6] = 0;
 
-    int apciCmd = apci & APCI_GROUP_MASK;
-    if ((apciCmd == APCI_MEMORY_READ_PDU) | (apciCmd == APCI_MEMORY_WRITE_PDU))
+    int apciCommand = apci & APCI_GROUP_MASK;
+    if ((apciCommand == APCI_MEMORY_READ_PDU) | (apciCommand == APCI_MEMORY_WRITE_PDU))
     {
-        d("R/W DATA\n");
-        sendAck = handleMemoryRequests(apciCmd, &sendTel, &bus.telegram[7]);
+        dump2(serial.println("R/W DATA"));
+        sendAck = handleMemoryRequests(apciCommand, &sendTel, &bus.telegram[7]);
     }
-    else if (apci == APCI_RESTART_PDU)
-        NVIC_SystemReset();  // Software Reset
+    else if (apciCommand == APCI_RESTART_PDU)
+    {
+        dump2(serial.println("APCI_RESTART_PDU"));
+        sendAck = T_ACK_PDU;
+        restartRequest(RESET_DELAY_MS); // Software Reset
+    }
     else
+    {
+        dump2(serial.println("APCI_UNKNOWN 0x", apciCommand, HEX, 4));
         sendAck = T_NACK_PDU;  // Command not supported
+        //TODO in case we run into this, maybe Reset?
+    }
 
     if (sendTel)
+    {
+        dump2(serial.println("TX-sendTel"));
         sendAck = T_ACK_PDU;
+    }
 
     if (sendAck)
     {
-        d("TX-ACK\n");
+        dump2(serial.println("TX-ACK"));
         sendConControlTelegram(sendAck, senderSeqNo);
     }
     else
+    {
         sendCtrlTelegram[0] = 0;
+    }
 
     if (sendTel)
     {
@@ -94,7 +124,7 @@ void BcuUpdate::processDirectTelegram(int apci)
         }
         else
             incConnectedSeqNo = false;
-        d("TX-DATA\n");
+        dump2(serial.println("TX-DATA"));
         bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
     }
 }
@@ -111,7 +141,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
             int curSeqNo = bus.telegram[6] & 0x3c;
             if (incConnectedSeqNo && connectedAddr == senderAddr && lastAckSeqNo !=  curSeqNo)
             {
-                d("RX-ACK\n");
+                dump2(serial.println("RX-ACK"));
                 connectedSeqNo += 4;
                 connectedSeqNo &= 0x3c;
                 incConnectedSeqNo = false;
@@ -122,7 +152,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
         {
             if (connectedAddr == senderAddr)
             {
-                d("RX-NACK\n");
+                dump2(serial.println("RX-NACK"));
                 sendConControlTelegram(T_DISCONNECT_PDU, 0);
                 connectedAddr = 0;
                 incConnectedSeqNo = false;
@@ -135,24 +165,26 @@ void BcuUpdate::processConControlTelegram(int tpci)
     {
         if (tpci == T_CONNECT_PDU)  // Open a direct data connection
         {
+            dump2(serial.println("T_CONNECT_PDU"));
+            dump2(serial.println("T_CONNECT_PDU"));
             if (connectedAddr == 0 || connectedAddr == senderAddr)
             {
                 connectedTime = systemTime;
                 connectedAddr = senderAddr;
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
-                d("RX-CON\n");
-                bus.setSendAck(0);
-
+                dump2(serial.println("RX-CON"));
+                bus.setSendAck(SB_BUS_ACK);
             }
         }
         else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
         {
+            dump2(serial.println("T_DISCONNECT_PDU"));
             if (connectedAddr == senderAddr)
             {
                 connectedAddr = 0;
-                bus.setSendAck(0);
-                d("RX-DIS\n");
+                bus.setSendAck(SB_BUS_ACK);
+                dump2(serial.println("RX-DIS"));
             }
         }
     }

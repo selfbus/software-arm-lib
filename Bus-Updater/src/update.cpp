@@ -1,5 +1,5 @@
 /*
- *  app_main.cpp - The application's main.
+ *  update.cpp  - UPD/UDP Selfbus protocol implementation.
  *
  *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
  *  Copyright (c) 2021 Stefan Haller
@@ -16,152 +16,144 @@
 #include <sblib/internal/iap.h>
 #include <string.h>
 #include <sblib/io_pin_names.h>
-#include <sblib/serial.h>
-#include <bcu_updater.h>
-#include <crc.h>
-#include <boot_descriptor_block.h>
-
+#include "bcu_updater.h"
+#include "crc.h"
+#include "boot_descriptor_block.h"
+#include "update.h"
 
 #ifdef DECOMPRESSOR
-#include <Decompressor.h>
+#   include <Decompressor.h>
 #endif
-
-/**
- * Updater protocol:
- *   We miss-use the memory write EIB frames. Miss-use because we do not transmit the address in each request
- *   to have more frame left for the actual data transmission:
- *     BYTES of the EIB telegram:
- *       8    CMD Number (see enum below), this is data[2]
- *       9-x  CMD dependent
- *
- *    UPD_ERASE_SECTOR
- *      9    Number of the sector which should be erased
- *           if the erasing was successful a T_ACK_PDU will be returned, otherwise a T_NACK_PDU
- *    UPD_SEND_DATA
- *      9-   the actual data which will be copied into a RAM buffer for later use
- *           If the RAM buffer is not yet full a T_ACK_PDU will be returned, otherwise a T_NACK_PDU
- *           The address of the RAM buffer will be automatically incremented.
- *           After a Program or Boot Desc. update, the RAM buffer address will be reseted.
- *    UPD_PROGRAM
- *      9-12 How many bytes of the RMA Buffer should be programmed. Be aware that the value needs to be one of the following
- *           256, 512, 1024, 4096 (required by the IAP of the LPC11xx devices)
- *     13-16 Flash address the data should be programmed to
- *     16-19 The CRC of the data downloaded via the UPD_SEND_DATA commands. If the CRC does not match the
- *           programming, error is returned
- *    UPD_UPDATE_BOOT_DESC
- *    UPD_PROGRAM
- *      9-12 The CRC of the data downloaded via the UPD_SEND_DATA commands. If the CRC does not match the
- *           programming, error is returned
- *        13 Which boot block should be used
- *    UPD_REQ_DATA
- *      ???
- *    UPD_GET_LAST_ERROR
- *      Returns the reason why the last memory write PDU had a T_NACK_PDU
- *
- *    Workflow:
- *      - erase the sector which needs to be programmed (UPD_ERASE_SECTOR)
- *      - download the data via UPD_SEND_DATA telegrams
- *      - program the transmitted data to into the FLASH  (UPD_PROGRAM)
- *      - repeat the above steps until the whole application has been downloaded
- *      - download the boot descriptor block via UPD_SEND_DATA telegrams
- *      - update the boot descriptor block so that the bootloader is able to start the new
- *        application (UPD_UPDATE_BOOT_DESC)
- *      - restart the board (UPD_RESTART)
- */
-
 
 #ifdef DUMP_TELEGRAMS_LVL1
-#define d1(x) {serial.print(x);}
-#define d2(u,v,w) {serial.print(u,v,w);}
+#   include <sblib/serial.h>
+#   define d1(x) {serial.print(x);}
+#   define dline(x) {serial.println(x);}
+#   define d2(u,v,w) {serial.print(u,v,w);}
 #else
-#define d1(x)
-#define d2(u,v,w)
+#   define d1(x)
+#   define d2(u,v,w)
 #endif
-
-
-enum
-{
-    UPD_ERASE_SECTOR = 0,
-    UPD_SEND_DATA = 1,
-    UPD_PROGRAM = 2,
-    UPD_UPDATE_BOOT_DESC = 3,
-	UPD_SEND_DATA_TO_DECOMPRESS = 4,	// Test
-	UPD_PROGRAM_DECOMPRESSED_DATA = 5,	// Test
-    UPD_REQ_DATA = 10,
-    UPD_GET_LAST_ERROR = 20,
-    UPD_SEND_LAST_ERROR = 21,
-    UPD_UNLOCK_DEVICE = 30,
-    UPD_REQUEST_UID = 31,
-    UPD_RESPONSE_UID = 32,
-    UPD_APP_VERSION_REQUEST = 33,
-    UPD_APP_VERSION_RESPONSE = 34,
-    UPD_RESET = 35,
-	UPD_REQUEST_BOOT_DESC = 36,
-	UPD_RESPONSE_BOOT_DESC = 37,
-	UPD_REQUEST_BL_IDENTITY = 40,
-	UPD_RESPONSE_BL_IDENTITY = 41,
-};
-
-#define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)
-#define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED)
-#define ADDRESS2SECTOR(a) ((a + 4095) / 4096)
-
-enum UPD_Status
-{
-    UDP_UNKONW_COMMAND = 0x100       //<! received command is not defined
-    ,
-    UDP_CRC_ERROR                    //<! CRC calculated on the device
-                                     //<! and by the updater don't match
-    ,
-    UPD_ADDRESS_NOT_ALLOWED_TO_FLASH //<! specifed address cannot be programmed
-    ,
-    UPD_SECTOR_NOT_ALLOWED_TO_ERASE //<! the specified sector cannot be erased
-    ,
-    UPD_RAM_BUFFER_OVERFLOW         //<! internal buffer for storing the data
-                                    //<! would overflow
-    ,
-    UPD_WRONG_DESCRIPTOR_BLOCK      //<! the boot descriptor block does not exist
-    ,
-    UPD_APPLICATION_NOT_STARTABLE   //<! the programmed application is not startable
-    ,
-    UPD_DEVICE_LOCKED               //<! the device is still locked
-    ,
-    UPD_UID_MISMATCH                //<! UID sent to unlock the device is invalid
-	,
-	UPD_ERASE_FAILED				// page erase failed
-	,
-	UPD_FLASH_ERROR					// page program (flash) failed
-	,
-    UDP_NOT_IMPLEMENTED = 0xFFFF    //<! this command is not yet implemented
-};
-
-unsigned char ramBuffer[4096];
 
 #ifdef DECOMPRESSOR
-Decompressor decompressor((AppDescriptionBlock*) BOOT_DSCR_ADDRESS);	// get application base address from boot descriptor
+    Decompressor decompressor((AppDescriptionBlock*) BOOT_DSCR_ADDRESS); // get application base address from boot descriptor
 #endif
 
-Timeout mcu_restart_request;
 
-void restartRequest (unsigned int time)
+#define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)    //!< \todo magic number for device is locked
+                                                        //!< and can't be flashed?
+#define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< \todo magic number for device is unlocked
+                                                         //!< and flashing is allowed?
+#define ADDRESS2SECTOR(a) ((a + RAM_BUFFER_SIZE - 1) / RAM_BUFFER_SIZE) //!> address to sector conversion
+
+#define PAGE_ALIGNMENT 0xff             //!< page alignement which is allowed to flash
+
+unsigned char ramBuffer[FLASH_SECTOR_SIZE]; //!< RAM buffer used for flash operations
+
+/**
+ * @brief UDP_Command \todo
+ *
+ */
+enum UDP_Command
 {
-	mcu_restart_request.start(time);
+    UPD_ERASE_SECTOR = 0,               //!< UPD_ERASE_SECTOR
+    UPD_SEND_DATA = 1,                  //!< UPD_SEND_DATA
+    UPD_PROGRAM = 2,                    //!< UPD_PROGRAM
+    UPD_UPDATE_BOOT_DESC = 3,           //!< UPD_UPDATE_BOOT_DESC
+    UPD_SEND_DATA_TO_DECOMPRESS = 4,    //!< Test
+    UPD_PROGRAM_DECOMPRESSED_DATA = 5,  //!< Test
+
+    UPD_REQ_DATA = 10,                  //!< UPD_REQ_DATA
+
+    UPD_GET_LAST_ERROR = 20,            //!< UPD_GET_LAST_ERROR
+    UPD_SEND_LAST_ERROR = 21,           //!< UPD_SEND_LAST_ERROR
+
+    UPD_UNLOCK_DEVICE = 30,             //!< UPD_UNLOCK_DEVICE
+    UPD_REQUEST_UID = 31,               //!< UPD_REQUEST_UID
+    UPD_RESPONSE_UID = 32,              //!< UPD_RESPONSE_UID
+    UPD_APP_VERSION_REQUEST = 33,       //!< UPD_APP_VERSION_REQUEST
+    UPD_APP_VERSION_RESPONSE = 34,      //!< UPD_APP_VERSION_RESPONSE
+    UPD_RESET = 35,                     //!< UPD_RESET
+    UPD_REQUEST_BOOT_DESC = 36,         //!< UPD_REQUEST_BOOT_DESC
+    UPD_RESPONSE_BOOT_DESC = 37,        //!< UPD_RESPONSE_BOOT_DESC
+
+    UPD_REQUEST_BL_IDENTITY = 40,       //!< UPD_REQUEST_BL_IDENTITY
+    UPD_RESPONSE_BL_IDENTITY = 41,      //!< UPD_RESPONSE_BL_IDENTITY
+};
+
+
+/**
+ * @brief UPD_Status \todo
+ *
+ */
+enum UPD_Status
+{
+    UDP_UNKONW_COMMAND = 0x100,       //!< received command is not defined
+    UDP_CRC_ERROR,                    //!< CRC calculated on the device and by the updater don't match
+    UPD_ADDRESS_NOT_ALLOWED_TO_FLASH, //!< specifed address cannot be programmed
+    UPD_SECTOR_NOT_ALLOWED_TO_ERASE,  //!< the specified sector cannot be erased
+    UPD_RAM_BUFFER_OVERFLOW,          //!< internal buffer for storing the data would overflow
+    UPD_WRONG_DESCRIPTOR_BLOCK,       //!< the boot descriptor block does not exist
+    UPD_APPLICATION_NOT_STARTABLE,    //!< the programmed application is not startable
+    UPD_DEVICE_LOCKED,                //!< the device is still locked
+    UPD_UID_MISMATCH,                 //!< UID sent to unlock the device is invalid
+    UPD_ERASE_FAILED,                 //!< page erase failed
+    UPD_FLASH_ERROR,                  //!< page program (flash) failed
+    UDP_NOT_IMPLEMENTED = 0xFFFF      //!< this command is not yet implemented
+};
+
+/**
+ * @brief The vector table marks the beginning of the updater application
+ *        used to protect the updater from killing itself with
+ *        a new application downloaded over the bus
+ */
+extern const unsigned int __vectors_start__;
+
+/**
+ * @brief _etext symbol marks the end of the used flash area
+ *        used to protect the updater from killing itself with
+ *        a new application downloaded over the bus
+ */
+extern const unsigned int _etext;
+
+Timeout mcuRestartRequestTimeout; //!< Timeout used to trigger a MCU Reset by NVIC_SystemReset()
+
+void restartRequest (unsigned int msec)
+{
+#ifdef DUMP_TELEGRAMS_LVL1
+    serial.print("Systime:", systemTime, DEC);
+    serial.print(" restartReq");
+#endif
+	mcuRestartRequestTimeout.start(msec);
 }
 
 bool restartRequestExpired(void)
 {
-	return mcu_restart_request.expired();
+	return mcuRestartRequestTimeout.expired();
 }
 
-/*
- * a direct cast does not work due to possible miss aligned addresses.
- * therefore a good old conversion has to be performed
+/**
+ * @brief Converts a 4 byte long provided buffer into a unsigned int
+ * @detail A direct cast does not work due to possible miss aligned addresses.
+ *         therefore a good old conversion has to be performed
+ *
+ * @param buffer data to convert
+ * @return to unsigned int converted value of the 4 first bytes of buffer
+ * @warning function doesn't perform any sanity-checks on the provided buffer
  */
 unsigned int streamToUIn32(unsigned char * buffer)
 {
     return buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0];
 }
 
+/**
+ * @brief Converts a unsigned int into a 4 byte long provided buffer
+ * @detail A direct cast does not work due to possible miss aligned addresses.
+ *         therefore a good old conversion has to be performed
+ *
+ * @param buffer in the 4 first bytes of buffer the result will be stored
+ * @warning function doesn't perform any sanity-checks on the provided buffer
+ */
 void UIn32ToStream(unsigned char * buffer, unsigned int val)
 {
     buffer[3] = val >> 24;
@@ -169,14 +161,6 @@ void UIn32ToStream(unsigned char * buffer, unsigned int val)
     buffer[1] = val >> 8;
     buffer[0] = val & 0xff;
 }
-
-/* the following two symbols are used to protect the updater from
- * killing itself with a new application downloaded over the bus
- */
-/* the vector table marks the beginning of the updater application */
-extern const unsigned int __vectors_start__;
-/* the _etext symbol marks the end of the used flash area */
-extern const unsigned int _etext;
 
 static bool _prepareReturnTelegram(unsigned int count, unsigned char cmd)
 {
@@ -234,8 +218,12 @@ inline bool sectorAllowedToErease(unsigned int sectorNumber)
             && (sectorNumber <= ADDRESS2SECTOR(_etext)));
 }
 
-/*
- * Checks if the address range is allowed to be programmed
+/**
+ * @brief Checks if the address range is allowed to be programmed
+ *
+ * @param start Start of the address range to check
+ * @param length length of the address range
+ * @return true if programming is allowed, otherwise false
  */
 inline bool addressAllowedToProgram(unsigned int start, unsigned int length)
 {
@@ -247,11 +235,7 @@ inline bool addressAllowedToProgram(unsigned int start, unsigned int length)
     return !((start >= __vectors_start__) && (end <= _etext));
 }
 
-/*
- * Handle flash writing
- * write_req controls if flash information is pre-loaded and write request is registered
- */
-unsigned int request_flashWrite(unsigned char * data, bool write_request)
+unsigned int request_flashWrite(unsigned char* data, bool write_request)
 {
 	static volatile bool ready2write = false;
 	unsigned int crc;
@@ -268,14 +252,14 @@ unsigned int request_flashWrite(unsigned char * data, bool write_request)
 			if (crc == streamToUIn32(data + 3 + 4 + 4))
 			{
 				// Select smallest possible sector size
-				if (flash_count > 1024)
-					flash_count = 4096;
-				else if (flash_count > 512)
-					flash_count = 1024;
-				else if (flash_count > 256)
-					flash_count = 512;
+				if (flash_count > 4*FLASH_PAGE_SIZE)
+					flash_count = 8*FLASH_PAGE_SIZE;
+				else if (flash_count > 2*FLASH_PAGE_SIZE)
+					flash_count = 4*FLASH_PAGE_SIZE;
+				else if (flash_count > FLASH_PAGE_SIZE)
+					flash_count = 2*FLASH_PAGE_SIZE;
 				else
-					flash_count = 256;
+					flash_count = FLASH_PAGE_SIZE;
 
 				// Debug: write CRC
 				d2(crc,HEX,8);
@@ -300,8 +284,6 @@ unsigned int request_flashWrite(unsigned char * data, bool write_request)
 	}
 	return 0;
 }
-
-
 
 unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
         unsigned char * data)
@@ -381,7 +363,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
         	d1("Restart!");
             if (deviceLocked == DEVICE_UNLOCKED)
             {
-            	restartRequest(100);	// request restart in 100ms to allow transmission of ACK before
+            	restartRequest(RESET_DELAY_MS);	// request restart in RESET_DELAY_MS ms to allow transmission of ACK before
             	lastError = IAP_SUCCESS;
             }
             else
@@ -577,7 +559,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
 							if (lastError == IAP_SUCCESS)
 							{
 								d1(" OK, Flash Page: ");
-								lastError = iapProgram((byte *) address, ramBuffer, 256); // no less than 256byte can be flashed
+								lastError = iapProgram((byte *) address, ramBuffer, FLASH_PAGE_SIZE); // no less than 256byte can be flashed
 								d2(lastError,DEC,2);
 							}
 						}

@@ -10,24 +10,17 @@
  */
 
 #include <sblib/main.h>
-
-#include <sblib/eib.h>
 #include <sblib/timeout.h>
 #include <sblib/internal/variables.h>
+#include <boot_descriptor_block.h>
+#include <sblib/digital_pin.h>
 #include <sblib/io_pin_names.h>
+#include <sblib/serial.h>
+
 #include "bcu_updater.h"
-#include "update.h"
 
 static BcuUpdate _bcu = BcuUpdate();
 BcuBase& bcu = _bcu;
-
-// The EIB bus access object
-Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
-
-#include <boot_descriptor_block.h>
-#include "sblib/digital_pin.h"
-#include "sblib/io_pin_names.h"
-#include <sblib/serial.h>
 
 Timeout blinky;
 
@@ -70,17 +63,29 @@ void loop()
     }
     digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
-
-    //FIXME writing to flash may time out the PC_Updater_tool for around 5s
-    //      because a bus timer interrupt may be canceled due to
-    //      iapProgram->IAP_Call_InterruptSafe->noInterrupts();
     //Check if there is data to flash when bus is idle
     if(bus.idle())
-    	request_flashWrite(NULL, 0);
+    {
+        //FIXME reverted to old method, because this leads to timeouts
+        //      also on success we would need to send a response
+        //      writing to flash may time out the PC_Updater_tool for around 5s
+        //      because a bus timer interrupt may be canceled due to
+        //      iapProgram->IAP_Call_InterruptSafe->noInterrupts();
+        // if (request_flashWrite(NULL, 0) == IAP_SUCCESS)
+    	// {
+    	// }
 
-    // Check if restart request is pending
-    if (restartRequestExpired())
-    	NVIC_SystemReset();
+        // Check if restart request is pending
+    	if (restartRequestExpired())
+        {
+#ifdef DUMP_TELEGRAMS_LVL1
+    	    serial.print("Systime:", systemTime, DEC);
+    	    serial.println(" reset");
+    	    serial.flush();  // give time to send serial data
+#endif
+    	    NVIC_SystemReset();
+        }
+    }
 }
 
 void jumpToApplication(unsigned int start)
@@ -121,7 +126,8 @@ void run_updater()
     serial.println("=======================================================");
     serial.print("Selfbus KNX Bootloader V");
     serial.print(BL_IDENTITY, HEX, 4);
-    serial.print(", DEBUG MODE :-)\n\rBuild: ");
+    serial.println(", DEBUG MODE :-)");
+    serial.println("Build: ");
     serial.print(__DATE__);
     serial.print(" ");
     serial.print(__TIME__);
@@ -140,8 +146,8 @@ void run_updater()
 int main(void)
 {
     // Updater request from application by setting magicWord
-	unsigned int * magicWord = (unsigned int *) 0x10000000;
-    if (*magicWord == 0x5E1FB055)
+	unsigned int * magicWord = (unsigned int *) BOOTLOADER_MAGIC_ADDRESS;
+    if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
         *magicWord = 0;	// avoid restarting BL after flashing
         run_updater();
@@ -161,7 +167,9 @@ int main(void)
     for (int i = 0; i < 2; i++, block--) // Do we really need to search of the correct block? Assume it's always fix, isn't it?
     {
         if (checkApplication(block))
+        {
             jumpToApplication(block->startAddress);
+        }
     }
     // Start updater in case of error
     run_updater();
