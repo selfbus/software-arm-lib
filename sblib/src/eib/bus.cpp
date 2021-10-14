@@ -628,7 +628,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 }
 
 /*
- *  set the Bus SM to idle state.
+ *  set the Bus state maschine to idle state.
  *  We waited at least 50 Bit times  (without cap event enabled), now we wait for next Telegram to receive.
  *  configure the capture to falling edge and interrupt
  *  match register for low pwm output
@@ -641,10 +641,10 @@ void Bus::idleState()
 	tb_h( 99, sendAck, tb_in);
 
 	timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
-	timer.matchMode(timeChannel, RESET); // no timeout interrupt, reset at match todo we could stop timer for power saving
+	timer.matchMode(timeChannel, RESET); // no timeout interrupt, reset at match //todo we could stop timer for power saving
 	timer.match(timeChannel, 0xfffe); // stop pwm pulse generation, set output to low
 	timer.match(pwmChannel, 0xffff);
-	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // todo enabled the  timer reset by the falling edge of cap event
+	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
 	state = Bus::IDLE;
 	sendAck = 0;
 	//need_to_send_ack_to_remote=false;
@@ -1435,5 +1435,3 @@ void Bus::timerInterruptHandler()
 
 	timer.resetFlags();
 }
-
-

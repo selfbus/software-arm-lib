@@ -153,7 +153,6 @@ public:
     virtual void flush(void);
 
     /**
-     * @fn  operator bool()
      * @brief Check if serial port enabled and available for transmission
      *
      * @return true if serial port is enabled, otherwise false
@@ -161,7 +160,6 @@ public:
     operator bool() const {return enabled_;}
 
     /**
-     * @fn const bool enabled(void)
      * @brief Check if serial port enabled and available for transmission
      *
      * @return true if serial port is enabled, otherwise false
@@ -188,6 +186,10 @@ private:
 //
 inline void Serial::begin(int baudRate)
 {
+    if (enabled())
+    {
+        end();
+    }
     begin(baudRate, SERIAL_8N1);
 }
 /** @}*/

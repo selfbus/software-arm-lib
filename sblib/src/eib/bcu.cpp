@@ -563,13 +563,14 @@ void BCU::processDirectTelegram(int apci)
         case APCI_RESTART_TYPE1_PDU:
             if(apci&1)
             {
+                // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
+                // restart with parameters, special meaning of erase=0 and channel=255 for update mode
                 unsigned int erase   = bus.telegram[8];
                 unsigned int channel = bus.telegram[9];
-
-                if(erase == 0 && channel == 255)
+                if (erase == BOOTLOADER_MAGIC_ERASE && channel == BOOTLOADER_MAGIC_CHANNEL)
                 {
-                    unsigned int * magicWord = (unsigned int *) 0x10000000;
-                    *magicWord = 0x5E1FB055;
+                    unsigned int * magicWord = (unsigned int *) BOOTLOADER_MAGIC_ADDRESS;
+                    *magicWord = BOOTLOADER_MAGIC_WORD;
                 }
             }
             if (usrCallback)
