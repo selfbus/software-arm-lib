@@ -190,5 +190,5 @@ inline void Serial::begin(int baudRate)
 {
     begin(baudRate, SERIAL_8N1);
 }
-
+/** @}*/
 #endif /*sblib_serial_h*/

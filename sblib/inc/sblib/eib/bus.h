@@ -418,10 +418,11 @@ private:
 //
 //  Inline functions
 //
-
+// FIXME make Bus::idle() work together with catch-unit tests
 inline bool Bus::idle() const
 {
-#ifndef IAP_EMULATION // FIXME make bus states work together with unit-tests
+#ifndef IAP_EMULATION
+    //XXX Issue #42 maybe should also check that we have no pending interrupt
     return (state == IDLE) && (sendCurTelegram == 0);
 #else
     return sendCurTelegram == 0;

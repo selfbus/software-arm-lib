@@ -163,16 +163,6 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
     useOldSerialStyle = 1;
     if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
     {
-#ifdef DUMP_SERIAL
-        // dump the guid received from iapReadUID
-        serial.print("GUID  : ");
-        for (unsigned int i = 0; i < (sizeof(uniqueID)/sizeof(uniqueID[0])); ++i)
-        {
-            if (i) serial.print(" ");
-            serial.print(uniqueID[i], HEX, 2);
-        }
-        serial.println();
-#endif
         // https://community.nxp.com/t5/LPC-Microcontrollers/IAP-C-code-example-query/m-p/596139/highlight/true#M22963
         // Unfortunately the details of what go into the 128-bit GUID cannot be disclosed.
         // It can be said, however, that the 128-bit GUIDs are not random, nor are they sequential.
@@ -180,6 +170,14 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 
         // create a 48bit serial/hash from the 128bit Guid
         useOldSerialStyle = !hashUID(&uniqueID[0], sizeof(uniqueID), &userEeprom.serial[0], sizeof(userEeprom.serial));
+
+        /** //TODO this could be a alternative for ETS checking the serial number
+         *         it seems that the first two bytes are the Manufacturer-ID
+         *         and setting the last 4 bytes to 0xFF the ETS doesn't check the serial number at all
+         *         memset (userEeprom.serial, 0xFF, 6);             // set serial to 0xFFFFFFFFFFFF
+         *         userEeprom.serial[0] = userEeprom.manufacturerH; // set Manufacturer-ID
+         *         userEeprom.serial[1] = userEeprom.manufacturerL;
+         */
     }
 
     if (useOldSerialStyle)
@@ -189,26 +187,6 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
         userEeprom.serial[4] = SBLIB_VERSION >> 8;
         userEeprom.serial[5] = SBLIB_VERSION;
     }
-
-/*
- * this is maybe a workaround for ETS checking the serial number
- * it seems that the first two bytes are the Manufacturer-ID
- * and setting the last 4 bytes to 0xFF seems, that ETS doesn't check the serial number
-    memset (userEeprom.serial, 0xFF, 6); // FIXME remove its just for testing
-    userEeprom.serial[0] = userEeprom.manufacturerH;
-    userEeprom.serial[1] = userEeprom.manufacturerL;
-*/
-#ifdef DUMP_SERIAL
-        // dump the generated hash/serial
-        serial.print("Serial: ");
-        for (unsigned int i = 0; i < sizeof(userEeprom.serial); ++i)
-        {
-            if (i) serial.print(" ");
-            serial.print(userEeprom.serial[i], HEX, 2);
-        }
-        serial.println();
-#endif
-
     userRam.peiType = 0;     // PEI type: 0=no adapter connected to PEI.
     userEeprom.appType = 0;  // Set to BCU2 application. ETS reads this when programming.
 #endif

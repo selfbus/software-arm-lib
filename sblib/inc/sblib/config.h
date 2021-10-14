@@ -51,9 +51,22 @@
 //#define DUMP_PROPERTIES //!> dump interface object and property handling over serial interface
 
 /// \todo following #defines should be moved to this config.h file
-// #define BH1750_DEBUG /// \todo found in bh1750.h
-// #define LOGGING      /// \todo found in bh1750.h
-// #define DEBUG_ACTIVE /// \todo found in debug.cpp
+// IAP_EMULATION        /// \todo from platform.h & analog_pin.cpp (used for catch-unit tests of the sblib)
+// SPI_BLOCK_TRANSFER   /// \todo from spi.h & spi.cpp
+// DEBUG                /// \todo from utils.h
+// SERIAL_WRITE_DIRECT  /// \todo from serial.cpp
+// BH1750_DEBUG         /// \todo from in bh1750.h
+// LOGGING              /// \todo from in bh1750.h
+// DEBUG_ACTIVE         /// \todo from in debug.cpp
+
+/// \todo find a better place for this bcu-type information
+/// variants of BCU_TYPE: BCU1_TYPE, BCU1_12, 0x10, 0x20, 20, 0x0701, 0x0705, 0x7B0
+///     BCU1_TYPE
+///     BIM112_TYPE
+///     SYSTEM_B_TYPE
+
+/// BCU_NAME
+/// MASK_VERSION
 
 /**************************************************************************//**
  *
