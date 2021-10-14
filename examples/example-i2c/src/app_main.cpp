@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_I2C_1 i2c example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Read Lux and RTC from LPC1115 Developer Board using I2C class with a timer and the timer interrupt

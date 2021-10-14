@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_SPI_1 SPI example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Configures SPI for output and sends a byte every second.

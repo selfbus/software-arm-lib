@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_ANALOG_READ_1 Analog read example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Read the analog channel AD0 (PIO0.11) and print the read value to the serial port.

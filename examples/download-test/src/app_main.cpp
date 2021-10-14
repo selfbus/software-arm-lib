@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_DOWLOAD_TEST_1 Download-Test example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Blinks the RUN/INFO LED's and sends a simple message over RS232.

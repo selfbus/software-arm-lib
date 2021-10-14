@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_ONEWIRE_DS18X20_1 Onewire DS18x20 example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Scan and read Temperature from DS18x20 family devices using the OneWire (1-Wire) Protocol.

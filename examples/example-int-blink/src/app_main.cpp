@@ -1,4 +1,5 @@
 /*****************************************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_TIMER_INTERRUPT_1 Timer interrupt blinking example
  * @ingroup SBLIB_EXAMPLES
  * @brief Blinks the Info LED of the 4TE-ARM Controller (on pin PIO2.6)

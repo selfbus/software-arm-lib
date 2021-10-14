@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_SERIAL_PORT_1 Serial port example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Shows the use of the serial port.

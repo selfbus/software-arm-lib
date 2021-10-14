@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_PROC_UID_1 Processor UID (GUID) and serial example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Sends UID, shorted UID (for bus-updater use) and KNX-serial number to the serial port

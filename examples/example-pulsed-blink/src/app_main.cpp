@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_PULSED_BLINK_1 Pulsed blink example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Sends pulses on a digital port

@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_PWM_BLINK_1 PWM blink example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Flashes a LED on digital pin PIO2.6 using the PWM output of the 16bit timer #1

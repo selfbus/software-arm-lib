@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_GRAPHICAL_LCD_1 Graphical LCD example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Displays some text on a 102x64 monochrome graphical LCD with SPI

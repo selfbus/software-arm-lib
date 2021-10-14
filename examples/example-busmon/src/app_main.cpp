@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_SERIAL_BUS_1 Serial Bus Monitor Example
  * @ingroup SBLIB_EXAMPLES
  * @brief    Bus monitor that outputs all received telegrams to the serial port

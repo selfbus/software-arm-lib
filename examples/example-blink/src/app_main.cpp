@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_LED_BLINK_1 LED blink example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Blinks the Program, Run, Info and a LED on PIO0.7

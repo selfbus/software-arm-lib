@@ -1,4 +1,5 @@
 /**************************************************************************//**
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
  * @defgroup SBLIB_EXAMPLE_DHT22_1 DHT22 example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Read temperature and humidity from one or more DHT22 sensors using a timer and the timer interrupt.
