@@ -33,7 +33,7 @@ Selfbus Updater 0.5x
 	 -appVersionPtr <hex/dev> pointer to APP_VERSION string
 	 -uid <hex>               send UID to unlock (default: request UID to unlock, required Prog. mode to be on!)
 	 -full                    force regular full download (disable diff-update mode)
-	 -dealy                   delay telegrams in ms duing data transmission to reduce bus load (valid 40-500)
+	 -dealy                   delay telegrams in ms during data transmission to reduce bus load (valid 0-500)
 
 
 To be used like this:

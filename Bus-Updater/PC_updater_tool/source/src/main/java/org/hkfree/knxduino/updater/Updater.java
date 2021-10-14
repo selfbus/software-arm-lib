@@ -367,8 +367,10 @@ public class Updater implements Runnable {
                 .append(sep);
         sb.append(" -full                    force full upload mode (disable diff)")
                 .append(sep);
-        sb.append(" -delay                   delay telegrams duing data transmission to reduce bus load (valid 40-500)")
+        sb.append(" -delay                   delay telegrams duing data transmission to reduce bus load (valid 0-500)")
         		.append(sep);
+        sb.append(" -NO_FLASH                disable flashing firmware, for debugging use only!")
+                .append(sep);
         LOGGER.log(Level.INFO, sb.toString());
     }
 
@@ -673,7 +675,7 @@ public class Updater implements Runnable {
             }
             if (options.containsKey("delay")) {
             	data_send_delay = (int) options.get("delay");
-            	if ((data_send_delay <40) || (data_send_delay >500))
+            	if ((data_send_delay <0) || (data_send_delay >500))
             		data_send_delay = 100;	// set to 100ms in case of invalid waiting time
             }
 
@@ -1042,6 +1044,7 @@ public class Updater implements Runnable {
         long progAddress = startAddress;
         boolean doProg = false;
         boolean timeoutOccured = false;
+        int timeoutCount = 0;
         
         if (data_send_delay != 0)
         	System.out.printf("%nStart sending application data (%d bytes) with telegram delay of %dms%n", totalLength, data_send_delay);
@@ -1105,6 +1108,7 @@ public class Updater implements Runnable {
                     // daher werden die letzten Daten noch einmal neu gesendet
                     catch(KNXTimeoutException e){
                         timeoutOccured = true;
+                        timeoutCount++;
                     }
 
                     if(!timeoutOccured) { // wenn kein Timeout Fehler vorgekommen ist, soll die Abarbeitung fortgesetzt werden
@@ -1114,6 +1118,8 @@ public class Updater implements Runnable {
                         progSize += payload;	// keep track of page/sector bytes send
                         total += payload;		// keep track of total bytes send from file
                     }else{ // wenn ein Timeout passiert ist, muss der Merker wieder zurückgesetzt werden
+                        System.out.print(ConColors.BRIGHT_RED + "x" );
+                        System.out.print(ConColors.RESET);
                         timeoutOccured = false;
                     }
                 }
@@ -1147,6 +1153,9 @@ public class Updater implements Runnable {
         long flash_time_duration = System.currentTimeMillis() - flash_time_start;
         fis.close();
         System.out.printf("Wrote %d bytes from file to device in %tM:%<tS.", total, flash_time_duration);
+        if (timeoutCount > 0) {
+            System.out.printf(ConColors.BG_RED + "Timeout(s): %d" + ConColors.RESET, timeoutCount);
+        }
         //Thread.sleep(100);	//TODO, can be removed
     }
 }
