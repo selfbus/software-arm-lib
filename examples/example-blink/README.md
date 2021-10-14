@@ -1,5 +1,5 @@
 LED blink example
------------------
+=================
 
 A simple application that blinks some LED's
 - used on the LPCxpresso board the LED on pin PIO0.7 will blink

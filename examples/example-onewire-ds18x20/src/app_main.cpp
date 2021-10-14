@@ -1,18 +1,22 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application which will scan and read Temperature from DS18x20
+ * @defgroup SBLIB_EXAMPLE_ONEWIRE_DS18X20_1 Onewire DS18x20 example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Scan and read Temperature from DS18x20 family devices using the OneWire (1-Wire) Protocol.
+ * @details A simple application which will scan and read Temperature from DS18x20
  *          family devices using the OneWire (1-Wire) Protocol.
  *          Implementation on 4TE-ARM-Controller. Including OneWire parasite power mode.
- *          1-wire data line pin is PIO1.7
+ *          1-wire data line pin is PIO1.7<br />
  *
- *          needs BCU1 version of the sblib library
+ *          links against BCU1 version of the sblib library
+ * @{
  *
- * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
- * @bug No known bugs.
+ * @file    app_main.cpp
+ * @author  Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
+ * @author  Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No  known bugs.
  ******************************************************************************/
 
-#define DBG_PRINT       0    // Debug print to console
+#define DBG_PRINT       0    ///>  Debug print to console
 
 #if DBG_PRINT
 #   include <stdio.h>
@@ -23,21 +27,21 @@
 #include <sblib/io_pin_names.h>
 #include <sblib/sensors/ds18x20.h>
 
-#define USE_OWN_ROM     1      ///> Use your own extracted rom informations. See SetOwnDs18xDeviceRoms()
-#define PORTPIN         PIO1_7 ///> GPIO PIN, where the 1-wire data line is connected
-#define PARASITE_POWER  true   ///> Enable the Parasite power (check ds18x20 Datasheet)
-#define READ_TIMER 500         ///> Read values timer in milliseconds
+#define USE_OWN_ROM     1        ///> Use your own extracted ROM informations. See SetOwnDs18xDeviceRoms()
+#define PORTPIN         PIO1_7   ///> GPIO PIN, where the 1-wire data line is connected
+#define PARASITE_POWER  true     ///> Enable the Parasite power (check ds18x20 Datasheet)
+#define READ_TIMER      500      ///> Read values timer in milliseconds
 
 #define START_UP_BLINK_DELAY 200 ///> start-up LED_blinking delay in milliseconds
 
-bool bLastRead= false;         ///> Condition to read values if timer reached
-bool bInitSearch= false;       ///> Device search state
+bool bLastRead= false;           ///> Condition to read values if timer reached
+bool bInitSearch= false;         ///> Device search state
 
 DS18x20 ds;
 
 #if USE_OWN_ROM
 /**
- * Example how to use your own extracted rom.
+ * Example how to use your own extracted ROM.
  */
 bool set_Own_Ds18x_Device_Roms()
 {
@@ -168,3 +172,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

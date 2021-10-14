@@ -1,11 +1,15 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application that sends pulses on a digital port.
+ * @defgroup SBLIB_EXAMPLE_PULSED_BLINK_1 Pulsed blink example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Sends pulses on a digital port
+ * @details This example is meant to be a test for the timing of delayMicroseconds().<br/>
+ *          By default PIO0.7 is used, which is the LED on the LPCxpresso board.<br/>
  *
- * By default PIO0.7 is used, which is the LED on the LPCxpresso board.
- * needs BCU1 version of the sblib library.
+ *          links against BCU1 version of the sblib library
  *
- * This example is meant to be a test for the timing of delayMicroseconds().
+ * @{
+ *
+ * @file   app_main.cpp
  *
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2015
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
@@ -38,7 +42,6 @@
 
 
 /**
- * @def SET_TESTPIN_HIGH macro to set the test pin high
  * @brief To be as accurate as possible, we directly access the IO pin and do not
  *        use digitalWrite().
  *
@@ -53,7 +56,6 @@
 #define SET_TESTPIN_HIGH port->MASKED_ACCESS[mask] = mask
 
 /**
- * @def SET_TESTPIN_LOW macro to set the test pin low
  * @brief To be as accurate as possible, we directly access the IO pin and do not
  *        use digitalWrite().
  *
@@ -298,3 +300,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

@@ -1,10 +1,14 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application which will demonstrate how to read Temperature and
- *          Humidity from one or more DHT22 sensors a timer and the timer interrupt.
+ * @defgroup SBLIB_EXAMPLE_DHT22_1 DHT22 example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Read temperature and humidity from one or more DHT22 sensors using a timer and the timer interrupt.
+ * @details A simple application which will demonstrate how to read Temperature and
+ *          Humidity from one or more DHT22 sensors a timer and the timer interrupt.<br />
  *
- *          needs BCU1 version of the sblib library
+ *          links against BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -111,3 +115,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

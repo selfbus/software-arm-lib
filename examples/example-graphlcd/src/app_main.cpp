@@ -1,19 +1,21 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   An example application for a graphical LCD.
- *          We use the EA DOGS 102, a 102x64 monochrome graphical LCD.
+ * @defgroup SBLIB_EXAMPLE_GRAPHICAL_LCD_1 Graphical LCD example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Displays some text on a 102x64 monochrome graphical LCD with SPI
+ * @details An example application for a graphical LCD.
+ *          We use the EA DOGS 102, a 102x64 monochrome graphical LCD.<br />
+ *          We use SPI port 0 in this example.<br />
+ *          <br />
+ *          Connect the ARM in this way to the EA-DOGS:<br />
+ *              - PIO0_2:  SSEL0 -> Display CS0 "chip select"<br />
+ *              - PIO0_9:  MOSI0 -> Display SDA "data in"<br />
+ *              - PIO2_11: SCK0  -> Display SCK "clock"<br />
+ *              - PIO0_8:        -> Display CD  "command/data"<br />
  *
- *          We use SPI port 0 in this example.
+ *         links against BCU1 version of the sblib library
+ * @{
  *
- *          Connect the ARM in this way to the EA-DOGS:
- *
- *          PIO0_2:  SSEL0 -> Display CS0 "chip select"
- *          PIO0_9:  MOSI0 -> Display SDA "data in"
- *          PIO2_11: SCK0  -> Display SCK "clock"
- *          PIO0_8:        -> Display CD  "command/data"
- *
- *          needs BCU1 version of the sblib library
- *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -68,3 +70,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

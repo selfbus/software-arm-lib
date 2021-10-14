@@ -1,18 +1,18 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple example for SPI.
- *          This example configures SPI for output and sends a byte every second.
- *
- *          We use SPI port 0 in this example.
- *
+ * @defgroup SBLIB_EXAMPLE_SPI_1 SPI example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Configures SPI for output and sends a byte every second.
+ * @details A simple example for SPI. This example configures SPI for output and sends a byte every second.
+ *          We use SPI port 0 in this example.<br/>
  *          Pinout:
+ *              - PIO0_2:  SSEL0
+ *              - PIO0_9:  MOSI0
+ *              - PIO2_11: SCK0
  *
- *          PIO0_2:  SSEL0
- *          PIO0_9:  MOSI0
- *          PIO2_11: SCK0
+ *          links against BCU1 version of the sblib library
+ * @{
  *
- *          needs BCU1 version of the sblib library
- *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -75,3 +75,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

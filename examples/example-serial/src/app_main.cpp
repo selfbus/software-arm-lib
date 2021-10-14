@@ -1,12 +1,16 @@
 /**************************************************************************//**
+ * @defgroup SBLIB_EXAMPLE_SERIAL_PORT_1 Serial port example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Shows the use of the serial port.
+ * @details This example application shows the use of the serial port.<br />
+ *          Connect a terminal program to the ARM's serial port.<br />
+ *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.<br />
+ *          Tx-pin is PIO1.7, Rx-pin is PIO1.6<br />
+ *
+ *          links against BCU1 version of the sblib library
+ * @{
+ *
  * @file    app_main.cpp
- * @brief   This example application shows the use of the serial port.
- *          Connect a terminal program to the ARM's serial port:
- *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.7, Rx-pin is PIO1.6
- *
- *          needs BCU1 version of the sblib library
- *
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -71,3 +75,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

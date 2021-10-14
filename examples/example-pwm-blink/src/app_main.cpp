@@ -1,15 +1,15 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   This example application flashes a LED on digital pin PIO2.6
- *          using the PWM output of the 16bit timer #1.
- *
- *          To test, connect: PIO2.6 --[ 470 ohm resistor ]---[ LED ]--- GND
- *
+ * @defgroup SBLIB_EXAMPLE_PWM_BLINK_1 PWM blink example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Flashes a LED on digital pin PIO2.6 using the PWM output of the 16bit timer #1
+ * @details To test, connect: PIO2.6 --[ 470 Ohm resistor ]---[ LED ]--- GND<br/>
  *          The LED to blink has to be connected to pin PIN_INFO (PIO2.6)
- *          We cannot blink the LED on the LPCxpresso board with PWM.
+ *          We cannot blink the LED on the LPCxpresso board with PWM.<br/>
  *
- *          needs BCU1 version of the sblib library
+ *          links against BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -70,3 +70,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

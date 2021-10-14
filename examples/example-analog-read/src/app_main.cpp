@@ -1,12 +1,16 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application that reads the analog channel AD0 (PIO0.11) and
- *          prints the read value to the serial port.
+ * @defgroup SBLIB_EXAMPLE_ANALOG_READ_1 Analog read example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Read the analog channel AD0 (PIO0.11) and print the read value to the serial port.
+ * @details A simple application that reads the analog channel AD0 (PIO0.11) and
+ *          prints the read value to the serial port.<br/>
  *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.7, Rx-pin is PIO1.6
+ *          Tx-pin is PIO1.7, Rx-pin is PIO1.6<br />
  *
- *          needs BCU1 version of the sblib library
+ *          links against BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -55,3 +59,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

@@ -1,10 +1,13 @@
 /*****************************************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application that blinks the Info LED of the 4TE-ARM Controller (on pin PIO2.6)
- *          using a timer and its timer interrupt.
+ * @defgroup SBLIB_EXAMPLE_TIMER_INTERRUPT_1 Timer interrupt blinking example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief Blinks the Info LED of the 4TE-ARM Controller (on pin PIO2.6)
+ *        using a timer and its timer interrupt.
+ * @details links against BCU1 version of the sblib library
  *
- *          needs BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -76,3 +79,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

@@ -1,15 +1,17 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application which will read Lux and RTC from
- *          LPC1115 Dev Board using I2C class with a timer and the timer interrupt.
+ * @defgroup SBLIB_EXAMPLE_I2C_1 i2c example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Read Lux and RTC from LPC1115 Developer Board using I2C class with a timer and the timer interrupt
+ * @details for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT<br/>
+ *         "Enable printf float" in Project settings -> Managed Linker Script<br/>
  *
- *          needs BCU1 version of the sblib library
- *          needs at least a 64KB LPC111x.
+ *         links against BCU1 version of the sblib library
  *
- *          for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT
- *          "Enable printf float" in Prj settings -> Managed Linker Script
+ * @note   needs at least a 64KB LPC111x.
  *
+ * @{
  *
+ * @file   app_main.cpp
  * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
  * @author Mario Theodoridis Copyright (c) 2021
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
@@ -330,3 +332,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

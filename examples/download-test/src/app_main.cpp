@@ -1,13 +1,15 @@
 /**************************************************************************//**
- * @file    Download-Test.cpp
- * @brief   A simple application that blinks the RUN/INFO LED's
- *          and sends a simple message over RS232.
- *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.7, Rx-pin is PIO1.6
+ * @defgroup SBLIB_EXAMPLE_DOWLOAD_TEST_1 Download-Test example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Blinks the RUN/INFO LED's and sends a simple message over RS232.
+ * @details The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.<br/>
+ *          Tx-pin is PIO1.7, Rx-pin is PIO1.6<br/>
+ *          used on the Selfbus 4TE-ARM-Controller the RUN (PIO3.3) and INFO (PIO2.6) LED will blink<br/>
  *
- *          needs BCU1 version of the sblib library
- *          used on the Selfbus 4TE-ARM-Controller the RUN (PIO3.3) and INFO (PIO2.6) LED will blink
+ *          links against BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -70,3 +72,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

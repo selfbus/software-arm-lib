@@ -1,5 +1,5 @@
 Pulsed blink example
---------------------
+====================
 
 A simple application that sends pulses on a digital port.
 

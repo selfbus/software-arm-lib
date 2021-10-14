@@ -1,18 +1,22 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application which:
+ * @defgroup SBLIB_EXAMPLE_PROC_UID_1 Processor UID (GUID) and serial example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Sends UID, shorted UID (for bus-updater use) and KNX-serial number to the serial port
+ * @details A simple application which:
  *              - reads the UID (GUID) of the LPCxx processor
  *              - calculates a hashed serial used for the KNX bus
  *              - blinks the program led at ~2Hz
- *              - sends UID, shorted UID (for bus-updater use) and KNX-serial to the serial port
+ *              - sends UID, shorted UID (for bus-updater use) and KNX-serial number to the serial port<br/>
  *
- *          Connect a terminal program to the ARM's serial port. Default Tx-pin is PIO1.7 and Rx-pin is PIO1.6.
- *          You can change the serial port by commenting/uncommenting
- *          #define PIN_SERIAL_RX and #define PIN_SERIAL_TX below.
- *          The connection setting is 19200 8N1 (19200 baud, 8 data bits, no parity, 1 stop bit).
+ *          Connect a terminal program to the ARM's serial port.<br/>
+ *          Default Tx-pin is PIO1.7 and Rx-pin is PIO1.6.<br/>
+ *          You can change the serial port by commenting/uncommenting PIN_SERIAL_RX and PIN_SERIAL_TX.<br/>
+ *          The connection settings are 19200 8N1 (19200 baud, 8 data bits, no parity, 1 stop bit).<br/>
  *
- *          - links against BCU1 version of the sblib library
+ *          links against BCU1 version of the sblib library
+ * @{
  *
+ * @file    app_main.cpp
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
  ******************************************************************************/
@@ -42,9 +46,8 @@
 
 #define UID_BYTES_FOR_BUSUPDATER 12     //!< number of byte the bus-updater needs for option -uid
 
-#define KNX_SERIAL_NUMBER_LENGTH 6      //!< length of a KNX serial number
-
 /// @cond DEVELOPER
+#define KNX_SERIAL_NUMBER_LENGTH 6      //!< length of a KNX serial number
 // hashUID is "borrowed" from BcuBase::hashUID(..) and can change anytime
 // so don't take a close look on me :)
 int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
@@ -163,3 +166,5 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
     return 1;
 }
 /// @endcond
+
+/** @}*/

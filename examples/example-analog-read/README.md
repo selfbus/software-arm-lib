@@ -1,5 +1,5 @@
 Analog read example
--------------------
+===================
 
 This example reads analog values from Pin PIO0.11 (analog channel AD0).
 

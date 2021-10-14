@@ -1,17 +1,21 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   This is a bus monitor that outputs all received telegrams to the serial port.
- *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.7, Rx-pin is PIO1.6
- *          In addition, one can send telegram on the bus via the serial port by sending
- *          a sequence of bytes. The incoming data from the serial line should be in
- *          following byte-format:
- *          CC aa bb cc dd ee
- *          CC             the number of telegram-bytes to be send
- *          aa,bb,cc,dd,ee the telegram data (without the checksum)
+ * @defgroup SBLIB_EXAMPLE_SERIAL_BUS_1 Serial Bus Monitor Example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief    Bus monitor that outputs all received telegrams to the serial port
+ * @details  This is a bus monitor that outputs all received telegrams to the serial port.<br/>
+ *           The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.<br/>
+ *           Tx-pin is PIO1.7, Rx-pin is PIO1.6<br/>
+ *           In addition, one can send telegram on the bus via the serial port by sending
+ *           a sequence of bytes.<br/>
+ *           The incoming data from the serial line should be in following byte-format:<br />
+ *           - CC aa bb cc dd ee<br />
+ *           - CC             the number of telegram-bytes to be send<br />
+ *           - aa, bb, cc, dd, ee the telegram data (without the checksum)<br />
  *
- *          needs BCU1 version of the sblib library
+ *           links against BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
@@ -30,7 +34,7 @@
 #include <sblib/timeout.h>
 #include <sblib/eib/sblib_default_objects.h>
 
-Timeout blinky;
+Timeout blinky; ///< Timeout to blink the RUN Led
 
 /**
  * Initialize the application.
@@ -114,3 +118,4 @@ void loop_noapp()
 {
 
 }
+/** @}*/

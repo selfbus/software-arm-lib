@@ -1,5 +1,5 @@
 Onewire DS18x20 example
-================================
+=======================
 
 A simple application which will scan and read Temperature from DS18x20
 family devices using the OneWire (1-Wire) Protocol.

@@ -1,4 +1,4 @@
-graphical LCD example
+Graphical LCD example
 =====================
 
 An example application for a graphical LCD.

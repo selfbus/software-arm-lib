@@ -1,5 +1,5 @@
 Serial port example
-========================
+===================
 
 This example application shows the use of the serial port.
 Connect a terminal program to the ARM's serial port:

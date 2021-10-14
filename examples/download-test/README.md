@@ -1,5 +1,5 @@
 Download-Test example
--------------------
+=====================
 
 A simple application that blinks the RUN/INFO LED's
 and sends a simple "Hello World via KNX download!" message over RS232.

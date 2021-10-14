@@ -1,15 +1,19 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application that blinks some LED's
+ * @defgroup SBLIB_EXAMPLE_LED_BLINK_1 LED blink example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Blinks the Program, Run, Info and a LED on PIO0.7
+ * @details A simple application that blinks some LED's<br/>
+ *          on a LPCxpresso board the LED on pin PIO0.7 will blink<br/>
+ *          on a Selfbus ARM-Controller the
+ *              - PROGRAM (PIO2.0)
+ *              - RUN     (PIO3.3)
+ *              - INFO (PIO2.6)
+ *          LED's will blink<br />
  *
- * needs BCU1 version of the sblib library
- * used on a LPCxpresso board the LED on pin PIO0.7 will blink
- * used on a Selfbus ARM-Controller the
- *                  PROGRAM (PIO2.0),
- *                  RUN     (PIO3.3) and
- *                  INFO (PIO2.6)
- *                  LED's will blink
+ *          links against BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -72,3 +76,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/
