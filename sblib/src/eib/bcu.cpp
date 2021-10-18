@@ -1,5 +1,5 @@
 /*
- *  bcu.h - EIB bus coupling unit.
+ *  bcu.cpp - EIB bus coupling unit.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -497,8 +497,8 @@ void BCU::processDirectTelegram(int apci)
     connectedTime = systemTime;
     sendTelegram[6] = 0;
 
-    int apciCmd = apci & APCI_GROUP_MASK;
-    switch (apciCmd)  // ADC / memory commands use the low bits for data
+    int apciCommand = apci & APCI_GROUP_MASK;
+    switch (apciCommand)  // ADC / memory commands use the low bits for data
     {
     case APCI_ADC_READ_PDU: // todo adc service  to be implemented for bus voltage and PEI
         index = bus.telegram[7] & 0x3f;  // ADC channel
@@ -517,7 +517,7 @@ void BCU::processDirectTelegram(int apci)
         count = bus.telegram[7] & 0x0f; // number of data bytes
         address = (bus.telegram[8] << 8) | bus.telegram[9]; // address of the data block
 
-        if (apciCmd == APCI_MEMORY_WRITE_PDU)
+        if (apciCommand == APCI_MEMORY_WRITE_PDU)
         {
             if (processApciMemoryWritePDU(address, &bus.telegram[10], count))
             {
@@ -525,14 +525,14 @@ void BCU::processDirectTelegram(int apci)
                 if (userRam.deviceControl & DEVCTRL_MEM_AUTO_RESPONSE)
                 {
                     // only on successful write
-                    apciCmd = APCI_MEMORY_READ_PDU;
+                    apciCommand = APCI_MEMORY_READ_PDU;
                 }
 #endif
             }
             sendAck = T_ACK_PDU;
         }
 
-        if (apciCmd == APCI_MEMORY_READ_PDU)
+        if (apciCommand == APCI_MEMORY_READ_PDU)
         {
             if (!processApciMemoryReadPDU(address, &sendTelegram[10], count))
             {
@@ -540,7 +540,7 @@ void BCU::processDirectTelegram(int apci)
                 count = 0;
             }
 
-            // send a the read response
+            // send a APCI_MEMORY_RESPONSE_PDU response
             sendTelegram[5] = 0x63 + count;
             sendTelegram[6] = 0x42;
             sendTelegram[7] = 0x40 | count;
@@ -560,26 +560,28 @@ void BCU::processDirectTelegram(int apci)
         switch (apci)
         {
         case APCI_RESTART_PDU:
-        case APCI_RESTART_TYPE1_PDU:
-            if(apci&1)
+        case APCI_RESTART_RESPONSE_PDU:
+            if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
             {
                 // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
-                // restart with parameters, special meaning of erase=0 and channel=255 for update mode
-                unsigned int erase   = bus.telegram[8];
-                unsigned int channel = bus.telegram[9];
-                if (erase == BOOTLOADER_MAGIC_ERASE && channel == BOOTLOADER_MAGIC_CHANNEL)
-                {
-                    unsigned int * magicWord = (unsigned int *) BOOTLOADER_MAGIC_ADDRESS;
-                    *magicWord = BOOTLOADER_MAGIC_WORD;
-                }
+                // restart with parameters, we need to start in flashmode
+                unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+                *magicWord = BOOTLOADER_MAGIC_WORD;
             }
+
             if (usrCallback)
+            {
                 usrCallback->Notify(USR_CALLBACK_RESET);
+            }
+
             writeUserEeprom();   // Flush the EEPROM before resetting
+
             if (memMapper)
             {
                 memMapper->doFlash();
             }
+            //FIXME 3/5/3 KNX spec 3.7 (page 63) says send an appropriate LM_Reset.ind message through the EMI interface
+
             NVIC_SystemReset();  // Software Reset
             break;
 
@@ -695,6 +697,7 @@ void BCU::processConControlTelegram(int tpci)
                 incConnectedSeqNo = false;
                 lastAckSeqNo = -1;
                 //bus.setSendAck (0); // todo check in spec if needed
+                // KNX 3/3/4 3.8 shall try to send the T_CONNECT_REQ_PDU to the remote Transport Layer
             }
         }
         else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
@@ -703,6 +706,7 @@ void BCU::processConControlTelegram(int tpci)
             {
                 connectedAddr = 0;
                 //bus.setSendAck (0);  // todo check in spec if needed
+                // KNX 3/3/4 3.8 The T_Disconnect service shall neither be acknowledged nor confirmed by the remote Transport Layer entity.
             }
         }
     }

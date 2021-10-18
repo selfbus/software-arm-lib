@@ -10,6 +10,8 @@
 #ifndef sblib_apci_h
 #define sblib_apci_h
 
+#include <sblib/types.h>
+
 enum
 {
     // Application commands (see KNX 3/3/7 p.8 Application Layer control field)
@@ -56,8 +58,9 @@ enum
     APCI_DEVICEDESCRIPTOR_RESPONSE_PDU          = 0x340, //!> A_DeviceDescriptor_Response-PDU, connection-oriented
 
     APCI_RESTART_PDU                            = 0x380, //!> A_Restart-PDU, connection-oriented
-    APCI_RESTART_TYPE1_PDU                      = 0x381, //!> special version of APCI_RESTART used by Selfbus bootloader
-                                                         //!> restart with parameters, special meaning of erase=0 and channel=255 for update mode
+    APCI_RESTART_RESPONSE_PDU                   = 0x381, //!> A_Restart_Response-PDU , connection-oriented
+                                                         //!> used by Selfbus bootloader to reset into flash mode
+                                                         //!> special meaning of eraseCode=0 and channelNumber=255 for update mode
 
     // 0x3C0 -> 0x3D0 coupler specific?
 
@@ -93,11 +96,24 @@ enum
     T_GROUP_PDU = 0x00
 };
 
-#define BOOTLOADER_MAGIC_WORD 0x5E1FB055        //!< magic word which will be checked on startup of the bootloader
+#define BOOTLOADER_MAGIC_WORD (0x5E1FB055)      //!< magic word which will be checked on startup of the bootloader
                                                 //!< weather or not to go into flash mode
-#define BOOTLOADER_MAGIC_ADDRESS 0x10000000     //!< magic address for the magic word to be checked on startup of the bootloader
+#define BOOTLOADER_MAGIC_ADDRESS ((unsigned int *) 0x10000000) //!< magic address for the magic word to be checked on startup of the bootloader
                                                 //!< weather or not to go into flash mode
 #define BOOTLOADER_MAGIC_ERASE 0                //!< bootloader magic erase
 #define BOOTLOADER_MAGIC_CHANNEL 255            //!< bootloader magic channel
+
+/**
+ * @brief Checks a APCI for the bus-updater Magic word
+ *        This is a bus-updater/bootloader and BCU special function
+ *        used for the flashing process to boot into updating mode
+ * @param apci          APCI to check for the magic word
+ * @param eraseCode     eraseCode from the APCI_RESTART_TYPE1_PDU telegram
+ * @param channelNumber channelNumber from the APCI_RESTART_TYPE1_PDU telegram
+ *
+ * @return true if apci is a APCI_RESTART_TYPE1_PDU with magic word<br/>
+ *         otherwise false
+ */
+const bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber);
 
 #endif /*sblib_apci_h*/

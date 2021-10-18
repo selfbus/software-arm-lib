@@ -49,7 +49,7 @@
 //#define PIN_SERIAL_RX PIO3_1            //!< serial Rx-Pin on PIO3.1
 //#define PIN_SERIAL_TX PIO3_0            //!< serial Tx-Pin on PIO3.0
 
-#define DEFAULT_SERIAL_SPEED 19200      //!< serial speed in baud
+#define DEFAULT_SERIAL_SPEED 115200      //!< serial speed in baud
 
 #define UID_BYTES_FOR_BUSUPDATER 12     //!< number of byte the bus-updater needs for option -uid
 
@@ -58,6 +58,8 @@
 // hashUID is "borrowed" from BcuBase::hashUID(..) and can change anytime
 // so don't take a close look on me :)
 int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
+// some fancy stuff for the selfbus bootloader, just ignore me
+volatile const char * __attribute__((optimize("O0"))) getAppVersion();
 /// @endcond
 void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int length, char separator='\0');
 
@@ -69,6 +71,8 @@ void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int l
  */
 void setup()
 {
+    volatile const char * v = getAppVersion();      // Ensure APP ID is not removed by linker (its used in the bus updater)
+    v++;                                            // just to avoid compiler warning of unused variable
     pinMode(PIN_PROG, OUTPUT);
     digitalWrite(PIN_PROG, true);
     serial.setRxPin(PIN_SERIAL_RX);
@@ -77,6 +81,27 @@ void setup()
     serial.println("Selfbus read UID example");
 }
 
+
+unsigned char __attribute__((section (".selfbusSection"))) selfBusBuffer[12];
+unsigned char __attribute__((section (".selfbusSection"))) selfBusChar = 0xAA;
+
+extern int __selfbus_first_sector, __selfbus_sector_end;
+extern unsigned int __selfbus_image_first_sector, __selfbus_image_size;
+
+extern unsigned int __base_Flash, __top_Flash;
+extern unsigned int _image_start, _image_end, _image_size;
+
+/*
+__base_${memory.name} = ${memory.location}  ; //${memory.name}
+__base_${memory.alias} = ${memory.location} ; // ${memory.alias}
+__top_${memory.name} = ${memory.location} + ${memory.size} ; // ${memory.sizek}
+__top_${memory.alias} = ${memory.location} + ${memory.size} ; // ${memory.sizek}/
+_image_start = LOADADDR(.text);
+_image_end = LOADADDR(.data) + SIZEOF(.data);
+_image_size = _image_end - _image_start;
+
+
+*/
 /**
  * @brief The processing loop while no KNX-application is loaded.
  *
@@ -85,21 +110,55 @@ void setup()
  */
 void loop_noapp()
 {
+
+
+/*
+    static int i = 0;
+    uint8_t *p, *end;
+
+    p = (uint8_t*)&__selfbus_first_sector;
+    end = (uint8_t*)&__selfbus_sector_end;
+    while(p<end) {
+      *p++ = i++; //initialize with pattern
+    }
+    for (;;) {
+    }
+    // Never leave main
+    return;
+*/
+    // unsigned int *p;
+    // p = (unsigned int*)&__selfbus_image_first_sector;
+
+    unsigned int flashStartAddress = (unsigned int) (unsigned int*)&__base_Flash;
+    unsigned int flashEndAddress = (unsigned int) (unsigned int*)&__top_Flash;
+
+    unsigned int imageStartAddress = (unsigned int) (unsigned int*)&_image_start;
+    unsigned int imageEndAddress = (unsigned int) (unsigned int*)&_image_end;
+    unsigned int imageSize = (unsigned int) (unsigned int*)&_image_size;
+
+    serial.print("Flash (start,end,size)    : 0x", flashStartAddress, HEX, 6);
+    serial.print(" 0x", flashEndAddress, HEX, 6);
+    serial.println(" 0x", flashEndAddress - flashStartAddress, HEX, 6);
+
+    serial.print("Firmware (start,end,size) : start: 0x", imageStartAddress, HEX, 6);
+    serial.print(" end: 0x", imageEndAddress, HEX, 6);
+    serial.println(" size: 0x", imageSize, HEX, 6);
+
     byte uniqueID[IAP_UID_LENGTH]; // buffer for the UID/GUID of the processsor
     byte knxSerial[KNX_SERIAL_NUMBER_LENGTH]; // buffer for the KNX serial number
 
     if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
     {
-        serial.print("Target UID is   :      ");
+        serial.print("Target UID is             : ");
         // send the uid/guid we received from iapReadUID
         sendBytesInHexToSerialPort(serial, &uniqueID[0], IAP_UID_LENGTH, ':');
-        serial.print("Busupdater needs: -uid ");
+        serial.print("Busupdater needs   (-uid) : ");
         sendBytesInHexToSerialPort(serial, &uniqueID[0], UID_BYTES_FOR_BUSUPDATER, ':');
 
         // create a 48bit serial/hash from the 128bit GUID
         if (hashUID(&uniqueID[0], sizeof(uniqueID), &knxSerial[0], sizeof(knxSerial)))
         {
-            serial.print("KNX-Serial      :      ");
+            serial.print("KNX-Serial                : ");
             sendBytesInHexToSerialPort(serial, &knxSerial[0], sizeof(knxSerial), ':');
         }
         else
@@ -147,6 +206,18 @@ void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int l
 }
 
 /// @cond DEVELOPER
+
+// create APP_VERSION, its used in the bus updater magic string is !AVP!@:
+// from Rauchmelder-bcu1 (app_main.cpp):
+volatile const char __attribute__((used)) APP_VERSION[20] = "!AVP!@:SBuid   1.00";
+// disable optimization seems to be the only way to ensure that this is not being removed by the linker
+// to keep the variable, we need to declare a function that uses it
+// alternatively, the link script may be modified by adding KEEP to the section
+volatile const char * __attribute__((optimize("O0"))) getAppVersion()
+{
+    return APP_VERSION;
+}
+
 int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
 {
     const int MAX_HASH_WIDE = 16;
