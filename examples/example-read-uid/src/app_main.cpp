@@ -17,7 +17,7 @@
  *          links against BCU1 version of the sblib library
  * @{
  *
- * @file    app_main.cpp
+ * @file   app_main.cpp
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
  ******************************************************************************/
