@@ -259,22 +259,21 @@ public:
     /** The states of the telegram sending/receiving state machine */
     enum State
     {
-    	INIT,	//! The Lib is initializing, waiting for 50bit time inactivity on the bus
-		IDLE,	//!< The lib is idle. there was no receiving or sending for at least 50 bit times. only cap intr enabled, no timeout intr
-		RECV_WAIT_FOR_STARTBIT_OR_TELEND,	//!< The lib is receiving a byte. cap intr  (low bit received) and timeout (stop bit: char end)) intr enabeld
-		RECV_BITS_OF_BYTE,	//!< The lib is waiting for the start bit window of the next byte. only timeout enabled
-		RECV_WAIT_FOR_NEXT_CHAR_WINDOW,	//!< After Tel is received the lib is waiting for  begin of window for sending an ACK to remote side.
-		RECV_WAIT_FOR_TX_ACK_WINDOW,	//!< After Tel is received the lib is waiting for start sending an ACK to remote side.
-		RECV_WAIT_FOR_ACK_TX_START,	//!< Timeout event: Start sending the telegram (also triggered in sbSendTelegram[]), cap event: start RX of a new tel
-		WAIT_FOR_NEXT_RX_OR_PENDING_TX, 	//!< Send a start bit
-		SEND_START_BIT,	//!< Send the first bit of the current byte
-		SEND_BIT_0,	//!< Send the bits of the current byte
-		SEND_BITS_OF_BYTE,	//!< Send high bit(s) and wait for receiving a the falling edge of our next 0-bit.
-		SEND_WAIT_FOR_HIGH_BIT_END,	//!< Wait between two transmissions, cap disabled, timeout: start sending next char
-		SEND_WAIT_FOR_NEXT_TX_CHAR,	//!< Finish sending current byte
-		SEND_END_OF_TX,	//!< after sending we wait for the ack receive window to start, only timeout event enabled
-		SEND_WAIT_FOR_RX_ACK_WINDOW,	//!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
-		SEND_WAIT_FOR_RX_ACK,
+    	INIT,	//!< The Lib is initializing, waiting for 50bit time inactivity on the bus
+		IDLE,	//!< The lib is idle. there was no receiving or sending for at least 50bit times, only cap intr enabled, no timeout intr
+		INIT_RX_FOR_RECEIVING_NEW_TEL, //! The Lib received a cap event and we need to start/init receiving of a new Telegram
+		RECV_WAIT_FOR_STARTBIT_OR_TELEND,	//!< The lib is waiting for Startbit (cap intr (low bit received) or timeout (end of stop bit: char end)) intr enabeld
+		RECV_BITS_OF_BYTE,	//!< The lib is collecting all bit of a character
+		RECV_WAIT_FOR_ACK_TX_START,		//!< After Tel is received the lib is waiting for start sending an ACK to remote side.
+		WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, 	//!< Timeout event: Start sending the telegram (also triggered in sbSendTelegram[]), cap event: start RX of a new tel
+		SEND_START_BIT,					//!< Send a start bit
+		SEND_BIT_0,						//!< Send the first bit of the current byte
+		SEND_BITS_OF_BYTE,				//!< Send the bits of the current byte
+		SEND_WAIT_FOR_HIGH_BIT_END,		//!< Send high bit(s) and wait for receiving a the falling edge of our next 0-bit.
+		SEND_WAIT_FOR_NEXT_TX_CHAR,		//!< Wait between two transmissions, cap disabled, timeout: start sending next char
+		SEND_END_OF_TX,					//!< Finish sending current byte
+		SEND_WAIT_FOR_RX_ACK_WINDOW,	//!< after sending we wait for the ack receive window to start, only timeout event enabled
+		SEND_WAIT_FOR_RX_ACK,			//!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
 		STATE_END
     };
 
