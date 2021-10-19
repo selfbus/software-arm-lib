@@ -1200,7 +1200,6 @@ void Bus::timerInterruptHandler()
 		//tb_d( SEND_START_BIT+100, timer.match (pwmChannel), tb_in);
 		//tb_h(SEND_START_BIT+200, timer.captureMode(captureChannel),  tb_in);
 
-
 		if (timer.flag(captureChannel))
 		{
 			// Bus busy check: Abort sending if we receive a start bit early enough to abort.
@@ -1437,8 +1436,6 @@ void Bus::timerInterruptHandler()
 		timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME); // we wait 50 BT- pre-send-time for next rx/tx window, cap intr disabled
 		timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait
 		timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
-		//state = Bus::WAIT_FOR_IDLE50;
-
 		break;
 
 
