@@ -27,6 +27,11 @@
 *.out
 *.app
 
+# debugging configuration files
+*.launch
+*.jlink
+
+
 # Build folders
 cmake-build*
 Debug*

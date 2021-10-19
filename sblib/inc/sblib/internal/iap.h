@@ -101,4 +101,4 @@ IAP_Status iapReadPartID(unsigned int* partId);
 int iapFlashSize();
 
 
-#endif /* SB_IAP_H_ */
+#endif /* sblib_iap_h */
