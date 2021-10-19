@@ -60,21 +60,22 @@
 #ifndef UPDATE_H_
 #define UPDATE_H_
 
-#define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
-// #define RAM_BUFFER_SIZE FLASH_SECTOR_SIZE  //!< \todo Why should we use 4096 byte buffer Size in byte for the ram buffer
+// #define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
+#define RAM_BUFFER_SIZE FLASH_SECTOR_SIZE  //!< \todo Why should we use 4096 byte buffer Size in byte for the ram buffer
 
-#define RESET_DELAY_MS 5000                 //!< Time in milliseconds a System reset should be delayed to
-                                           //!< to give the bcu enough time to send it's T_ACK_PDU
+#define RESET_DELAY_MS 300                 //!< Time in milliseconds a System reset should be delayed to
+                                           //!< give the bcu enough time to send it's T_ACK_PDU
+#define UID_LENGTH_USED 12
 
 /**
- * @brief Request a Rest of the mcu in x milliseconds
+ * @brief Request a reset of the mcu in x milliseconds
  * @param msec time in millisecond to wait before resetting the mcu.
  */
 void restartRequest (unsigned int msec);
 
 /**
  * @brief Returns the status of the Timeout timer to reset the mcu
- * @return true if restart request is expired and mcu should be resetted
+ * @return true if restart request is expired and mcu should be reset
  */
 bool restartRequestExpired(void);
 
@@ -90,7 +91,7 @@ bool restartRequestExpired(void);
  * @warning calls noInterrupts() so pending interrupt could be deleted<br/>
  *          execution path depends on many external variables
  */
-unsigned int request_flashWrite(unsigned char* data, bool write_request);
+//unsigned int request_flashWrite(unsigned char* data, bool write_request);
 
 /**
  * @brief Handles KNX memory requests which encapsulate our UPD/UDP protocol

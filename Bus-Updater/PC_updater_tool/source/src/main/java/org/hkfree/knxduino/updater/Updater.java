@@ -73,7 +73,8 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String tool = "Selfbus Updater 0.56";
+    private static final String version = "0.56";
+    private static final String tool = "Selfbus Updater " + version;
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
 
@@ -365,9 +366,11 @@ public class Updater implements Runnable {
         sb.append(
                 " -uid <hex>               send UID to unlock (default: request UID to unlock)")
                 .append(sep);
+        sb.append("                          only the first 12 bytes of UID are used")
+                .append(sep);
         sb.append(" -full                    force full upload mode (disable diff)")
                 .append(sep);
-        sb.append(" -delay                   delay telegrams duing data transmission to reduce bus load (valid 0-500)")
+        sb.append(" -delay                   delay telegrams during data transmission to reduce bus load (valid 0-500)")
         		.append(sep);
         sb.append(" -NO_FLASH                disable flashing firmware, for debugging use only!")
                 .append(sep);
@@ -610,8 +613,8 @@ public class Updater implements Runnable {
         // also call onCompletion
         AppDirs appDirs = AppDirsFactory.getInstance();
         //Diese Angaben werden genutzt, um den Ordner für die Cache Files des DiffUpdaters abzulegen
-        //Unter Windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\0.53
-        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", "0.54", "Selfbus");
+        //Unter Windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\[version]
+        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", version, "Selfbus");
 
         if (options.isEmpty()) {
             LOGGER.log(Level.INFO, tool);
@@ -690,8 +693,14 @@ public class Updater implements Runnable {
                 try {
                     mc.restart(d, 0, 255);
                 } catch (final KNXException e) {
+
                 }
-                Thread.sleep(1000);	// currently not needed because calimero currently times out waiting for an ACK
+                try {
+                    mc = new UpdatableManagementClientImpl(link); //.restart will result in a timeout and exception
+                } catch(final KNXException e){
+
+                }
+                //Thread.sleep(1000);	// currently not needed because calimero currently times out waiting for an ACK
             }
 
             pd = mc.createDestination(progDevice, true);
@@ -712,7 +721,7 @@ public class Updater implements Runnable {
                     }
                     System.out.println();
                 } else {
-                    System.out.println("Reqest UID failed");
+                    System.out.println("Request UID failed");
                     mc.restart(pd);
                     throw new RuntimeException("Selfbus update failed.");
                 }

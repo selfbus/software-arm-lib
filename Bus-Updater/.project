@@ -3,7 +3,6 @@
 	<name>Bus-Updater</name>
 	<comment></comment>
 	<projects>
-		<project>CMSIS_CORE_LPC11Uxx</project>
 		<project>CMSIS_CORE_LPC11xx</project>
 		<project>sblib</project>
 	</projects>
