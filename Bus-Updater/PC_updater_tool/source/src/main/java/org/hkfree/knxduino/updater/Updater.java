@@ -4,11 +4,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -23,7 +19,6 @@ import net.harawata.appdirs.AppDirs;
 import net.harawata.appdirs.AppDirsFactory;
 import org.hkfree.knxduino.updater.tests.flashdiff.BinImage;
 import org.hkfree.knxduino.updater.tests.flashdiff.FlashDiff;
-import org.hkfree.knxduino.updater.tests.flashdiff.FlashPage;
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
@@ -63,7 +58,7 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * disconnectIndicate(p, true); is commented out
  *<p>
  * Because I had to change the calimero lib, I had to import the files into the project
- * Due to other changes it was nessesary to move the UpdatableManagementClientImpl into
+ * Due to other changes it was necessary to move the UpdatableManagementClientImpl into
  * tuwien.auto.calimero.mgmt folder
  * Maybe in future someone finds a better way to do this....
  *
@@ -77,7 +72,6 @@ public class Updater implements Runnable {
     private static final String tool = "Selfbus Updater " + version;
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
-
     private final Map options = new HashMap();
 
     /**
@@ -372,7 +366,7 @@ public class Updater implements Runnable {
                 .append(sep);
         sb.append(" -delay                   delay telegrams during data transmission to reduce bus load (valid 0-500)")
         		.append(sep);
-        sb.append(" -NO_FLASH                disable flashing firmware, for debugging use only!")
+        sb.append(" -NO_FLASH                for debugging use only, disable flashing firmware!")
                 .append(sep);
         LOGGER.log(Level.INFO, sb.toString());
     }
@@ -398,7 +392,7 @@ public class Updater implements Runnable {
         }
     }
 
-    public static final int UPD_ERASE_PAGES = 0;
+    public static final int UPD_ERASE_SECTOR = 0;
     public static final int UPD_SEND_DATA = 1;
     public static final int UPD_PROGRAM = 2;
     public static final int UPD_UPDATE_BOOT_DESC = 3;
@@ -412,58 +406,33 @@ public class Updater implements Runnable {
     public static final int UPD_RESPONSE_UID = 32;
     public static final int UPD_APP_VERSION_REQUEST = 33;
     public static final int UPD_APP_VERSION_RESPONSE = 34;
-    public static final int UDP_RESET = 35;
+    public static final int UPD_RESET = 35;
     public static final int UPD_REQUEST_BOOT_DESC = 36;
     public static final int UPD_RESPONSE_BOOT_DESC = 37;
     public static final int UPD_REQUEST_BL_IDENTITY = 40;
     public static final int UPD_RESPONSE_BL_IDENTITY = 41;
     public static final int UPD_SET_EMULATION = 100;
 
-    public static final int UDP_UNKONW_COMMAND = 0x100; // <! received command
-    // is not defined
-    public static final int UDP_CRC_ERROR = 0x101; // <! CRC calculated on the
-    // device
-    // <! and by the updater don't match
-    public static final int UPD_ADDRESS_NOT_ALLOWED_TO_FLASH = 0x102;// <!
-    // specifed
-    // address
-    // cannot
-    // be
-    // programmed
-    public static final int UPD_SECTOR_NOT_ALLOWED_TO_ERASE = 0x103; // <! the
-    // specified
-    // sector
-    // cannot
-    // be
-    // erased
-    public static final int UPD_RAM_BUFFER_OVERFLOW = 0x104; // <! internal
-    // buffer for
-    // storing the
-    // data
-    // <! would overflow
-    public static final int UPD_WRONG_DESCRIPTOR_BLOCK = 0x105; // <! the boot
-    // descriptor
-    // block does
-    // not exist
-    public static final int UPD_APPLICATION_NOT_STARTABLE = 0x106; // <! the
-    // programmed
-    // application
-    // is not
-    // startable
-    public static final int UPD_DEVICE_LOCKED = 0x107; // <! the device is still
-    // locked
-    public static final int UPD_UID_MISMATCH = 0x108;	//! UID sent to unlock
-    // the device is invalid
-    public static final int UPD_ERASE_FAILED = 0x109;
-    // page erase failed
-    public static final int UPD_FLASH_ERROR = 0x110;
-    // page program (flash) failed
-    public static final int UDP_NOT_IMPLEMENTED = 0xFFFF; // <! this command is
-    // not yet
-    // implemented
+    public static final int UDP_UNKNOWN_COMMAND = 0x100; //!< received command is not defined
+    public static final int UDP_CRC_ERROR = 0x101; //!< CRC calculated on the device and by the updater don't match
+    public static final int UDP_ADDRESS_NOT_ALLOWED_TO_FLASH = 0x102;//!< specified address cannot be programmed
+    public static final int UDP_SECTOR_NOT_ALLOWED_TO_ERASE = 0x103; //!< the specified sector cannot be erased
+    public static final int UDP_RAM_BUFFER_OVERFLOW = 0x104; // <! internal buffer for storing the data would overflow
+    public static final int UDP_WRONG_DESCRIPTOR_BLOCK = 0x105; //<! the boot descriptor block does not exist
+    public static final int UDP_APPLICATION_NOT_STARTABLE = 0x106; //<! the programmed application is not startable
+    public static final int UDP_DEVICE_LOCKED = 0x107;  //!< the device is still locked
+    public static final int UDP_UID_MISMATCH = 0x108;	//!< UID sent to unlock the device is invalid
+    public static final int UDP_ERASE_FAILED = 0x109;   //!< page erase failed
 
-    public static final int FLASH_SECTOR_SIZE = 4096; // Selfbus ARM controller flash sector size
-    public static final int FLASH_PAGE_SIZE = 256;    // Selfbus ARM controller flash page size
+    // counting in hex so here is space for A-F
+    public static final int UDP_FLASH_ERROR = 0x110;               //!< page program (flash) failed
+    public static final int UDP_PAGE_NOT_ALLOWED_TO_ERASE = 0x111; //!< page not allowed to erase
+    public static final int UDP_NOT_IMPLEMENTED = 0xFFFF;          //!< this command is not yet implemented
+
+    public static final int FLASH_SECTOR_SIZE = 4096; //!< Selfbus ARM controller flash sector size
+    public static final int FLASH_PAGE_SIZE = 256;    //!< Selfbus ARM controller flash page size
+    private static final int MAX_PAYLOAD = 11;         //!< maximum payload one APCI_MEMORY_READ_PDU/APCI_MEMORY_WRITE_PDU can handle
+
 
     int streamToInteger(byte[] stream, int offset) {
         return (stream[offset + 3] << 24) | (stream[offset + 2] << 16)
@@ -487,34 +456,34 @@ public class Updater implements Runnable {
             resultCode = streamToInteger(result, 4);
             System.out.print(ConColors.BRIGHT_RED);		// Print errors in red
             switch (resultCode) {
-                case UPD_UID_MISMATCH:
+                case UDP_UID_MISMATCH:
                     System.out.println("failed, UID mismatch.");
                     break;
-                case UPD_SECTOR_NOT_ALLOWED_TO_ERASE:
+                case UDP_SECTOR_NOT_ALLOWED_TO_ERASE:
                     System.out.println("Sector not allowed being erased.");
                     break;
-                case UPD_RAM_BUFFER_OVERFLOW:
+                case UDP_RAM_BUFFER_OVERFLOW:
                     System.out.println("RAM Buffer Overflow");
                     break;
                 case UDP_CRC_ERROR:
                     System.out.println("CRC error");
                     break;
-                case UPD_ADDRESS_NOT_ALLOWED_TO_FLASH:
+                case UDP_ADDRESS_NOT_ALLOWED_TO_FLASH:
                     System.out.println("Address not allowed to flash");
                     break;
-                case UPD_DEVICE_LOCKED:
-                    System.out.println("Device locked");
+                case UDP_DEVICE_LOCKED:
+                    System.out.println("Device locked. Programming mode on device must be active!");
                     break;
-                case UPD_APPLICATION_NOT_STARTABLE:
+                case UDP_APPLICATION_NOT_STARTABLE:
                     System.out.println("Application not startable");
                     break;
-                case UPD_WRONG_DESCRIPTOR_BLOCK:
-                    System.out.println("Boot Descripter block wrong");
+                case UDP_WRONG_DESCRIPTOR_BLOCK:
+                    System.out.println("Boot Descriptor block wrong");
                     break;
-                case UPD_ERASE_FAILED:
+                case UDP_ERASE_FAILED:
                     System.out.println("Flash page erase failed");
                     break;
-                case UPD_FLASH_ERROR:
+                case UDP_FLASH_ERROR:
                     System.out.println("Flash page could not be programmed");
                     break;
 
@@ -698,7 +667,8 @@ public class Updater implements Runnable {
                 try {
                     mc = new UpdatableManagementClientImpl(link); //.restart will result in a timeout and exception
                 } catch(final KNXException e){
-
+                    System.out.println("Restarting device " + device.toString() + " failed");
+                    throw new RuntimeException("Selfbus update failed.");
                 }
                 //Thread.sleep(1000);	// currently not needed because calimero currently times out waiting for an ACK
             }
@@ -706,9 +676,10 @@ public class Updater implements Runnable {
             pd = mc.createDestination(progDevice, true);
 
             if (uid == null) {
-                System.out.print("Requesting UID from" + progDevice.toString() + " ... ");
+                System.out.print("Requesting UID from " + progDevice.toString() + " ... ");
                 result = mc.sendUpdateData(pd, UPD_REQUEST_UID, new byte[0]);
-                if (result.length == 16) {
+                checkResult(result, true);
+                if ((result.length >= 12) && (result.length <= 16)){
                     uid = new byte[12];
                     // TODO this can be merged with the section below
                     System.out.print("got: ");
@@ -750,8 +721,8 @@ public class Updater implements Runnable {
             long BL_Identity = (result[4] & 0xFF) + ((result[5] & 0xFF) << 8) + ((result[6] & 0xFF) << 16) + ((long)(result[7] & 0xFF) << 24);
             long BL_Features = (result[8] & 0xFF) + ((result[9] & 0xFF) << 8) + ((result[10] & 0xFF) << 16) + ((long)(result[11] & 0xFF) << 24);
             long BL_Size = (result[12] & 0xFF) + ((result[13] & 0xFF) << 8) + ((result[14] & 0xFF) << 16) + ((long)(result[15] & 0xFF) << 24);
-            System.out.println("Device Bootloader Identity   : " + ConColors.BRIGHT_YELLOW + "0x" +  Long.toHexString(BL_Identity)
-                    + ", Features: 0x" + Long.toHexString(BL_Features) + ", Bootloader Size: 0x" + Long.toHexString(BL_Size) + ConColors.RESET);
+            System.out.println("Device Bootloader Identity   : " + ConColors.BRIGHT_YELLOW + "0x" +  String.format("%04X", BL_Identity)
+                    + ", Features: 0x" + String.format("%04X", BL_Features) + ", Bootloader Size: 0x" + String.format("%04X", BL_Size) + ConColors.RESET);
 
             System.out.print("\n\rRequesting App Version String ...");
             result = mc.sendUpdateData(pd, UPD_APP_VERSION_REQUEST, new byte[] {0});
@@ -785,16 +756,17 @@ public class Updater implements Runnable {
             parser.parse();
             byte[] binData = os.toByteArray();
             int totalLength = binData.length;
+            long endAddress = startAddress + totalLength; //TODO -1 is missing?
             ByteArrayInputStream fis = new ByteArrayInputStream(binData);
-            System.out.println("  Hex file parsed: starting at 0x" + Long.toHexString(startAddress) + ", length " + totalLength
-                    + " bytes");
+            System.out.println("  Hex file parsed: start at 0x" + String.format("%04X", startAddress) + " end at 0x"
+                    + String.format("%04X", endAddress) + ", length " + totalLength + " bytes");
 
             // Handle App Version Pointer
             if (appVersionAddr > 0xD0 && appVersionAddr < binData.length) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
                 String file_version = new String(binData,appVersionAddr,12);	// Get app version pointers content
                 System.out.println("  File App Version String is : " + ConColors.BRIGHT_RED + file_version + ConColors.RESET +
-                        " manually specified at address 0x" + Long.toHexString(appVersionAddr));
+                        " manually specified at address 0x" + String.format("%08X", appVersionAddr));
             }
 
             // Search for AppVersion pointer in flash file if not set manually
@@ -813,7 +785,7 @@ public class Updater implements Runnable {
                     file_version = new String(binData,appVersionAddr,12);	// Convert app version pointers content to string
 
                     System.out.println("  File App Version String is : " + ConColors.BRIGHT_GREEN + file_version + ConColors.RESET +
-                            " found at address 0x" + Long.toHexString(appVersionAddr));
+                            " found at address 0x" + String.format("%08X", appVersionAddr));
                 }
             }
 
@@ -834,8 +806,8 @@ public class Updater implements Runnable {
             // Check if FW image has correct offset for MCUs bootloader size
             if(startAddress < BL_Size)
             {
-                System.out.println(ConColors.BRIGHT_RED+"  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offsest setting in the linker!");
-                System.out.println("  Firmware needs to start beyond 0x" + Long.toHexString(BL_Size) + ConColors.RESET);
+                System.out.println(ConColors.BRIGHT_RED+"  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!");
+                System.out.println("  Firmware needs to start beyond 0x" + String.format("%04X", BL_Size) + ConColors.RESET);
                 throw new RuntimeException("Firmware offset not correct!");
             }
             else if(startAddress == BL_Size)
@@ -858,7 +830,7 @@ public class Updater implements Runnable {
             long descrEndAddr = (result[8] & 0xFF) + ((result[9] & 0xFF) << 8) + ((result[10] & 0xFF) << 16) + ((long)(result[11] & 0xFF) << 24);
             long descrCrc = (result[12] & 0xFF) + ((result[13] & 0xFF) << 8) + ((result[14] & 0xFF) << 16) + ((long)(result[15] & 0xFF) << 24);
             long descrLength = descrEndAddr - descrStartAddr;
-            System.out.println("  Current firmware: starts at 0x" +  Long.toHexString(descrStartAddr) + " ends at 0x" + Long.toHexString(descrEndAddr) + " CRC is 0x" + Long.toHexString(descrCrc));
+            System.out.println("  Current firmware: starts at 0x" +  String.format("%04X", descrStartAddr) + " ends at 0x" + String.format("%04X", descrEndAddr) + " CRC is 0x" + String.format("%08X", descrCrc));
 
             // try to find old firmware file in cache
             boolean diffMode = false;
@@ -877,24 +849,23 @@ public class Updater implements Runnable {
             }
 
             byte bootDescriptor[] = new byte[16];
-            long endAddress = startAddress + totalLength;
-            appVersionAddr += startAddress;	// Add FW offset to get absolute position in MCU
+            // appVersionAddr += startAddress;	//todo why should we add here something? Add FW offset to get absolute position in MCU
             integerToStream(bootDescriptor, 0, startAddress);
             integerToStream(bootDescriptor, 4, endAddress);
             integerToStream(bootDescriptor, 8, (int) crc32File.getValue());
             integerToStream(bootDescriptor, 12, appVersionAddr);
             System.out
                     .println("\n" + ConColors.BG_RED + "Preparing boot descriptor with start address 0x"
-                            + Long.toHexString(startAddress)
+                            + String.format("%04X", startAddress)
                             + ", end address 0x"
-                            + Long.toHexString(endAddress)
+                            + String.format("%04X", endAddress)
                             + ", CRC32 0x"
-                            + Long.toHexString(crc32File.getValue())
+                            + String.format("%08X", crc32File.getValue())
                             + ", APP_VERSION pointer 0x"
-                            + Long.toHexString(appVersionAddr) + ConColors.RESET);
+                            + String.format("%04X", appVersionAddr) + ConColors.RESET);
 
             int nDone = 0;
-            boolean timeoutOccured = false;
+            boolean timeoutOccurred = false;
             while (nDone < bootDescriptor.length) {
                 int txSize = 11;
                 int remainBytes = bootDescriptor.length - nDone;
@@ -916,12 +887,12 @@ public class Updater implements Runnable {
                     }
                 }
                 catch(KNXTimeoutException e){
-                    timeoutOccured = true;
+                    timeoutOccurred = true;
                 }
-                if(!timeoutOccured){
+                if(!timeoutOccurred){
                     nDone += txSize;
                 }else{
-                    timeoutOccured = false;
+                    timeoutOccurred = false;
                 }
             }
 
@@ -934,9 +905,9 @@ public class Updater implements Runnable {
             integerToStream(programBootDescriptor, 4,
                     (int) crc32Block.getValue());
             System.out.print("Update boot descriptor with CRC32 0x"
-                    + Long.toHexString(crc32Block.getValue())
+                    + String.format("%08X", crc32Block.getValue())
                     + ", length "
-                    + Long.toHexString(bootDescriptor.length) + " ");
+                    + Long.toString(bootDescriptor.length) + " ");
             result = mc.sendUpdateData(pd, UPD_UPDATE_BOOT_DESC,
                     programBootDescriptor);
             if (checkResult(result) != 0) {
@@ -946,7 +917,7 @@ public class Updater implements Runnable {
             Thread.sleep(500);
             System.out.println(ConColors.BG_GREEN + "Firmware Update done, Restarting device now ..." + ConColors.RESET + "\n\r\n\r");
             //mc.restart(pd);
-            mc.sendUpdateData(pd, UDP_RESET, new byte[] {0});  // Clean restart by application rather than lib
+            mc.sendUpdateData(pd, UPD_RESET, new byte[] {0});  // Clean restart by application rather than lib
 
         } catch (final KNXException e) {
             thrown = e;
@@ -1006,7 +977,7 @@ public class Updater implements Runnable {
             integerToStream(progPars, 8, (int) crc32);
             if (options.containsKey("verbose")) {
                 System.out.println();
-                System.out.print("Program device next page diff, CRC32 0x" + Long.toHexString(crc32) + " ... ");
+                System.out.print("Program device next page diff, CRC32 0x" + String.format("%08X", crc32) + " ... ");
             }
             result = mc.sendUpdateData(pd, UPD_PROGRAM_DECOMPRESSED_DATA, progPars);
             if (checkResult(result) != 0) {
@@ -1019,11 +990,7 @@ public class Updater implements Runnable {
         System.out.printf("Diff-Update required %tM:%<tS.", flash_time_duration);   
     }
 
-    
-    
-    // Normal update routine, sending complete image #######################
-    // This works on sector page right now, so the complete affected flash is erased first
-    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis, int data_send_delay)
+    private void eraseFlashPages(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
         byte[] result;
 
@@ -1033,23 +1000,29 @@ public class Updater implements Runnable {
         byte[] sector = new byte[1];
         for (int i = 0; i < erasePages; i++) {
             sector[0] = (byte) (i + startPage);
-            System.out.print("Erase sector " + sector[0] + " ...");
-            result = mc.sendUpdateData(pd, UPD_ERASE_PAGES, sector);
+            System.out.print("Erase sector " + String.format("%2d", sector[0]) + " ...");
+            result = mc.sendUpdateData(pd, UPD_ERASE_SECTOR, sector);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
                 throw new RuntimeException("Selfbus update failed.");
             }
-            else {
-                System.out.print(" OK");
-            }
         }
+    }
+    
+    // Normal update routine, sending complete image #######################
+    // This works on sector page right now, so the complete affected flash is erased first
+    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis, int data_send_delay)
+            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
+        byte[] result;
+
+        eraseFlashPages(mc, pd, startAddress, totalLength);
 
         byte[] buf = new byte[FLASH_PAGE_SIZE];	// Read one flash page
-        int nRead = 0;		//Bytes read from file into buffer
-        int payload = 11;	// maximum start payload size
+        int nRead = 0;		                    // Bytes read from file into buffer
+        int payload = MAX_PAYLOAD;	            // maximum start payload size
         int total = 0;
         CRC32 crc32Block = new CRC32();
-        int progSize = 0;	//Bytes send so far
+        int progSize = 0;	                   // Bytes send so far
         long progAddress = startAddress;
         boolean doProg = false;
         boolean timeoutOccured = false;
@@ -1066,30 +1039,42 @@ public class Updater implements Runnable {
         // Read up to size of buffer, 1 Page of 256Bytes from file
         while ((nRead = fis.read(buf)) != -1) {
         	
-        	System.out.printf("Reading %d bytes: %3d%%%n", nRead, 100*(total+nRead)/totalLength);
+        	System.out.printf("Sending %d bytes: %3d%%%n", nRead, 100*(total+nRead)/totalLength);
         	
             int nDone = 0;
             // Bytes left to write
             while (nDone < nRead) {
-            	
+
             	// Calculate payload size for next telegram
             	// sufficient data left, use maximum payload size
-            	if (progSize + payload <= nRead)
+            	if (progSize + payload < nRead)
 				{
-					payload = 11;	// maximum payload size
+					payload = MAX_PAYLOAD;	// maximum payload size
 				}
 				else
 				{
 					payload = nRead - progSize;	// remaining bytes
 					doProg = true;
 				}
-            	// Handle last telegram with less than 11 bytes
-            	if (((total + nRead) == totalLength) && nRead <=11)
-            	{
-            		payload = nRead;
-            		doProg = true;
-            	}
-            	
+
+                if (payload > MAX_PAYLOAD)
+                {
+                    // this is just a safety backup, normally we should never land here
+                    payload = MAX_PAYLOAD;
+                    doProg = false;
+                }
+/*
+            	// Handle last telegram with <= 11 bytes
+                if ((total + nRead) == totalLength)
+                {
+                    if (nRead <= MAX_PAYLOAD) { // Handle last telegram with less than 11 bytes
+                        payload = nRead;
+                        doProg = true;
+                    } else if ((payload + MAX_PAYLOAD) == ) {
+                        doProg = true;
+                    }
+                }
+*/
                 // Data left to send
                 if (payload > 0) {
                 	// Message length is payload +1 byte for position
@@ -1104,8 +1089,7 @@ public class Updater implements Runnable {
                     if (data_send_delay != 0)
                     	Thread.sleep(data_send_delay);	//Reduce bus load during data upload, ohne 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
                     try{
-                        result = mc
-                                .sendUpdateData(pd, UPD_SEND_DATA, txBuf);
+                        result = mc.sendUpdateData(pd, UPD_SEND_DATA, txBuf);
 
                         if (checkResult(result, false) != 0) {
                             mc.restart(pd);
@@ -1132,6 +1116,7 @@ public class Updater implements Runnable {
                         timeoutOccured = false;
                     }
                 }
+
                 if (doProg) {
                     doProg = false;
                     byte[] progPars = new byte[3 * 4];
@@ -1142,10 +1127,10 @@ public class Updater implements Runnable {
                     System.out.println();
                     System.out
                             .print("Program device at flash address 0x"
-                                    + Long.toHexString(progAddress)
-                                    + " with " + progSize
+                                    + String.format("%04X", progAddress)
+                                    + " with " + String.format("%3d", progSize)
                                     + " bytes and CRC32 0x"
-                                    + Long.toHexString(crc) + " ... ");
+                                    + String.format("%08X", crc) + " ... ");
                     result = mc.sendUpdateData(pd, UPD_PROGRAM,
                             progPars);
                     if (checkResult(result) != 0) {
