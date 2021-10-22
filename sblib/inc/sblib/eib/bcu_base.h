@@ -40,6 +40,7 @@ class BcuBase
 {
 public:
     BcuBase();
+    virtual ~BcuBase() = default;
 
 #if BCU_TYPE == BCU1_TYPE
     /**
@@ -224,6 +225,14 @@ protected:
      * @return True if hash successfully created, false if not.
      */
     int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
+
+    /**
+     * @brief Set or unset the programming mode of the bcu
+     *
+     * @param  new programming button state
+     * @return true if successful, otherwise false
+     */
+    bool setProgrammingMode(bool newMode);
 
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
     bool enabled;                  //!< The BCU is enabled. Set by bcu.begin().

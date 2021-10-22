@@ -565,8 +565,17 @@ void BCU::processDirectTelegram(int apci)
             {
                 // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
                 // restart with parameters, we need to start in flashmode
+                // this is only allowed with programming mode on, otherwise it will result in a simple reset
                 unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
                 *magicWord = BOOTLOADER_MAGIC_WORD;
+                if (programmingMode())
+                {
+                    *magicWord = BOOTLOADER_MAGIC_WORD;
+                }
+                else
+                {
+                    *magicWord = 0;
+                }
             }
 
             if (usrCallback)

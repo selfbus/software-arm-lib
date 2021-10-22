@@ -99,7 +99,7 @@ enum
 #define BOOTLOADER_MAGIC_WORD (0x5E1FB055)      //!< magic word which will be checked on startup of the bootloader
                                                 //!< weather or not to go into flash mode
 #define BOOTLOADER_MAGIC_ADDRESS ((unsigned int *) 0x10000000) //!< magic address for the magic word to be checked on startup of the bootloader
-                                                //!< weather or not to go into flash mode
+                                                               //!< weather or not to go into flash mode
 #define BOOTLOADER_MAGIC_ERASE 0                //!< bootloader magic erase
 #define BOOTLOADER_MAGIC_CHANNEL 255            //!< bootloader magic channel
 
@@ -114,6 +114,6 @@ enum
  * @return true if apci is a APCI_RESTART_TYPE1_PDU with magic word<br/>
  *         otherwise false
  */
-const bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber);
+bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber);
 
 #endif /*sblib_apci_h*/

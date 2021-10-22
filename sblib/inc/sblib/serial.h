@@ -164,7 +164,7 @@ public:
      *
      * @return true if serial port is enabled, otherwise false
      */
-    const bool enabled(void) {return enabled_;}
+    bool enabled(void) {return enabled_;}
 
 protected:
     // Allow the interrupt handler to call our protected methods

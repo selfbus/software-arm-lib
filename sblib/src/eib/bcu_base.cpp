@@ -390,6 +390,26 @@ void BcuBase::loop()
 	}
 }
 
+bool BcuBase::setProgrammingMode(bool newMode)
+{
+    if (!progPin)
+    {
+        return false;
+    }
+
+    if (newMode)
+    {
+        userRam.status |= 0x81;  // set programming mode and checksum bit
+    }
+    else
+    {
+        userRam.status &= 0x81;  // clear programming mode and checksum bit
+    }
+    pinMode(progPin, OUTPUT);
+    digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
+    return true;
+}
+
 void BcuBase::processTelegram()
 {
 }

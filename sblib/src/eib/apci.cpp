@@ -19,7 +19,7 @@
 
 #include <sblib/eib/apci.h>
 
-const bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber)
+bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber)
 {
     if (!(apci & APCI_RESTART_RESPONSE_PDU))
     {

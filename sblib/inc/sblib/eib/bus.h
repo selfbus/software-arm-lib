@@ -204,7 +204,7 @@ public:
      * !!!!!!! critical as this could change the sendAck value during usage in the  SM - should be not used outside the bus SM!!
      *  not needed as the SM should check the bit1 in the telegram header to check if the sender is requesting an ACK
      */
-    void setSendAck(int sendAck);
+    void setSendAck(int newSendAck);
 
     /**
      * Set the number of tries that we do sent a telegram when it is not ACKed.
@@ -473,8 +473,8 @@ inline void Bus::end()
 {
 }
 
-inline void  Bus::setSendAck(int sendAck)
+inline void  Bus::setSendAck(int newSendAck)
 {
-	this->sendAck = sendAck;
+	this->sendAck = newSendAck;
 }
 #endif /*sblib_bus_h*/

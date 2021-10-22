@@ -68,9 +68,10 @@ IAP_Status iapErasePage(int sector);
  * Programs the specified number of bytes from the RAM to the specified location
  * inside the FLASH.
  * @param rom           start address of inside the FLASH
- * @param ram           start address if the buffer
- * @param size          number of bytes ot program
- * @return              status code, see enum IAP_Status above
+ * @param ram           start address of the buffer
+ * @param size          number of bytes to program
+ * @return              status code, see enum @ref IAP_Status above
+ * @warning             the function calls no_interrupts().
  */
 IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size);
 
