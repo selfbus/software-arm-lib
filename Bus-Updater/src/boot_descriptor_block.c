@@ -7,19 +7,35 @@
  *  published by the Free Software Foundation.
  */
 
+// #include <sblib/internal/iap.h>
 #include "boot_descriptor_block.h"
 #include "crc.h"
 
 
-/* This is the sanity check as described in 26.3.3 of the UM10398 user guide
-*  However, this shouldn't matter since we boot into the BL anyways and just it's vector table
-*  needs to be correct.
-*  This test get's important if we like to bypass the KNX bootloader.
-*  Note that the LPC device as a build in BL ROM for UART ISP which is always started first.
-*  This ROM BL checks if the vector table is correct to determine if the KNX BL can be started.
-*/
-#if 0
-unsigned int checkVectorTable(unsigned int start)
+extern unsigned int __base_Flash;   //!< marks the beginning of the flash memory (inserted by the linker)
+                                    //!< used to protect the updater from killing itself with a new application downloaded over the bus
+extern unsigned int  __top_Flash;   //!< marks the end of the flash memory (inserted by the linker)
+                                    //!< used to protect the updater from killing itself with a new application downloaded over the bus
+extern unsigned int _image_start;   //!< marks the beginning of the bootloader firmware (inserted by the linker)
+                                    //!< used to protect the updater from killing itself with a new application downloaded over the bus
+extern unsigned int _image_end;     //!< marks the end of the bootloader firmware (inserted by the linker)
+                                    //!< used to protect the updater from killing itself with a new application downloaded over the bus
+extern unsigned int _image_size;    //!< marks the size of the bootloader firmware (inserted by the linker)
+                                    //!< used to protect the updater from killing itself with a new application downloaded over the bus
+
+/**
+ * @brief This is the sanity check as described in 26.3.3 of the UM10398 user guide
+ *
+ * @note However, this shouldn't matter since we boot into the BL anyways and just it's vector table
+ *       needs to be correct.
+ *       This test get's important if we like to bypass the KNX bootloader.
+ *       Note that the LPC device as a build in BL ROM for UART ISP which is always started first.
+ *       This ROM BL checks if the vector table is correct to determine if the KNX BL can be started.
+ *
+ * @param start
+ * @return
+ */
+inline unsigned int checkVectorTable(unsigned int start)
 {
     unsigned int i;
     unsigned int * address;
@@ -33,39 +49,94 @@ unsigned int checkVectorTable(unsigned int start)
     return (~cs+1);
     return (address[0]);
 }
-#else
-#define checkVectorTable(s) 1
-#endif
 
-unsigned int checkApplication(AppDescriptionBlock * block)
+inline unsigned int checkApplication(AppDescriptionBlock * block)
 {
-    if ((block->startAddress < FIRST_SECTOR) || (block->startAddress > LAST_SECTOR)) // we have just 64k of Flash
+    // if ((block->startAddress < APPLICATION_FIRST_SECTOR) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
+    if ((block->startAddress < bootLoaderLastAddress()) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
+    {
         return 0;
-    if (block->endAddress > LAST_SECTOR)	// we have just 64k of Flash
+    }
+    if (block->endAddress > flashLastAddress())	// we have just 64k of Flash
+    {
         return 0;
+    }
     if (block->startAddress >= block->endAddress)
+    {
         return 0;
+    }
 
-    unsigned int crc = crc32(0xFFFFFFFF, (unsigned char *) block->startAddress,
-            block->endAddress - block->startAddress);
+    unsigned int blockSize = block->endAddress - block->startAddress;
+    unsigned int crc = crc32(0xFFFFFFFF, (unsigned char *) block->startAddress, blockSize);
+
     if (crc == block->crc)
     {
-        return checkVectorTable(block->startAddress);
+        return 1;
+        // see note from checkVectorTable
+        // return checkVectorTable(block->startAddress);
     }
     return 0;
 }
 
-inline unsigned char * getAppVersion(AppDescriptionBlock * block)
+inline unsigned char* getAppVersion(AppDescriptionBlock * block)
 {
-    return (unsigned char *) (block->appVersionAddress);
+    if ((block->appVersionAddress > bootLoaderLastAddress()) &&
+        (block->appVersionAddress < flashLastAddress() - sizeof(block->appVersionAddress)))
+    {
+        return (unsigned char*) (block->appVersionAddress);
+    }
+    else
+    {
+        return &bl_id_string[0]; // Bootloader ID if invalid (address out of range)
+    }
 }
 
-// Return start address of application in case of valid descriptor block
-// otherwise, base address of firmware area, directly behind bootloader
-unsigned char * getFWstartAddress(AppDescriptionBlock * block)
+/**
+ * @brief Return start address of application
+ *
+ * @param block Application description block to get the start address from
+ * @return      Start address of application in case of valid descriptor block,
+ *              otherwise base address of firmware area, directly behind bootloader
+ */
+inline unsigned char * getFWstartAddress(AppDescriptionBlock * block)
 {
+    unsigned int applicationFirstSector = APPLICATION_FIRST_SECTOR;
     if (checkApplication(block))
+    {
     	return (unsigned char *) (block->startAddress);
+    }
     else
-    	return (unsigned char *) FIRST_SECTOR;
+    {
+    	return (unsigned char *) applicationFirstSector;
+    }
+}
+
+inline unsigned int bootLoaderFirstAddress(void)
+{
+    return (unsigned int) (unsigned int*)&_image_start;
+}
+
+inline unsigned int bootLoaderLastAddress(void)
+{
+    return (unsigned int) (unsigned int*)&_image_end - 1;
+}
+
+inline unsigned int bootLoaderSize(void)
+{
+    return (unsigned int) (unsigned int*)&_image_size;
+}
+
+inline unsigned int flashFirstAddress(void)
+{
+    return (unsigned int) (unsigned int*)&__base_Flash;
+}
+
+inline unsigned int flashLastAddress(void)
+{
+    return (unsigned int) ((unsigned int*)&__top_Flash) - 1;
+}
+
+inline unsigned int flashSize(void)
+{
+    return flashLastAddress() - flashFirstAddress() + 1;
 }

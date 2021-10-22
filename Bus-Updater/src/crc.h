@@ -10,7 +10,7 @@
  */
 
 #ifndef _CRC32_H_
-#define _CRC32_H_ 1
+#define _CRC32_H_
 
 #ifdef __cplusplus
 extern "C" {

@@ -24,6 +24,7 @@ class BcuUpdate: public BcuBase
 public:
     virtual void processTelegram();
     bool progPinStatus();
+    using BcuBase::setProgrammingMode;
 protected:
     /**
      * Process a unicast telegram with our physical address as destination address.
@@ -52,12 +53,20 @@ protected:
      * @param senderSeqNo - the sequence number of the sender, 0 if not required
      */
     void sendConControlTelegram(int cmd, int senderSeqNo);
-};
 
-inline bool BcuUpdate::progPinStatus()
-{
-    return programmingMode();
-}
+    /**
+     * @brief Sends a A_Restart_Response-PDU
+     * @details response to A_Restart-PDU KNX Spec. 3/5/2
+     *
+     * @param cmd         Transport command, usually APCI_RESTART_RESPONSEU
+     * @param senderSeqNo The sequence number of the sender, 0 if not required
+     * @param errorCode   if no error 0 otherwise error code
+     * @param processTime Time in seconds the restart process will take
+     */
+     void sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byte errorCode, unsigned int processTime);
+
+
+};
 
 #ifndef INSIDE_BCU_CPP
 #   undef begin_BCU

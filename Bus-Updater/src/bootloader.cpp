@@ -10,13 +10,10 @@
  */
 
 #include <sblib/main.h>
-#include <sblib/timeout.h>
-#include <sblib/internal/variables.h>
-#include <boot_descriptor_block.h>
 #include <sblib/digital_pin.h>
-#include <sblib/io_pin_names.h>
 #include <sblib/serial.h>
-
+#include <sblib/internal/iap.h> // for IAP_SUCCESS
+#include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 
 static BcuUpdate _bcu = BcuUpdate();
@@ -37,10 +34,12 @@ static inline void lib_setup()
 void setup()
 {
     bcu.begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
-    //pinMode(PIN_INFO, OUTPUT);
     pinMode(PIN_RUN, OUTPUT);
 
-    //digitalWrite(PIN_INFO, false);	// Turn Off info LED
+#ifdef DEBUG
+    pinMode(PIN_INFO, OUTPUT);
+    digitalWrite(PIN_INFO, false);  // Turn Off info LED
+#endif
 
 
     blinky.start(1);
@@ -63,14 +62,14 @@ void loop()
     }
     digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
-    //Check if there is data to flash when bus is idle
+    // Check if there is data to flash when bus is idle
     if(bus.idle())
     {
-        //FIXME reverted to old method, because this leads to timeouts
-        //      also on success we would need to send a response
-        //      writing to flash may time out the PC_Updater_tool for around 5s
-        //      because a bus timer interrupt may be canceled due to
-        //      iapProgram->IAP_Call_InterruptSafe->noInterrupts();
+        // reverted to old method, because this leads to timeouts
+        // also on success we would need to send a response
+        // writing to flash may time out the PC_Updater_tool for around 5s
+        // because a bus timer interrupt may be canceled due to
+        // iapProgram->IAP_Call_InterruptSafe->noInterrupts();
         // if (request_flashWrite(NULL, 0) == IAP_SUCCESS)
     	// {
     	// }
@@ -79,7 +78,7 @@ void loop()
     	if (restartRequestExpired())
         {
 #ifdef DUMP_TELEGRAMS_LVL1
-    	    serial.print("Systime:", systemTime, DEC);
+    	    serial.print("Systime: ", systemTime, DEC);
     	    serial.println(" reset");
     	    serial.flush();  // give time to send serial data
 #endif
@@ -88,7 +87,7 @@ void loop()
     }
 }
 
-void jumpToApplication(unsigned int start)
+static inline void jumpToApplication(unsigned int start)
 {
     unsigned int StackTop = *(unsigned int *) (start);
     unsigned int ResetVector = *(unsigned int *) (start + 4);
@@ -111,28 +110,37 @@ void jumpToApplication(unsigned int start)
     asm volatile ("bx      %0" : : "r" (ResetVector));
 }
 
-void run_updater()
+static inline void run_updater(bool programmingMode)
 {
     lib_setup();
     setup();
+
+    if (programmingMode)
+    {
+        ((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
+    }
 
 #ifdef DUMP_TELEGRAMS_LVL1
     //serial.setRxPin(PIO3_1);
     //serial.setTxPin(PIO3_0);
     if (!serial.enabled())
     {
-        serial.begin(19200);
+        serial.begin(115200);
     }
     serial.println("=======================================================");
-    serial.print("Selfbus KNX Bootloader V");
-    serial.print(BL_IDENTITY, HEX, 4);
+    serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
     serial.println(", DEBUG MODE :-)");
-    serial.println("Build: ");
+    serial.print("Build: ");
     serial.print(__DATE__);
     serial.print(" ");
     serial.print(__TIME__);
-    serial.print(" Features: 0x");
-    serial.println(BL_FEATURES, HEX, 4);
+    serial.println(" Features: 0x", BL_FEATURES, HEX, 4);
+    serial.print("Flash (start,end,size)    : 0x", flashFirstAddress(), HEX, 6);
+    serial.print(" 0x", flashLastAddress(), HEX, 6);
+    serial.println(" 0x", flashSize(), HEX, 6);
+    serial.print("Firmware (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
+    serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
+    serial.println(" 0x", bootLoaderSize(), HEX, 6);
     serial.println("------------------------------------------------- by sh");
 #endif
 
@@ -143,14 +151,14 @@ void run_updater()
     }
 }
 
-int main(void)
+int main()
 {
     // Updater request from application by setting magicWord
-	unsigned int * magicWord = (unsigned int *) BOOTLOADER_MAGIC_ADDRESS;
-    if (*magicWord == BOOTLOADER_MAGIC_WORD)
+  	unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+ 	if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
         *magicWord = 0;	// avoid restarting BL after flashing
-        run_updater();
+        run_updater(true);
     }
     *magicWord = 0;		// wrong magicWord, delete it
 
@@ -158,13 +166,13 @@ int main(void)
     pinMode(PIN_PROG, INPUT | PULL_UP);
     if (!digitalRead(PIN_PROG))
     {
-        run_updater();
+        run_updater(true);
     }
 
     // Start main application at address
-    AppDescriptionBlock * block = (AppDescriptionBlock *) FIRST_SECTOR;
-    block--;
-    for (int i = 0; i < 2; i++, block--) // Do we really need to search of the correct block? Assume it's always fix, isn't it?
+    AppDescriptionBlock * block = (AppDescriptionBlock *) APPLICATION_FIRST_SECTOR;
+    block--; // one block backwards
+    for (int i = 0; i < BOOT_BLOCK_COUNT; i++, block--)
     {
         if (checkApplication(block))
         {
@@ -172,6 +180,6 @@ int main(void)
         }
     }
     // Start updater in case of error
-    run_updater();
+    run_updater(false);
     return 0;
 }

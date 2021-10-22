@@ -60,12 +60,14 @@
 #ifndef UPDATE_H_
 #define UPDATE_H_
 
+#include "boot_descriptor_block.h"
+
 // #define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
 #define RAM_BUFFER_SIZE FLASH_SECTOR_SIZE  //!< \todo Why should we use 4096 byte buffer Size in byte for the ram buffer
 
-#define RESET_DELAY_MS 300                 //!< Time in milliseconds a System reset should be delayed to
+#define RESET_DELAY_MS 500                 //!< Time in milliseconds a System reset should be delayed to
                                            //!< give the bcu enough time to send it's T_ACK_PDU
-#define UID_LENGTH_USED 12
+#define UID_LENGTH_USED 12                 //!< length of the mcu UID (guid) used by the PC Updater Tool
 
 /**
  * @brief Request a reset of the mcu in x milliseconds
@@ -74,24 +76,10 @@
 void restartRequest (unsigned int msec);
 
 /**
- * @brief Returns the status of the Timeout timer to reset the mcu
+ * @brief Returns the state of the Timeout timer to reset the mcu
  * @return true if restart request is expired and mcu should be reset
  */
 bool restartRequestExpired(void);
-
-/**
- * @brief  Handles flash writing
- *
- * @param data          byte-buffer with data to write to the flash
- * @param write_request - false data is pre-loaded into flash
- *                      - true write to flash may be executed
- * @post                function calls iapProgram which calls noInterrupts()
- * @return              IAP_SUCCESS on success, on failure IAP_Status or UPD_Status
- *
- * @warning calls noInterrupts() so pending interrupt could be deleted<br/>
- *          execution path depends on many external variables
- */
-//unsigned int request_flashWrite(unsigned char* data, bool write_request);
 
 /**
  * @brief Handles KNX memory requests which encapsulate our UPD/UDP protocol
@@ -102,6 +90,8 @@ bool restartRequestExpired(void);
  * @return          always T_ACK_PDU, the real return value is encapsulated in bcu.sendTelegram[10-13]
  */
 unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
+
+void dumpFlashContent(AppDescriptionBlock * buffer);
 
 /** @}*/
 #endif /* UPDATE_H_ */

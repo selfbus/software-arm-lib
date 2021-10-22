@@ -7,8 +7,7 @@
 
 #include <stdint.h>
 #include "boot_descriptor_block.h"
-#include "bcu_updater.h"
-//#include "../src/platform.h"
+// #include "../src/platform.h"
 
 #define REMEMBER_OLD_PAGES_COUNT 2	// There seems to be a RAM leak/overflow somewhere, 2 seems to work for the moment!
 

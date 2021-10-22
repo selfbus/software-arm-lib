@@ -3,19 +3,20 @@
  */
 
 
+#include <string.h>
+#include <sblib/internal/iap.h>
+#include "crc.h"
 #include "Decompressor.h"
 
-#include <string.h>
-#include "crc.h"
-#include <sblib/internal/iap.h>
-
 #ifdef DUMP_TELEGRAMS_LVL1
-#include <sblib/serial.h>
-#define d1(x) {serial.print(x);}
-#define d2(u,v,w) {serial.print(u,v,w);}
+#    include <sblib/serial.h>
+#    define d1(x) {serial.print(x);}
+#    define dline(x) {serial.println(x);}
+#    define d2(u,v,w) {serial.print(u,v,w);}
 #else
-#define d1(x)
-#define d2(u,v,w)
+#    define d1(x)
+#    define d2(u,v,w)
+#    define dline(x)
 #endif
 
 
@@ -102,11 +103,11 @@ int Decompressor::pageCompletedDoFlash()
 		//lastError = IAP_SUCCESS; // Dry RUN! for debug
 		if (lastError)
 		{
-			d1(" Failed!\n\r")
+		    dline(" Failed!")
 			return lastError;
 		}
 		else
-			d1(" OK\n\r");
+		    dline(" OK");
 
 		// proceed to flash the decompressed page stored in the scratchpad RAM
 		d1("Diff - Program Page at Address 0x");
@@ -115,16 +116,16 @@ int Decompressor::pageCompletedDoFlash()
 		//lastError = IAP_SUCCESS; // Dry RUN! for debug
 		if(lastError)
 		{
-			d1(" Failed!\n\r");
+		    dline(" Failed!");
 		}
 		else
 		{
-			d1(" OK\n\r");
+		    dline(" OK");
 		}
 	}
 	else
 	{
-		d1("  equal, skipping!\n\r");
+	    dline("  equal, skipping!");
 	}
 	// Equal, skip this page and
 	// move to next page
@@ -134,7 +135,7 @@ int Decompressor::pageCompletedDoFlash()
 	memset(scratchpad, 0, sizeof scratchpad);
 	//d1("LAST_ERROR = 0x");
 	//d2(lastError,HEX,2);
-	//d1("\n\r");
+	//dline("");
 	return lastError;
 }
 
@@ -251,7 +252,7 @@ void Decompressor::putByte(uint8_t data)
 				resetStateMachine();
 			}
 	}
-	//UART_printf("\n");
+	//UART_printf("\n\r");
 }
 
 uint32_t Decompressor::getCrc32() {
@@ -260,11 +261,11 @@ uint32_t Decompressor::getCrc32() {
 	//UART_printf("# CRC req scratchpad content l=%d", bytesToFlash);
 	for (int i = 0; i < bytesToFlash; i++) {
 		if (i % 16 == 0) {
-			//UART_printf("\n  ");
+			//UART_printf("\n\r  ");
 		}
 		//UART_printf("%02X ", scratchpad[i]);
 	}
-	//UART_printf("\n");
+	//UART_printf("\n\r");
 
 
 	return ccrc;

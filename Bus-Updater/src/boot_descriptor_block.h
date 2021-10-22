@@ -15,33 +15,73 @@ extern "C"
 {
 #endif
 
-#define BL_IDENTITY			 0x1055		// Version 0.55
-#define BL_ID_STRING         "[SB KNX BL ]"
-#define BOOT_BLOCK_DESC_SIZE 0x100		// 1 flash page
-#define BOOT_BLOCK_PAGE   ((FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
-#define BOOT_DSCR_ADDRESS 	(FIRST_SECTOR - BOOT_BLOCK_DESC_SIZE)	// Descriptor uses last page of bootloader
-
-#define LAST_SECTOR          0x10000
-#ifdef DUMP_TELEGRAMS_LVL1
-	#define	BL_FEATURES  	 0x8100
-	#define FIRST_SECTOR	 0x3000		// where the application starts (BL size)
+#ifdef DEBUG
+    #define BL_FEATURES      0x8100                 //!< Feature list of bootloader in Debug version
+    #define APPLICATION_FIRST_SECTOR    0x7000      //!< where the application starts (BL size)  in Debug version
 #else
-	#define BL_FEATURES		 0x0100		// Feature list of BL
-	#define FIRST_SECTOR	 0x2000		// where the application starts (BL size)
+    #define BL_FEATURES      0x0100                 //!< Feature list of bootloader in Release version
+    #define APPLICATION_FIRST_SECTOR     0x3000     //!< where the application starts (BL size) in Release version
 #endif
+
+#define BL_IDENTITY			 0x1056		        //!< Version 0.56
+#define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
+#define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
+
+
+#define BOOT_BLOCK_DESC_SIZE FLASH_PAGE_SIZE    //!< 1 flash page
+#define BOOT_BLOCK_COUNT 1                      //!< Number of applications supported (application description blocks)
+#define BOOT_DSCR_ADDRESS  (APPLICATION_FIRST_SECTOR - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT)) //!< Descriptor uses last page of bootloader
+#define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
+
+
 
 typedef struct
 {
-    unsigned int startAddress;
-    unsigned int endAddress;
-    unsigned int crc;
-    unsigned int appVersionAddress;
+    unsigned int startAddress;          //!< start address of the application
+    unsigned int endAddress;            //!< end address of the application
+    unsigned int crc;                   //!< crc from start to end address
+    unsigned int appVersionAddress;     //!<
 }__attribute__ ((aligned (256))) AppDescriptionBlock;
 
+
+
+__attribute__((unused)) static unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_STRING; // actually it's used in getAppVersion,
+                                                                                               // this is just to suppress compiler warning
+
+/**
+ * @brief Checks the application description block for valid
+ *        start and end addresses
+ *
+ * @param block Application description block to check start and end address
+ * @return      1 if block is valid, otherwise 0
+ */
 unsigned int checkApplication(AppDescriptionBlock * block);
 
+/**
+ * @brief Returns the address of function getAppversion() from the application
+ *
+ * @param block Application description block to get the address
+ * @return      if valid, pointer to buffer of application version string (length BL_ID_STRING_LENGTH)
+ *              otherwise bl_id_string
+ */
 unsigned char * getAppVersion(AppDescriptionBlock * block);
+
+/**
+ * @brief Return start address of application
+ *
+ * @param block Application description block to get the start address from
+ * @return      Start address of application in case of valid descriptor block,
+ *              otherwise base address of firmware area, directly behind bootloader
+ */
 unsigned char * getFWstartAddress(AppDescriptionBlock * block);
+
+unsigned int bootLoaderFirstAddress(void);
+unsigned int bootLoaderLastAddress(void);
+unsigned int bootLoaderSize(void);
+
+unsigned int flashFirstAddress(void);
+unsigned int flashLastAddress(void);
+unsigned int flashSize(void);
 
 #ifdef __cplusplus
 }

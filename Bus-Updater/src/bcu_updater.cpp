@@ -37,9 +37,9 @@ void BcuUpdate::processTelegram()
     );
     */
 
-    unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
+    unsigned short destAddr = (unsigned short)((bus.telegram[3] << 8) | bus.telegram[4]);
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
-    unsigned short apci = ((bus.telegram[6] & 3) << 8) | bus.telegram[7];
+    unsigned short apci = (unsigned short)(((bus.telegram[6] & 3) << 8) | bus.telegram[7]);
 
     if ((bus.telegram[5] & 0x80) == 0) // a physical destination address
     {
@@ -47,12 +47,12 @@ void BcuUpdate::processTelegram()
         {
             if (tpci & 0x80)  // A connection control command
             {
-                dump2(serial.println("procControlT"));
+                dump2(serial.print("procControlT "));
                 processConControlTelegram(bus.telegram[6]);
             }
             else
             {
-                dump2(serial.println("procDirectT"));
+                dump2(serial.print("procDirectT "));
                 processDirectTelegram(apci);
             }
         }
@@ -77,20 +77,29 @@ void BcuUpdate::processDirectTelegram(int apci)
     int apciCommand = apci & APCI_GROUP_MASK;
     if ((apciCommand == APCI_MEMORY_READ_PDU) | (apciCommand == APCI_MEMORY_WRITE_PDU))
     {
-        dump2(serial.println("R/W DATA"));
         sendAck = handleMemoryRequests(apciCommand, &sendTel, &bus.telegram[7]);
     }
     else if (apciCommand == APCI_RESTART_PDU)
     {
+        // attention we check acpi not like before apciCommand!
+        if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
+        {
+            // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
+            // restart with parameters, we need to start in flashmode
+            dump2(serial.print("MAGIC "));
+            unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+            *magicWord = BOOTLOADER_MAGIC_WORD;
+        }
         dump2(serial.println("APCI_RESTART_PDU"));
         sendAck = T_ACK_PDU;
+        sendRestartResponseControlTelegram(APCI_RESTART_RESPONSE_PDU, senderSeqNo, 0, 1); // we need 1s reset time
         restartRequest(RESET_DELAY_MS); // Software Reset
     }
     else
     {
         dump2(serial.println("APCI_UNKNOWN 0x", apciCommand, HEX, 4));
         sendAck = T_NACK_PDU;  // Command not supported
-        //TODO in case we run into this, maybe Reset?
+        //XXX in case we run into this, maybe Reset?
     }
 
     if (sendTel)
@@ -113,13 +122,13 @@ void BcuUpdate::processDirectTelegram(int apci)
     {
         sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
         // 1+2 contain the sender address, which is set by bus.sendTelegram()
-        sendTelegram[3] = connectedAddr >> 8;
-        sendTelegram[4] = connectedAddr;
+        sendTelegram[3] = static_cast<byte>(connectedAddr >> 8);
+        sendTelegram[4] = static_cast<byte>(connectedAddr);
 
         if (sendTelegram[6] & 0x40) // Add the sequence number if applicable
         {
-            sendTelegram[6] &= ~0x3c;
-            sendTelegram[6] |= connectedSeqNo;
+            sendTelegram[6] &= static_cast<byte>(~0x3c);
+            sendTelegram[6] |= static_cast<byte>(connectedSeqNo);
             incConnectedSeqNo = true;
         }
         else
@@ -165,8 +174,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
     {
         if (tpci == T_CONNECT_PDU)  // Open a direct data connection
         {
-            dump2(serial.println("T_CONNECT_PDU"));
-            dump2(serial.println("T_CONNECT_PDU"));
+            dump2(serial.print("T_CONNECT_PDU "));
             if (connectedAddr == 0 || connectedAddr == senderAddr)
             {
                 connectedTime = systemTime;
@@ -176,15 +184,23 @@ void BcuUpdate::processConControlTelegram(int tpci)
                 dump2(serial.println("RX-CON"));
                 bus.setSendAck(SB_BUS_ACK);
             }
+            else
+            {
+                dump2(serial.println("error"));
+            }
         }
         else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
         {
-            dump2(serial.println("T_DISCONNECT_PDU"));
+            dump2(serial.print("T_DISCONNECT_PDU "));
             if (connectedAddr == senderAddr)
             {
                 connectedAddr = 0;
                 bus.setSendAck(SB_BUS_ACK);
                 dump2(serial.println("RX-DIS"));
+            }
+            else
+            {
+                dump2(serial.println("error"));
             }
         }
     }
@@ -197,11 +213,29 @@ void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
 
     sendCtrlTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendCtrlTelegram[3] = connectedAddr >> 8;
-    sendCtrlTelegram[4] = connectedAddr;
-    sendCtrlTelegram[5] = 0x60;
-    sendCtrlTelegram[6] = cmd;
+    sendCtrlTelegram[3] = (byte)(connectedAddr >> 8);
+    sendCtrlTelegram[4] = (byte)connectedAddr;
+    sendCtrlTelegram[5] = (byte)0x60;
+    sendCtrlTelegram[6] = (byte)cmd;
 
     bus.sendTelegram(sendCtrlTelegram, 7);
+}
+
+void BcuUpdate::sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byte errorCode, unsigned int processTime)
+{
+    byte restartResponseTelegram[10]; // we need a longer buffer for connection control telegrams
+    if (cmd & 0x40)  // Add the sequence number if the command shall contain it
+        cmd |= senderSeqNo & 0x3c;
+
+    restartResponseTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
+    // 1+2 contain the sender address, which is set by bus.sendTelegram()
+    restartResponseTelegram[3] = (byte)(connectedAddr >> 8);
+    restartResponseTelegram[4] = (byte)connectedAddr;
+    restartResponseTelegram[5] = (byte)(cmd >> 8);
+    restartResponseTelegram[6] = (byte)(cmd & 0xff);
+    restartResponseTelegram[7] = errorCode;
+    restartResponseTelegram[8] = (byte)(processTime >> 8);
+    restartResponseTelegram[9] = processTime & 0xff;
+    bus.sendTelegram(restartResponseTelegram, sizeof(restartResponseTelegram)/sizeof(restartResponseTelegram[0]));
 }
 
