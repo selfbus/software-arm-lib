@@ -85,7 +85,10 @@ void writeUserEeprom()
         // Erase the sector
         int sectorId = iapSectorOfAddress(FLASH_SECTOR_ADDRESS);
         IAP_Status rc = iapEraseSector(sectorId);
-        if (rc != IAP_SUCCESS) fatalError(); // erasing failed
+        if (rc != IAP_SUCCESS)
+        {
+            fatalError(); // erasing failed
+        }
 
         page = FLASH_SECTOR_ADDRESS;
     }
@@ -108,7 +111,10 @@ void writeUserEeprom()
 #else
     rc = iapProgram(page, userEepromData, USER_EEPROM_SIZE);
 #endif
-    if (rc != IAP_SUCCESS) fatalError(); // flashing failed
+    if (rc != IAP_SUCCESS)
+    {
+        fatalError(); // flashing failed
+    }
 
     interrupts();
     userEepromModified = 0;

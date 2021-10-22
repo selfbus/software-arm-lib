@@ -63,8 +63,8 @@ const char * getAppVersion()
 void setup(void)
 {
     // currentVersion = &hardwareVersion[HARDWARE_ID];
-    // volatile char v = getAppVersion()[0];
-    // v++;
+    volatile char v = getAppVersion()[0];
+    v++;
 #if defined(DUMP_PROPERTIES) || defined(DUMP_MEM_OPS)
     serial.setRxPin(PIO2_7);
     serial.setTxPin(PIO2_8);
@@ -143,7 +143,6 @@ void setup(void)
     fatalError();
     */
     initApplication();
-    serial.println(" userEeprom.optionReg: 0x", userEeprom.optionReg, HEX, 2);
 }
 
 /**
@@ -159,8 +158,10 @@ void loop(void)
     {
         objectUpdated(objno);
     }
-
+    //FIXME why is this running into an fatalError()?
+    serial.println(" userEeprom.optionReg: 0x", userEeprom.optionReg, HEX, 2);
     checkPeriodic();
+    delay(1000);
 
     // Sleep up to 1 millisecond if there is nothing to do
     if (bus.idle())
