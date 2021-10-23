@@ -27,13 +27,15 @@
 #include "bcu_updater.h"
 #include "crc.h"
 #include "update.h"
-#include "intelhex.h"
+#if defined(DEBUG)
+#   include "intelhex.h"
+#endif
 
 #ifdef DECOMPRESSOR
 #   include "decompressor.h"
 #endif
 
-#ifdef DUMP_TELEGRAMS_LVL1
+#if defined(DUMP_TELEGRAMS_LVL1) && defined(DEBUG)
 #   include <sblib/serial.h>
 
 #   define d1(x) {serial.print(x);}
@@ -131,11 +133,14 @@ ALWAYS_INLINE void UIn32ToStream(unsigned char * buffer, unsigned int val);
 
 void dumpFlashContent(AppDescriptionBlock * buffer)
 {
-    serial.println();
-    dumpToSerialinIntelHex(&serial, (unsigned char *) buffer->startAddress, buffer->endAddress - buffer->startAddress);
-    serial.println();
+    d3(
+        serial.println();
+        dumpToSerialinIntelHex(&serial, (unsigned char *) buffer->startAddress, buffer->endAddress - buffer->startAddress);
+        serial.println();
+    );
 }
 
+#ifdef DEBUG
 /**
  * @brief Converts the name of a UPD_Command to "string" and
  *        sends it over the serial port
@@ -173,6 +178,7 @@ static void updCommand2Serial(byte cmd)
         }
     );
 }
+#endif
 
 void restartRequest (unsigned int msec)
 {
