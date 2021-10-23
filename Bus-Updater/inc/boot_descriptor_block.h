@@ -23,22 +23,17 @@
 #ifndef BOOT_DESCRIPTOR_BLOCK_H_
 #define BOOT_DESCRIPTOR_BLOCK_H_
 
-// #include <sblib/platform.h>
-
-#ifdef __cplusplus
-extern "C"
-{
-#endif
-
+#include <sblib/platform.h>
+/// \todo get rid of APPLICATION_FIRST_SECTOR, maybe somehow using bootLoaderLastAddress()
 #ifdef DEBUG
-    #define BL_FEATURES      0x8100                 //!< Feature list of bootloader in Debug version
-    #define APPLICATION_FIRST_SECTOR    0x7000      //!< where the application starts (BL size)  in Debug version
+    #define BL_FEATURES      0x8100             //!< Feature list of bootloader in Debug version
+    #define APPLICATION_FIRST_SECTOR    0x7000  //!< where the application starts (BL size)  in Debug version
 #else
-    #define BL_FEATURES      0x0100                 //!< Feature list of bootloader in Release version
-    #define APPLICATION_FIRST_SECTOR     0x3000     //!< where the application starts (BL size) in Release version
+    #define BL_FEATURES      0x0100             //!< Feature list of bootloader in Release version
+    #define APPLICATION_FIRST_SECTOR    0x3000  //!< where the application starts (BL size) in Release version
 #endif
 
-///\todo BL_IDENTITY move to bootloader.cpp or a new config.h file
+///\todo move BL_IDENTITY to bootloader.cpp or a new config.h file
 #define BL_IDENTITY			 0x1056		        //!< boot loader Version 0.56
 #define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
@@ -61,7 +56,7 @@ typedef struct
     unsigned int endAddress;            ///< end address of the application
     unsigned int crc;                   //!< crc from startAddress to end endAddress
     unsigned int appVersionAddress;     //!< address of the APP_VERSION[20] string MUST start with "!AVP!@:" e.g. "!AVP!@:SBuid   1.00";
-}__attribute__ ((aligned (256))) AppDescriptionBlock; // \TODO replace 256 with BOOT_BLOCK_DESC_SIZE, including platform.h fails, not sure why
+}__attribute__ ((aligned (BOOT_BLOCK_DESC_SIZE))) AppDescriptionBlock;
 
 
 
@@ -95,17 +90,48 @@ unsigned char * getAppVersion(AppDescriptionBlock * block);
  */
 unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block);
 
+/**
+ * @brief returns the first address of the bootloader image (_image_start symbol included by the linker)
+ *
+ * @return first address of the bootloader image
+ */
 unsigned int bootLoaderFirstAddress(void);
+
+/**
+ * @brief returns the last address of the bootloader image (__image_end symbol included by the linker)
+ *
+ * @return last address of the bootloader image
+ */
 unsigned int bootLoaderLastAddress(void);
+
+/**
+ * @brief returns the size of the bootloader image in bytes (__image_end - _image_start - 1)
+ *
+ * @return size of the bootloader image in bytes
+ */
 unsigned int bootLoaderSize(void);
 
+/**
+ * @brief returns the first address of the default flash memory (__base_Flash symbol included by the linker)
+ *
+ * @return first address of the the default flash memory
+ */
 unsigned int flashFirstAddress(void);
+
+/**
+ * @brief returns the last address of the default flash memory (__top_Flash symbol included by the linker)
+ *
+ * @return last address of the the default flash memory
+ */
 unsigned int flashLastAddress(void);
+
+/**
+ * @brief returns the size of the default flash memory in bytes (__top_Flash - __base_Flash - 1)
+ *
+ * @return size of the default flash memory in bytes
+ */
 unsigned int flashSize(void);
 
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* BOOT_DESCRIPTOR_BLOCK_H_ */
 

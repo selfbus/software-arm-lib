@@ -5,7 +5,7 @@
  *
  * @{
  *
- * @file   crc.c
+ * @file   crc.cpp
  * @author Deti Fliegl <deti@fliegl.de> Copyright (c) 2015
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @bug No known bugs.
@@ -19,7 +19,7 @@
 
 #include "crc.h"
 
-unsigned int crc32(unsigned int start, unsigned char * data, unsigned int count)
+unsigned int crc32(unsigned int startCrc32, unsigned char * data, unsigned int count)
 {
     int crc;
     unsigned int byte, c;
@@ -27,7 +27,7 @@ unsigned int crc32(unsigned int start, unsigned char * data, unsigned int count)
             >> 3, g4 = g0 >> 4, g5 = g0 >> 5, g6 = (g0 >> 6) ^ g0, g7 = ((g0
             >> 6) ^ g0) >> 1;
 
-    crc = start;
+    crc = startCrc32;
     while (count--)
     {
         byte = *data++;       // Get next byte.

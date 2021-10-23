@@ -5,7 +5,7 @@
  *
  * @{
  *
- * @file   boot_descriptor_block.c
+ * @file   boot_descriptor_block.cpp
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @author Stefan Haller Copyright (c) 2020
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
@@ -61,7 +61,7 @@ inline unsigned int checkVectorTable(unsigned int start)
     return (address[0]);
 }
 
-inline unsigned int checkApplication(AppDescriptionBlock * block)
+unsigned int checkApplication(AppDescriptionBlock * block)
 {
     // if ((block->startAddress < APPLICATION_FIRST_SECTOR) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
     if ((block->startAddress < bootLoaderLastAddress()) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
@@ -89,7 +89,7 @@ inline unsigned int checkApplication(AppDescriptionBlock * block)
     return 0;
 }
 
-inline unsigned char* getAppVersion(AppDescriptionBlock * block)
+unsigned char* getAppVersion(AppDescriptionBlock * block)
 {
     if ((block->appVersionAddress > bootLoaderLastAddress()) &&
         (block->appVersionAddress < flashLastAddress() - sizeof(block->appVersionAddress)))
@@ -109,7 +109,7 @@ inline unsigned char* getAppVersion(AppDescriptionBlock * block)
  * @return      Start address of application in case of valid descriptor block,
  *              otherwise base address of firmware area, directly behind bootloader
  */
-inline unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block)
+unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block)
 {
     unsigned int applicationFirstSector = APPLICATION_FIRST_SECTOR;
     if (checkApplication(block))
@@ -122,33 +122,37 @@ inline unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block)
     }
 }
 
-inline unsigned int bootLoaderFirstAddress(void)
+unsigned int bootLoaderFirstAddress(void)
 {
     return (unsigned int) (unsigned int*)&_image_start;
 }
 
-inline unsigned int bootLoaderLastAddress(void)
+unsigned int bootLoaderLastAddress(void)
 {
+    //linker sets this not correctly, so we need the -1
     return (unsigned int) (unsigned int*)&_image_end - 1;
 }
 
-inline unsigned int bootLoaderSize(void)
+unsigned int bootLoaderSize(void)
 {
+    // includes .text and .data
     return (unsigned int) (unsigned int*)&_image_size;
 }
 
-inline unsigned int flashFirstAddress(void)
+unsigned int flashFirstAddress(void)
 {
     return (unsigned int) (unsigned int*)&__base_Flash;
 }
 
-inline unsigned int flashLastAddress(void)
+unsigned int flashLastAddress(void)
 {
+    //linker sets this not correctly, so we need the -1
     return (unsigned int) ((unsigned int*)&__top_Flash) - 1;
 }
 
-inline unsigned int flashSize(void)
+unsigned int flashSize(void)
 {
+    // add the -1 from flashLastAddress(void) back to size
     return flashLastAddress() - flashFirstAddress() + 1;
 }
 

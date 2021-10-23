@@ -22,15 +22,15 @@
 #ifndef _CRC32_H_
 #define _CRC32_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-unsigned int crc32 (unsigned int start, unsigned char * data, unsigned int count);
-
-#ifdef __cplusplus
-}
-#endif
+/**
+ * @brief Calculates the crc32 of provided buffer data
+ *
+ * @param startCrc32 crc to start with (if unsure use 0xFFFFFFFF)
+ * @param data       buffer to calculate the crc32 of
+ * @param count      length of data
+ * @return calculated crc32 of
+ */
+unsigned int crc32 (unsigned int startCrc32, unsigned char * data, unsigned int count);
 
 #endif
 
