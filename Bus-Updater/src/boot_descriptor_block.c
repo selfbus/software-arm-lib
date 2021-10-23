@@ -1,11 +1,22 @@
-/*
- *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2020 Stefan Haller
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_BOOT_BLOCK_DESCRIPTOR Application Boot Block Descriptor
+ * @ingroup SBLIB_BOOTLOADER
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
- */
+ * @{
+ *
+ * @file   boot_descriptor_block.c
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2020
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 // #include <sblib/internal/iap.h>
 #include "boot_descriptor_block.h"
@@ -98,7 +109,7 @@ inline unsigned char* getAppVersion(AppDescriptionBlock * block)
  * @return      Start address of application in case of valid descriptor block,
  *              otherwise base address of firmware area, directly behind bootloader
  */
-inline unsigned char * getFWstartAddress(AppDescriptionBlock * block)
+inline unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block)
 {
     unsigned int applicationFirstSector = APPLICATION_FIRST_SECTOR;
     if (checkApplication(block))
@@ -140,3 +151,5 @@ inline unsigned int flashSize(void)
 {
     return flashLastAddress() - flashFirstAddress() + 1;
 }
+
+/** @}*/

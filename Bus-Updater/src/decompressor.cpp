@@ -1,12 +1,20 @@
-/* This is an extended version of the knxduino diff updater from
- * https://github.com/pavkriz/knxduino/tree/master/bootloader/src
- */
-
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_BOOTLOADER_DECOMPRESSOR Decompressor
+ * @ingroup SBLIB_BOOTLOADER
+ *
+ * @{
+ *
+ * @file   decompressor.cpp
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
 
 #include <string.h>
 #include <sblib/internal/iap.h>
 #include "crc.h"
-#include "Decompressor.h"
+#include "decompressor.h"
 
 #ifdef DUMP_TELEGRAMS_LVL1
 #    include <sblib/serial.h>
@@ -28,8 +36,8 @@
 
 Decompressor::Decompressor(AppDescriptionBlock* BaseAddress)
 {
-	startAddrOfFlash = getFWstartAddress(BaseAddress);
-	startAddrOfPageToBeFlashed = getFWstartAddress(BaseAddress);
+	startAddrOfFlash = getFirmwareStartAddress(BaseAddress);
+	startAddrOfPageToBeFlashed = getFirmwareStartAddress(BaseAddress);
 
 	//startAddrOfFlash = (uint8_t*)startAddrOfFirstPageToBeFlashed;
 	//startAddrOfPageToBeFlashed = (uint8_t*)startAddrOfFirstPageToBeFlashed;
@@ -282,3 +290,5 @@ uint32_t Decompressor::getBytesCountToBeFlashed() {
 uint8_t Decompressor::getFlashPageNumberToBeFlashed() {
 	return (uint8_t)((uint32_t)startAddrOfPageToBeFlashed / FLASH_PAGE_SIZE);
 }
+
+/** @}*/

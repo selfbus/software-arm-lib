@@ -1,13 +1,22 @@
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_CRC Crc calculation
+ * @ingroup SBLIB_BOOTLOADER
+ *
+ * @{
+ *
+ * @file   crc.c
+ * @author Deti Fliegl <deti@fliegl.de> Copyright (c) 2015
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @bug No known bugs.
+ ******************************************************************************/
+
 /*
- *  crc.cpp - The application's main.
- *
- *  Copyright (c) 2015 Deti Fliegl <deti@fliegl.de>
- *                     Martin Glueck <martin@mangari.org>
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
- */
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
+
 #include "crc.h"
 
 unsigned int crc32(unsigned int start, unsigned char * data, unsigned int count)
@@ -31,4 +40,6 @@ unsigned int crc32(unsigned int start, unsigned char * data, unsigned int count)
     }
     return ~crc;
 }
+
+/** @}*/
 

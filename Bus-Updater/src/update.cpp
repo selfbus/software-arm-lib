@@ -1,13 +1,22 @@
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_UPD_UDP_PROTOCOL_1 UPD/UDP protocol
+ * @ingroup SBLIB_BOOTLOADER
+ *
+ * @{
+ *
+ * @file   update.cpp
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
 /*
- *  update.cpp  - UPD/UDP Selfbus protocol implementation.
- *
- *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2021 Stefan Haller
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.Flash Sector, CRC
- */
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 #include <sblib/eib.h>
 #include <sblib/eib/bus.h>
@@ -18,9 +27,10 @@
 #include "bcu_updater.h"
 #include "crc.h"
 #include "update.h"
+#include "intelhex.h"
 
 #ifdef DECOMPRESSOR
-#   include <Decompressor.h>
+#   include "decompressor.h"
 #endif
 
 #ifdef DUMP_TELEGRAMS_LVL1
@@ -49,13 +59,6 @@
 
 #define PAGE_ALIGNMENT 0xff               //!< page alignment which is allowed to flash
 static unsigned char ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
-
-#define HEX_STARTCODE ":"
-#define HEX_DATA_RECORD (00)
-#define HEX_DUMP_PER_LINE (16)
-#define HEX_END_OF_FILE "00000001FF"
-#define HEX_START_SEGMENT_RECORD "04000003"
-#define HEX_START_SEGMENT_RECORD_CHKSM (0x07)  // 04 + 00 + 00 + 03
 
 /**
  * @brief Control commands for flash process with APCI_MEMORY_READ_PDU and APCI_MEMORY_WRITE_PDU
@@ -114,8 +117,8 @@ enum UDP_State
 
 Timeout mcuRestartRequestTimeout; //!< Timeout used to trigger a MCU Reset by NVIC_SystemReset()
 
-// try to avoid direct access to these global variables
-// better use their get, set and reset functions
+// Try to avoid direct access to these global variables.
+// It's better to use their get, set and reset functions
 static unsigned int deviceLocked = DEVICE_LOCKED;   //!< current device locking state,
                                                     //!<@note It's better to use GetDeviceUnlocked() & setDeviceLockState()
 static unsigned int lastError = 0;                  //!< last error while processing a UDP command
@@ -129,80 +132,8 @@ ALWAYS_INLINE void UIn32ToStream(unsigned char * buffer, unsigned int val);
 void dumpFlashContent(AppDescriptionBlock * buffer)
 {
     serial.println();
-    unsigned char x;
-    unsigned int count = buffer->endAddress - buffer->startAddress;
-    unsigned char* data = (unsigned char *) buffer->startAddress;
-    unsigned int i = 0;
-    unsigned int bytesToWrite = HEX_DUMP_PER_LINE;
-    unsigned int checkSum;
-    byte hexType = HEX_DATA_RECORD;
-    unsigned int address;
-    unsigned int b;
-
-    while (i < count)
-    {
-        bytesToWrite = HEX_DUMP_PER_LINE;
-        // write line header/command, excluded from checksum
-        serial.print(HEX_STARTCODE);
-        checkSum = 0;
-
-        if ((count - i) < HEX_DUMP_PER_LINE)
-        {
-            bytesToWrite = count - i;
-        }
-
-        // # of bytes
-        checkSum += bytesToWrite;
-        serial.print(bytesToWrite, HEX, 2);
-
-        // address
-        address = (unsigned int)data;
-        //address = 1234;
-        b = ((address >> 8) & 0xff) + (address & 0xff);
-        checkSum += b;
-        serial.print(address, HEX, 4);
-
-        // type/command
-        serial.print(hexType, HEX, 2);
-        checkSum += hexType;
-
-        // write bytes
-        for (unsigned int j = 0; j < bytesToWrite; j++)
-        {
-            x = *data++;
-            serial.print(x, HEX, 2);
-            checkSum += x;
-            i++;
-        }
-        checkSum &= 0xff;
-        checkSum = ((byte)(checkSum ^ 0xff) + 1) & 0xff;
-        // write line checksum
-        serial.println(checkSum, HEX, 2);
-    }
-
-    // Start segment Address record
-    serial.print(HEX_STARTCODE);
-    // "04000003"
-    serial.print(HEX_START_SEGMENT_RECORD);
-    checkSum = HEX_START_SEGMENT_RECORD_CHKSM;
-
-    // miss use of Segment to send block->startAddress
-    address = (unsigned int)buffer->startAddress;
-    checkSum += ((address >> 8) & 0xff) + (address & 0xff);
-    serial.print(address, HEX, 4);
-
-    // miss use of Offset to send block->endAddress
-    address = (unsigned int)buffer->endAddress;
-    checkSum += ((address >> 8) & 0xff) + (address & 0xff);
-    serial.print(address, HEX, 4);
-    checkSum &= 0xff;
-    checkSum = ((byte)(checkSum ^ 0xff) + 1) & 0xff;
-    // write line checksum
-    serial.println(checkSum, HEX, 2);
-
-    // end of file record
-    serial.print(HEX_STARTCODE);
-    serial.println(HEX_END_OF_FILE);
+    dumpToSerialinIntelHex(&serial, (unsigned char *) buffer->startAddress, buffer->endAddress - buffer->startAddress);
+    serial.println();
 }
 
 /**
@@ -276,6 +207,7 @@ ALWAYS_INLINE unsigned int streamToUIn32(unsigned char * buffer)
  *          therefore a good old conversion has to be performed
  *
  * @param buffer in the 4 first bytes of buffer the result will be stored
+ * @param val    the unsigned int to be converted
  * @warning function doesn't perform any sanity-checks on the provided buffer
  */
 ALWAYS_INLINE void UIn32ToStream(unsigned char * buffer, unsigned int val)
@@ -468,6 +400,8 @@ static UDP_State erasePage(unsigned int page)
  * @param address start address of inside the FLASH
  * @param ram     start address of the buffer containing the data
  * @param size    number of bytes to program
+ * @param isBootDescriptor  Set true to program an @ref AppDescriptionBlock, default false
+ *
  * @return        IAP_SUCCESS if successful, otherwise UDP_ADDRESS_NOT_ALLOWED_TO_FLASH
  *                or a @ref IAP_Status
  * @warning       The function calls iap_Program which by itself calls no_interrupts().
@@ -648,9 +582,7 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
     bytesReceived += nCount;
 
     memcpy((void *) &ramBuffer[ramLocation], data + 4, nCount); //ab dem 4. Byte sind die Daten verfügbar
-    //crc = crc32(crc, data + 3, nCount); //XXX why is crc check disabled?
     lastError = IAP_SUCCESS;
-    //d1("OK\n\r");
     setLastError((UDP_State)IAP_SUCCESS, sendTel);
     for(unsigned int i=0; i<nCount; i++)
     {
@@ -824,16 +756,19 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
         dline("ramBuffer Full");
         return T_ACK_PDU;
     }
-    d3(serial.println());
-    d3(serial.println("Bytes Rx    ", bytesReceived));
-    d3(serial.println("Bytes Flash ", bytesFlashed));
-    d3(serial.println("Diff        ", (int)bytesReceived - (int)bytesFlashed));
-    d3(serial.println());
-    d3(serial.println("FW start@ 0x", streamToUIn32(ramBuffer), HEX, 4));    // Firmware start address
-    d3(serial.println("FW end  @ 0x", streamToUIn32(ramBuffer+4), HEX, 4));  // Firmware end address
-    d3(serial.println("FW Desc.@ 0x", streamToUIn32(ramBuffer+12), HEX, 4)); // Firmware App descriptor address (for getAppVersion())
-    d3(serial.println("FWs CRC : 0x", streamToUIn32(ramBuffer+8), HEX, 8));  // Firmware CRC
-    // d3(serial.println("RamBuffer[16-20] 0x", streamToUIn32(ramBuffer+16), HEX, 8));// This is beyond the descriptor block
+    d3(
+        bytesReceived -= count; // subtract bytes received for boot descriptor
+        serial.println();
+        serial.println("Bytes Rx    ", bytesReceived - count);
+        serial.println("Bytes Flash ", bytesFlashed); //
+        serial.println("Diff        ", (int)bytesReceived - (int)bytesFlashed); // difference here is normal, because flashing is always in multiple of FLASH_PAGE_SIZE
+        serial.println();
+        serial.println("FW start@ 0x", streamToUIn32(ramBuffer), HEX, 4);    // Firmware start address
+        serial.println("FW end  @ 0x", streamToUIn32(ramBuffer+4), HEX, 4);  // Firmware end address
+        serial.println("FW Desc.@ 0x", streamToUIn32(ramBuffer+12), HEX, 4); // Firmware App descriptor address (for getAppVersion())
+        serial.println("FWs CRC : 0x", streamToUIn32(ramBuffer+8), HEX, 8);  // Firmware CRC
+        // serial.println("RamBuffer[16-20] 0x", streamToUIn32(ramBuffer+16), HEX, 8);// This is beyond the descriptor block
+    )
 
 
     //address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
@@ -911,6 +846,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
 static unsigned char updSendDataToDecompress(bool * sendTel, unsigned char * data, unsigned int nCount)
 {
 #ifndef DECOMPRESSOR
+    dline("-->not implemented")
     setLastError(UDP_NOT_IMPLEMENTED, sendTel);
 #else
     if ((ramLocation + nCount) > (sizeof(ramBuffer)/sizeof(ramBuffer[0]))) // Check if this can be removed. Overflow protection should be in decompressor class instead!
@@ -1096,3 +1032,5 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 //
 //    return (~cs+1);
 //}
+
+/** @}*/

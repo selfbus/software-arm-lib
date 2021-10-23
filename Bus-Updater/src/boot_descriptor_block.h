@@ -1,14 +1,29 @@
-/*
- *  Copyright (c) 2014 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2021 Stefan Haller
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_BOOT_BLOCK_DESCRIPTOR Application Boot Block Descriptor
+ * @ingroup SBLIB_BOOTLOADER
+ * @brief   Application Boot Block Descriptor
+ * @details
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
- */
+ * @{
+ *
+ * @file   boot_descriptor_block.h
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 #ifndef BOOT_DESCRIPTOR_BLOCK_H_
 #define BOOT_DESCRIPTOR_BLOCK_H_
+
+// #include <sblib/platform.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -23,7 +38,8 @@ extern "C"
     #define APPLICATION_FIRST_SECTOR     0x3000     //!< where the application starts (BL size) in Release version
 #endif
 
-#define BL_IDENTITY			 0x1056		        //!< Version 0.56
+///\todo BL_IDENTITY move to bootloader.cpp or a new config.h file
+#define BL_IDENTITY			 0x1056		        //!< boot loader Version 0.56
 #define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
 
@@ -34,14 +50,18 @@ extern "C"
 #define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
 
 
-
+/**
+ * @struct AppDescriptionBlock
+ * @brief Application Description Block struct
+ *
+ */
 typedef struct
 {
-    unsigned int startAddress;          //!< start address of the application
-    unsigned int endAddress;            //!< end address of the application
-    unsigned int crc;                   //!< crc from start to end address
-    unsigned int appVersionAddress;     //!<
-}__attribute__ ((aligned (256))) AppDescriptionBlock;
+    unsigned int startAddress;          ///< start address of the application
+    unsigned int endAddress;            ///< end address of the application
+    unsigned int crc;                   //!< crc from startAddress to end endAddress
+    unsigned int appVersionAddress;     //!< address of the APP_VERSION[20] string MUST start with "!AVP!@:" e.g. "!AVP!@:SBuid   1.00";
+}__attribute__ ((aligned (256))) AppDescriptionBlock; // \TODO replace 256 with BOOT_BLOCK_DESC_SIZE, including platform.h fails, not sure why
 
 
 
@@ -73,7 +93,7 @@ unsigned char * getAppVersion(AppDescriptionBlock * block);
  * @return      Start address of application in case of valid descriptor block,
  *              otherwise base address of firmware area, directly behind bootloader
  */
-unsigned char * getFWstartAddress(AppDescriptionBlock * block);
+unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block);
 
 unsigned int bootLoaderFirstAddress(void);
 unsigned int bootLoaderLastAddress(void);
@@ -88,3 +108,5 @@ unsigned int flashSize(void);
 #endif
 
 #endif /* BOOT_DESCRIPTOR_BLOCK_H_ */
+
+/** @}*/

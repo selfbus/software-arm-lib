@@ -1,13 +1,24 @@
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_BOOTLOADER_MAIN Bootloader
+ * @ingroup SBLIB_BOOTLOADER
+ * @brief   Bootloader main program
+ * @details
+ *
+ * @{
+ *
+ * @file   bootloader.cpp
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
 /*
- *  BootLoader.c - The bootloader.
- *
- *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2021 Stefan Haller
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
- */
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 #include <sblib/main.h>
 #include <sblib/digital_pin.h>
@@ -183,3 +194,5 @@ int main()
     run_updater(false);
     return 0;
 }
+
+/** @}*/

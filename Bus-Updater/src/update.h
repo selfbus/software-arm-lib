@@ -1,8 +1,8 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_UPD_UDP_PROTOCOL_1 Selfbus UPD/UDP Bootloader protocol
+ * @defgroup SBLIB_UPD_UDP_PROTOCOL_1 UPD/UDP protocol
  * @ingroup SBLIB_BOOTLOADER
- * @brief   Definition of the Selfbus UPD/UDP protocol
+ * @brief   Definition of the UPD/UDP bootloader protocol
  * @details Updater protocol:
  *   We miss-use the memory write EIB frames. Miss-use because we do not transmit the address in each request
  *   to have more frame left for the actual data transmission:
@@ -48,6 +48,7 @@
  *
  * @file   update.h
  * @author Stefan Haller Copyright (c) May 24, 2020
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -91,7 +92,5 @@ bool restartRequestExpired(void);
  */
 unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
 
-void dumpFlashContent(AppDescriptionBlock * buffer);
-
-/** @}*/
 #endif /* UPDATE_H_ */
+/** @}*/

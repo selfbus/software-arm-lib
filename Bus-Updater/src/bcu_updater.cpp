@@ -1,12 +1,25 @@
-/*
- * bcu_updater.cpp
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_BOOTLOADER_BCU Bus coupling unit (BCU)
+ * @ingroup SBLIB_BOOTLOADER
  *
- *  Created on: 15.07.2015
- *      Author: glueck
- */
+ * @{
+ *
+ * @file   bcu_updater.cpp
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
 
-#include "bcu_updater.h"
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
+
 #include <sblib/serial.h>
+#include "bcu_updater.h"
 
 
 // The EIB bus access object
@@ -239,3 +252,4 @@ void BcuUpdate::sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byt
     bus.sendTelegram(restartResponseTelegram, sizeof(restartResponseTelegram)/sizeof(restartResponseTelegram[0]));
 }
 
+/** @}*/

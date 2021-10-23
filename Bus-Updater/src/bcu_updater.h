@@ -1,9 +1,24 @@
-/*
- * bcu_updater.h
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_BOOTLOADER_BCU Bus coupling unit (BCU)
+ * @ingroup SBLIB_BOOTLOADER
+ * @brief    Bus coupling unit (BCU)
+ * @details
  *
- *  Created on: 15.07.2015
- *      Author: glueck
- */
+ * @{
+ *
+ * @file   bcu_updater.h
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 #ifndef BCU_UPDATER_H_
 #define BCU_UPDATER_H_
@@ -73,3 +88,5 @@ protected:
 #endif
 
 #endif /* BCU_UPDATER_H_ */
+
+/** @}*/

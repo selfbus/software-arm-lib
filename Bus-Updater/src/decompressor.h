@@ -1,6 +1,23 @@
-/* This is an extended version of the knxduino diff updater from
- * https://github.com/pavkriz/knxduino/tree/master/bootloader/src
- */
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @defgroup SBLIB_BOOTLOADER_DECOMPRESSOR Decompressor
+ * @ingroup SBLIB_BOOTLOADER
+ * @brief   Differential decompressor
+ * @details This is an extended version of the knxduino differential updater from
+ *          https://github.com/pavkriz/knxduino/tree/master/bootloader/src
+ *
+ * @{
+ *
+ * @file   decompressor.h
+ * @author Stefan Haller Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 #ifndef _DECOMPRESSOR_H_
 #define _DECOMPRESSOR_H_
@@ -13,8 +30,8 @@
 
 
 /**
- * Apply diff stream and produce one page to be flashed
- * (based on diff stream, original ROM content, and RAM buffer to store some latest ROM pages already flashed)
+ * Apply differential stream and produce one page to be flashed
+ * (based on differential stream, original ROM content, and RAM buffer to store some latest ROM pages already flashed)
  */
 class Decompressor
 {
@@ -68,3 +85,5 @@ class Decompressor
 };
 
 #endif
+
+/** @}*/
