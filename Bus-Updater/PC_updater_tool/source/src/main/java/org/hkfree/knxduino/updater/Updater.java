@@ -424,17 +424,20 @@ public class Updater implements Runnable {
     public static final int UDP_UID_MISMATCH = 0x108;	//!< UID sent to unlock the device is invalid
     public static final int UDP_ERASE_FAILED = 0x109;   //!< page erase failed
 
-    // counting in hex so here is space for A-F
+    // counting in hex so here is space for 0x10A-0x10F
     public static final int UDP_FLASH_ERROR = 0x110;               //!< page program (flash) failed
     public static final int UDP_PAGE_NOT_ALLOWED_TO_ERASE = 0x111; //!< page not allowed to erase
     public static final int UDP_NOT_IMPLEMENTED = 0xFFFF;          //!< this command is not yet implemented
 
     public static final int FLASH_SECTOR_SIZE = 4096; //!< Selfbus ARM controller flash sector size
     public static final int FLASH_PAGE_SIZE = 256;    //!< Selfbus ARM controller flash page size
-    private static final int MAX_PAYLOAD = 11;         //!< maximum payload one APCI_MEMORY_READ_PDU/APCI_MEMORY_WRITE_PDU can handle
+    private static final int MAX_PAYLOAD = 11;        //!< maximum payload one APCI_MEMORY_READ_PDU/APCI_MEMORY_WRITE_PDU can handle
 
 
     int streamToInteger(byte[] stream, int offset) {
+        //TODO this doesn't work for UDP_NOT_IMPLEMENTED
+        // with stream[0]=0xFF and stream[1]=0xFF return is -1 but should be 0xFFFF
+        // byte is signed in java -127...128, so that's our problem...
         return (stream[offset + 3] << 24) | (stream[offset + 2] << 16)
                 | (stream[offset + 1] << 8) | stream[offset + 0];
     }
@@ -485,6 +488,15 @@ public class Updater implements Runnable {
                     break;
                 case UDP_FLASH_ERROR:
                     System.out.println("Flash page could not be programmed");
+                    break;
+                case UDP_PAGE_NOT_ALLOWED_TO_ERASE:
+                    System.out.println("Flash page not allowed to erase");
+                    break;
+                case UDP_NOT_IMPLEMENTED:
+                    System.out.println("Command not implemented");
+                    break;
+                case UDP_UNKNOWN_COMMAND:
+                    System.out.println("Command unknown");
                     break;
 
                 default:
