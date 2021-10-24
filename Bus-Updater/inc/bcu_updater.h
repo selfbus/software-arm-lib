@@ -38,8 +38,15 @@ class BcuUpdate: public BcuBase
 {
 public:
     virtual void processTelegram();
+
+    /**
+     * The BCU's main processing loop. This is like the application's loop() function,
+     * and is called automatically by main() when the BCU is activated with bcu.begin().
+     */
+    virtual void loop();
+
     bool progPinStatus();
-    using BcuBase::setProgrammingMode;
+    using BcuBase::setProgrammingMode; // makes it public so we can use it in bootloader.cpp
 protected:
     /**
      * Process a unicast telegram with our physical address as destination address.

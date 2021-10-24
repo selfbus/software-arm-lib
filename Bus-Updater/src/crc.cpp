@@ -1,6 +1,6 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_CRC Crc calculation
+ * @addtogroup SBLIB_CRC Crc calculation
  * @ingroup SBLIB_BOOTLOADER
  *
  * @{

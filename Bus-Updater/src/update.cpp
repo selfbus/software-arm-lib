@@ -1,6 +1,6 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_UPD_UDP_PROTOCOL_1 UPD/UDP protocol
+ * @addtogroup SBLIB_UPD_UDP_PROTOCOL_1 UPD/UDP protocol
  * @ingroup SBLIB_BOOTLOADER
  *
  * @{
@@ -125,9 +125,8 @@ static unsigned int deviceLocked = DEVICE_LOCKED;   //!< current device locking 
                                                     //!<@note It's better to use GetDeviceUnlocked() & setDeviceLockState()
 static unsigned int lastError = 0;                  //!< last error while processing a UDP command
 static unsigned int ramLocation = 0;                //!< current location of the ramBuffer processed
-// static unsigned int crc = 0xFFFFFFFF;               //!< current calculated crc32 value
-static unsigned int bytesReceived = 0;              //!< number of bytes received by UPD_SEND_DATA since last resetRamLocation()
-static unsigned int bytesFlashed = 0;               //!< number of bytes flashed by UPD_PROGRAM since last resetRamLocation()
+static unsigned int bytesReceived = 0;              //!< number of bytes received by UPD_SEND_DATA since last reset()
+static unsigned int bytesFlashed = 0;               //!< number of bytes flashed by UPD_PROGRAM since last reset()
 
 ALWAYS_INLINE void UIn32ToStream(unsigned char * buffer, unsigned int val);
 
@@ -438,12 +437,9 @@ static void setLastError(UDP_State errorToSet, bool * sendTel)
     UIn32ToStream(bcu.sendTelegram + 10, lastError);
 }
 
-/**
- * @brief Resets the actual ramBuffer position back to 0
- *
- */
-static void resetRamLocation()
+void resetProtocol(void)
 {
+    lastError = 0;
     ramLocation = 0;
     bytesReceived = 0;
     bytesFlashed = 0;
@@ -494,7 +490,7 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
         setDeviceLockState(DEVICE_UNLOCKED);
         setLastError((UDP_State)IAP_SUCCESS, sendTel);
         dline(" by UID");
-        resetRamLocation();
+        resetProtocol();
     }
     return T_ACK_PDU;
 }
@@ -558,7 +554,7 @@ static unsigned char updAppVersionRequest(bool * sendTel, unsigned char * data)
  */
 static unsigned char updEraseSector(bool * sendTel, unsigned char * data)
 {
-    resetRamLocation();
+    resetProtocol();
     setLastError(eraseSector(data[3]), sendTel);
     return T_ACK_PDU;
 }
@@ -860,6 +856,7 @@ static unsigned char updSendDataToDecompress(bool * sendTel, unsigned char * dat
         setLastError(UDP_RAM_BUFFER_OVERFLOW, sendTel);
         return T_ACK_PDU;
     }
+    dline("-->decompressor");
     for (unsigned int i = 0; i < nCount; i++)
     {
         decompressor.putByte(data[i + 3]);
@@ -909,7 +906,7 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
         setLastError((UDP_State)IAP_SUCCESS, sendTel);
     }
 
-    resetRamLocation(); //TODO check this rly is right?
+    resetProtocol(); //TODO check this rly is right?
 #endif
      return T_ACK_PDU;
 }

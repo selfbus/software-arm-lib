@@ -1,6 +1,6 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_BOOT_BLOCK_DESCRIPTOR Application Boot Block Descriptor
+ * @addtogroup SBLIB_BOOT_BLOCK_DESCRIPTOR Application Boot Block Descriptor
  * @ingroup SBLIB_BOOTLOADER
  *
  * @{

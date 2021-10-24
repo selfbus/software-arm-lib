@@ -63,8 +63,8 @@
 
 #include "boot_descriptor_block.h"
 
-// #define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
-#define RAM_BUFFER_SIZE FLASH_SECTOR_SIZE  //!< \todo Why should we use 4096 byte buffer Size in byte for the ram buffer
+#define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
+// #define RAM_BUFFER_SIZE FLASH_SECTOR_SIZE  //!< \done Why should we use 4096 byte buffer Size in byte for the ram buffer
 
 #define RESET_DELAY_MS 500                 //!< Time in milliseconds a System reset should be delayed to
                                            //!< give the bcu enough time to send it's T_ACK_PDU
@@ -91,6 +91,11 @@ bool restartRequestExpired(void);
  * @return          always T_ACK_PDU, the real return value is encapsulated in bcu.sendTelegram[10-13]
  */
 unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
+
+/**
+ * @brief Resets the UPD/UDP protocol ramBuffer and global variables to default
+ */
+void resetProtocol(void);
 
 #endif /* UPDATE_H_ */
 /** @}*/

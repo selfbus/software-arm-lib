@@ -9,6 +9,7 @@
  * @{
  *
  * @file   decompressor.h
+ * @author Pavel Kriz <https://github.com/pavkriz> Copyright (c) 2019
  * @author Stefan Haller Copyright (c) 2021
  * @bug No known bugs.
  ******************************************************************************/

@@ -1,6 +1,6 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_BOOTLOADER_BCU Bus coupling unit (BCU)
+ * @addtogroup SBLIB_BOOTLOADER_BCU Bus coupling unit (BCU)
  * @ingroup SBLIB_BOOTLOADER
  *
  * @{
@@ -249,6 +249,21 @@ void BcuUpdate::sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byt
     restartResponseTelegram[8] = (byte)(processTime >> 8);
     restartResponseTelegram[9] = processTime & 0xff;
     bus.sendTelegram(restartResponseTelegram, sizeof(restartResponseTelegram)/sizeof(restartResponseTelegram[0]));
+}
+
+void BcuUpdate::loop()
+{
+    if (!enabled)
+        return;
+    /// \todo make a define for 6 seconds
+    // Send a disconnect after 6 seconds inactivity
+    if (connectedAddr && elapsed(connectedTime) > 6000)
+    {
+        sendConControlTelegram(T_DISCONNECT_PDU, 0);
+        connectedAddr = 0;
+        resetProtocol();
+    }
+    BcuBase::loop();
 }
 
 /** @}*/

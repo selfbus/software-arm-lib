@@ -1,15 +1,22 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_BOOTLOADER_DECOMPRESSOR Decompressor
+ * @addtogroup SBLIB_BOOTLOADER_DECOMPRESSOR Decompressor
  * @ingroup SBLIB_BOOTLOADER
  *
  * @{
  *
  * @file   decompressor.cpp
+ * @author Pavel Kriz <https://github.com/pavkriz> Copyright (c) 2019
  * @author Stefan Haller Copyright (c) 2021
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
  ******************************************************************************/
+
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 #include <string.h>
 #include <sblib/internal/iap.h>

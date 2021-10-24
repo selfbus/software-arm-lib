@@ -1,6 +1,6 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_BOOTLOADER_MAIN Bootloader
+ * @addtogroup SBLIB_BOOTLOADER_MAIN Bootloader
  * @ingroup SBLIB_BOOTLOADER
  * @brief   Bootloader main program
  * @details
@@ -27,55 +27,93 @@
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 
-static BcuUpdate _bcu = BcuUpdate();
-BcuBase& bcu = _bcu;
 
-Timeout blinky;
+// bootloader specific settings
+#define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
+#define RUN_MODE_BLINK_IDLE (1000)     //!< while idle/disconnected, programming and run led blinking time in milliseconds
+#define BL_RESERVED_RAM_START (0x10000000) //!> start address of RAM for bootloader reserved
+#define BL_DEFAULT_VECTOR_TABLE_SIZE (200 / sizeof(unsigned int))
+
+
+// KNX/EIB specific settings
+#define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
+#define MANUFACTURER 0x04 //!< Manufacturer ID -> Jung
+#define DEVICETYPE 0x2060 //!< Device Type -> 2138.10
+#define APPVERSION 0x01   //!< Application Version -> 0.1
+
+
+static BcuUpdate _bcu = BcuUpdate(); //!< instance of @ref BcuUpdate used for bus communication of the bootloader
+BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
+
+Timeout runModeTimeout;              //!< running mode LED blinking timeout
 
 /**
- * Setup the library.
+ * @brief Configures the system timer to call SysTick_Handler once every 1 msec
+ *
  */
 static inline void lib_setup()
 {
-    // Configure the system timer to call SysTick_Handler once every 1 msec
     SysTick_Config(SystemCoreClock / 1000);
     systemTime = 0;
 }
 
+/**
+ * @brief Starts BCU with @ref DEFAULT_BL_KNX_ADDRESS (15.15.192) as a Jung 2138.10 device, version 0.1<br>
+ *        Sets @ref PIN_RUN as output and in debug build also @ref PIN_INFO as output
+ *
+ */
 void setup()
 {
-    bcu.begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
+    bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION); // We are a "Jung 2138.10" device, version 0.1
     pinMode(PIN_RUN, OUTPUT);
 
 #ifdef DEBUG
     pinMode(PIN_INFO, OUTPUT);
-    digitalWrite(PIN_INFO, false);  // Turn Off info LED
+    digitalWrite(PIN_INFO, false);  // Turn off info LED
 #endif
 
-
-    blinky.start(1);
-    bcu.setOwnAddress(0xFFC0);		// 15.15.192 default updater PA
+    runModeTimeout.start(1);
+    bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
     extern byte userEepromModified;
     userEepromModified = 0;
 }
 
+
+/**
+ * @brief Handles bus.idle(), LED status and MCU's reset (if requested by KNX-telegram), called from run_updater(...)
+ *
+ */
 void loop()
 {
-	//bool blink_state = false;
-    if (blinky.expired())
+    if (runModeTimeout.expired())
     {
         if (bcu.directConnection())
-            blinky.start(250);
+        {
+            runModeTimeout.start(RUN_MODE_BLINK_CONNECTED);
+        }
         else
-            blinky.start(1000);
-        //blink_state = !blink_state;
+        {
+            digitalWrite(PIN_INFO, false);  // Turn Off info LED
+            runModeTimeout.start(RUN_MODE_BLINK_IDLE);
+        }
         digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
     }
     digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
-    // Check if there is data to flash when bus is idle
+
     if(bus.idle())
     {
+        // Check if restart request is pending
+        if (restartRequestExpired())
+        {
+#ifdef DUMP_TELEGRAMS_LVL1
+            serial.print("Systime: ", systemTime, DEC);
+            serial.println(" reset");
+            serial.flush();  // give time to send serial data
+#endif
+            NVIC_SystemReset();
+        }
+        // Check if there is data to flash when bus is idle
         // reverted to old method, because this leads to timeouts
         // also on success we would need to send a response
         // writing to flash may time out the PC_Updater_tool for around 5s
@@ -84,31 +122,29 @@ void loop()
         // if (request_flashWrite(NULL, 0) == IAP_SUCCESS)
     	// {
     	// }
-
-        // Check if restart request is pending
-    	if (restartRequestExpired())
-        {
-#ifdef DUMP_TELEGRAMS_LVL1
-    	    serial.print("Systime: ", systemTime, DEC);
-    	    serial.println(" reset");
-    	    serial.flush();  // give time to send serial data
-#endif
-    	    NVIC_SystemReset();
-        }
     }
 }
 
+/**
+ * @brief Starts the application by coping application's stack top and vector table to ram, remaps it and calls Reset vector of it
+ *
+ * @param start Start address of application
+ * @warning Explanation may be wrong,
+ */
 static inline void jumpToApplication(unsigned int start)
 {
     unsigned int StackTop = *(unsigned int *) (start);
     unsigned int ResetVector = *(unsigned int *) (start + 4);
     unsigned int * rom = (unsigned int *) start;
-    unsigned int * ram = (unsigned int *) 0x10000000;
+    unsigned int * ram = (unsigned int *) BL_RESERVED_RAM_START;
     unsigned int i;
     // copy the first 200 bytes of the "application" (the vector table)
     // into the RAM and than remap the vector table inside the RAM
-    for (i = 0; i < 50; i++, rom++, ram++)
+    for (i = 0; i < BL_DEFAULT_VECTOR_TABLE_SIZE; i++, rom++, ram++)
+    {
+        serial.println("Vec Size: ", BL_DEFAULT_VECTOR_TABLE_SIZE);
         *ram = *rom;
+    }
     LPC_SYSCON->SYSMEMREMAP = 0x01;
 
     /* Normally during RESET the stack pointer will be loaded
@@ -121,6 +157,13 @@ static inline void jumpToApplication(unsigned int start)
     asm volatile ("bx      %0" : : "r" (ResetVector));
 }
 
+
+/**
+ * @brief The real "main()" of the bootloader. Calls libsetup() to initialize the Selfbus library
+ *        and setup() to initialize itself. Handles loop() of the BCU and itself.
+ *
+ * @param programmingMode if true bootloader enables BCU programming mode active, otherwise not.
+ */
 static inline void run_updater(bool programmingMode)
 {
     lib_setup();
@@ -162,6 +205,13 @@ static inline void run_updater(bool programmingMode)
     }
 }
 
+/**
+ * @brief Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.<br>
+ *        If no "magic word" is present it checks for a valid application to start,<br>
+ *        otherwise starts in bootloader mode
+ *
+ * @return never returns
+ */
 int main()
 {
     // Updater request from application by setting magicWord

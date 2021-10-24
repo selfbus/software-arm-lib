@@ -1,6 +1,6 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @defgroup SBLIB_INTEL_HEX Intel(R) hex file format
+ * @addtogroup SBLIB_INTEL_HEX Intel(R) hex file format
  * @ingroup SBLIB_BOOTLOADER
  *
  * @{
