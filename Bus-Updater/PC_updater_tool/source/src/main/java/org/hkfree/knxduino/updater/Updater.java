@@ -469,7 +469,7 @@ public class Updater implements Runnable {
                     System.out.println("RAM Buffer Overflow");
                     break;
                 case UDP_CRC_ERROR:
-                    System.out.println("CRC error");
+                    System.out.println("CRC error, try option -full for a clean and full flash");
                     break;
                 case UDP_ADDRESS_NOT_ALLOWED_TO_FLASH:
                     System.out.println("Address not allowed to flash");
