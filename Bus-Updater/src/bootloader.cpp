@@ -31,7 +31,7 @@
 // bootloader specific settings
 #define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
 #define RUN_MODE_BLINK_IDLE (1000)     //!< while idle/disconnected, programming and run led blinking time in milliseconds
-#define BL_RESERVED_RAM_START (0x10000000) //!> start address of RAM for bootloader reserved
+#define BL_RESERVED_RAM_START (0x10000000) //!< RAM start address for bootloader
 #define BL_DEFAULT_VECTOR_TABLE_SIZE (200 / sizeof(unsigned int)) //!< vectortable size to copy prior application start
 
 // KNX/EIB specific settings

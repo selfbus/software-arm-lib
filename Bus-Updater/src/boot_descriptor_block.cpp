@@ -35,7 +35,7 @@ extern unsigned int _image_size;    //!< marks the size of the bootloader firmwa
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
 
 __attribute__((unused)) unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_STRING; // actually it's used in getAppVersion,
-                                                                                               // this is just to suppress compiler warning
+                                                                                        // this is just to suppress compiler warning
 
 
 /**

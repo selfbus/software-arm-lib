@@ -39,6 +39,11 @@
 class BcuUpdate: public BcuBase
 {
 public:
+    /**
+     * @brief pre-processes the received telegram from bus.telegram.
+     *        Only telegrams matching @ref destAddr == @ref bus.ownAddress()
+     *        are processed.
+     */
     virtual void processTelegram();
 
     /**
@@ -47,8 +52,13 @@ public:
      */
     virtual void loop();
 
-    bool progPinStatus();
-    using BcuBase::setProgrammingMode; // makes it public so we can use it in bootloader.cpp
+    /**
+     * @brief Set or unset the programming mode of the bootloader BCU
+     *
+     * @param  new programming button state
+     * @return true if successful, otherwise false
+     */
+    using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
 protected:
     /**
      * Process a unicast telegram with our physical address as destination address.

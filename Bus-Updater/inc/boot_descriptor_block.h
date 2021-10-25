@@ -42,22 +42,22 @@
 #define BOOT_BLOCK_DESC_SIZE FLASH_PAGE_SIZE    //!< 1 flash page
 #define BOOT_BLOCK_COUNT 1                      //!< Number of applications supported (application description blocks)
 #define BOOT_DSCR_ADDRESS  (APPLICATION_FIRST_SECTOR - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT)) //!< Descriptor uses last page of bootloader
-#define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
+#define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1) //!< flash page number of the application description block
 
 
-extern unsigned char bl_id_string[BL_ID_STRING_LENGTH];
+extern unsigned char bl_id_string[BL_ID_STRING_LENGTH]; //!< default bootloader identity "string" used in @ref getAppVersion()
 
 /**
  * @struct AppDescriptionBlock
  * @brief Application Description Block struct
  *
  */
-typedef struct
+typedef struct AppDescriptionBlock
 {
     unsigned int startAddress;          ///< start address of the application
     unsigned int endAddress;            ///< end address of the application
     unsigned int crc;                   //!< crc from startAddress to end endAddress
-    unsigned int appVersionAddress;     //!< address of the APP_VERSION[20] string MUST start with "!AVP!@:" e.g. "!AVP!@:SBuid   1.00";
+    unsigned int appVersionAddress;     //!< address of the APP_VERSION[20] @note string MUST start with "!AVP!@:" e.g. "!AVP!@:SBuid   1.00"
 }__attribute__ ((aligned (BOOT_BLOCK_DESC_SIZE))) AppDescriptionBlock;
 
 /**
