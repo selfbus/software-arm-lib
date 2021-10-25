@@ -34,6 +34,8 @@
 // link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
 #define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
 
+#define BCU_DIRECT_CONNECTION_TIMEOUT_MS (6000) //!< BCU direct connection timeout in milliseconds
+
 class BcuUpdate: public BcuBase
 {
 public:
@@ -56,8 +58,8 @@ protected:
      *
      * @param apci - the application control field
      */
-
     void processDirectTelegram(int apci);
+
     /**
      * Process a unicast connection control telegram with our physical address as
      * destination address. The telegram is stored in sbRecvTelegram[].

@@ -45,6 +45,8 @@
 #define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1)
 
 
+extern unsigned char bl_id_string[BL_ID_STRING_LENGTH];
+
 /**
  * @struct AppDescriptionBlock
  * @brief Application Description Block struct
@@ -57,11 +59,6 @@ typedef struct
     unsigned int crc;                   //!< crc from startAddress to end endAddress
     unsigned int appVersionAddress;     //!< address of the APP_VERSION[20] string MUST start with "!AVP!@:" e.g. "!AVP!@:SBuid   1.00";
 }__attribute__ ((aligned (BOOT_BLOCK_DESC_SIZE))) AppDescriptionBlock;
-
-
-
-__attribute__((unused)) static unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_STRING; // actually it's used in getAppVersion,
-                                                                                               // this is just to suppress compiler warning
 
 /**
  * @brief Checks the application description block for valid

@@ -34,6 +34,10 @@ extern unsigned int _image_end;     //!< marks the end of the bootloader firmwar
 extern unsigned int _image_size;    //!< marks the size of the bootloader firmware (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
 
+__attribute__((unused)) unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_STRING; // actually it's used in getAppVersion,
+                                                                                               // this is just to suppress compiler warning
+
+
 /**
  * @brief This is the sanity check as described in 26.3.3 of the UM10398 user guide
  *
@@ -66,15 +70,15 @@ unsigned int checkApplication(AppDescriptionBlock * block)
     // if ((block->startAddress < APPLICATION_FIRST_SECTOR) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
     if ((block->startAddress < bootLoaderLastAddress()) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
     {
-        return 0;
+        return (0);
     }
     if (block->endAddress > flashLastAddress())	// we have just 64k of Flash
     {
-        return 0;
+        return (0);
     }
     if (block->startAddress >= block->endAddress)
     {
-        return 0;
+        return (0);
     }
 
     unsigned int blockSize = block->endAddress - block->startAddress;
@@ -82,11 +86,11 @@ unsigned int checkApplication(AppDescriptionBlock * block)
 
     if (crc == block->crc)
     {
-        return 1;
+        return (1);
         // see note from checkVectorTable
         // return checkVectorTable(block->startAddress);
     }
-    return 0;
+    return (0);
 }
 
 unsigned char* getAppVersion(AppDescriptionBlock * block)
@@ -94,11 +98,11 @@ unsigned char* getAppVersion(AppDescriptionBlock * block)
     if ((block->appVersionAddress > bootLoaderLastAddress()) &&
         (block->appVersionAddress < flashLastAddress() - sizeof(block->appVersionAddress)))
     {
-        return (unsigned char*) (block->appVersionAddress);
+        return ((unsigned char*) (block->appVersionAddress));
     }
     else
     {
-        return &bl_id_string[0]; // Bootloader ID if invalid (address out of range)
+        return (&bl_id_string[0]); // Bootloader ID if invalid (address out of range)
     }
 }
 
@@ -114,46 +118,46 @@ unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block)
     unsigned int applicationFirstSector = APPLICATION_FIRST_SECTOR;
     if (checkApplication(block))
     {
-    	return (unsigned char *) (block->startAddress);
+    	return ((unsigned char *) (block->startAddress));
     }
     else
     {
-    	return (unsigned char *) applicationFirstSector;
+    	return ((unsigned char *) applicationFirstSector);
     }
 }
 
 unsigned int bootLoaderFirstAddress(void)
 {
-    return (unsigned int) (unsigned int*)&_image_start;
+    return ((unsigned int) (unsigned int*)&_image_start);
 }
 
 unsigned int bootLoaderLastAddress(void)
 {
     //linker sets this not correctly, so we need the -1
-    return (unsigned int) (unsigned int*)&_image_end - 1;
+    return ((unsigned int) (unsigned int*)&_image_end - 1);
 }
 
 unsigned int bootLoaderSize(void)
 {
     // includes .text and .data
-    return (unsigned int) (unsigned int*)&_image_size;
+    return ((unsigned int) (unsigned int*)&_image_size);
 }
 
 unsigned int flashFirstAddress(void)
 {
-    return (unsigned int) (unsigned int*)&__base_Flash;
+    return ((unsigned int) (unsigned int*)&__base_Flash);
 }
 
 unsigned int flashLastAddress(void)
 {
     //linker sets this not correctly, so we need the -1
-    return (unsigned int) ((unsigned int*)&__top_Flash) - 1;
+    return ((unsigned int) ((unsigned int*)&__top_Flash) - 1);
 }
 
 unsigned int flashSize(void)
 {
     // add the -1 from flashLastAddress(void) back to size
-    return flashLastAddress() - flashFirstAddress() + 1;
+    return (flashLastAddress() - flashFirstAddress() + 1);
 }
 
 /** @}*/

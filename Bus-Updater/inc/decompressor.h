@@ -25,7 +25,6 @@
 
 #include <stdint.h>
 #include "boot_descriptor_block.h"
-// #include "../src/platform.h"
 
 #define REMEMBER_OLD_PAGES_COUNT 2	// There seems to be a RAM leak/overflow somewhere, 2 seems to work for the moment!
 
@@ -46,21 +45,26 @@ class Decompressor
 		};
 
 	private:
-		uint8_t cmdBuffer[5] = {0};
-		int expectedCmdLength = 0;
-		int cmdBufferLength = 0;
-		uint8_t scratchpad[FLASH_PAGE_SIZE] = {0};
-		uint8_t oldPages[FLASH_PAGE_SIZE * REMEMBER_OLD_PAGES_COUNT] = {0};
-		int bytesToFlash = 0;
-		int rawLength = 0;
-		State state = State::EXPECT_COMMAND_BYTE;
-		uint8_t* startAddrOfPageToBeFlashed = 0;
-		uint8_t* startAddrOfFlash = 0;
+        uint8_t cmdBuffer[5] = {0};
+        int expectedCmdLength = 0;
+        int cmdBufferLength = 0;
+        uint8_t scratchpad[FLASH_PAGE_SIZE] = {0};
+        uint8_t oldPages[FLASH_PAGE_SIZE * REMEMBER_OLD_PAGES_COUNT] = {0};
+        int bytesToFlash = 0;
+        int rawLength = 0;
+        State state = State::EXPECT_COMMAND_BYTE;
+        uint8_t* startAddrOfPageToBeFlashed = 0;
+        uint8_t* startAddrOfFlash = 0;
 
 	public:
 		Decompressor(AppDescriptionBlock* BaseAddress);
 
 	private:
+		// remove default constructors
+		Decompressor() = delete;
+        Decompressor(const Decompressor&) = delete;
+        Decompressor& operator=(const Decompressor&) = delete;
+
 		int getLength();
 
 		bool isCopyFromRam();

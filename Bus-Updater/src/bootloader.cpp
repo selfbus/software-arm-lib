@@ -32,8 +32,7 @@
 #define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
 #define RUN_MODE_BLINK_IDLE (1000)     //!< while idle/disconnected, programming and run led blinking time in milliseconds
 #define BL_RESERVED_RAM_START (0x10000000) //!> start address of RAM for bootloader reserved
-#define BL_DEFAULT_VECTOR_TABLE_SIZE (200 / sizeof(unsigned int))
-
+#define BL_DEFAULT_VECTOR_TABLE_SIZE (200 / sizeof(unsigned int)) //!< vectortable size to copy prior application start
 
 // KNX/EIB specific settings
 #define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
@@ -41,14 +40,13 @@
 #define DEVICETYPE 0x2060 //!< Device Type -> 2138.10
 #define APPVERSION 0x01   //!< Application Version -> 0.1
 
-
-static BcuUpdate _bcu = BcuUpdate(); //!< instance of @ref BcuUpdate used for bus communication of the bootloader
+static BcuUpdate _bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
 BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
 
 Timeout runModeTimeout;              //!< running mode LED blinking timeout
 
 /**
- * @brief Configures the system timer to call SysTick_Handler once every 1 msec
+ * @brief Configures the system timer to call SysTick_Handler once every 1 msec.
  *
  */
 static inline void lib_setup()
@@ -140,9 +138,11 @@ static inline void jumpToApplication(unsigned int start)
     unsigned int i;
     // copy the first 200 bytes of the "application" (the vector table)
     // into the RAM and than remap the vector table inside the RAM
+#ifdef DUMP_TELEGRAMS_LVL1
+    serial.println("Vectortable Size: ", (unsigned int) BL_DEFAULT_VECTOR_TABLE_SIZE, HEX, 4);
+#endif
     for (i = 0; i < BL_DEFAULT_VECTOR_TABLE_SIZE; i++, rom++, ram++)
     {
-        serial.println("Vec Size: ", BL_DEFAULT_VECTOR_TABLE_SIZE);
         *ram = *rom;
     }
     LPC_SYSCON->SYSMEMREMAP = 0x01;
@@ -223,7 +223,7 @@ int main()
     }
     *magicWord = 0;		// wrong magicWord, delete it
 
-    // Enter Updater when prog button pressed at power up
+    // Enter Updater when programming button was pressed at power up
     pinMode(PIN_PROG, INPUT | PULL_UP);
     if (!digitalRead(PIN_PROG))
     {
@@ -242,7 +242,7 @@ int main()
     }
     // Start updater in case of error
     run_updater(false);
-    return 0;
+    return (0);
 }
 
 /** @}*/

@@ -22,10 +22,16 @@
 unsigned int crc32(unsigned int startCrc32, unsigned char * data, unsigned int count)
 {
     int crc;
-    unsigned int byte, c;
-    const unsigned int g0 = 0xEDB88320, g1 = g0 >> 1, g2 = g0 >> 2, g3 = g0
-            >> 3, g4 = g0 >> 4, g5 = g0 >> 5, g6 = (g0 >> 6) ^ g0, g7 = ((g0
-            >> 6) ^ g0) >> 1;
+    unsigned int byte;
+    unsigned int c;
+    const unsigned int g0 = 0xEDB88320;
+    const unsigned int g1 = g0 >> 1;
+    const unsigned int g2 = g0 >> 2;
+    const unsigned int g3 = g0 >> 3;
+    const unsigned int g4 = g0 >> 4;
+    const unsigned int g5 = g0 >> 5;
+    const unsigned int g6 = (g0 >> 6) ^ g0;
+    const unsigned int g7 = ((g0 >> 6) ^ g0) >> 1;
 
     crc = startCrc32;
     while (count--)
@@ -38,7 +44,7 @@ unsigned int crc32(unsigned int startCrc32, unsigned char * data, unsigned int c
                 ^ ((crc << 25 >> 31) & g1) ^ ((crc << 24 >> 31) & g0);
         crc = ((unsigned) crc >> 8) ^ c;
     }
-    return ~crc;
+    return (~crc);
 }
 
 /** @}*/

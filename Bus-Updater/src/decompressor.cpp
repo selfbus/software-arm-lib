@@ -43,18 +43,15 @@
 
 Decompressor::Decompressor(AppDescriptionBlock* BaseAddress)
 {
-	startAddrOfFlash = getFirmwareStartAddress(BaseAddress);
+    startAddrOfFlash = getFirmwareStartAddress(BaseAddress);
 	startAddrOfPageToBeFlashed = getFirmwareStartAddress(BaseAddress);
-
-	//startAddrOfFlash = (uint8_t*)startAddrOfFirstPageToBeFlashed;
-	//startAddrOfPageToBeFlashed = (uint8_t*)startAddrOfFirstPageToBeFlashed;
 }
 
 int Decompressor::getLength()
 {
 	if ((cmdBuffer[0] & FLAG_LONG) == FLAG_LONG)
 	{
-		return ((cmdBuffer[0] & 0b111111) << 8) | (cmdBuffer[1] & 0xff);
+		return (((cmdBuffer[0] & 0b111111) << 8) | (cmdBuffer[1] & 0xff));
 	}
 	else
 	{
@@ -66,11 +63,11 @@ bool Decompressor::isCopyFromRam()
 {
 	if ((cmdBuffer[0] & FLAG_LONG) == FLAG_LONG)
 	{
-		return (cmdBuffer[2] & ADDR_FROM_RAM) == ADDR_FROM_RAM;
+		return ((cmdBuffer[2] & ADDR_FROM_RAM) == ADDR_FROM_RAM);
 	}
 	else
 	{
-		return (cmdBuffer[1] & ADDR_FROM_RAM) == ADDR_FROM_RAM;
+		return ((cmdBuffer[1] & ADDR_FROM_RAM) == ADDR_FROM_RAM);
 	}
 }
 
@@ -78,11 +75,11 @@ int Decompressor::getCopyAddress()
 {
 	if ((cmdBuffer[0] & FLAG_LONG) == FLAG_LONG)
 	{
-		return ((cmdBuffer[2] & 0b1111111) << 16) | ((cmdBuffer[3] & 0xff) << 8) | (cmdBuffer[4] & 0xff);
+		return (((cmdBuffer[2] & 0b1111111) << 16) | ((cmdBuffer[3] & 0xff) << 8) | (cmdBuffer[4] & 0xff));
 	}
 	else
 	{
-		return ((cmdBuffer[1] & 0b1111111) << 16) | ((cmdBuffer[2] & 0xff) << 8) | (cmdBuffer[3] & 0xff);
+		return (((cmdBuffer[1] & 0b1111111) << 16) | ((cmdBuffer[2] & 0xff) << 8) | (cmdBuffer[3] & 0xff));
 	}
 }
 
@@ -119,7 +116,7 @@ int Decompressor::pageCompletedDoFlash()
 		if (lastError)
 		{
 		    dline(" Failed!")
-			return lastError;
+			return (lastError);
 		}
 		else
 		    dline(" OK");
@@ -151,7 +148,7 @@ int Decompressor::pageCompletedDoFlash()
 	//d1("LAST_ERROR = 0x");
 	//d2(lastError,HEX,2);
 	//dline("");
-	return lastError;
+	return (lastError);
 }
 
 void Decompressor::putByte(uint8_t data)
@@ -283,19 +280,19 @@ uint32_t Decompressor::getCrc32() {
 	//UART_printf("\n\r");
 
 
-	return ccrc;
+	return (ccrc);
 }
 
 uint32_t Decompressor::getStartAddrOfPageToBeFlashed() {
-	return (uint32_t)startAddrOfPageToBeFlashed;
+	return ((uint32_t)startAddrOfPageToBeFlashed);
 }
 
 uint32_t Decompressor::getBytesCountToBeFlashed() {
-	return bytesToFlash;
+	return (bytesToFlash);
 }
 
 uint8_t Decompressor::getFlashPageNumberToBeFlashed() {
-	return (uint8_t)((uint32_t)startAddrOfPageToBeFlashed / FLASH_PAGE_SIZE);
+	return ((uint8_t)((uint32_t)startAddrOfPageToBeFlashed / FLASH_PAGE_SIZE));
 }
 
 /** @}*/
