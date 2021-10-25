@@ -97,3 +97,5 @@ void initApplication(void)
     objectWrite(COMOBJ_52_KANAL_D_STATUS_EIN_AUS, (unsigned int) 0);
 #endif
 }
+
+/** @}*/
