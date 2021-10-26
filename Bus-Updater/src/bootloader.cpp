@@ -206,7 +206,7 @@ static inline void run_updater(bool programmingMode)
 }
 
 /**
- * @brief Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.<br>
+ * @brief Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.<br/>
  *        If no "magic word" is present it checks for a valid application to start,<br>
  *        otherwise starts in bootloader mode
  *
