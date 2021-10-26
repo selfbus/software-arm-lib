@@ -23,7 +23,8 @@ public class FlashDiff {
     public static final int ADDR_FROM_ROM = 0;
     public static final int ADDR_FROM_RAM = 0b10000000;
 
-
+    private int totalBytesTransferred = 0;
+    
     enum SourceType {
         FORWARD_ROM,
         BACKWARD_RAM,
@@ -115,6 +116,10 @@ public class FlashDiff {
             return 0;
         }
     }
+    
+    public int getTotalBytesTransferred() {
+        return totalBytesTransferred;
+    }
 
     public void generateDiff(BinImage img1Orig, BinImage img2, FlashProgrammer flashProgrammer) throws InterruptedException, KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException {
         // TODO check if old image can be truncated for smaller new image, first test was fine
@@ -128,6 +133,7 @@ public class FlashDiff {
         int i = 0;
         int size = 0;
         int pages = 0;
+        totalBytesTransferred = 0;
         while (i < img2.getBinData().length) {
             SearchResult rBackwardRamWindow = letLongestCommonBytes(w.getOldBinData(), img2.getBinData(), i, 0, MAX_COPY_LENGTH);
             rBackwardRamWindow.sourceType = SourceType.BACKWARD_RAM;
@@ -227,6 +233,7 @@ public class FlashDiff {
 
             System.out.print("Page " + pages + ", ");
             flashProgrammer.sendCompressedPage(outputDiffStream, crc32Block.getValue());
+            totalBytesTransferred = size;
             System.out.println("OK! Total diff stream length = " + ConColors.BRIGHT_GREEN + size + "bytes" + ConColors.RESET);
         }
         //dumpSideBySide(img1, img2);

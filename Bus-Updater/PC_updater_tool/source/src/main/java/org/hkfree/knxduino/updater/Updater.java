@@ -861,7 +861,7 @@ public class Updater implements Runnable {
             }
 
             byte bootDescriptor[] = new byte[16];
-            // appVersionAddr += startAddress;	//todo why should we add here something? Add FW offset to get absolute position in MCU
+            appVersionAddr += startAddress;	//DONE why should we add here something?, yes we have to: Add FW offset to get absolute position in MCU
             integerToStream(bootDescriptor, 0, startAddress);
             integerToStream(bootDescriptor, 4, endAddress);
             integerToStream(bootDescriptor, 8, (int) crc32File.getValue());
@@ -999,7 +999,15 @@ public class Updater implements Runnable {
             }
         });
         long flash_time_duration = System.currentTimeMillis() - flash_time_start;
-        System.out.printf("Diff-Update required %tM:%<tS.", flash_time_duration);   
+        System.out.printf("Diff-Update required %tM:%<tS.", flash_time_duration);
+        float bytesPerSecond = (float)((float)(differ.getTotalBytesTransferred())/(flash_time_duration/1000));
+        if (bytesPerSecond >= 50.0) {
+            System.out.printf(ConColors.BRIGHT_GREEN + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+        }
+        else {
+            System.out.printf(ConColors.BRIGHT_RED + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+        }
+
     }
 
     private void eraseFlashPages(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength)
@@ -1159,6 +1167,14 @@ public class Updater implements Runnable {
         long flash_time_duration = System.currentTimeMillis() - flash_time_start;
         fis.close();
         System.out.printf("Wrote %d bytes from file to device in %tM:%<tS.", total, flash_time_duration);
+        float bytesPerSecond = (float)((float)(total)/(flash_time_duration/1000));
+        if (bytesPerSecond >= 50.0) {
+            System.out.printf(ConColors.BRIGHT_GREEN + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+        }
+        else {
+            System.out.printf(ConColors.BRIGHT_RED + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+        }
+
         if (timeoutCount > 0) {
             System.out.printf(ConColors.BG_RED + "Timeout(s): %d" + ConColors.RESET, timeoutCount);
         }
