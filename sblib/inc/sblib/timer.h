@@ -67,7 +67,7 @@ unsigned int millis();
  * Get the number of milliseconds that elapsed since the reference time.
  *
  * @param ref - the reference time to compare with
- * @return The numer of milliseconds since time.
+ * @return The number of milliseconds since time.
  */
 unsigned int elapsed(unsigned int ref);
 
