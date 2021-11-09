@@ -139,7 +139,7 @@ static inline void jumpToApplication(unsigned int start)
     // copy the first 200 bytes of the "application" (the vector table)
     // into the RAM and than remap the vector table inside the RAM
 #ifdef DUMP_TELEGRAMS_LVL1
-    serial.println("Vectortable Size: ", (unsigned int) BL_DEFAULT_VECTOR_TABLE_SIZE, HEX, 4);
+    serial.println("Vectortable Size: ", (unsigned int) (BL_DEFAULT_VECTOR_TABLE_SIZE * sizeof(start)), HEX, 4);
 #endif
     for (i = 0; i < BL_DEFAULT_VECTOR_TABLE_SIZE; i++, rom++, ram++)
     {
