@@ -72,7 +72,7 @@ public class Updater implements Runnable {
     private static final String tool = "Selfbus Updater " + version;
     private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
-    private final Map options = new HashMap();
+    private final Map<String, Object> options = new HashMap<>();
 
     /**
      * Creates a new Updater instance using the supplied options.
@@ -188,8 +188,9 @@ public class Updater implements Runnable {
             return;
 
         // add defaults
-        options.put("port", new Integer(KNXnetIPConnection.DEFAULT_PORT));
-        options.put("medium", TPSettings.TP1);
+        options.put("port", KNXnetIPConnection.DEFAULT_PORT);
+        // options.put("medium", TPSettings.TP1);
+        options.put("medium", new TPSettings());
 
         int i = 0;
         for (; i < args.length; i++) {
@@ -284,10 +285,14 @@ public class Updater implements Runnable {
     }
 
     private static void parseHost(final String host, final boolean local,
-                                  final Map options) {
+                                  final Map<String, Object> options) {
         try {
-            options.put(local ? "localhost" : "host",
-                    InetAddress.getByName(host));
+            if (local) {
+                options.put("localhost", InetAddress.getByName(host));
+            }
+            else {
+                options.put("host", InetAddress.getByName(host));
+            }
         } catch (final UnknownHostException e) {
             throw new KNXIllegalArgumentException(
                     "failed to read host " + host, e);
@@ -302,7 +307,8 @@ public class Updater implements Runnable {
         //if (id.equals("tp0"))
         //	return TPSettings.TP0;
         if (id.equals("tp1"))
-            return TPSettings.TP1;
+            return new TPSettings();
+            //return TPSettings.TP1;
             //else if (id.equals("p110"))
             //	return new PLSettings(false);
             //else if (id.equals("p132"))
@@ -392,42 +398,79 @@ public class Updater implements Runnable {
         }
     }
 
-    public static final int UPD_ERASE_SECTOR = 0;
-    public static final int UPD_SEND_DATA = 1;
-    public static final int UPD_PROGRAM = 2;
-    public static final int UPD_UPDATE_BOOT_DESC = 3;
-    public static final int UPD_SEND_DATA_TO_DECOMPRESS = 4;
-    public static final int UPD_PROGRAM_DECOMPRESSED_DATA = 5;
-    public static final int UPD_REQ_DATA = 10;
-    public static final int UPD_GET_LAST_ERROR = 20;
-    public static final int UPD_SEND_LAST_ERROR = 21;
-    public static final int UPD_UNLOCK_DEVICE = 30;
-    public static final int UPD_REQUEST_UID = 31;
-    public static final int UPD_RESPONSE_UID = 32;
-    public static final int UPD_APP_VERSION_REQUEST = 33;
-    public static final int UPD_APP_VERSION_RESPONSE = 34;
-    public static final int UPD_RESET = 35;
-    public static final int UPD_REQUEST_BOOT_DESC = 36;
-    public static final int UPD_RESPONSE_BOOT_DESC = 37;
-    public static final int UPD_REQUEST_BL_IDENTITY = 40;
-    public static final int UPD_RESPONSE_BL_IDENTITY = 41;
-    public static final int UPD_SET_EMULATION = 100;
+    public enum UPDCommand {
+        ERASE_SECTOR(0),
+        SEND_DATA(1),
+        PROGRAM(2),
+        UPDATE_BOOT_DESC(3),
+        SEND_DATA_TO_DECOMPRESS(4),
+        PROGRAM_DECOMPRESSED_DATA(5),
+        REQ_DATA(10),
+        GET_LAST_ERROR(20),
+        SEND_LAST_ERROR(21),
+        UNLOCK_DEVICE(30),
+        REQUEST_UID(31),
+        RESPONSE_UID(32),
+        APP_VERSION_REQUEST(33),
+        APP_VERSION_RESPONSE(34),
+        RESET(35),
+        REQUEST_BOOT_DESC(36),
+        RESPONSE_BOOT_DESC(37),
+        REQUEST_BL_IDENTITY(40),
+        RESPONSE_BL_IDENTITY(41),
+        SET_EMULATION(100);
 
-    public static final int UDP_UNKNOWN_COMMAND = 0x100; //!< received command is not defined
-    public static final int UDP_CRC_ERROR = 0x101; //!< CRC calculated on the device and by the updater don't match
-    public static final int UDP_ADDRESS_NOT_ALLOWED_TO_FLASH = 0x102;//!< specified address cannot be programmed
-    public static final int UDP_SECTOR_NOT_ALLOWED_TO_ERASE = 0x103; //!< the specified sector cannot be erased
-    public static final int UDP_RAM_BUFFER_OVERFLOW = 0x104; // <! internal buffer for storing the data would overflow
-    public static final int UDP_WRONG_DESCRIPTOR_BLOCK = 0x105; //<! the boot descriptor block does not exist
-    public static final int UDP_APPLICATION_NOT_STARTABLE = 0x106; //<! the programmed application is not startable
-    public static final int UDP_DEVICE_LOCKED = 0x107;  //!< the device is still locked
-    public static final int UDP_UID_MISMATCH = 0x108;	//!< UID sent to unlock the device is invalid
-    public static final int UDP_ERASE_FAILED = 0x109;   //!< page erase failed
+        private static final Map<Integer, UPDCommand> BY_INDEX = new HashMap<>();
+        static {
+            for (UPDCommand e: values()) {
+                BY_INDEX.put(e.id, e);
+            }
+        }
 
-    // counting in hex so here is space for 0x10A-0x10F
-    public static final int UDP_FLASH_ERROR = 0x110;               //!< page program (flash) failed
-    public static final int UDP_PAGE_NOT_ALLOWED_TO_ERASE = 0x111; //!< page not allowed to erase
-    public static final int UDP_NOT_IMPLEMENTED = 0xFFFF;          //!< this command is not yet implemented
+        public final Integer id;
+        private UPDCommand(Integer id) {
+            this.id = id;
+        }
+
+        public static UPDCommand valueOfIndex(Integer index) {
+               return BY_INDEX.get(index);
+        }
+    }
+
+    public enum UDPResult {
+        OK(0x000),
+        UNKNOWN_COMMAND(0x100),             //!< received command is not defined
+        CRC_ERROR(0x101),                   //!< CRC calculated on the device and by the updater don't match
+        ADDRESS_NOT_ALLOWED_TO_FLASH(0x102),//!< specified address cannot be programmed
+        SECTOR_NOT_ALLOWED_TO_ERASE(0x103), //!< the specified sector cannot be erased
+        RAM_BUFFER_OVERFLOW(0x104),         //!< internal buffer for storing the data would overflow
+        WRONG_DESCRIPTOR_BLOCK(0x105),      //!< the boot descriptor block does not exist
+        APPLICATION_NOT_STARTABLE(0x106),   //!< the programmed application is not startable
+        DEVICE_LOCKED(0x107),               //!< the device is still locked
+        UID_MISMATCH(0x108),                //!< UID sent to unlock the device is invalid
+        ERASE_FAILED(0x109),                //!< page erase failed
+        // counting in hex so here is space for 0x10A-0x10F
+        FLASH_ERROR(0x110),                 //!< page program (flash) failed
+        PAGE_NOT_ALLOWED_TO_ERASE(0x111),   //!< page not allowed to erase
+        NOT_IMPLEMENTED(0xFFFF);            //!< this command is not yet implemented
+
+        private static final Map<Integer, UDPResult> BY_INDEX = new HashMap<>();
+        static {
+            for (UDPResult e: values()) {
+                BY_INDEX.put(e.id, e);
+            }
+        }        
+        
+        public final Integer id;
+
+        private UDPResult(Integer id) {
+            this.id = id;
+        }
+
+        public static UDPResult valueOfIndex(Integer index) {
+            return BY_INDEX.get(index);
+        }
+    }
 
     public static final int FLASH_SECTOR_SIZE = 4096; //!< Selfbus ARM controller flash sector size
     public static final int FLASH_PAGE_SIZE = 256;    //!< Selfbus ARM controller flash page size
@@ -454,64 +497,65 @@ public class Updater implements Runnable {
     }
 
     int checkResult(byte[] result, boolean verbose) {
-        int resultCode = 0;
-        if (result[3] == UPD_SEND_LAST_ERROR) {
-            resultCode = streamToInteger(result, 4);
-            System.out.print(ConColors.BRIGHT_RED);		// Print errors in red
-            switch (resultCode) {
-                case UDP_UID_MISMATCH:
-                    System.out.println("failed, UID mismatch.");
-                    break;
-                case UDP_SECTOR_NOT_ALLOWED_TO_ERASE:
-                    System.out.println("Sector not allowed being erased.");
-                    break;
-                case UDP_RAM_BUFFER_OVERFLOW:
-                    System.out.println("RAM Buffer Overflow");
-                    break;
-                case UDP_CRC_ERROR:
-                    System.out.println("CRC error, try option -full for a clean and full flash");
-                    break;
-                case UDP_ADDRESS_NOT_ALLOWED_TO_FLASH:
-                    System.out.println("Address not allowed to flash");
-                    break;
-                case UDP_DEVICE_LOCKED:
-                    System.out.println("Device locked. Programming mode on device must be active!");
-                    break;
-                case UDP_APPLICATION_NOT_STARTABLE:
-                    System.out.println("Application not startable");
-                    break;
-                case UDP_WRONG_DESCRIPTOR_BLOCK:
-                    System.out.println("Boot Descriptor block wrong");
-                    break;
-                case UDP_ERASE_FAILED:
-                    System.out.println("Flash page erase failed");
-                    break;
-                case UDP_FLASH_ERROR:
-                    System.out.println("Flash page could not be programmed");
-                    break;
-                case UDP_PAGE_NOT_ALLOWED_TO_ERASE:
-                    System.out.println("Flash page not allowed to erase");
-                    break;
-                case UDP_NOT_IMPLEMENTED:
-                    System.out.println("Command not implemented");
-                    break;
-                case UDP_UNKNOWN_COMMAND:
-                    System.out.println("Command unknown");
-                    break;
-
-                default:
-                    if (resultCode == 0) {
-                        System.out.print(ConColors.BRIGHT_GREEN);	// Success in green
-                        if (verbose) {
-                            System.out.println("done (" + resultCode + ")");
-                        } else
-                            System.out.print(".");
-                    } else {
-                        System.out.println(ConColors.BRIGHT_RED + "unknown error (" + resultCode + ").");
-                    }
-            }
-            System.out.print(ConColors.RESET);		// switch back to default colors
+        if (result[3] != UPDCommand.SEND_LAST_ERROR.id) {
+            return 0;
         }
+
+        int resultCode = streamToInteger(result, 4);
+        System.out.print(ConColors.BRIGHT_RED);		// Print errors in red
+        UDPResult udpResult = UDPResult.valueOfIndex(resultCode);
+        switch (udpResult) {
+            case UID_MISMATCH:
+                System.out.println("failed, UID mismatch.");
+                break;
+            case SECTOR_NOT_ALLOWED_TO_ERASE:
+                System.out.println("Sector not allowed being erased.");
+                break;
+            case RAM_BUFFER_OVERFLOW:
+                System.out.println("RAM Buffer Overflow");
+                break;
+            case CRC_ERROR:
+                System.out.println("CRC error, try option -full for a clean and full flash");
+                break;
+            case ADDRESS_NOT_ALLOWED_TO_FLASH:
+                System.out.println("Address not allowed to flash");
+                break;
+            case DEVICE_LOCKED:
+                System.out.println("Device locked. Programming mode on device must be active!");
+                break;
+            case APPLICATION_NOT_STARTABLE:
+                System.out.println("Application not startable");
+                break;
+            case WRONG_DESCRIPTOR_BLOCK:
+                System.out.println("Boot Descriptor block wrong");
+                break;
+            case ERASE_FAILED:
+                System.out.println("Flash page erase failed");
+                break;
+            case FLASH_ERROR:
+                System.out.println("Flash page could not be programmed");
+                break;
+            case PAGE_NOT_ALLOWED_TO_ERASE:
+                System.out.println("Flash page not allowed to erase");
+                break;
+            case NOT_IMPLEMENTED:
+                System.out.println("Command not implemented");
+                break;
+            case UNKNOWN_COMMAND:
+                System.out.println("Command unknown");
+                break;
+            case OK:
+                System.out.print(ConColors.BRIGHT_GREEN);	// Success in green
+                if (verbose) {
+                    System.out.println("done (" + resultCode + ")");
+                } else {
+                    System.out.print(".");
+                }
+                break;
+            default:
+                System.out.println(ConColors.BRIGHT_RED + "unknown error (" + resultCode + ").");
+        }
+        System.out.print(ConColors.RESET);		// switch back to default colors
         return resultCode;
     }
 
@@ -689,7 +733,7 @@ public class Updater implements Runnable {
 
             if (uid == null) {
                 System.out.print("Requesting UID from " + progDevice.toString() + " ... ");
-                result = mc.sendUpdateData(pd, UPD_REQUEST_UID, new byte[0]);
+                result = mc.sendUpdateData(pd, UPDCommand.REQUEST_UID.id, new byte[0]);
                 checkResult(result, true);
                 if ((result.length >= 12) && (result.length <= 16)){
                     uid = new byte[12];
@@ -719,13 +763,13 @@ public class Updater implements Runnable {
             }
             System.out.print(" ... ");
 
-            result = mc.sendUpdateData(pd, UPD_UNLOCK_DEVICE, uid);
+            result = mc.sendUpdateData(pd, UPDCommand.UNLOCK_DEVICE.id, uid);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
                 throw new RuntimeException("Selfbus update failed.");
             }
 
-            result = mc.sendUpdateData(pd, UPD_REQUEST_BL_IDENTITY, new byte[] {0});
+            result = mc.sendUpdateData(pd, UPDCommand.REQUEST_BL_IDENTITY.id, new byte[] {0});
             if (checkResult(result) != 0) {
                 mc.restart(pd);
                 throw new RuntimeException("Requesting Bootloader Identity failed!");
@@ -737,7 +781,7 @@ public class Updater implements Runnable {
                     + ", Features: 0x" + String.format("%04X", BL_Features) + ", Bootloader Size: 0x" + String.format("%04X", BL_Size) + ConColors.RESET);
 
             System.out.print("\n\rRequesting App Version String ...");
-            result = mc.sendUpdateData(pd, UPD_APP_VERSION_REQUEST, new byte[] {0});
+            result = mc.sendUpdateData(pd, UPDCommand.APP_VERSION_REQUEST.id, new byte[] {0});
             if (checkResult(result) != 0) {
                 //mc.restart(pd);
                 System.out.println(ConColors.BRIGHT_RED + " failed!" + ConColors.RESET);
@@ -833,7 +877,7 @@ public class Updater implements Runnable {
 
             // Request current main firmware boot descriptor from device
             System.out.println("\nRequesting Boot Descriptor ...");
-            result = mc.sendUpdateData(pd, UPD_REQUEST_BOOT_DESC, new byte[] {0});
+            result = mc.sendUpdateData(pd, UPDCommand.REQUEST_BOOT_DESC.id, new byte[] {0});
             if (checkResult(result) != 0) {
                 mc.restart(pd);
                 throw new RuntimeException("Boot descriptor request failed.");
@@ -848,6 +892,8 @@ public class Updater implements Runnable {
             boolean diffMode = false;
             File oldImageCacheFile = new File(hexCacheDir + File.separator + "image-" + Long.toHexString(descrStartAddr) + "-" + descrLength + "-" + Long.toHexString(descrCrc) + ".bin" );
             if (!(options.containsKey("full")) && oldImageCacheFile.exists()) {
+                //TODO check that "Current App Version String" and "File App Version String" represent the same application,
+                //     if they are not the same app, we should switch top full flash mode
                 System.out.println("  Found current device firmware in cache " + oldImageCacheFile.getAbsolutePath() + ConColors.BRIGHT_GREEN +"\n\r  --> switching to diff upload mode" + ConColors.RESET);
                 diffMode = true;
             }
@@ -892,7 +938,7 @@ public class Updater implements Runnable {
                 txBuf[0] = (byte)nDone;
 
                 try {
-                    result = mc.sendUpdateData(pd, UPD_SEND_DATA, txBuf);
+                    result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA.id, txBuf);
                     if (checkResult(result, false) != 0) {
                         mc.restart(pd);
                         throw new RuntimeException("Selfbus update failed.");
@@ -920,7 +966,7 @@ public class Updater implements Runnable {
                     + String.format("%08X", crc32Block.getValue())
                     + ", length "
                     + Long.toString(bootDescriptor.length) + " ");
-            result = mc.sendUpdateData(pd, UPD_UPDATE_BOOT_DESC,
+            result = mc.sendUpdateData(pd, UPDCommand.UPDATE_BOOT_DESC.id,
                     programBootDescriptor);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
@@ -929,7 +975,7 @@ public class Updater implements Runnable {
             Thread.sleep(500);
             System.out.println(ConColors.BG_GREEN + "Firmware Update done, Restarting device now ..." + ConColors.RESET + "\n\r\n\r");
             //mc.restart(pd);
-            mc.sendUpdateData(pd, UPD_RESET, new byte[] {0});  // Clean restart by application rather than lib
+            mc.sendUpdateData(pd, UPDCommand.RESET.id, new byte[] {0});  // Clean restart by application rather than lib
 
         } catch (final KNXException e) {
             thrown = e;
@@ -964,7 +1010,7 @@ public class Updater implements Runnable {
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
             byte[] result;
             // process compressed page
-            System.out.print("Sending new firmware (" + outputDiffStream.size() + " diff bytes) ");
+            System.out.print("Sending new firmware (" + (outputDiffStream.size() - 5) + " diff bytes) "); //TODO 5 bytes are added to size in FlashDiff.java / generateDiff(...), check why
             byte[] buf = new byte[12];
             int i = 0;
             while (i < outputDiffStream.size()) {
@@ -975,7 +1021,7 @@ public class Updater implements Runnable {
                 }
                 // transmit telegram
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
-                result = mc.sendUpdateData(pd, UPD_SEND_DATA_TO_DECOMPRESS, txBuf);
+                result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA_TO_DECOMPRESS.id, txBuf);
                 if (checkResult(result, false) != 0) {
                     mc.restart(pd);
                     throw new RuntimeException("Selfbus update failed.");
@@ -991,7 +1037,7 @@ public class Updater implements Runnable {
                 System.out.println();
                 System.out.print("Program device next page diff, CRC32 0x" + String.format("%08X", crc32) + " ... ");
             }
-            result = mc.sendUpdateData(pd, UPD_PROGRAM_DECOMPRESSED_DATA, progPars);
+            result = mc.sendUpdateData(pd, UPDCommand.PROGRAM_DECOMPRESSED_DATA.id, progPars);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
                 throw new RuntimeException(
@@ -1021,7 +1067,7 @@ public class Updater implements Runnable {
         for (int i = 0; i < erasePages; i++) {
             sector[0] = (byte) (i + startPage);
             System.out.print("Erase sector " + String.format("%2d", sector[0]) + " ...");
-            result = mc.sendUpdateData(pd, UPD_ERASE_SECTOR, sector);
+            result = mc.sendUpdateData(pd, UPDCommand.ERASE_SECTOR.id, sector);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
                 throw new RuntimeException("Selfbus update failed.");
@@ -1109,7 +1155,7 @@ public class Updater implements Runnable {
                     if (data_send_delay != 0)
                     	Thread.sleep(data_send_delay);	//Reduce bus load during data upload, ohne 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
                     try{
-                        result = mc.sendUpdateData(pd, UPD_SEND_DATA, txBuf);
+                        result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA.id, txBuf);
 
                         if (checkResult(result, false) != 0) {
                             mc.restart(pd);
@@ -1151,7 +1197,7 @@ public class Updater implements Runnable {
                                     + " with " + String.format("%3d", progSize)
                                     + " bytes and CRC32 0x"
                                     + String.format("%08X", crc) + " ... ");
-                    result = mc.sendUpdateData(pd, UPD_PROGRAM,
+                    result = mc.sendUpdateData(pd, UPDCommand.PROGRAM.id,
                             progPars);
                     if (checkResult(result) != 0) {
                         mc.restart(pd);
