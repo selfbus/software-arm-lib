@@ -148,7 +148,6 @@ void setup(void)
 /**
  * @brief The main processing loop while a KNX-application is loaded.
  *
- * @note Will never be called in this example
  */
 void loop(void)
 {
@@ -158,10 +157,13 @@ void loop(void)
     {
         objectUpdated(objno);
     }
-    //FIXME why is this running into an fatalError()?
-    serial.println(" userEeprom.optionReg: 0x", userEeprom.optionReg, HEX, 2);
+
+    if ((millis() % 1000) == 0)
+    {
+        //FIXME why is this running into an fatalError()?
+        serial.println("userEeprom.optionReg: 0x", userEeprom.optionReg, HEX, 2);
+    }
     checkPeriodic();
-    delay(1000);
 
     // Sleep up to 1 millisecond if there is nothing to do
     if (bus.idle())
@@ -170,9 +172,6 @@ void loop(void)
 
 /**
  * @brief The processing loop while no KNX-application is loaded.
- *
- * @note Because we don't start the bus with bcu.begin(...),
- *       in this example only this function will be called by the Selfbus library.
  */
 void loop_noapp(void)
 {
