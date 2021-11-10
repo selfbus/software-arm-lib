@@ -568,7 +568,7 @@ void BCU::processDirectTelegram(int apci)
                 // this is only allowed with programming mode on, otherwise it will result in a simple reset
                 unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
                 *magicWord = BOOTLOADER_MAGIC_WORD;
-                if (programmingMode())
+                /* if (programmingMode())
                 {
                     *magicWord = BOOTLOADER_MAGIC_WORD;
                 }
@@ -576,6 +576,7 @@ void BCU::processDirectTelegram(int apci)
                 {
                     *magicWord = 0;
                 }
+                */
             }
 
             if (usrCallback)
