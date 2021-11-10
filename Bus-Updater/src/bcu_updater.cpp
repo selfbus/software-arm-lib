@@ -81,7 +81,16 @@ void BcuUpdate::processDirectTelegram(int apci)
     bool sendTel = false;
 
     if (connectedAddr != senderAddr) // ensure that the sender is correct
+    {
+        dump2(
+                serial.print("connectedAddr 0x");
+                serial.print(connectedAddr, HEX, 4);
+                serial.print(" != 0x");
+                serial.print(senderAddr, HEX, 4);
+                serial.println(" senderAddr");
+             );
         return;
+    }
 
     connectedTime = systemTime;
     sendTelegram[6] = 0;
@@ -214,6 +223,13 @@ void BcuUpdate::processConControlTelegram(int tpci)
             {
                 dump2(serial.println("error"));
             }
+        }
+        else
+        {
+            dump2(
+                  serial.print("processConControlTelegram unknown tpci 0x");
+                  serial.println(tpci, HEX, 4);
+                  );
         }
     }
 }
