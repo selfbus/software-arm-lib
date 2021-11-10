@@ -720,12 +720,16 @@ public class Updater implements Runnable {
                 } catch (final KNXException e) {
 
                 }
+
+                /*
                 try {
+                    //TODO this was a wrong attempt, resulting in a T_DISCONNECT_PDU for the progDevice
                     mc = new UpdatableManagementClientImpl(link); //.restart will result in a timeout and exception
                 } catch(final KNXException e){
                     System.out.println("Restarting device " + device.toString() + " failed");
                     throw new RuntimeException("Selfbus update failed.");
                 }
+                 */
                 //Thread.sleep(1000);	// currently not needed because calimero currently times out waiting for an ACK
             }
 
