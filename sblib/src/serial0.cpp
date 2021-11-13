@@ -11,7 +11,7 @@
 #include <sblib/serial.h>
 #include <sblib/digital_pin.h>
 #include <sblib/core.h>
-#include <sblib/config.h>
+#include <sblib/libconfig.h>
 
 Serial serial(SERIAL_RX_PIN, SERIAL_TX_PIN);
 

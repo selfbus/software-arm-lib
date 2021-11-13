@@ -1,8 +1,8 @@
 /**************************************************************************//**
- * @file     config.h
+ * @addtogroup SBLIB Selfbus KNX-Library sblib
+ * @defgroup SBLIB_CORE CORE
+ * @ingroup SBLIB
  * @brief    set pre-processor symbols which apply to all sblib build-configs
- * @date     2021/04/02
- *
  * @note     for serial debugging output it is recommended to use
  *           PIO2_7 and PIO2_8 at high baud rate e.g 1.5MB
  *           define below SERIAL_RX_PIN and SERIAL_TX_PIN
@@ -11,10 +11,23 @@
  *           serial.setTxPin(PIO2_8);
  *           serial.begin(1500000);  1.5Mbaud
  *           serial object is defined in serial.h
+ *
+ * @{
+ *
+ * @file   libconfig.h
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Horst Rauch Copyright (c) 2021
+ * @bug No known bugs.
  ******************************************************************************/
 
-#ifndef SBLIB_CONFIG_H_
-#define SBLIB_CONFIG_H_
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
+
+#ifndef SBLIB_LIBCONFIG_H_
+#define SBLIB_LIBCONFIG_H_
 
 /**************************************************************************//**
  * Things to configure in the sblib
@@ -51,7 +64,7 @@
 //#define DUMP_MEM_OPS    //!< dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
 //#define DUMP_PROPERTIES //!< dump interface object and property handling over serial interface
 
-/// \todo following #defines should be moved to this config.h file
+/// \todo following #defines should be moved to this libconfig.h file
 // IAP_EMULATION        /// \todo from platform.h & analog_pin.cpp (used for catch-unit tests of the sblib)
 // SPI_BLOCK_TRANSFER   /// \todo from spi.h & spi.cpp
 // DEBUG                /// \todo from utils.h
@@ -113,4 +126,6 @@
 #   define SERIAL_SPEED 115200
 #endif
 
-#endif /* SBLIB_CONFIG_H_ */
+#endif /* SBLIB_LIBCONFIG_H_ */
+
+/** @}*/

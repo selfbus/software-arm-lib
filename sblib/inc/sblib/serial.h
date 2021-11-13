@@ -22,7 +22,7 @@
 
 #include <sblib/buffered_stream.h>
 #include <sblib/interrupt.h>
-#include <sblib/config.h>
+#include <sblib/libconfig.h>
 
 /** @defgroup SERIAL_11XX CHIP: LPC11xx Serial port driver
  * @ingroup CHIP_11XX_Drivers
