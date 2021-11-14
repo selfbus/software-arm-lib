@@ -18,6 +18,7 @@
  published by the Free Software Foundation.
  -----------------------------------------------------------------------------*/
 
+#include <string.h>
 #include <sblib/eib.h>
 #include <sblib/eib/bus.h>
 #include <sblib/eib/apci.h>
