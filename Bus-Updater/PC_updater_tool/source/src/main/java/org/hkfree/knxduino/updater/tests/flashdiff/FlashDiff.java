@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.CRC32;
 
-import org.hkfree.knxduino.updater.Updater.ConColors;
+import org.hkfree.knxduino.updater.ConColors;
 
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;

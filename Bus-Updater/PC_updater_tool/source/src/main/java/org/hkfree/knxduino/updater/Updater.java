@@ -88,6 +88,15 @@ public class Updater implements Runnable {
      *             on unknown/invalid options
      */
     public Updater(final String[] args) {
+        System.out.println(ConColors.BRIGHT_BOLD_GREEN + "\n" +
+                "\n" +
+                "     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
+                "    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
+                "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
+                "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
+                "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
+                "  by Dr. Stefan Haller, Oliver Stefan et al.                                 Version 0.56B \n\n" +
+                ConColors.RESET);
         // read in user-supplied command line options
         try {
             parseOptions(args);
@@ -141,7 +150,7 @@ public class Updater implements Runnable {
      */
     private KNXNetworkLink createLink() throws KNXException,
             InterruptedException {
-        LOGGER.trace("Creating KNX network link...");
+        LOGGER.debug("Creating KNX network link...");
         final KNXMediumSettings medium = (KNXMediumSettings) options
                 .get("medium");
         if (options.containsKey("serial")) {
@@ -253,12 +262,15 @@ public class Updater implements Runnable {
                 String str = args[++i];
                 String[] tokens = str.split(":");
 
-                if (tokens.length == 12) {
-                    byte uid[] = new byte[12];
+                if (tokens.length == UID_LENGTH_USED) {
+                    byte uid[] = new byte[tokens.length];
                     for (int n = 0; n < tokens.length; n++) {
                         uid[n] = (byte) Integer.parseUnsignedInt(tokens[n], 16);
                     }
                     options.put("uid", uid);
+                }
+                else {
+                    LOGGER.warn("ignoring -uid {}, wrong size {}, expected {}", str, tokens.length, UID_LENGTH_USED);
                 }
             }
             else if (isOption(arg, "-delay", null))
@@ -366,7 +378,7 @@ public class Updater implements Runnable {
         sb.append(
                 " -uid <hex>               send UID to unlock (default: request UID to unlock)")
                 .append(sep);
-        sb.append("                          only the first 12 bytes of UID are used")
+        sb.append(String.format("                          only the first %d bytes of UID are used", UID_LENGTH_USED))
                 .append(sep);
         sb.append(" -full                    force full upload mode (disable diff)")
                 .append(sep);
@@ -398,84 +410,10 @@ public class Updater implements Runnable {
         }
     }
 
-    public enum UPDCommand {
-        ERASE_SECTOR(0),
-        SEND_DATA(1),
-        PROGRAM(2),
-        UPDATE_BOOT_DESC(3),
-        SEND_DATA_TO_DECOMPRESS(4),
-        PROGRAM_DECOMPRESSED_DATA(5),
-        REQ_DATA(10),
-        GET_LAST_ERROR(20),
-        SEND_LAST_ERROR(21),
-        UNLOCK_DEVICE(30),
-        REQUEST_UID(31),
-        RESPONSE_UID(32),
-        APP_VERSION_REQUEST(33),
-        APP_VERSION_RESPONSE(34),
-        RESET(35),
-        REQUEST_BOOT_DESC(36),
-        RESPONSE_BOOT_DESC(37),
-        REQUEST_BL_IDENTITY(40),
-        RESPONSE_BL_IDENTITY(41),
-        SET_EMULATION(100);
-
-        private static final Map<Integer, UPDCommand> BY_INDEX = new HashMap<>();
-        static {
-            for (UPDCommand e: values()) {
-                BY_INDEX.put(e.id, e);
-            }
-        }
-
-        public final Integer id;
-        private UPDCommand(Integer id) {
-            this.id = id;
-        }
-
-        public static UPDCommand valueOfIndex(Integer index) {
-               return BY_INDEX.get(index);
-        }
-    }
-
-    public enum UDPResult {
-        OK(0x000),
-        UNKNOWN_COMMAND(0x100),             //!< received command is not defined
-        CRC_ERROR(0x101),                   //!< CRC calculated on the device and by the updater don't match
-        ADDRESS_NOT_ALLOWED_TO_FLASH(0x102),//!< specified address cannot be programmed
-        SECTOR_NOT_ALLOWED_TO_ERASE(0x103), //!< the specified sector cannot be erased
-        RAM_BUFFER_OVERFLOW(0x104),         //!< internal buffer for storing the data would overflow
-        WRONG_DESCRIPTOR_BLOCK(0x105),      //!< the boot descriptor block does not exist
-        APPLICATION_NOT_STARTABLE(0x106),   //!< the programmed application is not startable
-        DEVICE_LOCKED(0x107),               //!< the device is still locked
-        UID_MISMATCH(0x108),                //!< UID sent to unlock the device is invalid
-        ERASE_FAILED(0x109),                //!< page erase failed
-        // counting in hex so here is space for 0x10A-0x10F
-        FLASH_ERROR(0x110),                 //!< page program (flash) failed
-        PAGE_NOT_ALLOWED_TO_ERASE(0x111),   //!< page not allowed to erase
-        NOT_IMPLEMENTED(0xFFFF);            //!< this command is not yet implemented
-
-        private static final Map<Integer, UDPResult> BY_INDEX = new HashMap<>();
-        static {
-            for (UDPResult e: values()) {
-                BY_INDEX.put(e.id, e);
-            }
-        }        
-        
-        public final Integer id;
-
-        private UDPResult(Integer id) {
-            this.id = id;
-        }
-
-        public static UDPResult valueOfIndex(Integer index) {
-            return BY_INDEX.get(index);
-        }
-    }
-
     public static final int FLASH_SECTOR_SIZE = 4096; //!< Selfbus ARM controller flash sector size
     public static final int FLASH_PAGE_SIZE = 256;    //!< Selfbus ARM controller flash page size
     private static final int MAX_PAYLOAD = 11;        //!< maximum payload one APCI_MEMORY_READ_PDU/APCI_MEMORY_WRITE_PDU can handle
-
+    private static final int UID_LENGTH_USED = 12;    //!< uid/guid length of the mcu used for unlocking/flashing
 
     int streamToInteger(byte[] stream, int offset) {
         //TODO this doesn't work for UDP_NOT_IMPLEMENTED
@@ -502,131 +440,77 @@ public class Updater implements Runnable {
         }
 
         int resultCode = streamToInteger(result, 4);
-        System.out.print(ConColors.BRIGHT_RED);		// Print errors in red
         UDPResult udpResult = UDPResult.valueOfIndex(resultCode);
+        String msgResult;
+        Boolean isError = true;
+        final String PROGRESS_DOT = ".";
         switch (udpResult) {
             case UID_MISMATCH:
-                System.out.println("failed, UID mismatch.");
+                msgResult = "failed, UID mismatch.";
                 break;
             case SECTOR_NOT_ALLOWED_TO_ERASE:
-                System.out.println("Sector not allowed being erased.");
+                msgResult = "Sector not allowed being erased.";
                 break;
             case RAM_BUFFER_OVERFLOW:
-                System.out.println("RAM Buffer Overflow");
+                msgResult = "RAM Buffer Overflow";
                 break;
             case CRC_ERROR:
-                System.out.println("CRC error, try option -full for a clean and full flash");
+                msgResult = "CRC error, try option -full for a clean and full flash";
                 break;
             case ADDRESS_NOT_ALLOWED_TO_FLASH:
-                System.out.println("Address not allowed to flash");
+                msgResult = "Address not allowed to flash";
                 break;
             case DEVICE_LOCKED:
-                System.out.println("Device locked. Programming mode on device must be active!");
+                msgResult = "Device locked. Programming mode on device must be active!";
                 break;
             case APPLICATION_NOT_STARTABLE:
-                System.out.println("Application not startable");
+                msgResult = "Application not startable";
                 break;
             case WRONG_DESCRIPTOR_BLOCK:
-                System.out.println("Boot Descriptor block wrong");
+                msgResult = "Boot Descriptor block wrong";
                 break;
             case ERASE_FAILED:
-                System.out.println("Flash page erase failed");
+                msgResult = "Flash page erase failed";
                 break;
             case FLASH_ERROR:
-                System.out.println("Flash page could not be programmed");
+                msgResult = "Flash page could not be programmed";
                 break;
             case PAGE_NOT_ALLOWED_TO_ERASE:
-                System.out.println("Flash page not allowed to erase");
+                msgResult = "Flash page not allowed to erase";
                 break;
             case NOT_IMPLEMENTED:
-                System.out.println("Command not implemented");
+                msgResult = "Command not implemented";
                 break;
             case UNKNOWN_COMMAND:
-                System.out.println("Command unknown");
+                msgResult = "Command unknown";
                 break;
             case OK:
-                System.out.print(ConColors.BRIGHT_GREEN);	// Success in green
+                isError = false;
                 if (verbose) {
-                    System.out.println("done (" + resultCode + ")");
+                    msgResult = "done (" + resultCode + ")";
                 } else {
-                    System.out.print(".");
+                    msgResult = PROGRESS_DOT;
                 }
                 break;
             default:
-                System.out.println(ConColors.BRIGHT_RED + "unknown error (" + resultCode + ").");
+                msgResult = "unknown error (" + resultCode + ").";
         }
-        System.out.print(ConColors.RESET);		// switch back to default colors
+
+        if (isError == true) {
+            System.out.println(ConColors.BRIGHT_RED + msgResult + ConColors.RESET); // Print errors in red
+            LOGGER.error(msgResult);
+        }
+        else
+        {
+            System.out.print(ConColors.BRIGHT_GREEN + msgResult + ConColors.RESET); // Success in green
+            if (msgResult != PROGRESS_DOT)
+            {
+                System.out.println();
+            }
+            LOGGER.debug(msgResult);
+        }
         return resultCode;
     }
-
-
-    public class ConColors {
-        // Reset to default colors
-        public static final String RESET  = "\033[0m";  	// Reset
-
-        // Regular Colors
-        public static final String BLACK  = "\033[0;30m";   // BLACK
-        public static final String RED    = "\033[0;31m";   // RED
-        public static final String GREEN  = "\033[0;32m";   // GREEN
-        public static final String YELLOW = "\033[0;33m";   // YELLOW
-        public static final String BLUE   = "\033[0;34m";   // BLUE
-        public static final String PURPLE = "\033[0;35m";   // PURPLE
-        public static final String CYAN   = "\033[0;36m";   // CYAN
-        public static final String WHITE  = "\033[0;37m";   // WHITE
-
-        // Regular Bold
-        public static final String BOLD_BLACK  = "\033[1;30m";  // BLACK
-        public static final String BOLD_RED    = "\033[1;31m";  // RED
-        public static final String BOLD_GREEN  = "\033[1;32m";  // GREEN
-        public static final String BOLD_YELLOW = "\033[1;33m";  // YELLOW
-        public static final String BOLD_BLUE   = "\033[1;34m";  // BLUE
-        public static final String BOLD_PURPLE = "\033[1;35m";  // PURPLE
-        public static final String BOLD_CYAN   = "\033[1;36m";  // CYAN
-        public static final String BOLD_WHITE  = "\033[1;37m";  // WHITE
-
-        // Regular Background
-        public static final String BG_BLACK  = "\033[40m";  // BLACK
-        public static final String BG_RED    = "\033[41m";  // RED
-        public static final String BG_GREEN  = "\033[42m";  // GREEN
-        public static final String BG_YELLOW = "\033[43m";  // YELLOW
-        public static final String BG_BLUE   = "\033[44m";  // BLUE
-        public static final String BG_PURPLE = "\033[45m";  // PURPLE
-        public static final String BG_CYAN   = "\033[46m";  // CYAN
-        public static final String BG_WHITE  = "\033[47m";  // WHITE
-
-        // High Intensity
-        public static final String BRIGHT_BLACK  = "\033[0;90m";  // BLACK
-        public static final String BRIGHT_RED    = "\033[0;91m";  // RED
-        public static final String BRIGHT_GREEN  = "\033[0;92m";  // GREEN
-        public static final String BRIGHT_YELLOW = "\033[0;93m";  // YELLOW
-        public static final String BRIGHT_BLUE   = "\033[0;94m";  // BLUE
-        public static final String BRIGHT_PURPLE = "\033[0;95m";  // PURPLE
-        public static final String BRIGHT_CYAN   = "\033[0;96m";  // CYAN
-        public static final String BRIGHT_WHITE  = "\033[0;97m";  // WHITE
-
-        // High Intensity Bold
-        public static final String BRIGHT_BOLD_BLACK  = "\033[1;90m";  // BLACK
-        public static final String BRIGHT_BOLD_RED    = "\033[1;91m";  // RED
-        public static final String BRIGHT_BOLD_GREEN  = "\033[1;92m";  // GREEN
-        public static final String BRIGHT_BOLD_YELLOW = "\033[1;93m";  // YELLOW
-        public static final String BRIGHT_BOLD_BLUE   = "\033[1;94m";  // BLUE
-        public static final String BRIGHT_BOLD_PURPLE = "\033[1;95m";  // PURPLE
-        public static final String BRIGHT_BOLD_CYAN   = "\033[1;96m";  // CYAN
-        public static final String BRIGHT_BOLD_WHITE  = "\033[1;97m";  // WHITE
-
-        // High Intensity Background
-        public static final String BRIGHT_BG_BLACK  = "\033[0;100m";  // BLACK
-        public static final String BRIGHT_BG_RED    = "\033[0;101m";  // RED
-        public static final String BRIGHT_BG_GREEN  = "\033[0;102m";  // GREEN
-        public static final String BRIGHT_BG_YELLOW = "\033[0;103m";  // YELLOW
-        public static final String BRIGHT_BG_BLUE   = "\033[0;104m";  // BLUE
-        public static final String BRIGHT_BG_PURPLE = "\033[0;105m";  // PURPLE
-        public static final String BRIGHT_BG_CYAN   = "\033[0;106m";  // CYAN
-        public static final String BRIGHT_BG_WHITE  = "\033[0;107m";  // WHITE
-    }
-
-
-
 
     /*
      * (non-Javadoc)
@@ -634,7 +518,7 @@ public class Updater implements Runnable {
      * @see java.lang.Runnable#run()
      */
     public void run() {
-        // ??? as with the other tools, maybe put this into the try block to
+        //TODO ??? as with the other tools, maybe put this into the try block to
         // also call onCompletion
         AppDirs appDirs = AppDirsFactory.getInstance();
         //Diese Angaben werden genutzt, um den Ordner für die Cache Files des DiffUpdaters abzulegen
@@ -659,17 +543,6 @@ public class Updater implements Runnable {
         Exception thrown = null;
         boolean canceled = false;
         KNXNetworkLink link = null;
-
-
-        System.out.println(ConColors.BRIGHT_BOLD_GREEN + "\n" +
-                "\n" +
-                "     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
-                "    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
-                "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
-                "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
-                "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Dr. Stefan Haller, Oliver Stefan et al.                                 Version 0.56B \n\n" +
-                ConColors.RESET);
 
         try {
             UpdatableManagementClientImpl mc;
@@ -708,7 +581,7 @@ public class Updater implements Runnable {
             }
 
             link = createLink();
-            LOGGER.trace("Creating UpdatableManagementClient...");
+            LOGGER.debug("Creating UpdatableManagementClient...");
             mc = new UpdatableManagementClientImpl(link);
 
 
@@ -740,8 +613,8 @@ public class Updater implements Runnable {
                 LOGGER.info("Requesting UID from " + progDevice.toString() + " ... ");
                 result = mc.sendUpdateData(pd, UPDCommand.REQUEST_UID.id, new byte[0]);
                 checkResult(result, true);
-                if ((result.length >= 12) && (result.length <= 16)){
-                    uid = new byte[12];
+                if ((result.length >= UID_LENGTH_USED) && (result.length <= 16)){
+                    uid = new byte[UID_LENGTH_USED];
                     // TODO this can be merged with the section below
                     System.out.print("got: ");
                     for (int i = 0; i < result.length - 4; i++) {

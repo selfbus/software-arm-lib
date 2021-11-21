@@ -29,7 +29,7 @@
     </appender>
 
      <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
-    <logger name="org.hkfree.knxduino.updater.Updater" level="TRACE"> 
+    <logger name="org.hkfree.knxduino.updater.Updater" level="INFO">
         <appender-ref ref="STDOUT" />
     </logger>
     
