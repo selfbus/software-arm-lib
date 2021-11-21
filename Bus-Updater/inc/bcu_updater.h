@@ -100,6 +100,11 @@ protected:
      void sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byte errorCode, unsigned int processTime);
 
 
+private:
+     unsigned int lastTick; //!< last systemtick a telegram was received or sent
+     unsigned int telegramCount; //!< number of telegrams received in one "connect" session
+     void dumpTicks();
+
 };
 
 #ifndef INSIDE_BCU_CPP
