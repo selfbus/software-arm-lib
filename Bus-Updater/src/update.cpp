@@ -154,7 +154,6 @@ void dumpFlashContent(AppDescriptionBlock * buffer)
     );
 }
 
-#ifdef DEBUG
 /**
  * @brief Converts the name of a UPD_Command to "string" and
  *        sends it over the serial port
@@ -192,7 +191,6 @@ static void updCommand2Serial(byte cmd)
         }
     );
 }
-#endif
 
 void restartRequest (unsigned int msec)
 {
@@ -1025,7 +1023,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 #endif
 
     // simple command debugging message
-    d3(updCommand2Serial(updCommand));
+    updCommand2Serial(updCommand);
 
     // check for commands allowed on a locked device
     if (!getDeviceUnlocked())
