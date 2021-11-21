@@ -425,9 +425,8 @@ static UDP_State erasePage(unsigned int page)
  *                or a @ref IAP_Status
  * @warning       The function calls iap_Program which by itself calls no_interrupts().
  */
-static UDP_State programFlash(unsigned int address, const byte* ram, unsigned int size, bool isBootDescriptor = false)
+static UDP_State executeProgramFlash(unsigned int address, const byte* ram, unsigned int size, bool isBootDescriptor = false)
 {
-    // lastError = iapProgram((byte *) address, ramBuffer, FLASH_PAGE_SIZE);
     UDP_State result = UDP_ADDRESS_NOT_ALLOWED_TO_FLASH;
     if (!addressAllowedToProgram(address, size, isBootDescriptor))
     {
@@ -598,7 +597,6 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
     bytesReceived += nCount;
 
     memcpy((void *) &ramBuffer[ramLocation], data + 4, nCount); //ab dem 4. Byte sind die Daten verfügbar
-    lastError = IAP_SUCCESS;
     setLastError((UDP_State)IAP_SUCCESS, sendTel);
     for(unsigned int i=0; i<nCount; i++)
     {
@@ -619,9 +617,9 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
  * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise a @ref UDP_State or a @ref IAP_Status
  * @return        T_ACK_PDU
  * @note          device must be unlocked
- * @warning       The function calls iap_Program which by itself calls no_interrupts().
+ * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updProgramFlash(bool * sendTel, unsigned char * data)
+static unsigned char updProgram(bool * sendTel, unsigned char * data)
 {
     unsigned int crcRamBuffer;
     unsigned int flash_count = streamToUIn32(data + 3);
@@ -659,7 +657,7 @@ static unsigned char updProgramFlash(bool * sendTel, unsigned char * data)
     else
         flash_count = FLASH_PAGE_SIZE;
 
-    d3(serial.print(" flashWrite writing ", flash_count));
+    d3(serial.print("writing ", flash_count));
     d3(serial.print(" bytes @ 0x", address, HEX, 8));
     d3(serial.println(" crc 0x", crcRamBuffer, HEX, 8));
 
@@ -669,7 +667,7 @@ static unsigned char updProgramFlash(bool * sendTel, unsigned char * data)
             ;
             */
     bytesFlashed += flash_count;
-    UDP_State error = (UDP_State)iapProgram((byte *) address, ramBuffer, flash_count);
+    UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
     if (error != (UDP_State)IAP_SUCCESS)
     {
         error = UDP_CRC_ERROR;
@@ -818,7 +816,7 @@ static unsigned char updUnkownCommand(bool * sendTel)
  * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise a @ref UDP_State or @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
- * @warning       The function calls @ref programFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
+ * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
 static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char * data)
 {
@@ -888,20 +886,20 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
 
         d3(serial.print(" OK, Flash Page:"));
 
-        result = programFlash(address, ramBuffer, FLASH_PAGE_SIZE, true); // no less than 256byte can be flashed
+        result = executeProgramFlash(address, ramBuffer, FLASH_PAGE_SIZE, true); // no less than 256byte can be flashed
         if (result == ((UDP_State)IAP_SUCCESS))
         {
             d3(serial.println(" OK"));
         }
         else if (result == UDP_ADDRESS_NOT_ALLOWED_TO_FLASH)
         {
-            d3(serial.println(" -->programFlash: UDP_ADDRESS_NOT_ALLOWED_TO_FLASH"));
+            d3(serial.println(" -->executeProgramFlash: UDP_ADDRESS_NOT_ALLOWED_TO_FLASH"));
             setLastError(UDP_ADDRESS_NOT_ALLOWED_TO_FLASH, sendTel);
             return (T_ACK_PDU);
         }
         else
         {
-            d3(serial.println(" -->programFlash: ", result, DEC, 2));
+            d3(serial.println(" -->executeProgramFlash: ", result, DEC, 2));
             setLastError((UDP_State)result, sendTel);
         }
     }
@@ -1076,7 +1074,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
             return (updSendData(sendTel, data, count));
 
         case UPD_PROGRAM:
-            return (updProgramFlash(sendTel, data));
+            return (updProgram(sendTel, data));
 
         case UPD_SEND_DATA_TO_DECOMPRESS:
             return (updSendDataToDecompress(sendTel, data, count));
