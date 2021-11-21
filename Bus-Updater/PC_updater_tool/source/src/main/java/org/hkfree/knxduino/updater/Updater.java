@@ -106,8 +106,7 @@ public class Updater implements Runnable {
             d.run();
             sh.unregister();
         } catch (final Throwable t) {
-            LOGGER.error("parsing options " + t);
-            t.printStackTrace();
+            LOGGER.error("parsing options ", t);
         } finally {
         }
     }
@@ -125,8 +124,7 @@ public class Updater implements Runnable {
         if (canceled)
             LOGGER.info("reading device info canceled");
         if (thrown != null) {
-            LOGGER.error("completed " + thrown);
-            thrown.printStackTrace();
+            LOGGER.error("completed ", thrown);
         }
     }
 
@@ -1001,13 +999,11 @@ public class Updater implements Runnable {
             canceled = true;
             Thread.currentThread().interrupt();
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.error("FileNotFoundException ", e);
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            LOGGER.error("IOException ", e);
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOGGER.error("Throwable ", e);
         } finally {
             if (link != null)
                 link.close();
@@ -1142,6 +1138,7 @@ public class Updater implements Runnable {
                 if (payload > MAX_PAYLOAD)
                 {
                     // this is just a safety backup, normally we should never land here
+                    LOGGER.error("payload {} > MAX_PAYLOAD {} should never happen here.", payload, MAX_PAYLOAD);
                     payload = MAX_PAYLOAD;
                     doProg = false;
                 }
