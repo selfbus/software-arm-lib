@@ -372,9 +372,10 @@ void BcuBase::loop()
 	}
 #endif
 
-
-	if (bus.telegramReceived() && !bus.sendingTelegram() && (userRam.status & BCU_STATUS_TL))
-		processTelegram();
+	if (bus.telegramReceived() && (!bus.sendingTelegram()) && (bus.state == Bus::IDLE) && (userRam.status & BCU_STATUS_TL))
+	{
+        processTelegram();
+	}
 
 	if (progPin)
 	{
