@@ -7,8 +7,8 @@ import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.zip.CRC32;
 
 import cz.jaybee.intelhex.Parser;
@@ -71,7 +71,7 @@ public class Updater implements Runnable {
     private static final String version = "0.56";
     private static final String tool = "Selfbus Updater " + version;
     private static final String sep = System.getProperty("line.separator");
-    private final static Logger LOGGER = Logger.getLogger(Updater.class.getName());
+    private final static Logger LOGGER = LoggerFactory.getLogger(Updater.class.getName());
     private final Map<String, Object> options = new HashMap<>();
 
     /**
@@ -100,12 +100,13 @@ public class Updater implements Runnable {
 
     public static void main(final String[] args) {
         try {
+            // System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
             final Updater d = new Updater(args);
             final ShutdownHandler sh = new ShutdownHandler().register();
             d.run();
             sh.unregister();
         } catch (final Throwable t) {
-            LOGGER.log(Level.SEVERE, "parsing options " + t);
+            LOGGER.error("parsing options " + t);
             t.printStackTrace();
         } finally {
         }
@@ -122,9 +123,9 @@ public class Updater implements Runnable {
      */
     protected void onCompletion(final Exception thrown, final boolean canceled) {
         if (canceled)
-            LOGGER.log(Level.INFO, "reading device info canceled");
+            LOGGER.info("reading device info canceled");
         if (thrown != null) {
-            LOGGER.log(Level.SEVERE, "completed " + thrown);
+            LOGGER.error("completed " + thrown);
             thrown.printStackTrace();
         }
     }
@@ -142,6 +143,7 @@ public class Updater implements Runnable {
      */
     private KNXNetworkLink createLink() throws KNXException,
             InterruptedException {
+        LOGGER.trace("Creating KNX network link...");
         final KNXMediumSettings medium = (KNXMediumSettings) options
                 .get("medium");
         if (options.containsKey("serial")) {
@@ -374,11 +376,11 @@ public class Updater implements Runnable {
         		.append(sep);
         sb.append(" -NO_FLASH                for debugging use only, disable flashing firmware!")
                 .append(sep);
-        LOGGER.log(Level.INFO, sb.toString());
+        LOGGER.info(sb.toString());
     }
 
     private static void showVersion() {
-        LOGGER.log(Level.INFO, Settings.getLibraryHeader(false));
+        LOGGER.info(Settings.getLibraryHeader(false));
     }
 
     private static final class ShutdownHandler extends Thread {
@@ -642,9 +644,9 @@ public class Updater implements Runnable {
         String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", version, "Selfbus");
 
         if (options.isEmpty()) {
-            LOGGER.log(Level.INFO, tool);
+            LOGGER.info(tool);
             showVersion();
-            LOGGER.log(Level.INFO, "type -help for help message");
+            LOGGER.info("type -help for help message");
             return;
         }
         if (options.containsKey("help")) {
@@ -708,13 +710,14 @@ public class Updater implements Runnable {
             }
 
             link = createLink();
+            LOGGER.trace("Creating UpdatableManagementClient...");
             mc = new UpdatableManagementClientImpl(link);
 
 
             if (device != null) {
                 Destination d;
                 d = mc.createDestination(device, true);
-                System.out.println("Attempting to restart device " + device.toString() + " in bootloader mode ...");
+                LOGGER.info("Attempting to restart device " + device.toString() + " in bootloader mode ...");
                 try {
                     mc.restart(d, 0, 255);
                 } catch (final KNXException e) {
@@ -736,7 +739,7 @@ public class Updater implements Runnable {
             pd = mc.createDestination(progDevice, true);
 
             if (uid == null) {
-                System.out.print("Requesting UID from " + progDevice.toString() + " ... ");
+                LOGGER.info("Requesting UID from " + progDevice.toString() + " ... ");
                 result = mc.sendUpdateData(pd, UPDCommand.REQUEST_UID.id, new byte[0]);
                 checkResult(result, true);
                 if ((result.length >= 12) && (result.length <= 16)){
@@ -758,14 +761,15 @@ public class Updater implements Runnable {
                 }
             }
 
-            System.out.print("Unlocking device with UID ");
+            String txt = "Unlocking device with UID ";
             for (int i = 0; i < uid.length; i++) {
                 if (i != 0) {
-                    System.out.print(":");
+                    txt += ":";
                 }
-                System.out.print(String.format("%02X", uid[i] & 0xff));
+                txt += String.format("%02X", uid[i] & 0xff);
             }
-            System.out.print(" ... ");
+            txt += " ...";
+            LOGGER.info(txt);
 
             result = mc.sendUpdateData(pd, UPDCommand.UNLOCK_DEVICE.id, uid);
             if (checkResult(result) != 0) {
@@ -901,13 +905,21 @@ public class Updater implements Runnable {
                 System.out.println("  Found current device firmware in cache " + oldImageCacheFile.getAbsolutePath() + ConColors.BRIGHT_GREEN +"\n\r  --> switching to diff upload mode" + ConColors.RESET);
                 diffMode = true;
             }
-
+/*
+            Boolean diffMode = false;
+            Long startAddress = 0x7000L;
+            int totalLength = 0x200;
+            eraseFlashPages(mc, pd, startAddress, totalLength);
+            LOGGER.error("finished");
+*/
             // Start to flash the new firmware
             System.out.println("\n" + ConColors.BRIGHT_BG_BLUE + "Starting to send new firmware now: " + ConColors.RESET);
             if (diffMode) {
                 doDiffFlash(mc, pd, startAddress, binData, oldImageCacheFile);
             } else if (DO_FLASH_WRITE){
                 doFullFlash(mc, pd, startAddress, totalLength, fis, data_send_delay);
+            } else {
+                eraseFlashPages(mc, pd, startAddress, totalLength);
             }
 
             byte bootDescriptor[] = new byte[16];
@@ -1070,7 +1082,7 @@ public class Updater implements Runnable {
         byte[] sector = new byte[1];
         for (int i = 0; i < erasePages; i++) {
             sector[0] = (byte) (i + startPage);
-            System.out.print("Erase sector " + String.format("%2d", sector[0]) + " ...");
+            LOGGER.info("Erase sector " + String.format("%2d", sector[0]) + " ...");
             result = mc.sendUpdateData(pd, UPDCommand.ERASE_SECTOR.id, sector);
             if (checkResult(result) != 0) {
                 mc.restart(pd);
@@ -1181,6 +1193,7 @@ public class Updater implements Runnable {
                         progSize += payload;	// keep track of page/sector bytes send
                         total += payload;		// keep track of total bytes send from file
                     }else{ // wenn ein Timeout passiert ist, muss der Merker wieder zurückgesetzt werden
+                        LOGGER.warn("Timeout");
                         System.out.print(ConColors.BRIGHT_RED + "x" );
                         System.out.print(ConColors.RESET);
                         timeoutOccured = false;
@@ -1195,12 +1208,9 @@ public class Updater implements Runnable {
                     integerToStream(progPars, 4, progAddress);
                     integerToStream(progPars, 8, (int) crc);
                     System.out.println();
-                    System.out
-                            .print("Program device at flash address 0x"
-                                    + String.format("%04X", progAddress)
-                                    + " with " + String.format("%3d", progSize)
-                                    + " bytes and CRC32 0x"
-                                    + String.format("%08X", crc) + " ... ");
+                    String txt = String.format("Program device at flash address 0x%04X with %3d bytes and CRC32 0x%08X ... ",
+                                                progAddress, progSize, crc);
+                    LOGGER.info(txt);
                     result = mc.sendUpdateData(pd, UPDCommand.PROGRAM.id,
                             progPars);
                     if (checkResult(result) != 0) {
