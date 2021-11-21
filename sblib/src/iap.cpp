@@ -84,6 +84,9 @@ typedef void (*IAP_Func)(unsigned int * cmd, unsigned int * stat);
 inline void IAP_Call_InterruptSafe(unsigned int *cmd, unsigned int *stat)
 {
     noInterrupts();
+    ///\todo check, if this data barriers are rly needed as mentioned here: https://dzone.com/articles/nvic-disabling-interrupts-on-arm-cortex-m-and-the
+    // __DSB();
+    // __ISB();
     IAP_Call(cmd, stat);
     interrupts();
 }
