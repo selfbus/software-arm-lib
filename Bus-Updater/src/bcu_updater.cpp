@@ -227,7 +227,14 @@ void BcuUpdate::processConControlTelegram(int tpci)
             }
             else
             {
-                dump2(serial.println("RX-ACK error?"));
+                dump2(
+                    serial.println("RX-ACK error?");
+                    serial.print("incConnectedSeqNo ", incConnectedSeqNo);
+                    serial.print(" connectedAddr 0x", connectedAddr, HEX, 4);
+                    serial.print(" senderAddr 0x", senderAddr, HEX, 4);
+                    serial.print(" lastAckSeqNo ", lastAckSeqNo, DEC, 2);
+                    serial.println(" curSeqNo ", curSeqNo, DEC, 2);
+                );
             }
         }
         else if (tpci == T_NACK_PDU)  // A negative acknowledgement
