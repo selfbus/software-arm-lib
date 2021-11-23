@@ -907,7 +907,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
         d3(
             serial.println("-->UDP_APPLICATION_NOT_STARTABLE");
             //DONE turn back on and remove above
-            dumpFlashContent((AppDescriptionBlock *) ramBuffer);
+            //dumpFlashContent((AppDescriptionBlock *) ramBuffer);
         );
         setLastError(UDP_APPLICATION_NOT_STARTABLE, sendTel);
         return (T_ACK_PDU);

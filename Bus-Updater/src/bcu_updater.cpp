@@ -263,6 +263,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
                 telegramCount = 1;
                 connectedSeqNo = 0;
                 incConnectedSeqNo = false;
+                lastAckSeqNo = -1;
                 dump2(serial.println("RX-CON"));
                 bus.setSendAck(SB_BUS_ACK);
             }
