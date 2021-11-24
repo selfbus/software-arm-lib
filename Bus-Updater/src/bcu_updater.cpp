@@ -23,10 +23,11 @@
 #endif
 
 #include "bcu_updater.h"
+#include <sblib/eib/bus.h>
 
 
 // The EIB bus access object
-Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
+//Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 
 #if defined(DUMP_TELEGRAMS_LVL2) && defined(DEBUG)
 #   define dump2(code) code
@@ -56,13 +57,13 @@ void BcuUpdate::processTelegram()
     /*
     dump2(
         serial.print("RX: ");
-        for (volatile int i = 0; i < bus.telegramLen; i++)
+        for (volatile int i = 0; i < bus->telegramLen; i++)
         {
-            serial.print(bus.telegram[i],HEX,2);
+            serial.print(bus->telegram[i],HEX,2);
             serial.print(" ");
         }
         serial.print(" LEN: ");
-        serial.println(bus.telegramLen,DEC,4);
+        serial.println(bus->telegramLen,DEC,4);
     );
     */
 
@@ -78,15 +79,14 @@ void BcuUpdate::processTelegram()
     }
 
     if (destAddr != bus.ownAddress()) // discard telegrams not for us
-    {
+        {
         bus.discardReceivedTelegram();
         return;
-    }
-
+            }
     dump2(
         dumpTicks();
         if (isSequenced != 0)
-        {
+            {
             serial.print("#", (bus.telegram[6] & 0b00111100) >> 2, DEC, 2);
             serial.print(" ");
         }
@@ -101,7 +101,7 @@ void BcuUpdate::processTelegram()
         processDirectTelegram(apci);
     }
     // At the end: discard the received telegram
-    bus.discardReceivedTelegram();
+    bus->discardReceivedTelegram();
 }
 
 void BcuUpdate::processDirectTelegram(int apci)
@@ -135,7 +135,7 @@ void BcuUpdate::processDirectTelegram(int apci)
     else if (apciCommand == APCI_RESTART_PDU)
     {
         // attention we check acpi not like before apciCommand!
-        if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
+        if (checkApciForMagicWord(apci, bus->telegram[8], bus->telegram[9]))
         {
             // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
             // restart with parameters, we need to start in flashmode
@@ -194,6 +194,8 @@ void BcuUpdate::processDirectTelegram(int apci)
         }
         else
             incConnectedSeqNo = false;
+==== BASE ====
+        dump2(serial.println("TX-DATA"));
         bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
     }
     else
@@ -216,7 +218,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
         tpci &= 0xc3;
         if (tpci == T_ACK_PDU) // A positive acknowledgement
         {
-            int curSeqNo = bus.telegram[6] & 0x3c;
+            int curSeqNo = bus->telegram[6] & 0x3c;
             if (incConnectedSeqNo && connectedAddr == senderAddr && lastAckSeqNo !=  curSeqNo)
             {
                 dump2(serial.println("RX-ACK"));
@@ -265,7 +267,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
                 incConnectedSeqNo = false;
                 lastAckSeqNo = -1;
                 dump2(serial.println("RX-CON"));
-                bus.setSendAck(SB_BUS_ACK);
+                bus->setSendAck(SB_BUS_ACK);
             }
             else
             {
@@ -278,7 +280,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
             if (connectedAddr == senderAddr)
             {
                 connectedAddr = 0;
-                bus.setSendAck(SB_BUS_ACK);
+                bus->setSendAck(SB_BUS_ACK);
                 dump2(serial.println("RX-DIS"));
             }
             else
@@ -329,14 +331,14 @@ void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
     if (cmd & 0x40)  // Add the sequence number if the command shall contain it
         cmd |= senderSeqNo & 0x3c;
 
-    sendCtrlTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
+    sendCtrlTelegram[0] = 0xb0 | (bus->telegram[0] & 0x0c); // Control byte
+    // 1+2 contain the sender address, which is set by bus->sendTelegram()
     sendCtrlTelegram[3] = (byte)(connectedAddr >> 8);
     sendCtrlTelegram[4] = (byte)connectedAddr;
     sendCtrlTelegram[5] = (byte)0x60;
     sendCtrlTelegram[6] = (byte)cmd;
 
-    bus.sendTelegram(sendCtrlTelegram, 7);
+    bus->sendTelegram(sendCtrlTelegram, 7);
 }
 
 void BcuUpdate::sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byte errorCode, unsigned int processTime)
@@ -345,8 +347,8 @@ void BcuUpdate::sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byt
     if (cmd & 0x40)  // Add the sequence number if the command shall contain it
         cmd |= senderSeqNo & 0x3c;
 
-    restartResponseTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
+    restartResponseTelegram[0] = 0xb0 | (bus->telegram[0] & 0x0c); // Control byte
+    // 1+2 contain the sender address, which is set by bus->sendTelegram()
     restartResponseTelegram[3] = (byte)(connectedAddr >> 8);
     restartResponseTelegram[4] = (byte)connectedAddr;
     restartResponseTelegram[5] = (byte)(cmd >> 8);

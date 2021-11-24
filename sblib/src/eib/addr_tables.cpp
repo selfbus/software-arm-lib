@@ -11,38 +11,10 @@
 #include <sblib/eib/addr_tables.h>
 
 #include <sblib/eib/property_types.h>
-#include <sblib/eib/user_memory.h>
-#include <sblib/internal/functions.h>
 #include <sblib/bits.h>
+#include <sblib/eib/userEeprom.h>
 
-int indexOfAddr(int addr)
-{
-    byte* tab = addrTable();
-    int num = 0;
-
-#if  BCU_TYPE != SYSTEM_B_TYPE
-    if (tab)
-        num = *tab;
-    tab += 3;
-#else
-    if (tab)
-        num = (tab[0] << 8) + tab[1];
-    tab += 2;
-#endif
-
-    int addrHigh = addr >> 8;
-    int addrLow = addr & 255;
-
-    for (int i = 1; i <= num; ++i, tab += 2)
-    {
-        if (tab[0] == addrHigh && tab[1] == addrLow)
-            return i;
-    }
-
-    return -1;
-}
-
-int objectOfAddr(int addr)
+int AddrTables::objectOfAddr(int addr)
 {
     int addrIndex = indexOfAddr(addr);
 
@@ -60,27 +32,7 @@ int objectOfAddr(int addr)
     return -1;
 }
 
-int addrForSendObject(int objno)
+int AddrTables::addrForSendObject(int objno)
 {
     return 0;
-}
-
-byte* addrTable()
-{
-#if BCU_TYPE == BCU1_TYPE
-    return (byte*) &userEeprom.addrTabSize;
-#else
-    byte * addr = (byte* ) & userEeprom.addrTabAddr;
-    return userMemoryPtr (makeWord (*(addr + 1), * addr));
-#endif
-}
-
-byte* assocTable()
-{
-#if BCU_TYPE == BCU1_TYPE
-    return userEepromData + userEeprom.assocTabPtr;
-#else
-    byte * addr = (byte* ) & userEeprom.assocTabAddr;
-    return userMemoryPtr (makeWord (*(addr + 1), * addr));
-#endif
 }

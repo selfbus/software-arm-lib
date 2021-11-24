@@ -12,10 +12,9 @@
 
 #include <sblib/core.h>
 
-#include <sblib/eib/bcu.h>
 #include <sblib/eib/bus.h>
 #include <sblib/eib/addr_tables.h>
-#include <sblib/eib/com_objects.h>
-#include <sblib/eib/properties.h>
+#include <sblib/eib/systemb.h>
+#include <sblib/eib/com_objectsSYSTEMB.h>
 
 #endif /*sblib_eib_h*/

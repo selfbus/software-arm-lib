@@ -16,12 +16,11 @@
 
 #include <sblib/main.h>
 
-#include <sblib/eib.h>
 #include <sblib/interrupt.h>
 #include <sblib/timer.h>
 
-#include <sblib/internal/functions.h>
 #include <sblib/internal/variables.h>
+#include <sblib/eib/bcu_base.h>
 
 /**
  * @brief Initializes the library.
@@ -42,12 +41,12 @@ static inline void lib_setup()
 int main()
 {
     lib_setup();
-    setup();
+    BcuBase* bcu = setup();
 
     while (1)
     {
-        bcu.loop();
-        if (bcu.applicationRunning())
+        bcu->loop();
+        if (bcu->applicationRunning())
             loop();
         else
             loop_noapp();

@@ -9,9 +9,7 @@
  */
 
 #include <sblib/eib/property_types.h>
-#include <sblib/eib/user_memory.h>
-
-#if BCU_TYPE != BCU1_TYPE
+#include <sblib/eib/bcu_base.h>
 
 /**
  * PropertyDataType sizes in bytes
@@ -34,7 +32,7 @@ int PropertyDef::size() const
     return propertySizes[control & PC_TYPE_MASK];
 }
 
-byte* PropertyDef::valuePointer() const
+byte* PropertyDef::valuePointer(BcuBase* bcu) const
 {
     if (control & PC_POINTER)
     {
@@ -43,9 +41,9 @@ byte* PropertyDef::valuePointer() const
         switch (valAddr & PPT_MASK)
         {
         case PPT_USER_RAM:
-            return userRamData + offs;
+            return bcu->userRam->userRamData + offs;
         case PPT_USER_EEPROM:
-            return userEepromData + offs;
+            return bcu->userEeprom->userEepromData + offs;
         default:
             fatalError(); // invalid property pointer type encountered
             break;
@@ -54,5 +52,3 @@ byte* PropertyDef::valuePointer() const
 
     return (byte*) &valAddr;
 }
-
-#endif /*BCU_TYPE != BCU1_TYPE*/

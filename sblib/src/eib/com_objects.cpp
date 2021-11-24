@@ -5,7 +5,7 @@
  *
  *  last update: Jan. 2021 Horst Rauch
  *  			 - added some explanation on the functions of this interface between
- *  			   the user application and the communication functions of the knx bus.
+ *  			   the user application and the communication functions of the knx bcu->bus->
  *  			 - changed some function for the transmission of object from
  *  			 user appl. to knx bus and vice versa as there was an endless loop in some cases
  *
@@ -121,26 +121,26 @@
  *
 
  * 	The respective requests will be handled by the asynchronous process of the AIL/AL by a call from the
- * 	bcu.loop function to sendnextGroupTelegram() which will check the transmission request state of the RAM flag.
+ * 	bcu->loop function to sendnextGroupTelegram() which will check the transmission request state of the RAM flag.
  *
  * 	If the transmission request and data request flag are set, then the user wants to read the object:
  *
  *	 	1. Search the Association table for the GroupObject number (ASAP) and get the GroupAddr-index (TSAP)
  *		of the associated obj-number (ASAP). Get the GroupAddress from the GroupAddressTable with the GroupAddr-Index (TSAP)
- *		and generate a GroupValue_read.req msg for the AL and send the msg to the bus.
+ *		and generate a GroupValue_read.req msg for the AL and send the msg to the bcu->bus->
  *
  *		2. Set the RAM flag transmission status to transmitting if positively send to local transport/network layer.
  *
  *		3. todo: Search the association table with the TSAP for further associations with TSAP. For each found, get the ASAP,
  *		check the ConfigFlags communication enable and read enable. If all enabled, stop search, get value of the found GO
  *		and update the initial GO with the new GO value and set the update RAM flag and send a read.response with
- *		the found object value and association (GroupAddress)to the bus.
+ *		the found object value and association (GroupAddress)to the bcu->bus->
  *
  *	If only the transmission request is set, then the user wants to write the object:
  *
  *	 	1. Search the Association table from top for the first GroupObject number (ASAP) and get the GroupAddr-index (TSAP)
  * 		of the associated obj-number (ASAP). Get the GroupAddress from the GroupAddressTable with the GroupAddr-Index (TSAP)
- * 		and generate a GroupValue_write.req msg for the AL and send the msg to the bus.
+ * 		and generate a GroupValue_write.req msg for the AL and send the msg to the bcu->bus->
  *
  * 		2. Set the RAM flag transmission status to transmitting if positively send to local transport/network layer.
  *
@@ -150,7 +150,7 @@
  *
  *
  * 	---BUS received Telegram triggered---
- * A call to processTelegram() from the bcu.loop initiates the handling of a new received telegram on the app-layer.
+ * A call to processTelegram() from the bcu->loop initiates the handling of a new received telegram on the app-layer.
  * The received telegram is based on a valid GA (found in the GA Address Table) associated to a local object.
  *
  *		If the service request (APCI) is a write.request:
@@ -167,7 +167,7 @@
  *		If the service request (APCI) is a read.request:
  *		1. Search the Association table for the the GroupAddr-index (TSAP)and get GroupObject number (ASAP).
  *		For each found, get the ASAP, check the ConfigFlags communication enable, transmit enable and read enable. If all enabled,
- *		get value of the found GO send a read.response with the found object value and association (GroupAddress)to the bus.
+ *		get value of the found GO send a read.response with the found object value and association (GroupAddress)to the bcu->bus->
  *
  *
  *
@@ -183,8 +183,8 @@
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/apci.h>
 #include <sblib/eib/property_types.h>
-#include <sblib/eib/user_memory.h>
-#include <sblib/internal/functions.h>
+#include <sblib/eib/bcu_base.h>
+#include <sblib/eib/bus.h>
 
 #if defined(DUMP_COM_OBJ)
 #   include <sblib/serial.h>
@@ -202,42 +202,18 @@
 // The COMFLAG_TRANS_MASK mask, moved to the high nibble
 #define COMFLAG_TRANS_MASK_HIGH (COMFLAG_TRANS_MASK << 4)
 
-
-// The size of the object types BIT_7...VARDATA in bytes
-#if  BCU_TYPE != SYSTEM_B_TYPE
-    const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 15 };
-#else
-    const byte objectTypeSizes[] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 5, 7, 9, 11, 12, 13};
-#endif
-
-int le_ptr = BIG_ENDIAN;
-int transmitting_object_no = INVALID_OBJECT_NUMBER; // object number of last transmitted bus msg - status should be in transmitting
-
-
-int objectSize(int objno)
-{
-    int type = objectType(objno);
-    if (type < BIT_7) return 1;
-#if  BCU_TYPE != SYSTEM_B_TYPE
-    return objectTypeSizes[type - BIT_7];
-#else
-    if (type < 21)
-        return objectTypeSizes[type - BIT_7];
-    if (type < 255)
-        return (type -6);
-    return 252;
-#endif
-}
+ComObjects::ComObjects(BcuBase* bcuInstance) : bcu(bcuInstance) {}
+ComObjects::~ComObjects() {}
 
 /*
  * Get the size of the com-object in bytes, for sending/receiving telegrams.
  * 0 is returned if the object's size is <= 6 bit.
  */
-int telegramObjectSize(int objno)
+int ComObjects::telegramObjectSize(int objno)
 {
     int type = objectType(objno);
     if (type < BIT_7) return 0;
-    return objectTypeSizes[type - BIT_7];
+    return getObjectTypeSizes()[type - BIT_7];
 }
 
 /*
@@ -250,7 +226,7 @@ int telegramObjectSize(int objno)
  * @see objectWritten(int)
  * @see requestObjectRead(int)
  */
-void addObjectFlags(int objno, int flags)
+void ComObjects::addObjectFlags(int objno, int flags)
 {
     byte* flagsTab = objectFlagsTable();
     if(flagsTab == 0)
@@ -284,7 +260,7 @@ void addObjectFlags(int objno, int flags)
  * @see objectWritten(int)
  * @see requestObjectRead(int)
  */
-void setObjectFlags(int objno, int flags)
+void ComObjects::setObjectFlags(int objno, int flags)
 {
     byte* flagsPtr = objectFlagsTable();
     flagsPtr += objno >> 1;
@@ -314,36 +290,7 @@ void setObjectFlags(int objno, int flags)
 
 }
 
-byte* objectValuePtr(int objno)
-{
-#if BCU_TYPE != SYSTEM_B_TYPE
-    // The object configuration
-    const ComConfig& cfg = objectConfig(objno);
-
-#if BCU_TYPE == BCU1_TYPE
-    if (cfg.config & COMCONF_VALUE_TYPE) // 0 if user RAM, >0 if user EEPROM
-        return userEepromData + cfg.dataPtr;
-    return userRamData + cfg.dataPtr;
-#else
-    // TODO Should handle userRam.segment0addr and userRam.segment1addr here
-    // if (cfg.config & COMCONF_VALUE_TYPE) // 0 if segment 0, !=0 if segment 1
-    const byte * addr = (const byte *) &cfg.dataPtr;
-    if (le_ptr == LITTLE_ENDIAN)
-        return userMemoryPtr(makeWord(addr[1], addr[0]));
-    else
-        return userMemoryPtr(makeWord(addr[0], addr[1]));
-#endif
-
-#else
-
-    int ramAddr = getUserRamStart() + 2;
-    for (int i = 1; i < objno; i++)
-        ramAddr += objectSize(i);
-    return userMemoryPtr(ramAddr);
-#endif
-}
-
-unsigned int objectRead(int objno)
+unsigned int ComObjects::objectRead(int objno)
 {
 	int sz = objectSize(objno);
 	byte* ptr = objectValuePtr(objno) + sz;
@@ -357,7 +304,7 @@ unsigned int objectRead(int objno)
     return value;
 }
 
-void _objectWrite(int objno, unsigned int value, int flags)
+void ComObjects::_objectWrite(int objno, unsigned int value, int flags)
 {
     byte* ptr = objectValuePtr(objno);
     int sz = objectSize(objno);
@@ -375,7 +322,7 @@ void _objectWrite(int objno, unsigned int value, int flags)
     setObjectFlags(objno, flags); //clear any pending ram comms flags and set new flags
 }
 
-void _objectWriteBytes(int objno, byte* value, int flags)
+void ComObjects::_objectWriteBytes(int objno, byte* value, int flags)
 {
     byte* ptr = objectValuePtr(objno);
     int sz = objectSize(objno);
@@ -389,7 +336,7 @@ void _objectWriteBytes(int objno, byte* value, int flags)
 /*
  * @return The number of communication objects.
  */
-inline int objectCount()
+inline int ComObjects::objectCount()
 {
     // The first byte of the config table contains the number of com-objects
     return *objectConfigTable();
@@ -402,16 +349,16 @@ inline int objectCount()
  * @param objno - the ID of the communication object
  * @return The group address, or 0 if none found.
  */
-int firstObjectAddr(int objno)
+int ComObjects::firstObjectAddr(int objno)
 {
-    byte* assocTab = assocTable();
+    byte* assocTab = bcu->addrTables->assocTable();
     byte* assocTabEnd = assocTab + (*assocTab << 1);
 
     for (++assocTab; assocTab < assocTabEnd; assocTab += 2)
     {
         if (assocTab[1] == objno)
         {
-            byte* addr = addrTable() + 1 + (assocTab[0] << 1);
+            byte* addr = bcu->addrTables->addrTable() + 1 + (assocTab[0] << 1);
             return (addr[0] << 8) | addr[1];
         }
     }
@@ -428,23 +375,23 @@ int firstObjectAddr(int objno)
  * @param objno - the ID of the communication object
  * @param addr - the group address to read
  */
-void sendGroupReadTelegram(int objno, int addr)
+void ComObjects::sendGroupReadTelegram(int objno, int addr)
 {
-	while (bcu.sendTelegram[0]);  // wait for a free buffer
+	while (bcu->sendTelegram[0]);  // wait for a free buffer
 
-    bcu.sendTelegram[0] = 0xbc; // Control byte
+    bcu->sendTelegram[0] = 0xbc; // Control byte
     // todo, set routing cnt and prio according to the parameters set from ETS in the EPROM, add ID/objno for result association from bus-layer
     // check of spec 3.7.4. : no additional search for associations to Grp Addr for local read and possible response
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    bcu.sendTelegram[3] = addr >> 8;
-    bcu.sendTelegram[4] = addr;
-    bcu.sendTelegram[5] = 0xe1;
-    bcu.sendTelegram[6] = 0;
-    bcu.sendTelegram[7] = 0x00;
+    // 1+2 contain the sender address, which is set by bcu->bus->sendTelegram()
+    bcu->sendTelegram[3] = addr >> 8;
+    bcu->sendTelegram[4] = addr;
+    bcu->sendTelegram[5] = 0xe1;
+    bcu->sendTelegram[6] = 0;
+    bcu->sendTelegram[7] = 0x00;
 
-    bus.sendTelegram(bcu.sendTelegram, 8);
+    bcu->bus->sendTelegram(bcu->sendTelegram, 8);
     transmitting_object_no = objno; //save transmitting object for status check
-    bus.setBusRXStateValid(false);
+    bcu->bus->setBusRXStateValid(false);
 
 }
 
@@ -458,31 +405,31 @@ void sendGroupReadTelegram(int objno, int addr)
  * @param addr - the destination group address
  * @param isResponse - true if response telegram, false if write telegram
  */
-void sendGroupWriteTelegram(int objno, int addr, bool isResponse)
+void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 {
     byte* valuePtr = objectValuePtr(objno);
     int sz = telegramObjectSize(objno);
 
-	while (bcu.sendTelegram[0]);  // wait for a free buffer
+	while (bcu->sendTelegram[0]);  // wait for a free buffer
 
-    bcu.sendTelegram[0] = 0xbc; // Control byte
+    bcu->sendTelegram[0] = 0xbc; // Control byte
     //todo, set routing cnt and prio according to the parameters set from ETS in the EPROM, add ID/objno for result association from bus-layer
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    bcu.sendTelegram[3] = addr >> 8;
-    bcu.sendTelegram[4] = addr;
-    bcu.sendTelegram[5] = 0xe0 | ((sz + 1) & 15);
-    bcu.sendTelegram[6] = 0;
-    bcu.sendTelegram[7] = isResponse ? 0x40 : 0x80;
+    // 1+2 contain the sender address, which is set by bcu->bus->sendTelegram()
+    bcu->sendTelegram[3] = addr >> 8;
+    bcu->sendTelegram[4] = addr;
+    bcu->sendTelegram[5] = 0xe0 | ((sz + 1) & 15);
+    bcu->sendTelegram[6] = 0;
+    bcu->sendTelegram[7] = isResponse ? 0x40 : 0x80;
 
-    if (sz) reverseCopy(bcu.sendTelegram + 8, valuePtr, sz);
-    else bcu.sendTelegram[7] |= *valuePtr & 0x3f;
+    if (sz) reverseCopy(bcu->sendTelegram + 8, valuePtr, sz);
+    else bcu->sendTelegram[7] |= *valuePtr & 0x3f;
 
     // Process this telegram in the receive queue (if there is a local receiver of this group address)
-    processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, bcu.sendTelegram, objno );
+    processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, bcu->sendTelegram, objno );
 
-    bus.sendTelegram(bcu.sendTelegram, 8 + sz);
+    bcu->bus->sendTelegram(bcu->sendTelegram, 8 + sz);
     transmitting_object_no = objno; //save transmitting object for status check
-    bus.setBusTXStateValid(false);
+    bcu->bus->setBusTXStateValid(false);
 }
 
 /*
@@ -502,9 +449,7 @@ void sendGroupWriteTelegram(int objno, int addr, bool isResponse)
  *  @return true if a telegram was send, 0 if none found/send.
  *
  */
-int sndStartIdx = 0;
-
-bool sendNextGroupTelegram()
+bool ComObjects::sendNextGroupTelegram()
 {
     int addr, flags, objno, config, numObjs = objectCount();
 	const ComConfig* configTab = &objectConfig(0);
@@ -515,10 +460,10 @@ bool sendNextGroupTelegram()
     }
 	//  pending transmission status check, switch of innterrupts to avoid reading/storing changing data
     noInterrupts();
-	if ( !(transmitting_object_no == INVALID_OBJECT_NUMBER) && bus.getBusTXStateValid() )
+	if ( !(transmitting_object_no == INVALID_OBJECT_NUMBER) && bcu->bus->getBusTXStateValid() )
 	{
 		//check if state ok and update RAM Flag of object
-		if ( !bus.sendTelegramState())
+		if ( !bcu->bus->sendTelegramState())
 		{
 			// set RAM Status flag to ok : clear COMFLAG_TRANS_MASK	and possible DATAREQ
          	unsigned int mask = (COMFLAG_TRANS_MASK |COMFLAG_DATAREQ )  << (transmitting_object_no & 1 ? 4 :  0);
@@ -534,8 +479,7 @@ bool sendNextGroupTelegram()
 
 		// clear pending status check
 		transmitting_object_no = INVALID_OBJECT_NUMBER;
-		bus.setBusTXStateValid(false);
-
+		bcu->bus->setBusTXStateValid(false);
 	}
 	interrupts();
 
@@ -588,7 +532,7 @@ bool sendNextGroupTelegram()
  * @return The ID of the next updated com-object, -1 if none.
  */
 
-int nextUpdatedObject()
+int ComObjects::nextUpdatedObject()
 {
     static int startIdx = 0;
 
@@ -644,7 +588,7 @@ int nextUpdatedObject()
     return -1;
 }
 
-void processGroupWriteTelegram(int objno, byte* tel)
+void ComObjects::processGroupWriteTelegram(int objno, byte* tel)
 {
     byte* valuePtr = objectValuePtr(objno);
 
@@ -659,135 +603,3 @@ void processGroupWriteTelegram(int objno, byte* tel)
     addObjectFlags(objno, COMFLAG_UPDATE);
 }
 
-
-
-/*
- *  A Group read/write Telegram on the bus or a
- *  Telegram transmitt-request (object read/write)from the app was received
- *
- *  From bus: Called from bus::ProcessTelegram function triggered by the BCUbase-loop function.
- *  From app: Called from sendGroupWriteTelegram or sendGroupReadTelegram
- *
- *  Scan the AssociationTable for the received GrpAdr for a valid association to a local object.
- *
- *  In order to avoid an endless loop by updating we need to skip the triggering object from the app.
- *  In case of a received bus request the triggering objectnumber was set to an invalid value (-1).
- *
- *
- *  @return void
- *
- */
-void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno)
-{
-#if BCU_TYPE != SYSTEM_B_TYPE
-
-/**
- * Spec: Resources 4.11.2 Group Object Association Table - Realisation Type 1
- */
-    const ComConfig* configTab = &objectConfig(0);
-    const byte* assocTab = assocTable();
-    const int endAssoc = 1 + (*assocTab) * 2;
-    int objno, objConf;
-
-    // Convert the group address into the index into the group address table
-    const int gapos = indexOfAddr(addr);
-    if (gapos < 0) return;
-
-    // Loop over all entries in the association table, as one group address
-    // could be assigned to multiple com-objects.
-    for (int idx = 1; idx < endAssoc; idx += 2)
-    {
-        // Check if grp-address index in assoc table matches the dest grp address index
-        if (gapos == assocTab[idx]) // We found an association for our addr
-        {
-            objno = assocTab[idx + 1];  // Get the com-object number from the assoc table
-
-            if (objno == trg_objno)
-            	continue; // no update of the object triggered by the app
-
-            objConf = configTab[objno].config;
-
-            if (apci == APCI_GROUP_VALUE_WRITE_PDU || apci == APCI_GROUP_VALUE_RESPONSE_PDU)
-            {
-                // Check if communication and write are enabled
-                if ((objConf & COMCONF_WRITE_COMM) == COMCONF_WRITE_COMM)
-                    processGroupWriteTelegram(objno, tel); // set update flag and update value of object
-            }
-            else if (apci == APCI_GROUP_VALUE_READ_PDU)
-            {
-                // Check if communication and read are enabled
-                if ((objConf & COMCONF_READ_COMM) == COMCONF_READ_COMM)
-                	// we received read-request from bus - so send response back and search for more associations
-                   	sendGroupWriteTelegram(objno, addr, true); // send write to the bus and update all associated local objects
-            }
-        }
-    }
-
-#else
-
-    //
-    // Spec: Resources 4.11.4 Group Object Association Table - Realisation Type 6
-    //
-    const ComConfig* configTab = &objectConfig(0);
-    const byte* assocTab = assocTable();
-    const int endAssoc = 2 +  makeWord(assocTab[0], assocTab[1]) * 4;   // length field has 2 octets and each entry has 4 octets on SYSTEM B
-    int objno, objConf;
-
-    // Convert the group address into the index into the group address table
-    const int gapos = indexOfAddr(addr);
-    if (gapos < 0) return;
-
-    // Loop over all entries in the association table, as one group address
-    // could be assigned to multiple com-objects.
-    for (int idx = 2; idx < endAssoc; idx += 4)
-    {
-        // Check if grp-address index in assoc table matches the dest grp address index
-        int gadest = makeWord(assocTab[idx], assocTab[idx +1]); // get destination group address index
-        if (gapos == gadest) // We found an association for our addr
-        {
-            objno = makeWord(assocTab[idx +2], assocTab[idx +3]);  // Get the com-object number from the assoc table
-            if (objno == trg_objno)
-             	continue; // no update of the object triggered by the app
-
-            objConf = configTab[objno].config;
-
-            if (apci == APCI_GROUP_VALUE_WRITE_PDU || apci == APCI_GROUP_VALUE_RESPONSE_PDU)
-            {
-                // Check if communication and write are enabled
-                if ((objConf & COMCONF_WRITE_COMM) == COMCONF_WRITE_COMM)
-                    processGroupWriteTelegram(objno, tel); // set update flag and update value of object
-            }
-            else if (apci == APCI_GROUP_VALUE_READ_PDU)
-            {
-                // Check if communication and read are enabled
-                if ((objConf & COMCONF_READ_COMM) == COMCONF_READ_COMM)
-                   	// we received read-request from bus - so send response back and search for more associations
-                    sendGroupWriteTelegram(objno, addr, true);
-            }
-        }
-    }
-#endif
-}
-
-byte* objectConfigTable()
-{
-#if BCU_TYPE == BCU1_TYPE
-    return userEepromData + userEeprom.commsTabPtr;
-#else
-    byte * addr = (byte* ) & userEeprom.commsTabAddr;
-    return userMemoryPtr (makeWord (*(addr + 1), * addr));
-#endif
-}
-
-byte* objectFlagsTable()
-{
-#if BCU_TYPE == BCU1_TYPE
-    return userRamData + userEepromData[userEeprom.commsTabPtr + 1];
-#else
-    const byte* configTable = objectConfigTable();
-    if(le_ptr == LITTLE_ENDIAN)
-    	return userMemoryPtr(makeWord(configTable[2], configTable[1]));
-
-    return userMemoryPtr(makeWord(configTable[1], configTable[2]));
-#endif
-}

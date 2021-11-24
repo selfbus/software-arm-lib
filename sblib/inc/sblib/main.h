@@ -27,6 +27,8 @@
 #ifndef sblib_main_h
 #define sblib_main_h
 
+#include <sblib/eib/bcu_base.h>
+
 #define WEAK __attribute__ ((weak))
 
 /**
@@ -35,7 +37,7 @@
  *
  * @note  You must implement this function in your code.
  */
-void setup();
+BcuBase* setup();
 
 /**
  * @brief This function is called in a loop by the Selfbus's library main.

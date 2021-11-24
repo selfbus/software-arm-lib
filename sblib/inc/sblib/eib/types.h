@@ -72,6 +72,15 @@ enum ComType
     VARDATA = 15
 };
 
+struct ComConfig
+{
+    /** Configuration flags. See enum ComConfigFlag. */
+    byte config;
+
+    /** Type of the communication object (bits 0..5). See enum ComType. */
+    byte type;
+};
+
 /**
  * The flags for a communication object configuration.
  */
@@ -119,34 +128,6 @@ enum ComConfigFlag
 
     /** Com object configuration flag: system transmission priority */
     COMCONF_PRIO_SYSTEM = 0x00,
-};
-
-/**
- * Depending on the BCU type define the size of the pointer to the RAM
- * location of the value for a com object
- */
-#if BCU_TYPE != BCU1_TYPE
-typedef word DataPtrType;
-#else
-typedef byte DataPtrType;
-#endif
-/**
- * A communication object configuration.
- */
-struct ComConfig
-{
-#if BCU_TYPE != SYSTEM_B_TYPE
-    /** Data pointer, low byte. Depending on the COMCONF_VALUE_TYPE flag in the
-     * config byte, this pointer points to userRam or userEeprom.
-     */
-    DataPtrType dataPtr;
-#endif
-
-    /** Configuration flags. See enum ComConfigFlag. */
-    byte config;
-
-    /** Type of the communication object (bits 0..5). See enum ComType. */
-    byte type;
 };
 
 /**

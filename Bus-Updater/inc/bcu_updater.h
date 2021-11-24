@@ -23,7 +23,7 @@
 #ifndef BCU_UPDATER_H_
 #define BCU_UPDATER_H_
 
-#include <sblib/eib/bcu_base.h>
+#include <sblib/eib/bcu1.h>
 #include <sblib/eib/apci.h>
 #include <sblib/internal/variables.h>
 #include <sblib/timeout.h>
@@ -36,7 +36,7 @@
 
 #define BCU_DIRECT_CONNECTION_TIMEOUT_MS (6000) //!< BCU direct connection timeout in milliseconds
 
-class BcuUpdate: public BcuBase
+class BcuUpdate: public BCU1
 {
 public:
     /**
