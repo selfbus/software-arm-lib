@@ -13,7 +13,7 @@
 
 #include <sblib/types.h>
 #include <sblib/utils.h>
-#include <sblib/eib/bcu_type.h>
+#include <sblib/eib/bcu_base.h>
 
 // See BCU2 help:
 // System Architecture > Interface Objects > User Interface Objects > Attributes of Properties
@@ -129,7 +129,7 @@ struct PropertyDef
      *
      * @return The pointer to the property value.
      */
-    byte* valuePointer() const;
+    byte* valuePointer(BcuBase *bcu) const;
 
     /**
      * Test if the valuePointer() points to the userEeprom.
@@ -488,12 +488,6 @@ enum PropertyPointerType
     PPT_OFFSET_MASK = 0x0fff  //!< Bitmask for property pointer offsets
 };
 
-
-/** Define a PropertyDef pointer to variable v in the userRam */
-#define PD_USER_RAM_OFFSET(v) (OFFSET_OF(UserRam, v) + PPT_USER_RAM)
-
-/** Define a PropertyDef pointer to variable v in the userEeprom */
-#define PD_USER_EEPROM_OFFSET(v) (OFFSET_OF(UserEeprom, v) + PPT_USER_EEPROM)
 
 /** Define a PropertyDef pointer to variable v in the internal constants table */
 #define PD_CONSTANTS_OFFSET(v) (OFFSET_OF(ConstPropValues, v) + PPT_CONSTANTS)

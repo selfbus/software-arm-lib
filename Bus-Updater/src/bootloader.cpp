@@ -26,7 +26,8 @@
 #include <sblib/internal/iap.h> // for IAP_SUCCESS
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
-
+#include <sblib/eib/bus.h>
+#include <sblib/eib/bcu_base.h>
 
 // bootloader specific settings
 #define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
@@ -41,7 +42,7 @@
 #define APPVERSION 0x01   //!< Application Version -> 0.1
 
 static BcuUpdate _bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
-BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
+//BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
 
 Timeout runModeTimeout;              //!< running mode LED blinking timeout
 
@@ -60,9 +61,9 @@ static inline void lib_setup()
  *        Sets @ref PIN_RUN as output and in debug build also @ref PIN_INFO as output
  *
  */
-void setup()
+BcuBase* setup()
 {
-    bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION); // We are a "Jung 2138.10" device, version 0.1
+    _bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION); // We are a "Jung 2138.10" device, version 0.1
     pinMode(PIN_RUN, OUTPUT);
 
 #ifdef DEBUG
@@ -71,9 +72,10 @@ void setup()
 #endif
 
     runModeTimeout.start(1);
-    bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
-    extern byte userEepromModified;
-    userEepromModified = 0;
+    _bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
+    _bcu.userEeprom->userEepromModified = 0;
+
+    return &_bcu;
 }
 
 
@@ -85,7 +87,7 @@ void loop()
 {
     if (runModeTimeout.expired())
     {
-        if (bcu.directConnection())
+        if (_bcu.directConnection())
         {
             runModeTimeout.start(RUN_MODE_BLINK_CONNECTED);
         }
@@ -99,7 +101,7 @@ void loop()
     digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
 
-    if(bus.idle())
+    if(_bcu.bus->idle())
     {
         // Check if restart request is pending
         if (restartRequestExpired())
@@ -171,7 +173,7 @@ static inline void run_updater(bool programmingMode)
 
     if (programmingMode)
     {
-        ((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
+        _bcu.setProgrammingMode(programmingMode);
     }
 
 #ifdef DUMP_TELEGRAMS_LVL1
@@ -204,7 +206,7 @@ static inline void run_updater(bool programmingMode)
 
     while (1)
     {
-        bcu.loop();
+    	_bcu.loop();
         loop();
     }
 }
@@ -218,7 +220,7 @@ static inline void run_updater(bool programmingMode)
  */
 int main()
 {
-    // Updater request from application by setting magicWord
+	// Updater request from application by setting magicWord
   	unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
  	if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
@@ -244,7 +246,8 @@ int main()
             jumpToApplication(block->startAddress);
         }
     }
-    // Start updater in case of error
+
+// Start updater in case of error
     run_updater(false);
     return (0);
 }

@@ -11,24 +11,18 @@
 #define sblib_BcuBase_h
 
 #include <sblib/types.h>
-#include <sblib/eib/bus.h>
-#include <sblib/eib/bcu_type.h>
-#include <sblib/eib/properties.h>
-#include <sblib/eib/user_memory.h>
+#include <sblib/eib/com_objects.h>
 #include <sblib/utils.h>
+#include <sblib/mem_mapper.h>
+#include <sblib/usr_callback.h>
+#include <sblib/eib/userRam.h>
+#include <sblib/eib/userEeprom.h>
+#include <sblib/eib/userRam.h>
+#include <sblib/eib/addr_tables.h>
+#include <sblib/timer.h>
+#include <sblib/debounce.h>
 
-
-// Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
-// link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
-#define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
-
-class BcuBase;
-
-/**
- * The EIB bus coupling unit.
- */
-extern BcuBase& bcu;
-
+class Bus;
 
 /**
  * Class for controlling all BCU related things.
@@ -39,87 +33,16 @@ extern BcuBase& bcu;
 class BcuBase
 {
 public:
-    BcuBase();
+    BcuBase(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables);
     virtual ~BcuBase() = default;
 
-#if BCU_TYPE == BCU1_TYPE
-    /**
-     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
-     * program version and a optional read-only CommObjectTable address which
-     * can't be changed by ETS/KNX telegrams
-     *
-     * @param manufacturer - the manufacturer ID (16 bit)
-     * @param deviceType - the device type (16 bit)
-     * @param version - the version of the application program (8 bit)
-     */
-    void begin(int manufacturer, int deviceType, int version);
-#else
-    /**
-     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
-     * program version and a optional read-only CommObjectTable address which
-     * can't be changed by ETS/KNX telegrams
-     *
-     * @param manufacturer - the manufacturer ID (16 bit)
-     * @param deviceType - the device type (16 bit)
-     * @param version - the version of the application program (8 bit)
-     * @param readOnlyCommObjectTableAddress - optional (16bit), to set a read-only CommObjectTable address which won't be changed by KNX telegrams
-     *                                         This is a workaround for ETS product databases, which send the "wrong" ComObjectTable address.
-     *                                         Compare inside the extracted *.knxprod product database M-xxxx_x_xxxx-xx-xxxx.xml
-     *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/ComObjectTable CodeSegment="M-xxxx_x-xxxx-xx-xxxx_xx-HHHH"
-     *                                         HHHH = communication object table address in hexadecimal
-     *                                         and
-     *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/LoadProcedures/LdCtrlTaskSegment LsmIdx="3" Address="dddddd" />
-     *                                         dddddd = communication object table address in decimal ETS wants us to use
-     *                                         convert dddddd to hexadecimal => WWWW
-     *                                         in case HHHH != WWWW ,
-     *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
-     */
-    void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress = 0);
-#endif
+    void setRxPin(int rxPin);
+    void setTxPin(int txPin);
+    void setTimer(Timer& timer);
+    void setCaptureChannel(TimerCapture captureChannel);
+    void setProgPin(int prgPin);
+    void setProgPinInverted(int prgPinInv);
 
-    /**
-     * Set RxPin of board, must be called before begin method
-     * @param rxPin pin definition
-     */
-    void setRxPin(int rxPin) {
-        bus.rxPin=rxPin;
-    }
-    /**
-     * Set TxPin of board, must be called before begin method
-     * @param txPin pin definition
-     */
-    void setTxPin(int txPin) {
-        bus.txPin=txPin;
-    }
-    /**
-     * Set timer class, must be called before begin method
-     * @param timer
-     */
-    void setTimer(Timer& timer) {
-        bus.timer=timer;
-    }
-    /**
-     * Set capture channel of processor, must be called before begin method
-     * @param capture channel definition of processor
-     */
-    void setCaptureChannel(TimerCapture captureChannel) {
-        bus.captureChannel=captureChannel;
-    }
-    /**
-     * Set ProgPin of board, must be called before begin method
-     * @param progPin Pin definition
-     */
-    void setProgPin(int prgPin) {
-        progPin=prgPin;
-        setFatalErrorPin(progPin);
-    }
-    /**
-     * Set ProgPin output inverted, must be called before begin method
-     * @param progPin output inverted
-     */
-    void setProgPinInverted(int prgPinInv) {
-        progPinInv=prgPinInv;
-    }
     /**
      * End using the EIB bus coupling unit.
      */
@@ -131,7 +54,7 @@ public:
      *
      * @param addr - the physical address
      */
-    void setOwnAddress(int addr);
+    virtual void setOwnAddress(int addr) = 0;
 
     /**
      * Get our own physical address.
@@ -144,7 +67,7 @@ public:
      *
      * @return True if the programming mode is active, false if not.
      */
-    bool programmingMode() const;
+    bool programmingMode();
 
     /**
      * Test if the user application is active. The application is active if the
@@ -153,7 +76,7 @@ public:
      *
      * @return True if the user application is active, false if not.
      */
-    bool applicationRunning() const;
+    virtual bool applicationRunning() const = 0;
 
     /**
      * Test if a direct data connection is open.
@@ -172,7 +95,9 @@ public:
      * Get the mask version.
      * Usually 0x0012 for BCU1, 0x0020 for BCU2.
      */
-    int maskVersion() const;
+    virtual const unsigned short getMaskVersion() const = 0;
+
+    virtual const char* getBcuType() const = 0;
 
     /**
      * The BCU's main processing loop. This is like the application's loop() function,
@@ -190,9 +115,10 @@ public:
      * A buffer for sending telegrams. This buffer is considered library private
      * and should rather not be used by the application program.
      */
-    byte sendTelegram[Bus::TELEGRAM_SIZE];
+    byte *sendTelegram;
 
-    /**
+    /**    z = bcu.getOwnAddress();
+     *
      * The pin where the programming LED + button are connected. The default pin
      * is PIO2_0. This variable may be changed in setup(), if required. If set
      * to 0, the programming LED + button are not handled by the library.
@@ -205,10 +131,63 @@ public:
      */
     int progPinInv;
 
+    /**
+     * Process a APCI_MEMORY_WRITE_PDU
+     * see KNX Spec. 3/3/7 §3.5.4 p.73 A_Memory_Write-service
+     *
+     * @param addressStart - memory start address
+     * @param payLoad - data to write into the memory
+     * @param lengthPayLoad - length of data/payload
+     *
+     * @return true if successfully written, otherwise false
+     */
+    bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
+
+    /**
+     * Process a APCI_MEMORY_READ_PDU
+     * see KNX Spec. 3/3/7 §3.5.3 p.71 A_Memory_Read-service
+     *
+     * @param addressStart - memory start address
+     * @param payLoad - buffer to write data read from memory
+     * @param lengthPayLoad - length of data/payload to read
+     *
+     * @return true if successfully read, otherwise false
+     */
+    bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
+
+    /**
+     * Process a APCI_MEMORY_READ_PDU or APCI_MEMORY_WRITE_PDU depending on
+     *
+     * @param addressStart - memory start address
+     * @param payLoad - data to write into the memory
+     * @param lengthPayLoad - length of data/payload
+     * @param readMem - operation mode, if true memory will be read, if false memory will be written
+     *
+     * @return true if successfully, otherwise false
+     */
+    bool processApciMemoryOperation(int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem);
+
+    UserEeprom* userEeprom;
+    UserRam* userRam;
+    ComObjects* comObjects;
+    AddrTables* addrTables;
+
+    virtual int TelegramSize();
+
+    byte* userMemoryPtr(int addr);
+
+    /**
+     * Returns a pointer to the instance of the MemMapper object of the BCU
+     * @return a pointer to the instance of the MemMapper object, in case of error return is nullptr
+     */
+    MemMapper* getMemMapper();
+
+    Bus* bus;
+
 protected:
     // The method begin_BCU() is renamed during compilation to indicate the BCU type.
     // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-    void begin_BCU(int manufacturer, int deviceType, int version);
+    virtual void begin_BCU(int manufacturer, int deviceType, int version) = 0;
     /*
      * Special initialization for the BCU
      */
@@ -243,103 +222,98 @@ protected:
     bool incConnectedSeqNo;        //!< True if the sequence number shall be incremented on ACK.
     int lastAckSeqNo;              //!< Last acknowledged sequence number
 
-private:
-    word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
-};
+    /**
+     * Process a unicast connection control telegram with our physical address as
+     * destination address. The telegram is stored in sbRecvTelegram[].
+     *
+     * When this function is called, the sender address is != 0 (not a broadcast).
+     *
+     * @param tpci - the transport control field
+     */
+    void processConControlTelegram(int tpci);
 
+    /**
+     * Process a unicast telegram with our physical address as destination address.
+     * The telegram is stored in sbRecvTelegram[].
+     *
+     * When this function is called, the sender address is != 0 (not a broadcast).
+     *
+     * @param apci - the application control field
+     */
+    virtual void processDirectTelegram(int apci) = 0;
+
+    /**
+     * Send a connection control telegram.
+     *
+     * @param cmd - the transport command, see SB_T_xx defines
+     * @param senderSeqNo - the sequence number of the sender, 0 if not required
+     */
+    void sendConControlTelegram(int cmd, int senderSeqNo);
+
+    /**
+     * Process a device-descriptor-read request.
+     *
+     * @param id - the device-descriptor type ID
+     *
+     * @return True on success, false on failure
+     */
+    bool processDeviceDescriptorReadTelegram(int id);
+
+    int connectedTo();
+
+    /**
+     * Allow an user provided memory mapper to store parameter data via memory write / read
+     * @param mapper - a pointer to an instance of a MemMapper object
+     */
+    void setMemMapper(MemMapper *mapper);
+
+    /**
+     * Set a callback class to notify the user program of some events
+     */
+    void setUsrCallback(UsrCallback *callback);
+
+    /**
+     * Enable/Disable sending of group write or group response telegrams.
+     * Useful if the device wants to implement transmission delays
+     * after bus voltage recovery.
+     * Transmission is enabled by default.
+     */
+    void enableGroupTelSend(bool enable);
+
+    /**
+     * Set a limit for group telegram transmissions per second.
+     * If the parameter is not zero, there is a minimum delay
+     * of 1/limit (in seconds) between subsequent group telegram
+     * transmissions.
+     *
+     * @param limit - the maximum number of telegrams per second.
+     */
+    void setGroupTelRateLimit(unsigned int limit);
+
+    void cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigned int count);
+    void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count);
+
+    MemMapper *memMapper;
+    UsrCallback *usrCallback;
+    bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
+    unsigned int groupTelWaitMillis;
+    unsigned int groupTelSent;
+
+    word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
+
+    volatile int ownAddr;                 //!< Our own physical address on the bus
+};
 
 //
 //  Inline functions
 //
-#if BCU_TYPE == BCU1_TYPE
-    /**
-     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
-     * program version and a optional read-only CommObjectTable address which
-     * can't be changed by ETS/KNX telegrams
-     *
-     * @param manufacturer - the manufacturer ID (16 bit)
-     * @param deviceType - the device type (16 bit)
-     * @param version - the version of the application program (8 bit)
-     */
-inline void BcuBase::begin(int manufacturer, int deviceType, int version)
-{
-    begin_BCU(manufacturer, deviceType, version);
-    commObjectTableAddressStatic = 0;
-}
-#else
 
-/**
- * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
- * program version and a optional read-only CommObjectTable address which
- * can't be changed by ETS/KNX telegrams
- *
- * @param manufacturer - the manufacturer ID (16 bit)
- * @param deviceType - the device type (16 bit)
- * @param version - the version of the application program (8 bit)
- * @param readOnlyCommObjectTableAddress - optional (16bit), to set a read-only CommObjectTable address which can't be changed by KNX telegrams
- *                                         This is a workaround for ETS product databases, which send the "wrong" ComObjectTable address.
- *                                         Compare inside the extracted *.knxprod product database M-xxxx_x_xxxx-xx-xxxx.xml
- *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/ComObjectTable CodeSegment="M-xxxx_x-xxxx-xx-xxxx_xx-HHHH"
- *                                         HHHH = communication object table address in hexadecimal
- *                                         and
- *                                         node <KNX/ManufacturerData/Manufacturer/ApplicationPrograms/ApplicationProgram/Static/LoadProcedures/LdCtrlTaskSegment LsmIdx="3" Address="dddddd" />
- *                                         dddddd = communication object table address in decimal ETS wants us to use
- *                                         convert dddddd to hexadecimal => WWWW
- *                                         in case HHHH != WWWW ,
- *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
- */
-inline void BcuBase::begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress)
-{
-    begin_BCU(manufacturer, deviceType, version);
-    commObjectTableAddressStatic = readOnlyCommObjectTableAddress;
-    if ((commObjectTableAddressStatic != 0) && ( userEeprom.commsTabAddr != commObjectTableAddressStatic))
-    {
-        userEeprom.commsTabAddr = commObjectTableAddressStatic;
-        userEeprom.modified();
-    }
-}
-#endif
+#define  MAX_GROUP_TEL_PER_SECOND  28
+#define  DEFAULT_GROUP_TEL_WAIT_MILLIS  1000/MAX_GROUP_TEL_PER_SECOND
 
-inline bool BcuBase::programmingMode() const
-{
-    return (userRam.status & BCU_STATUS_PROG) == BCU_STATUS_PROG;
-}
-
-inline int BcuBase::ownAddress() const
-{
-    return bus.ownAddr;
-}
-
-inline bool BcuBase::applicationRunning() const
-{
-    if (!enabled)
-        return false;
-
-#if BCU_TYPE == BCU1_TYPE
-    return ((userRam.status & (BCU_STATUS_PROG|BCU_STATUS_AL)) == BCU_STATUS_AL &&
-        userRam.runState == 1 && userEeprom.runError == 0xff); // ETS sets the run error to 0 when programming
-#else
-    return userRam.runState == 1 &&
-        userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADED &&  // Address table object
-        userEeprom.loadState[OT_ASSOC_TABLE] == LS_LOADED && // Association table object &
-        userEeprom.loadState[OT_APPLICATION] == LS_LOADED;   // Application object. All three in State "Loaded"
-#endif
-}
-
-inline int BcuBase::maskVersion() const
-{
-    return MASK_VERSION;
-}
-
-inline bool BcuBase::directConnection() const
-{
-    return connectedAddr != 0;
-}
-
-inline word BcuBase::getCommObjectTableAddressStatic() const
-{
-    return commObjectTableAddressStatic;
-}
+//
+//  Inline functions
+//
 
 #ifndef INSIDE_BCU_CPP
 #   undef begin_BCU

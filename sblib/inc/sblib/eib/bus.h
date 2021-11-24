@@ -14,7 +14,7 @@
 #define sblib_bus_h
 
 #include <sblib/core.h>
-#include <sblib/eib/bcu_type.h>
+#include <sblib/eib/bcu_base.h>
 
 // dump all received and sent telegrams out on the serial interface
 #if defined(INCLUDE_SERIAL)
@@ -44,12 +44,6 @@ extern volatile bool  tb_in_ov;
 
 
 class Bus;
-
-/**
- * The EIB bus access object.
- */
-extern Bus bus;
-
 
 /**
  * Bus short acknowledgment frame: acknowledged
@@ -96,6 +90,9 @@ extern Bus bus;
  */
 class Bus
 {
+private:
+    BcuBase* bcu;
+
 public:
 
     /**
@@ -107,7 +104,7 @@ public:
      * @param captureChannel - the timer capture channel of rxPin, e.g. CAP0
      * @param matchChannel - the timer match channel of txPin, e.g. MAT0
      */
-    Bus(Timer& timer, int rxPin, int txPin, TimerCapture captureChannel, TimerMatch matchChannel);
+    Bus(BcuBase* bcu, Timer& timer, int rxPin, int txPin, TimerCapture captureChannel, TimerMatch matchChannel);
 
     /**
      * Begin using the bus.
@@ -195,11 +192,6 @@ public:
     void discardReceivedTelegram();
 
     /**
-     * Get our own physical address.
-     */
-    int ownAddress() const;
-
-    /**
      * Set weather the an acknowledgment from the last received byte should be sent.
      * !!!!!!! critical as this could change the sendAck value during usage in the  SM - should be not used outside the bus SM!!
      *  not needed as the SM should check the bit1 in the telegram header to check if the sender is requesting an ACK
@@ -277,16 +269,11 @@ public:
 		STATE_END
     };
 
-    enum
-    {
-        TELEGRAM_SIZE = 24   //!< The maximum size of a telegram including the checksum byte
-    };
-
     /**
      * The received telegram.
      * The higher layer process should not change the telegram data in the buffer!
      */
-    byte telegram[TELEGRAM_SIZE];
+    byte* telegram = new byte[bcu->TelegramSize()];
 
     /**
       * The total length of the received telegram in telegram[].
@@ -371,7 +358,6 @@ protected:
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
     TimerMatch pwmChannel;       //!< The timer channel for PWM for sending
     TimerMatch timeChannel;      //!< The timer channel for timeouts
-    volatile int ownAddr;                 //!< Our own physical address on the bus
     volatile int sendAck;                 //!< Send an acknowledge or not-acknowledge byte if != 0
 
 private:
@@ -386,7 +372,7 @@ private:
     int sendTelegramLen;         //!< The size of the to be sent telegram in bytes (including the checksum).
     volatile byte *sendCurTelegram;       //!< The telegram that is currently being sent.
     volatile byte *sendNextTel;           //!< The telegram to be sent after sbSendTelegram is done.
-    volatile byte rx_telegram[TELEGRAM_SIZE]; // !< Telegram buffer for the L1/L2 receiving process
+    volatile byte *rx_telegram = new byte[bcu->TelegramSize()]; // !< Telegram buffer for the L1/L2 receiving process
 
     int bitMask;
     int bitTime;                 // The bit-time within a byte when receiving
@@ -465,11 +451,6 @@ inline bool Bus::idle() const
 #else
     return sendCurTelegram == 0;
 #endif
-}
-
-inline int Bus::ownAddress() const
-{
-    return bus.ownAddr;
 }
 
 inline void Bus::maxSendTries(int tries)

@@ -61,6 +61,7 @@
 #ifndef UPDATE_H_
 #define UPDATE_H_
 
+#include <sblib/eib/bcu_base.h>
 #include "boot_descriptor_block.h"
 
 #define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
@@ -90,7 +91,7 @@ bool restartRequestExpired(void);
  * @param data      telegram buffer received from KNX bus
  * @return          always T_ACK_PDU, the real return value is encapsulated in bcu.sendTelegram[10-13]
  */
-unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data);
+unsigned char handleMemoryRequests(BcuBase* bcu, int apciCmd, bool * sendTel, unsigned char * data);
 
 /**
  * @brief Resets the UPD/UDP protocol ramBuffer and global variables to default
