@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'org.hkfree.knxduino'
-version '0.56'
+version '0.57'
 
 sourceCompatibility = 11
 
@@ -18,8 +18,9 @@ jar {
 
 task fatJar(type: Jar) {
     manifest.from jar.manifest
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     classifier = 'all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
 
@@ -36,12 +37,23 @@ gradle.projectsEvaluated{
 }
 
 dependencies {
+    // calimero knx bus access lib
+    implementation 'com.github.calimero:calimero-core:2.4'
+    testImplementation 'com.github.calimero:calimero-core:2.4'
 
-    implementation group: 'com.github.calimero', name: 'calimero-core', version: '2.4'
-    implementation group: 'net.harawata', name: 'appdirs', version: '1.2.1'
-    implementation group: 'com.google.guava', name: 'guava', version: '21+'
+    // find specific directories under linux and windows
+    implementation 'net.harawata:appdirs:1.2.1'
+    testImplementation 'net.harawata:appdirs:1.2.1'
 
-    // Logging dependencies
+    ///\todo
+    implementation 'com.google.guava:guava:21+'
+    testImplementation 'com.google.guava:guava:21+'
+
+    // command line option dependencies
+    implementation 'commons-cli:commons-cli:1.5.0'
+    testImplementation 'commons-cli:commons-cli:1.5.0'
+
+    // console and file logging dependencies
     implementation 'ch.qos.logback:logback-classic:1.3.0-alpha10'
     testImplementation 'ch.qos.logback:logback-classic:1.3.0-alpha10'
 
