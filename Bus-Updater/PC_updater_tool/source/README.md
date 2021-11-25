@@ -63,3 +63,13 @@ java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim1
 IntelliJ IDEA Community 2021.2.3 (Build -> Build Artifacts)<br>
 eclipse project is currently not maintained
 
+##gradle:
+update [gradle wrapper](gradle/wrapper) to the newest version:
+```
+gradlew wrapper
+```
+
+list of gradle tasks:
+```
+gradlew tasks
+```
