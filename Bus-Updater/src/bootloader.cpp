@@ -181,6 +181,7 @@ static inline void run_updater(bool programmingMode)
     {
         serial.begin(115200);
     }
+    int physicalAddress = bus.ownAddress();
     serial.println("=======================================================");
     serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
     serial.println(", DEBUG MODE :-)");
@@ -195,6 +196,9 @@ static inline void run_updater(bool programmingMode)
     serial.print("Firmware (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
     serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
     serial.println(" 0x", bootLoaderSize(), HEX, 6);
+    serial.print("physical address          : ", (physicalAddress >> 12) & 0x0F, DEC);
+    serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
+    serial.println(".", physicalAddress & 0xFF, DEC);
     serial.println("------------------------------------------------- by sh");
 #endif
 
