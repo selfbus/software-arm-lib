@@ -108,7 +108,7 @@ public class CliOptions {
         Option full = new Option(null, OPT_LONG_FULL, false, "force full upload mode (disables differential mode)");
         Option help = new Option(OPT_SHORT_HELP, OPT_LONG_HELP, false, "show this help message");
         Option version = new Option(null, OPT_LONG_VERSION, false, "show tool/library version");
-        Option verbose = new Option(OPT_SHORT_VERBOSE, OPT_LONG_VERBOSE, false, "enable verbose status output");
+        Option verbose = new Option(OPT_SHORT_VERBOSE, OPT_LONG_VERBOSE, false, "enable verbose status output (not used/implemented)");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
 
         Option fileName = Option.builder(OPT_SHORT_FILENAME).longOpt(OPT_LONG_FILENAME)
@@ -165,8 +165,8 @@ public class CliOptions {
                 .argName("appVersionPtr")
                 .hasArg()
                 .required(false)
-                .type(Number.class)
-                .desc("pointer address to APP_VERSION string in new firmware file (in decimal)").build();
+                .type(String.class)
+                .desc("pointer address to APP_VERSION string in new firmware file").build();
         Option uid = Option.builder(OPT_SHORT_UID).longOpt(OPT_LONG_UID)
                 .argName("uid")
                 .hasArg()
@@ -302,7 +302,8 @@ public class CliOptions {
             logger.debug("uid={}", Utils.byteArrayToHex(uid));
 
             if (cmdLine.hasOption(OPT_SHORT_APP_VERSION_PTR)) {
-                appVersionPtr = ((Number)cmdLine.getParsedOptionValue(OPT_SHORT_APP_VERSION_PTR)).intValue();
+                appVersionPtr = Integer.decode(cmdLine.getOptionValue(OPT_SHORT_APP_VERSION_PTR));
+
             }
             logger.debug("appVersionPtr={}", appVersionPtr);
 
