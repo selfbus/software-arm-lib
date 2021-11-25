@@ -508,8 +508,11 @@ public class TransportLayerImpl implements TransportLayer
 				p.setState(OpenIdle);
 				logger.trace("positive ack by {}", d.getAddress());
 			}
-			//else
+			else {
+				// commented out for selfbus updater
 				//disconnectIndicate(p, true);
+				logger.error("more then one positive ack by {}", d.getAddress());
+			}
 		}
 		else if ((ctrl & 0xC3) == NACK) {
 			if (d.getState() == Disconnected || !sender.equals(d.getAddress()))
