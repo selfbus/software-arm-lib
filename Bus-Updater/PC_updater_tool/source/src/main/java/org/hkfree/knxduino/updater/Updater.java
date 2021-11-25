@@ -80,7 +80,7 @@ import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String version = "0.57";
+    private static final String version = "0.57"; ///\todo also change in README.md and build.gradle
     private static final String tool = "Selfbus Updater " + version;
     // private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = LoggerFactory.getLogger(Updater.class.getName());
@@ -116,7 +116,7 @@ public class Updater implements Runnable {
                 ConColors.RESET);
         // read in user-supplied command line options
         try {
-            this.cliOptions = new CliOptions(args, "SB_updater.jar" , "Selfbus KNX-Firmware update tool", "");
+            this.cliOptions = new CliOptions(args, String.format("SB_updater-%s-all.jar", version) , "Selfbus KNX-Firmware update tool options:", "");
             // parseOptions(args);
         } catch (final KNXIllegalArgumentException | KNXFormatException | ParseException e) {
             throw e;

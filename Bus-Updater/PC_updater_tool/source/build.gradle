@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'org.hkfree.knxduino'
-version '0.57'
+version '0.57' ///\todo also change in README.md and Updater.java (String version)
 
 sourceCompatibility = 11
 
@@ -18,8 +18,8 @@ jar {
 
 task fatJar(type: Jar) {
     manifest.from jar.manifest
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    classifier = 'all'
+    duplicatesStrategy = DuplicatesStrategy.WARN
+    archiveClassifier = 'all'
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
@@ -37,9 +37,13 @@ gradle.projectsEvaluated{
 }
 
 dependencies {
-    // calimero knx bus access lib
-    implementation 'com.github.calimero:calimero-core:2.4'
-    testImplementation 'com.github.calimero:calimero-core:2.4'
+    // calimero knx bus access libary
+    // implementation 'com.github.calimero:calimero-core:2.5'
+    // testImplementation 'com.github.calimero:calimero-core:2.5'
+
+    ///\todo dependency of the calimero lib, can be removed after eliminating calimero source code in our repo
+    implementation 'org.usb4java:usb4java-javax:1.3.0'
+
 
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.2.1'
@@ -49,14 +53,14 @@ dependencies {
     implementation 'com.google.guava:guava:21+'
     testImplementation 'com.google.guava:guava:21+'
 
-    // command line option dependencies
+    // command line option
     implementation 'commons-cli:commons-cli:1.5.0'
     testImplementation 'commons-cli:commons-cli:1.5.0'
 
-    // console and file logging dependencies
+    // console and file logging
     implementation 'ch.qos.logback:logback-classic:1.3.0-alpha10'
     testImplementation 'ch.qos.logback:logback-classic:1.3.0-alpha10'
 
-    // unit test dependencies
+    // unit test
     testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
