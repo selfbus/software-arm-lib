@@ -3,6 +3,8 @@ package org.hkfree.knxduino.updater.tests;
 import org.hkfree.knxduino.updater.tests.flashdiff.*;
 import org.junit.Test;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -37,23 +39,21 @@ public class FlashDiffTests {
     }
 
     @Test
-    public void testDiff() {
+    public void testDiff() throws URISyntaxException {
         // test of upgrade from old version to newer (longer)
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        URL url1 = contextClassLoader.getResource("knxduino.ino.slto.v1.hex");
-        URL url2 = contextClassLoader.getResource("knxduino.ino.slto.v2.hex");
-        String file1 = url1.getPath();
-        String file2 = url2.getPath();
-        BinImage img1 = BinImage.readFromHex(file1);
-        BinImage img2 = BinImage.readFromHex(file2);
+        URI uri1 = contextClassLoader.getResource("knxduino.ino.slto.v1.hex").toURI();
+        URI uri2 = contextClassLoader.getResource("knxduino.ino.slto.v2.hex").toURI();
+        BinImage img1 = BinImage.readFromHex(uri1.getPath());
+        BinImage img2 = BinImage.readFromHex(uri2.getPath());
         performTest(img1, img2);
     }
 
     @Test
-    public void testDiff2() {
+    public void testDiff2() throws URISyntaxException {
         // test of new firmware into empty MCU
-        URL url2 = Thread.currentThread().getContextClassLoader().getResource("knxduino.ino.slto.v2.hex");
-        BinImage img2 = BinImage.readFromHex(url2.getPath());
+        URI uri2 = Thread.currentThread().getContextClassLoader().getResource("knxduino.ino.slto.v2.hex").toURI();
+        BinImage img2 = BinImage.readFromHex(uri2.getPath());
         BinImage img1 = BinImage.dummyFilled(img2.getBinData().length, 0xff);
         performTest(img1, img2);
     }
