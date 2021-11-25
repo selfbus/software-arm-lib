@@ -4,6 +4,9 @@ import cz.jaybee.intelhex.Parser;
 import cz.jaybee.intelhex.Region;
 import cz.jaybee.intelhex.listeners.BinWriter;
 import cz.jaybee.intelhex.listeners.RangeDetector;
+import org.hkfree.knxduino.updater.Updater;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -12,6 +15,7 @@ import java.nio.file.Files;
 import java.util.Arrays;
 
 public class BinImage {
+    private final static Logger logger = LoggerFactory.getLogger(BinImage.class.getName());
     private byte[] binData;
     private long startAddress;
     private long endAddress;
@@ -57,8 +61,7 @@ public class BinImage {
             parser.parse();
             byte[] binData = os.toByteArray();
             int totalLength = binData.length;
-            System.out.println("Hex file parsed: starting at 0x" + Long.toHexString(startAddress) + ", length " + totalLength
-                    + " bytes");
+            logger.info("Hex file parsed: starting at 0x{}, length {} bytes", Long.toHexString(startAddress), totalLength);
             return new BinImage(binData, startAddress, endAddress);
         } catch (Exception e) {
             throw new RuntimeException(e);

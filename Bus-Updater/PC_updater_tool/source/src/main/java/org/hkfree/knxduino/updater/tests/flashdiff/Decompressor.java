@@ -1,5 +1,8 @@
 package org.hkfree.knxduino.updater.tests.flashdiff;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Arrays;
 
 /**
@@ -7,7 +10,7 @@ import java.util.Arrays;
  * (based on diff stream, original ROM content, and RAM buffer to store some latest ROM pages already flashed)
  */
 public class Decompressor {
-
+    private final static Logger logger = LoggerFactory.getLogger(Decompressor.class.getName());
     private enum State {
         EXPECT_COMMAND_BYTE,
         EXPECT_COMMAND_PARAMS,
@@ -61,11 +64,11 @@ public class Decompressor {
     public void pageCompleted() {
         listener.flashPage(oldPagesRam, new FlashPage(scratchpad, 0));
         scratchpadIndex = 0;
-        Arrays.fill(scratchpad, (byte)0);   // only get get the last (uncomplete) page padded with 0 for unit tests, otherwise not relevant
+        Arrays.fill(scratchpad, (byte)0);   // only get the last (incomplete) page padded with 0 for unit tests, otherwise not relevant
     }
 
     public void putByte(byte data) {
-        //System.out.println("Decompressor processing new byte " + (data & 0xff) + ", state=" + state);
+        logger.trace("Decompressor processing new byte {}, state=", (data & 0xff), state);
         switch (state) {
             case EXPECT_COMMAND_BYTE:
                 cmdBuffer[0] = data;
@@ -91,13 +94,13 @@ public class Decompressor {
                     if ((cmdBuffer[0] & FlashDiff.CMD_COPY) == FlashDiff.CMD_COPY) {
                         // perform copy
                         if (isCopyFromRam()) {
-                            //System.out.println("COPY FROM RAM index=" + scratchpadIndex + " length=" + getLength() + " from addr=" + getCopyAddress());
+                            logger.trace("COPY FROM RAM index={} length={} from addr={}", scratchpadIndex, getLength(), getCopyAddress());
                             System.arraycopy(oldPagesRam.getOldBinData(), getCopyAddress(), scratchpad, scratchpadIndex, getLength());
                         } else {
-                            //System.out.println("COPY FROM ROM index=" + scratchpadIndex + " length=" + getLength() + " from addr=" + getCopyAddress());
-                            //System.out.println(rom.getBinData()[getCopyAddress()] & 0xff);
-                            //System.out.println(rom.getBinData()[getCopyAddress()+1] & 0xff);
-                            //System.out.println(rom.getBinData()[getCopyAddress()+2] & 0xff);
+                            logger.trace("COPY FROM ROM index={} length={} from addr={}", scratchpadIndex, getLength(), getCopyAddress());
+                            logger.trace("{}", rom.getBinData()[getCopyAddress()] & 0xff);
+                            logger.trace("{}", rom.getBinData()[getCopyAddress()+1] & 0xff);
+                            logger.trace("{}", rom.getBinData()[getCopyAddress()+2] & 0xff);
                             System.arraycopy(rom.getBinData(), getCopyAddress(), scratchpad, scratchpadIndex, getLength());
                         }
                         scratchpadIndex += getLength();

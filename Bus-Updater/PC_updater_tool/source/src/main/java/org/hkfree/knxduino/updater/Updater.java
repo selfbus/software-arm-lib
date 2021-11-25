@@ -1,12 +1,19 @@
 package org.hkfree.knxduino.updater;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.zip.CRC32;
@@ -15,12 +22,17 @@ import cz.jaybee.intelhex.Parser;
 import cz.jaybee.intelhex.Region;
 import cz.jaybee.intelhex.listeners.BinWriter;
 import cz.jaybee.intelhex.listeners.RangeDetector;
-import net.harawata.appdirs.AppDirs;
+
 import net.harawata.appdirs.AppDirsFactory;
 import org.hkfree.knxduino.updater.tests.flashdiff.BinImage;
 import org.hkfree.knxduino.updater.tests.flashdiff.FlashDiff;
-import tuwien.auto.calimero.*;
-import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.KNXRemoteException;
+import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
@@ -31,8 +43,8 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementClient;
-import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 import com.google.common.primitives.Bytes;  	// For search in byte array
+import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
 /**
  * A tool for Calimero updating a KNXduino device in a KNX network.
@@ -49,7 +61,7 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * this class is invoked, otherwise use this class in the context appropriate to
  * a {@link Runnable}.<br>
  * In console mode, the KNX device information, as well as errors and problems
- * during its execution are written to <code>System.out</code>.
+ * during its execution are written to <code>System.out</code> and logback <code>LOGGER</code>.
  * <p>
  * CAUTION:
  * To avoid disconnect problems caused by groupwrite telegrams and thereby send
@@ -68,11 +80,12 @@ import com.google.common.primitives.Bytes;  	// For search in byte array
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String version = "0.56";
+    private static final String version = "0.57";
     private static final String tool = "Selfbus Updater " + version;
-    private static final String sep = System.getProperty("line.separator");
+    // private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = LoggerFactory.getLogger(Updater.class.getName());
-    private final Map<String, Object> options = new HashMap<>();
+    private final CliOptions cliOptions;
+    // private final Map<String, Object> options = new HashMap<>();
 
     /**
      * Creates a new Updater instance using the supplied options.
@@ -86,21 +99,26 @@ public class Updater implements Runnable {
      *            list with options
      * @throws KNXIllegalArgumentException
      *             on unknown/invalid options
+     * @throws ParseException
+     *             on invalid command line parameters
      */
-    public Updater(final String[] args) {
-        System.out.println(ConColors.BRIGHT_BOLD_GREEN + "\n" +
+    public Updater(final String[] args) throws ParseException, KNXFormatException {
+        LOGGER.debug(tool);
+        LOGGER.debug(Settings.getLibraryHeader(false));
+        LOGGER.info(ConColors.BRIGHT_BOLD_GREEN + "\n" +
                 "\n" +
                 "     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
                 "    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
                 "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Dr. Stefan Haller, Oliver Stefan et al.                                 Version 0.56B \n\n" +
+                "  by Dr. Stefan Haller, Oliver Stefan et al.                       " + tool + " \n\n" +
                 ConColors.RESET);
         // read in user-supplied command line options
         try {
-            parseOptions(args);
-        } catch (final KNXIllegalArgumentException e) {
+            this.cliOptions = new CliOptions(args, "SB_updater.jar" , "Selfbus KNX-Firmware update tool", "");
+            // parseOptions(args);
+        } catch (final KNXIllegalArgumentException | KNXFormatException | ParseException e) {
             throw e;
         } catch (final RuntimeException e) {
             throw new KNXIllegalArgumentException(e.getMessage(), e);
@@ -117,6 +135,8 @@ public class Updater implements Runnable {
         } catch (final Throwable t) {
             LOGGER.error("parsing options ", t);
         } finally {
+            LOGGER.info("\n\n");
+            LOGGER.debug("main exit");
         }
     }
 
@@ -133,7 +153,127 @@ public class Updater implements Runnable {
         if (canceled)
             LOGGER.info("reading device info canceled");
         if (thrown != null) {
-            LOGGER.error("completed ", thrown);
+            LOGGER.error("completed", thrown);
+        }
+    }
+
+    /**
+     * Restarts the <code>device</code> in normal or Bootloader mode
+     * @param link
+     *          the KNX network link  to communicate with the device
+     * @param device
+     *          the IndividualAddress of the device to restart
+     */
+    private void restartDeviceToBootloader(KNXNetworkLink link, IndividualAddress device) throws KNXLinkClosedException {
+        UpdatableManagementClientImpl mcDevice = new UpdatableManagementClientImpl(link);
+        Destination dest;
+        dest = mcDevice.createDestination(device, true);
+        try {
+            LOGGER.info("\nRestarting device {} in bootloader mode using {}", device, link);
+            mcDevice.restart(dest, 0, 255);
+        } catch (final KNXException e) {
+            ///\todo make restarting more reliable to determine weather it was really successful or not, right now we will always land here
+            LOGGER.debug("KNXException ", e);
+        } catch (final InterruptedException e) {
+            LOGGER.error("InterruptedException ", e);
+        }
+/*
+        if (m.isOpen()) {
+            LOGGER.info("Disconnecting from {}", m);
+            m.detach();
+            m.close();
+        }
+ */
+    }
+
+    private void restartProgrammingDevice(UpdatableManagementClientImpl m, Destination dest)
+            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException {
+        LOGGER.warn("restarting device {}", dest);
+        m.restart(dest);
+    }
+
+    private byte[] requestUIDFromDevice(UpdatableManagementClientImpl m, Destination dest)
+            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+        LOGGER.info("\nRequesting UID from {}...", dest.getAddress());
+        byte[] result;
+        byte[] uid;
+        result = m.sendUpdateData(dest, UPDCommand.REQUEST_UID.id, new byte[0]);
+        if (result[3] != UPDCommand.RESPONSE_UID.id) {
+            checkResult(result, true);
+            restartProgrammingDevice(m, dest);
+            throw new UpdaterException("Requesting UID failed!");
+        }
+
+        if ((result.length >= UID_LENGTH_USED) && (result.length <= UID_LENGTH_MAX)){
+            uid = Arrays.copyOfRange(result, 4, UID_LENGTH_USED + 4);
+            LOGGER.info("  got: {} length {}", Utils.byteArrayToHex(uid), uid.length);
+            return uid;
+        } else {
+            uid = Arrays.copyOfRange(result, 4, result.length - 4);
+            LOGGER.error("Request UID failed {} result.length={}, UID_LENGTH_USED={}, UID_LENGTH_MAX={}",
+                    Utils.byteArrayToHex(uid),uid.length, UID_LENGTH_USED, UID_LENGTH_MAX);
+            restartProgrammingDevice(m, dest);
+            throw new UpdaterException("Selfbus update failed.");
+        }
+    }
+
+    private BootLoaderIdentity requestBootLoaderIdentity(UpdatableManagementClientImpl m, Destination dest)
+            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+        LOGGER.info("\nRequesting Bootloader Identity...");
+        byte[] result;
+        result = m.sendUpdateData(dest, UPDCommand.REQUEST_BL_IDENTITY.id, new byte[] {0});
+        if (result[3] != UPDCommand.RESPONSE_BL_IDENTITY.id)
+        {
+            checkResult(result);
+            restartProgrammingDevice(m, dest);
+            throw new UpdaterException("Requesting Bootloader Identity failed!");
+        }
+
+        BootLoaderIdentity bl = new BootLoaderIdentity(Arrays.copyOfRange(result, 4, result.length));
+        LOGGER.info("  Device Bootloader: {}{}{}", ConColors.BRIGHT_YELLOW, bl, ConColors.RESET);
+        return bl;
+    }
+
+    private BootDescriptor requestBootDescriptor(UpdatableManagementClientImpl m, Destination dest)
+            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+        LOGGER.info("\nRequesting Boot Descriptor...");
+        byte[] result;
+        result = m.sendUpdateData(dest, UPDCommand.REQUEST_BOOT_DESC.id, new byte[] {0});
+        if (result[3] != UPDCommand.RESPONSE_BOOT_DESC.id) {
+            checkResult(result);
+            restartProgrammingDevice(m, dest);
+            throw new UpdaterException("Boot descriptor request failed.");
+        }
+        BootDescriptor bootDescriptor = new BootDescriptor(Arrays.copyOfRange(result, 4, result.length));
+        LOGGER.info("  Current firmware: {}", bootDescriptor);
+        return bootDescriptor;
+    }
+
+
+    private String requestAppVersionString(UpdatableManagementClientImpl m, Destination dest)
+            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException {
+        byte[] result;
+        LOGGER.info("\nRequesting App Version String...");
+        result = m.sendUpdateData(dest, UPDCommand.APP_VERSION_REQUEST.id, new byte[] {0});
+        if (result[3] != UPDCommand.APP_VERSION_RESPONSE.id){
+            checkResult(result);
+            //restartProgrammingDevice(mc, progDest);
+            LOGGER.info("{}  failed!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+            return "";
+        }
+        String app_version = new String(result,4,result.length - 4);	// Convert 12 bytes to string starting from result[4]
+        LOGGER.info("  Current App Version String is: {}{}{}", ConColors.BRIGHT_GREEN, app_version, ConColors.RESET);
+        return app_version;
+    }
+
+    private void unlockDeviceWithUID(UpdatableManagementClientImpl m, Destination dest, byte[] uid)
+            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+        LOGGER.info("\nUnlocking device {} with UID {}...", dest.getAddress(), Utils.byteArrayToHex(uid));
+        byte[] result;
+        result = m.sendUpdateData(dest, UPDCommand.UNLOCK_DEVICE.id, uid);
+        if (checkResult(result) != 0) {
+            restartProgrammingDevice(m, dest);
+            throw new UpdaterException("Selfbus update failed.");
         }
     }
 
@@ -149,37 +289,37 @@ public class Updater implements Runnable {
      *             on interrupted thread
      */
     private KNXNetworkLink createLink() throws KNXException,
-            InterruptedException {
-        LOGGER.debug("Creating KNX network link...");
-        final KNXMediumSettings medium = (KNXMediumSettings) options
-                .get("medium");
-        if (options.containsKey("serial")) {
+            InterruptedException, UpdaterException {
+        final KNXMediumSettings medium = getMedium(cliOptions.medium());
+        LOGGER.debug("Creating KNX network link {}...", medium);
+        if (cliOptions.ft12().length() > 0) {
             // create FT1.2 network link
-            final String p = (String) options.get("serial");
             try {
-                return new KNXNetworkLinkFT12(Integer.parseInt(p), medium);
+                return new KNXNetworkLinkFT12(Integer.parseInt(cliOptions.ft12()), medium);
             } catch (final NumberFormatException e) {
-                return new KNXNetworkLinkFT12(p, medium);
+                return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
             }
         }
+
         // create local and remote socket address for network link
-        InetSocketAddress local = createLocalSocket(
-                (InetAddress) options.get("localhost"),
-                (Integer) options.get("localport"));
-        if (local == null) local = new InetSocketAddress(0);
-        final InetSocketAddress host = new InetSocketAddress(
-                (InetAddress) options.get("host"),
-                ((Integer) options.get("port")).intValue());
-        if (options.containsKey("routing")) {
+        InetSocketAddress local;
+        local = createLocalSocket(cliOptions.localhost(), cliOptions.localport());
+        if (local == null) {
+            local = new InetSocketAddress(0);
+        }
+
+        final InetSocketAddress host;
+        host = new InetSocketAddress(cliOptions.knxInterface(), cliOptions.port());
+        if (cliOptions.routing()) {
             //KNXNetworkLinkIP.ROUTING
-            //return KNXNetworkLinkIP.newRoutingLink(local, host,	options.containsKey("nat"), medium);
-            throw new RuntimeException("not implemented yet");
+            //return KNXNetworkLinkIP.newRoutingLink(local, host,	cliOptions.nat(), medium);
+            LOGGER.error("{}Routing not implemented.{}", ConColors.RED, ConColors.RESET);
+            throw new UpdaterException("not implemented yet");
             //return KNXNetworkLinkIP.newRoutingLink(local, host, medium);
         } else {
             //KNXNetworkLinkIP.TUNNELING;
-            return KNXNetworkLinkIP.newTunnelingLink(local, host, options.containsKey("nat"), medium);
+            return KNXNetworkLinkIP.newTunnelingLink(local, host, cliOptions.nat(), medium);
         }
-
     }
 
     /**
@@ -192,6 +332,7 @@ public class Updater implements Runnable {
      * @param args
      *            array with command line options
      */
+/*
     private void parseOptions(final String[] args) {
         if (args.length == 0)
             return;
@@ -204,33 +345,33 @@ public class Updater implements Runnable {
         int i = 0;
         for (; i < args.length; i++) {
             final String arg = args[i];
-            if (isOption(arg, "-help", "-h")) {
+            if (isOption(arg, "--help", "-h")) {
                 options.put("help", null);
                 return;
             }
-            if (isOption(arg, "-version", null)) {
+            if (isOption(arg, "--version", null)) {
                 options.put("version", null);
                 return;
             }
-            if (isOption(arg, "-full", null))
+            if (isOption(arg, "--full", null))
                 options.put("full", null);
-            else if (isOption(arg, "-verbose", "-v"))
+            else if (isOption(arg, "--verbose", "-v"))
                 options.put("verbose", null);
-            else if (isOption(arg, "-NO_FLASH", "-f0"))
+            else if (isOption(arg, "--NO_FLASH", "-f0"))
                 options.put("NO_FLASH", null);
-            else if (isOption(arg, "-localhost", null))
-                parseHost(args[++i], true, options);
-            else if (isOption(arg, "-localport", null))
+            else if (isOption(arg, "--localhost", null))
+                Utils.parseHost(args[++i], true, options);
+            else if (isOption(arg, "--localport", null))
                 options.put("localport", Integer.decode(args[++i]));
-            else if (isOption(arg, "-port", "-p"))
+            else if (isOption(arg, "--port", "-p"))
                 options.put("port", Integer.decode(args[++i]));
-            else if (isOption(arg, "-nat", "-n"))
+            else if (isOption(arg, "--nat", "-n"))
                 options.put("nat", null);
-            else if (isOption(arg, "-routing", null))
+            else if (isOption(arg, "--routing", null))
                 options.put("routing", null);
-            else if (isOption(arg, "-serial", "-s"))
+            else if (isOption(arg, "--serial", "-s"))
                 options.put("serial", null);
-            else if (isOption(arg, "-medium", "-m"))
+            else if (isOption(arg, "--medium", "-m"))
                 options.put("medium", getMedium(args[++i]));
             else if (options.containsKey("serial")
                     && options.get("serial") == null)
@@ -238,42 +379,40 @@ public class Updater implements Runnable {
                 // option
                 options.put("serial", arg);
             else if (!options.containsKey("host"))
-                // otherwise add a host key with argument as host
-                parseHost(arg, false, options);
-            else if (isOption(arg, "-progDevice", "-D")) {
+                // otherwise, add a host key with argument as host
+                Utils.parseHost(arg, false, options);
+            else if (isOption(arg, "--progDevice", "-D")) {
                 try {
                     options.put("progDevice", new IndividualAddress(args[++i]));
                 } catch (final KNXFormatException e) {
-                    throw new KNXIllegalArgumentException("KNX device "
-                            + e.toString(), e);
+                    throw new KNXIllegalArgumentException("KNX progDevice " + e, e);
                 }
-            } else if (isOption(arg, "-device", "-d")) {
+            } else if (isOption(arg, "--device", "-d")) {
                 try {
                     options.put("device", new IndividualAddress(args[++i]));
                 } catch (final KNXFormatException e) {
-                    throw new KNXIllegalArgumentException("KNX device "
-                            + e.toString(), e);
+                    throw new KNXIllegalArgumentException("KNX device " + e, e);
                 }
-            } else if (isOption(arg, "-appVersionPtr", ""))
+            } else if (isOption(arg, "--appVersionPtr", ""))
                 options.put("appVersionPtr", Integer.decode(args[++i]));
-            else if (isOption(arg, "-fileName", "-f"))
+            else if (isOption(arg, "--fileName", "-f"))
                 options.put("fileName", args[++i]);
-            else if (isOption(arg, "-uid", "-u")) {
+            else if (isOption(arg, "--uid", "-u")) {
                 String str = args[++i];
                 String[] tokens = str.split(":");
 
                 if (tokens.length == UID_LENGTH_USED) {
-                    byte uid[] = new byte[tokens.length];
+                    byte[] uid = new byte[tokens.length];
                     for (int n = 0; n < tokens.length; n++) {
                         uid[n] = (byte) Integer.parseUnsignedInt(tokens[n], 16);
                     }
                     options.put("uid", uid);
                 }
                 else {
-                    LOGGER.warn("ignoring -uid {}, wrong size {}, expected {}", str, tokens.length, UID_LENGTH_USED);
+                    LOGGER.warn("ignoring --uid {}, wrong size {}, expected {}", str, tokens.length, UID_LENGTH_USED);
                 }
             }
-            else if (isOption(arg, "-delay", null))
+            else if (isOption(arg, "--delay", null))
                     options.put("delay", Integer.decode(args[++i]));
             else
                 throw new KNXIllegalArgumentException("unknown option " + arg);
@@ -282,7 +421,7 @@ public class Updater implements Runnable {
             throw new KNXIllegalArgumentException(
                     "specify either IP host or serial port");
     }
-
+*/
     private static InetSocketAddress createLocalSocket(final InetAddress host,
                                                        final Integer port) {
         final int p = port != null ? port.intValue() : 0;
@@ -296,21 +435,6 @@ public class Updater implements Runnable {
         }
     }
 
-    private static void parseHost(final String host, final boolean local,
-                                  final Map<String, Object> options) {
-        try {
-            if (local) {
-                options.put("localhost", InetAddress.getByName(host));
-            }
-            else {
-                options.put("host", InetAddress.getByName(host));
-            }
-        } catch (final UnknownHostException e) {
-            throw new KNXIllegalArgumentException(
-                    "failed to read host " + host, e);
-        }
-    }
-
     private static KNXMediumSettings getMedium(final String id) {
         // for now, the local device address is always left 0 in the
         // created medium setting, since there is no user cmd line option for
@@ -320,7 +444,6 @@ public class Updater implements Runnable {
         //	return TPSettings.TP0;
         if (id.equals("tp1"))
             return new TPSettings();
-            //return TPSettings.TP1;
             //else if (id.equals("p110"))
             //	return new PLSettings(false);
             //else if (id.equals("p132"))
@@ -330,66 +453,14 @@ public class Updater implements Runnable {
         else
             throw new KNXIllegalArgumentException("unknown medium");
     }
-
+/*
     private static boolean isOption(final String arg, final String longOpt,
                                     final String shortOpt) {
-        return arg.equals(longOpt) || shortOpt != null && arg.equals(shortOpt);
+        return arg.equals(longOpt) || arg.equals(shortOpt);
     }
-
-    private static void showUsage() {
-        final StringBuffer sb = new StringBuffer();
-        sb.append(tool).append(sep).append(sep);
-        sb.append("usage: SB_updater.jar")
-                .append(" [options] <KNX Interface> -fileName <filename.hex> -device <KNX device address>")
-                .append(sep).append(sep);
-        sb.append("options:").append(sep);
-        sb.append(" -help -h                 show this help message")
-                .append(sep);
-        sb.append(" -fileName                Filename of hex file to program")
-                .append(sep);
-        sb.append(" -version                 show tool/library version and exit")
-                .append(sep);
-        sb.append(" -verbose -v              enable verbose status output")
-                .append(sep);
-        sb.append(" -localhost <id>          local IP/host name").append(sep);
-        sb.append(
-                " -localport <number>      local UDP port (default system assigned)")
-                .append(sep);
-        sb.append(" -port -p <number>        UDP port on <host> (default ")
-                .append(KNXnetIPConnection.DEFAULT_PORT).append(")")
-                .append(sep);
-        // sb.append(" -host <id>              remote IP/host name").append(sep);
-        sb.append(" -nat -n                  enable Network Address Translation")
-                .append(sep);
-        sb.append(" -serial -s               use FT1.2 serial communication")
-                .append(sep);
-        sb.append(" -routing                 use KNXnet/IP routing").append(sep);
-        sb.append(
-                " -medium -m <id>          KNX medium [tp0|tp1|p110|p132|rf] "
-                        + "(default tp1)").append(sep);
-        sb.append(
-                " -progDevice              KNX device address of bootloader (default 15.15.192)")
-                .append(sep);
-        sb.append(
-                " -device <knxid>          KNX device address in normal operating mode (default none)")
-                .append(sep);
-        sb.append(" -appVersionPtr <hex/dev> pointer to APP_VERSION string in new firmware file")
-                .append(sep);
-        sb.append(
-                " -uid <hex>               send UID to unlock (default: request UID to unlock)")
-                .append(sep);
-        sb.append(String.format("                          only the first %d bytes of UID are used", UID_LENGTH_USED))
-                .append(sep);
-        sb.append(" -full                    force full upload mode (disable diff)")
-                .append(sep);
-        sb.append(" -delay                   delay telegrams during data transmission to reduce bus load (valid 0-500)")
-        		.append(sep);
-        sb.append(" -NO_FLASH                for debugging use only, disable flashing firmware!")
-                .append(sep);
-        LOGGER.info(sb.toString());
-    }
-
+*/
     private static void showVersion() {
+        LOGGER.info(tool);
         LOGGER.info(Settings.getLibraryHeader(false));
     }
 
@@ -410,25 +481,23 @@ public class Updater implements Runnable {
         }
     }
 
-    public static final int FLASH_SECTOR_SIZE = 4096; //!< Selfbus ARM controller flash sector size
-    public static final int FLASH_PAGE_SIZE = 256;    //!< Selfbus ARM controller flash page size
-    private static final int MAX_PAYLOAD = 11;        //!< maximum payload one APCI_MEMORY_READ_PDU/APCI_MEMORY_WRITE_PDU can handle
-    private static final int UID_LENGTH_USED = 12;    //!< uid/guid length of the mcu used for unlocking/flashing
+    private static final int FLASH_SECTOR_SIZE = 4096; //!< Selfbus ARM controller flash sector size
+    private static final int FLASH_PAGE_SIZE = 256;    //!< Selfbus ARM controller flash page size
+    private static final int MAX_PAYLOAD = 11;         //!< maximum payload one APCI_MEMORY_READ_PDU/APCI_MEMORY_WRITE_PDU can handle
+    public static final int UID_LENGTH_USED = 12;     //!< uid/guid length of the mcu used for unlocking/flashing
+    private static final int UID_LENGTH_MAX = 16;      //!< uid/guid length of the mcu
+    public static final int DELAY_MIN = 0;            //!< minimum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
+    public static final int DELAY_MAX = 500;          //!< maximum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
+    public static final int DELAY_DEFAULT = 100;      //!< default delay between two UPDCommand.SEND_DATA telegrams in milliseconds
+    public static final int PHYS_ADDRESS_BOOTLOADER_AREA = 15;    //!< area part of the physical address the bootloader is using
+    public static final int PHYS_ADDRESS_BOOTLOADER_LINE = 15;    //!< line part of the physical address the bootloader is using
+    public static final int PHYS_ADDRESS_BOOTLOADER_DEVICE = 192; //!< device part of the physical address the bootloader is using
 
-    int streamToInteger(byte[] stream, int offset) {
-        //TODO this doesn't work for UDP_NOT_IMPLEMENTED
-        // with stream[0]=0xFF and stream[1]=0xFF return is -1 but should be 0xFFFF
-        // byte is signed in java -127...128, so that's our problem...
-        return (stream[offset + 3] << 24) | (stream[offset + 2] << 16)
-                | (stream[offset + 1] << 8) | stream[offset + 0];
-    }
+    private static final int VECTOR_TABLE_END = 0xD0;  //!> vector table end of the mcu
+    private static final int BL_ID_STRING_LENGTH = 12; //!> length of bootloader identity string
+    private static final byte[] APP_VER_PTR_MAGIC = {'!','A','V','P','!','@',':'};	//!> App Pointer follows this MAGIC word
 
-    void integerToStream(byte[] stream, int offset, long val) {
-        stream[offset + 3] = (byte) (val >> 24);
-        stream[offset + 2] = (byte) (val >> 16);
-        stream[offset + 1] = (byte) (val >> 8);
-        stream[offset + 0] = (byte) (val);
-    }
+    private static final String PROGRESS_MARKER = "."; //!< symbol to print progress to console
 
     int checkResult(byte[] result) {
         return checkResult(result, true);
@@ -436,78 +505,24 @@ public class Updater implements Runnable {
 
     int checkResult(byte[] result, boolean verbose) {
         if (result[3] != UPDCommand.SEND_LAST_ERROR.id) {
+            LOGGER.error("checkResult called on other than UPDCommand.SEND_LAST_ERROR.id=0x{}, result[3]=0x{}",
+                         String.format("%04X", UPDCommand.SEND_LAST_ERROR.id),
+                         String.format("%04X", result[3]));
             return 0;
         }
 
-        int resultCode = streamToInteger(result, 4);
+        int resultCode = Utils.streamToInteger(result, 4);
         UDPResult udpResult = UDPResult.valueOfIndex(resultCode);
-        String msgResult;
-        Boolean isError = true;
-        final String PROGRESS_DOT = ".";
-        switch (udpResult) {
-            case UID_MISMATCH:
-                msgResult = "failed, UID mismatch.";
-                break;
-            case SECTOR_NOT_ALLOWED_TO_ERASE:
-                msgResult = "Sector not allowed being erased.";
-                break;
-            case RAM_BUFFER_OVERFLOW:
-                msgResult = "RAM Buffer Overflow";
-                break;
-            case CRC_ERROR:
-                msgResult = "CRC error, try option -full for a clean and full flash";
-                break;
-            case ADDRESS_NOT_ALLOWED_TO_FLASH:
-                msgResult = "Address not allowed to flash";
-                break;
-            case DEVICE_LOCKED:
-                msgResult = "Device locked. Programming mode on device must be active!";
-                break;
-            case APPLICATION_NOT_STARTABLE:
-                msgResult = "Application not startable";
-                break;
-            case WRONG_DESCRIPTOR_BLOCK:
-                msgResult = "Boot Descriptor block wrong";
-                break;
-            case ERASE_FAILED:
-                msgResult = "Flash page erase failed";
-                break;
-            case FLASH_ERROR:
-                msgResult = "Flash page could not be programmed";
-                break;
-            case PAGE_NOT_ALLOWED_TO_ERASE:
-                msgResult = "Flash page not allowed to erase";
-                break;
-            case NOT_IMPLEMENTED:
-                msgResult = "Command not implemented";
-                break;
-            case UNKNOWN_COMMAND:
-                msgResult = "Command unknown";
-                break;
-            case OK:
-                isError = false;
-                if (verbose) {
-                    msgResult = "done (" + resultCode + ")";
-                } else {
-                    msgResult = PROGRESS_DOT;
-                }
-                break;
-            default:
-                msgResult = "unknown error (" + resultCode + ").";
-        }
 
-        if (isError == true) {
-            System.out.println(ConColors.BRIGHT_RED + msgResult + ConColors.RESET); // Print errors in red
-            LOGGER.error(msgResult);
-        }
-        else
-        {
-            System.out.print(ConColors.BRIGHT_GREEN + msgResult + ConColors.RESET); // Success in green
-            if (msgResult != PROGRESS_DOT)
-            {
-                System.out.println();
+        if (udpResult.isError()) {
+            LOGGER.error("{}{} resultCode=0x{}{}", ConColors.BRIGHT_RED, udpResult, String.format("%04X", resultCode), ConColors.RESET);
+        } else {
+            if (verbose) {
+                LOGGER.info("{}done ({}){}", ConColors.BRIGHT_GREEN, resultCode, ConColors.RESET);
+            } else {
+                System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, PROGRESS_MARKER, ConColors.RESET); // Success in green
+                LOGGER.debug(PROGRESS_MARKER);
             }
-            LOGGER.debug(msgResult);
         }
         return resultCode;
     }
@@ -518,24 +533,12 @@ public class Updater implements Runnable {
      * @see java.lang.Runnable#run()
      */
     public void run() {
-        //TODO ??? as with the other tools, maybe put this into the try block to
-        // also call onCompletion
-        AppDirs appDirs = AppDirsFactory.getInstance();
-        //Diese Angaben werden genutzt, um den Ordner für die Cache Files des DiffUpdaters abzulegen
-        //Unter Windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\[version]
-        String hexCacheDir = appDirs.getUserCacheDir("Selfbus-Updater", version, "Selfbus");
-
-        if (options.isEmpty()) {
-            LOGGER.info(tool);
-            showVersion();
-            LOGGER.info("type -help for help message");
+        //TODO maybe as with the other tools, put this into a try block to also call onCompletion
+         if (cliOptions.help()) {
+             LOGGER.info(cliOptions.helpToString());
             return;
         }
-        if (options.containsKey("help")) {
-            showUsage();
-            return;
-        }
-        if (options.containsKey("version")) {
+        if (cliOptions.version()) {
             showVersion();
             return;
         }
@@ -545,133 +548,51 @@ public class Updater implements Runnable {
         KNXNetworkLink link = null;
 
         try {
-            UpdatableManagementClientImpl mc;
-            Destination pd;
-            String fName = "";
-            int appVersionAddr = 0;
-            IndividualAddress progDevice = new IndividualAddress(15, 15, 192);
-            IndividualAddress device = null;
-            byte uid[] = null;
-            byte result[] = null;
-            boolean DO_FLASH_WRITE = true;
-            int data_send_delay = 0;	// no delay
+            // hexCacheDir will be used as a cache directory for the cached *.hex files used by the differential update mode
+            // under windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\[version]
+            String hexCacheDir = AppDirsFactory.getInstance().getUserCacheDir("Selfbus-Updater", version, "Selfbus");
+            LOGGER.debug("hexCacheDir: {}", hexCacheDir);
 
-            if (options.containsKey("fileName")) {
-                fName = (String) options.get("fileName");
+            UpdatableManagementClientImpl mc;
+            Destination progDest;
+            IndividualAddress progDevice = cliOptions.progDevice(); //!< phys. knx address of the device in bootloader mode
+            IndividualAddress device = cliOptions.device();         //!< phys. knx address of the device in normal operation
+
+            int appVersionAddress = cliOptions.appVersionPtr();
+            byte[] uid = cliOptions.uid();
+            byte[] result;
+
+            // check that the firmware file exists
+            if (!Utils.fileExists(cliOptions.fileName())) {
+                LOGGER.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
+                throw new UpdaterException("Selfbus update failed.");
             }
-            if (options.containsKey("appVersionPtr")) {
-                appVersionAddr = (int) options.get("appVersionPtr");
-            }
-            if (options.containsKey("progDevice")) {
-                progDevice = (IndividualAddress) options.get("progDevice");
-            }
-            if (options.containsKey("device")) {
-                device = (IndividualAddress) options.get("device");
-            }
-            if (options.containsKey("uid")) {
-                uid = (byte[]) options.get("uid");
-            }
-            if (options.containsKey("NO_FLASH")) {
-                DO_FLASH_WRITE = false;	// Disable flashing firmware, for debugging use only
-            }
-            if (options.containsKey("delay")) {
-            	data_send_delay = (int) options.get("delay");
-            	if ((data_send_delay <0) || (data_send_delay >500))
-            		data_send_delay = 100;	// set to 100ms in case of invalid waiting time
-            }
+
 
             link = createLink();
-            LOGGER.debug("Creating UpdatableManagementClient...");
+            LOGGER.debug("Creating UpdatableManagementClient");
             mc = new UpdatableManagementClientImpl(link);
+            mc.responseTimeout(Duration.ofSeconds(3));
 
-
+            //for option -device restart the device in bootloader mode
             if (device != null) {
-                Destination d;
-                d = mc.createDestination(device, true);
-                LOGGER.info("Attempting to restart device " + device.toString() + " in bootloader mode ...");
-                try {
-                    mc.restart(d, 0, 255);
-                } catch (final KNXException e) {
-
-                }
-
-                /*
-                try {
-                    //TODO this was a wrong attempt, resulting in a T_DISCONNECT_PDU for the progDevice
-                    mc = new UpdatableManagementClientImpl(link); //.restart will result in a timeout and exception
-                } catch(final KNXException e){
-                    System.out.println("Restarting device " + device.toString() + " failed");
-                    throw new RuntimeException("Selfbus update failed.");
-                }
-                 */
-                //Thread.sleep(1000);	// currently not needed because calimero currently times out waiting for an ACK
+                ///\todo this still leads to a T_DISCONNECT at requestUIDFromDevice below, not sure why
+                restartDeviceToBootloader(link, device);
             }
 
-            pd = mc.createDestination(progDevice, true);
+            progDest = mc.createDestination(progDevice, true, false, false);
 
             if (uid == null) {
-                LOGGER.info("Requesting UID from " + progDevice.toString() + " ... ");
-                result = mc.sendUpdateData(pd, UPDCommand.REQUEST_UID.id, new byte[0]);
-                checkResult(result, true);
-                if ((result.length >= UID_LENGTH_USED) && (result.length <= 16)){
-                    uid = new byte[UID_LENGTH_USED];
-                    // TODO this can be merged with the section below
-                    System.out.print("got: ");
-                    for (int i = 0; i < result.length - 4; i++) {
-                        uid[i] = result[i + 4];
-                        if (i != 0) {
-                            System.out.print(":");
-                        }
-                        System.out.print(String.format("%02X", uid[i] & 0xff));
-                    }
-                    System.out.println();
-                } else {
-                    System.out.println("Request UID failed");
-                    mc.restart(pd);
-                    throw new RuntimeException("Selfbus update failed.");
-                }
+                uid = requestUIDFromDevice(mc, progDest);
             }
 
-            String txt = "Unlocking device with UID ";
-            for (int i = 0; i < uid.length; i++) {
-                if (i != 0) {
-                    txt += ":";
-                }
-                txt += String.format("%02X", uid[i] & 0xff);
-            }
-            txt += " ...";
-            LOGGER.info(txt);
-
-            result = mc.sendUpdateData(pd, UPDCommand.UNLOCK_DEVICE.id, uid);
-            if (checkResult(result) != 0) {
-                mc.restart(pd);
-                throw new RuntimeException("Selfbus update failed.");
-            }
-
-            result = mc.sendUpdateData(pd, UPDCommand.REQUEST_BL_IDENTITY.id, new byte[] {0});
-            if (checkResult(result) != 0) {
-                mc.restart(pd);
-                throw new RuntimeException("Requesting Bootloader Identity failed!");
-            }
-            long BL_Identity = (result[4] & 0xFF) + ((result[5] & 0xFF) << 8) + ((result[6] & 0xFF) << 16) + ((long)(result[7] & 0xFF) << 24);
-            long BL_Features = (result[8] & 0xFF) + ((result[9] & 0xFF) << 8) + ((result[10] & 0xFF) << 16) + ((long)(result[11] & 0xFF) << 24);
-            long BL_Size = (result[12] & 0xFF) + ((result[13] & 0xFF) << 8) + ((result[14] & 0xFF) << 16) + ((long)(result[15] & 0xFF) << 24);
-            System.out.println("Device Bootloader Identity   : " + ConColors.BRIGHT_YELLOW + "0x" +  String.format("%04X", BL_Identity)
-                    + ", Features: 0x" + String.format("%04X", BL_Features) + ", Bootloader Size: 0x" + String.format("%04X", BL_Size) + ConColors.RESET);
-
-            System.out.print("\n\rRequesting App Version String ...");
-            result = mc.sendUpdateData(pd, UPDCommand.APP_VERSION_REQUEST.id, new byte[] {0});
-            if (checkResult(result) != 0) {
-                //mc.restart(pd);
-                System.out.println(ConColors.BRIGHT_RED + " failed!" + ConColors.RESET);
-            }
-            String app_version = new String(result,4,12);	// Convert 12 bytes to string starting from result[4]
-            System.out.println("\n  Current App Version String is: " + ConColors.BRIGHT_GREEN + app_version + ConColors.RESET + "\n");
-
+            unlockDeviceWithUID(mc, progDest, uid);
+            BootLoaderIdentity bootLoaderIdentity = requestBootLoaderIdentity(mc, progDest);
+            String appVersion = requestAppVersionString(mc, progDest);
 
             // Load Firmware file
-            System.out.println("Loading new firmware file ...");
-            FileInputStream hexFis = new FileInputStream(fName);
+            LOGGER.info("Loading new firmware file '{}'", cliOptions.fileName());
+            FileInputStream hexFis = new FileInputStream(cliOptions.fileName());
 
             // init parser
             Parser parser = new Parser(hexFis);
@@ -693,37 +614,33 @@ public class Updater implements Runnable {
             int totalLength = binData.length;
             long endAddress = startAddress + totalLength; //TODO -1 is missing?
             ByteArrayInputStream fis = new ByteArrayInputStream(binData);
-            System.out.println("  Hex file parsed: start at 0x" + String.format("%04X", startAddress) + " end at 0x"
-                    + String.format("%04X", endAddress) + ", length " + totalLength + " bytes");
+            LOGGER.info("  Hex file parsed: start at 0x{} end at 0x{}, length {} bytes",
+                    String.format("%04X", startAddress), String.format("%04X", endAddress),totalLength + "");
 
             // Handle App Version Pointer
-            if (appVersionAddr > 0xD0 && appVersionAddr < binData.length) {  // manually provided and not in vector or outside file length
+            if (appVersionAddress > VECTOR_TABLE_END && appVersionAddress < binData.length) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
-                String file_version = new String(binData,appVersionAddr,12);	// Get app version pointers content
-                System.out.println("  File App Version String is : " + ConColors.BRIGHT_RED + file_version + ConColors.RESET +
-                        " manually specified at address 0x" + String.format("%08X", appVersionAddr));
+                String file_version = new String(binData, appVersionAddress, BL_ID_STRING_LENGTH);	// Get app version pointers content
+                LOGGER.info("  File App Version String is : {}{}{} manually specified at address 0x{}",
+                        ConColors.BRIGHT_RED, file_version, ConColors.RESET, Integer.toHexString(appVersionAddress));
             }
-
-            // Search for AppVersion pointer in flash file if not set manually
             else {
-                byte[] APP_VER_PTR_MAGIC = {'!','A','V','P','!','@',':'};	// App Pointer follows this MAGIC
-                String file_version = ("Sadly EMPTY!");
+                // Search for AppVersion pointer in flash file if not set manually
                 // Search magic in image file
-                appVersionAddr = Bytes.indexOf(binData, APP_VER_PTR_MAGIC) + APP_VER_PTR_MAGIC.length;
-                if (appVersionAddr <= 0xD0 || appVersionAddr >= binData.length) {
-                    appVersionAddr = 0;		// missing, or not valid set to 0
-
-                    System.out.println(ConColors.BRIGHT_RED + "  Could not find the App Version string, setting to 0. "
-                            + "Please specify manually with -appVersionPtr!" + ConColors.RESET);
+                appVersionAddress = Bytes.indexOf(binData, APP_VER_PTR_MAGIC) + APP_VER_PTR_MAGIC.length;
+                if (appVersionAddress <= VECTOR_TABLE_END || appVersionAddress >= binData.length) {
+                    appVersionAddress = 0;		// missing, or not valid set to 0
+                    LOGGER.warn("  {}Could not find the App Version string, setting to 0. Please specify manually with -appVersionPtr!{}",
+                            ConColors.BRIGHT_RED, ConColors.RESET);
                 }
                 else {
-                    file_version = new String(binData,appVersionAddr,12);	// Convert app version pointers content to string
-
-                    System.out.println("  File App Version String is : " + ConColors.BRIGHT_GREEN + file_version + ConColors.RESET +
-                            " found at address 0x" + String.format("%08X", appVersionAddr));
+                    String fileVersion = new String(binData,appVersionAddress,BL_ID_STRING_LENGTH);	// Convert app version pointers content to string
+                    LOGGER.info("  File App Version String is : {}{}{} found at address 0x{}",
+                            ConColors.BRIGHT_GREEN, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
                 }
             }
 
+            ///\todo why we need this dump.bin, where is it used?
             try (FileOutputStream fos = new FileOutputStream("dump.bin")) {
                 fos.write(binData);
             }
@@ -733,102 +650,83 @@ public class Updater implements Runnable {
 
             // store bin file in cache
             File imageCacheFile = new File(hexCacheDir + File.separator + "image-" + Long.toHexString(startAddress) + "-" + totalLength + "-" + Long.toHexString(crc32File.getValue()) + ".bin" );
-            imageCacheFile.getParentFile().mkdirs();
+            if (!imageCacheFile.getParentFile().exists()) {
+                if (!imageCacheFile.getParentFile().mkdirs()) {
+                    LOGGER.warn("{}Could not create bin-file cache directory {}{}",
+                            ConColors.RED, imageCacheFile.getParentFile().toString(), ConColors.RESET);
+                }
+            }
             try (FileOutputStream fos = new FileOutputStream(imageCacheFile)) {
                 fos.write(binData);
             }
 
             // Check if FW image has correct offset for MCUs bootloader size
-            if(startAddress < BL_Size)
+            if(startAddress < bootLoaderIdentity.size())
             {
-                System.out.println(ConColors.BRIGHT_RED+"  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!");
-                System.out.println("  Firmware needs to start beyond 0x" + String.format("%04X", BL_Size) + ConColors.RESET);
-                throw new RuntimeException("Firmware offset not correct!");
+                LOGGER.error("{}  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                LOGGER.error("{}  Firmware needs to start beyond 0x{}{}", ConColors.BRIGHT_RED, String.format("%04X", bootLoaderIdentity.size()), ConColors.RESET);
+                throw new UpdaterException("Firmware offset not correct!");
             }
-            else if(startAddress == BL_Size)
+            else if (startAddress == bootLoaderIdentity.size())
             {
-                System.out.println(ConColors.BRIGHT_GREEN+"  Firmware starts directly beyond bootloader." + ConColors.RESET);
+                LOGGER.info("  {}Firmware starts directly beyond bootloader.{}", ConColors.BRIGHT_GREEN, ConColors.RESET);
             }
             else
             {
-                System.out.println(ConColors.BRIGHT_YELLOW+"  Info: There are " + Long.toString(startAddress-BL_Size) + " bytes of unused flash between bootloader and firmware." + ConColors.RESET);
+                LOGGER.info("  {}Info: There are {} bytes of unused flash between bootloader and firmware.{}",
+                            ConColors.BRIGHT_YELLOW, startAddress-bootLoaderIdentity.size(), ConColors.RESET);
             }
 
             // Request current main firmware boot descriptor from device
-            System.out.println("\nRequesting Boot Descriptor ...");
-            result = mc.sendUpdateData(pd, UPDCommand.REQUEST_BOOT_DESC.id, new byte[] {0});
-            if (checkResult(result) != 0) {
-                mc.restart(pd);
-                throw new RuntimeException("Boot descriptor request failed.");
-            }
-            long descrStartAddr = (result[4] & 0xFF) + ((result[5] & 0xFF) << 8) + ((result[6] & 0xFF) << 16) + ((long)(result[7] & 0xFF) << 24);
-            long descrEndAddr = (result[8] & 0xFF) + ((result[9] & 0xFF) << 8) + ((result[10] & 0xFF) << 16) + ((long)(result[11] & 0xFF) << 24);
-            long descrCrc = (result[12] & 0xFF) + ((result[13] & 0xFF) << 8) + ((result[14] & 0xFF) << 16) + ((long)(result[15] & 0xFF) << 24);
-            long descrLength = descrEndAddr - descrStartAddr;
-            System.out.println("  Current firmware: starts at 0x" +  String.format("%04X", descrStartAddr) + " ends at 0x" + String.format("%04X", descrEndAddr) + " CRC is 0x" + String.format("%08X", descrCrc));
+            BootDescriptor bootDescriptor = requestBootDescriptor(mc, progDest);
 
             // try to find old firmware file in cache
             boolean diffMode = false;
-            File oldImageCacheFile = new File(hexCacheDir + File.separator + "image-" + Long.toHexString(descrStartAddr) + "-" + descrLength + "-" + Long.toHexString(descrCrc) + ".bin" );
-            if (!(options.containsKey("full")) && oldImageCacheFile.exists()) {
+            File oldImageCacheFile = new File(hexCacheDir + File.separator + "image-" +
+                                                Long.toHexString(bootDescriptor.startAddress()) + "-" +
+                                                bootDescriptor.length() + "-" +
+                                                Integer.toHexString(bootDescriptor.crc32()) + ".bin" );
+            if (!(cliOptions.full()) && oldImageCacheFile.exists()) {
                 //TODO check that "Current App Version String" and "File App Version String" represent the same application,
                 //     if they are not the same app, we should switch top full flash mode
-                System.out.println("  Found current device firmware in cache " + oldImageCacheFile.getAbsolutePath() + ConColors.BRIGHT_GREEN +"\n\r  --> switching to diff upload mode" + ConColors.RESET);
+                LOGGER.info("  Found current device firmware in cache {}", oldImageCacheFile.getAbsolutePath());
+                LOGGER.info("  {}--> switching to diff upload mode{}", ConColors.BRIGHT_GREEN, ConColors.RESET);
                 diffMode = true;
             }
-/*
-            Boolean diffMode = false;
-            Long startAddress = 0x7000L;
-            int totalLength = 0x200;
-            eraseFlashPages(mc, pd, startAddress, totalLength);
-            LOGGER.error("finished");
-*/
+
             // Start to flash the new firmware
-            System.out.println("\n" + ConColors.BRIGHT_BG_BLUE + "Starting to send new firmware now: " + ConColors.RESET);
+            LOGGER.info("\n{}{}Starting to send new firmware now:{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
             if (diffMode) {
-                doDiffFlash(mc, pd, startAddress, binData, oldImageCacheFile);
-            } else if (DO_FLASH_WRITE){
-                doFullFlash(mc, pd, startAddress, totalLength, fis, data_send_delay);
-            } else {
-                eraseFlashPages(mc, pd, startAddress, totalLength);
+                doDiffFlash(mc, progDest, startAddress, binData, oldImageCacheFile);
+            } else if (!cliOptions.NO_FLASH()){ // Disable flashing firmware, for debugging use only
+                doFullFlash(mc, progDest, startAddress, totalLength, fis, cliOptions.delay());
             }
 
-            byte bootDescriptor[] = new byte[16];
-            appVersionAddr += startAddress;	//DONE why should we add here something?, yes we have to: Add FW offset to get absolute position in MCU
-            integerToStream(bootDescriptor, 0, startAddress);
-            integerToStream(bootDescriptor, 4, endAddress);
-            integerToStream(bootDescriptor, 8, (int) crc32File.getValue());
-            integerToStream(bootDescriptor, 12, appVersionAddr);
-            System.out
-                    .println("\n" + ConColors.BG_RED + "Preparing boot descriptor with start address 0x"
-                            + String.format("%04X", startAddress)
-                            + ", end address 0x"
-                            + String.format("%04X", endAddress)
-                            + ", CRC32 0x"
-                            + String.format("%08X", crc32File.getValue())
-                            + ", APP_VERSION pointer 0x"
-                            + String.format("%04X", appVersionAddr) + ConColors.RESET);
+            BootDescriptor newBootDescriptor = new BootDescriptor(startAddress, endAddress, (int) crc32File.getValue(), startAddress + appVersionAddress);
+            LOGGER.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
+            byte[] streamBootDescriptor = newBootDescriptor.toStream();
 
             int nDone = 0;
             boolean timeoutOccurred = false;
-            while (nDone < bootDescriptor.length) {
-                int txSize = 11;
-                int remainBytes = bootDescriptor.length - nDone;
-                if (remainBytes < 11) {
+            while (nDone < streamBootDescriptor.length) {
+                int txSize = MAX_PAYLOAD;
+                int remainBytes = streamBootDescriptor.length - nDone;
+                if (remainBytes < MAX_PAYLOAD) {
                     txSize = remainBytes;
                 }
-                byte txBuf[] = new byte[txSize + 1];
-                for (int i = 0; i < txSize; i++) {
-                    txBuf[i + 1] = bootDescriptor[nDone + i];
+                byte[] txBuf = new byte[txSize + 1];
+                if (txSize >= 0) {
+                    System.arraycopy(streamBootDescriptor, nDone, txBuf, 1, txSize);
                 }
+
                 // First Byte contains message number
                 txBuf[0] = (byte)nDone;
 
                 try {
-                    result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA.id, txBuf);
+                    result = mc.sendUpdateData(progDest, UPDCommand.SEND_DATA.id, txBuf);
                     if (checkResult(result, false) != 0) {
-                        mc.restart(pd);
-                        throw new RuntimeException("Selfbus update failed.");
+                        restartProgrammingDevice(mc, progDest);
+                        throw new UpdaterException("Selfbus update failed.");
                     }
                 }
                 catch(KNXTimeoutException e){
@@ -842,31 +740,29 @@ public class Updater implements Runnable {
             }
 
             CRC32 crc32Block = new CRC32();
-            crc32Block.update(bootDescriptor);
+            crc32Block.update(streamBootDescriptor);
+            int newCrc32 = (int)crc32Block.getValue();
 
-            byte programBootDescriptor[] = new byte[9];
-            integerToStream(programBootDescriptor, 0,
-                    (int) bootDescriptor.length);
-            integerToStream(programBootDescriptor, 4,
-                    (int) crc32Block.getValue());
-            System.out.print("Update boot descriptor with CRC32 0x"
-                    + String.format("%08X", crc32Block.getValue())
-                    + ", length "
-                    + Long.toString(bootDescriptor.length) + " ");
-            result = mc.sendUpdateData(pd, UPDCommand.UPDATE_BOOT_DESC.id,
-                    programBootDescriptor);
+            byte[] programBootDescriptor = new byte[9];
+            Utils.integerToStream(programBootDescriptor, 0, streamBootDescriptor.length);
+            Utils.integerToStream(programBootDescriptor, 4, newCrc32);
+            System.out.println();
+            LOGGER.info("Updating boot descriptor with CRC32 0x{}, length {}",
+                    Integer.toHexString(newCrc32), Long.toString(streamBootDescriptor.length));
+            result = mc.sendUpdateData(progDest, UPDCommand.UPDATE_BOOT_DESC.id, programBootDescriptor);
             if (checkResult(result) != 0) {
-                mc.restart(pd);
-                throw new RuntimeException("Selfbus update failed.");
+                restartProgrammingDevice(mc, progDest);
+                throw new UpdaterException("Selfbus update failed.");
             }
-            Thread.sleep(500);
-            System.out.println(ConColors.BG_GREEN + "Firmware Update done, Restarting device now ..." + ConColors.RESET + "\n\r\n\r");
-            //mc.restart(pd);
-            mc.sendUpdateData(pd, UPDCommand.RESET.id, new byte[] {0});  // Clean restart by application rather than lib
+            Thread.sleep(500); ///\todo check if this delay is really needed
+            LOGGER.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
+            result = mc.sendUpdateData(progDest, UPDCommand.RESET.id, new byte[] {0});  // Clean restart by application rather than lib
+            if (checkResult(result) != 0) {
+                restartProgrammingDevice(mc, progDest);
+                throw new UpdaterException("Selfbus update failed.");
+            }
 
-        } catch (final KNXException e) {
-            thrown = e;
-        } catch (final RuntimeException e) {
+        } catch (final KNXException | UpdaterException | RuntimeException e) {
             thrown = e;
         } catch (final InterruptedException e) {
             canceled = true;
@@ -887,7 +783,8 @@ public class Updater implements Runnable {
     
     
     // Differential update routine #######################
-    private void doDiffFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, byte[] binData, File oldBinFile) throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
+    private void doDiffFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, byte[] binData, File oldBinFile)
+            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
     	long flash_time_start = System.currentTimeMillis();
     	FlashDiff differ = new FlashDiff();
         BinImage img2 = BinImage.copyFromArray(binData, startAddress);
@@ -895,7 +792,8 @@ public class Updater implements Runnable {
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
             byte[] result;
             // process compressed page
-            System.out.print("Sending new firmware (" + (outputDiffStream.size() - 5) + " diff bytes) "); //TODO 5 bytes are added to size in FlashDiff.java / generateDiff(...), check why
+            //TODO check why 5 bytes are added to size in FlashDiff.java / generateDiff(...)
+            LOGGER.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size() - 5));
             byte[] buf = new byte[12];
             int i = 0;
             while (i < outputDiffStream.size()) {
@@ -908,41 +806,48 @@ public class Updater implements Runnable {
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
                 result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA_TO_DECOMPRESS.id, txBuf);
                 if (checkResult(result, false) != 0) {
-                    mc.restart(pd);
-                    throw new RuntimeException("Selfbus update failed.");
+                    restartProgrammingDevice(mc, pd);
+                    throw new UpdaterException("Selfbus update failed.");
                 }
             }
             // diff data of a single page transmitted
             // flash the page
             byte[] progPars = new byte[3 * 4];
-            integerToStream(progPars, 0, 0);
-            integerToStream(progPars, 4, 0);
-            integerToStream(progPars, 8, (int) crc32);
-            if (options.containsKey("verbose")) {
-                System.out.println();
-                System.out.print("Program device next page diff, CRC32 0x" + String.format("%08X", crc32) + " ... ");
-            }
+            Utils.integerToStream(progPars, 0, 0);
+            Utils.integerToStream(progPars, 4, 0);
+            Utils.integerToStream(progPars, 8, (int) crc32);
+            System.out.println();
+            LOGGER.info("Program device next page diff, CRC32 0x{}", String.format("%08X", crc32));
             result = mc.sendUpdateData(pd, UPDCommand.PROGRAM_DECOMPRESSED_DATA.id, progPars);
             if (checkResult(result) != 0) {
-                mc.restart(pd);
-                throw new RuntimeException(
-                        "Selfbus update failed.");
+                restartProgrammingDevice(mc, pd);
+                throw new UpdaterException("Selfbus update failed.");
             }
         });
+
         long flash_time_duration = System.currentTimeMillis() - flash_time_start;
-        System.out.printf("Diff-Update required %tM:%<tS.", flash_time_duration);
-        float bytesPerSecond = (float)((float)(differ.getTotalBytesTransferred())/(flash_time_duration/1000));
+        long total = differ.getTotalBytesTransferred();
+        float bytesPerSecond = (float)total/(flash_time_duration/1000f);
+        String col;
         if (bytesPerSecond >= 50.0) {
-            System.out.printf(ConColors.BRIGHT_GREEN + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+            col = ConColors.BRIGHT_GREEN;
         }
         else {
-            System.out.printf(ConColors.BRIGHT_RED + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+            col = ConColors.BRIGHT_RED;
         }
-
+        ///\todo find a better way to build the infoMsg, check possible logback functions
+        String infoMsg = String.format("Diff-Update: Wrote %s%d%s bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
+                ConColors.BRIGHT_GREEN, total, ConColors.RESET, flash_time_duration, col, bytesPerSecond, ConColors.RESET);
+/*
+        if (timeoutCount > 0) {
+            infoMsg += String.format(" Timeout(s): %d%s", ConColors.BG_RED, timeoutCount, ConColors.RESET);
+        }
+*/
+        LOGGER.info("{}", infoMsg);
     }
 
     private void eraseFlashPages(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength)
-            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
+            throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
         byte[] result;
 
         // Erasing flash on sector base (4k), one telegram per sector
@@ -951,53 +856,51 @@ public class Updater implements Runnable {
         byte[] sector = new byte[1];
         for (int i = 0; i < erasePages; i++) {
             sector[0] = (byte) (i + startPage);
-            LOGGER.info("Erase sector " + String.format("%2d", sector[0]) + " ...");
+            LOGGER.info("Erase sector {}...", String.format("%2d", sector[0]));
             result = mc.sendUpdateData(pd, UPDCommand.ERASE_SECTOR.id, sector);
             if (checkResult(result) != 0) {
-                mc.restart(pd);
-                throw new RuntimeException("Selfbus update failed.");
+                restartProgrammingDevice(mc, pd);
+                throw new UpdaterException("Selfbus update failed.");
             }
         }
     }
     
     // Normal update routine, sending complete image #######################
     // This works on sector page right now, so the complete affected flash is erased first
-    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis, int data_send_delay)
-            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
+    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis, int dataSendDelay)
+            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
         byte[] result;
 
         eraseFlashPages(mc, pd, startAddress, totalLength);
 
         byte[] buf = new byte[FLASH_PAGE_SIZE];	// Read one flash page
-        int nRead = 0;		                    // Bytes read from file into buffer
+        int nRead;		                    // Bytes read from file into buffer
         int payload = MAX_PAYLOAD;	            // maximum start payload size
         int total = 0;
         CRC32 crc32Block = new CRC32();
         int progSize = 0;	                   // Bytes send so far
         long progAddress = startAddress;
         boolean doProg = false;
-        boolean timeoutOccured = false;
+        boolean timeoutOccurred = false;
         int timeoutCount = 0;
         
-        if (data_send_delay != 0)
-        	System.out.printf("%nStart sending application data (%d bytes) with telegram delay of %dms%n", totalLength, data_send_delay);
-        else
-        	System.out.printf("%nStart sending application data (%d bytes)%n", totalLength);
+        LOGGER.info("\nStart sending application data ({} bytes) with telegram delay of {}ms", totalLength, dataSendDelay);
 
         // Get time when starting to transfer data
         long flash_time_start = System.currentTimeMillis();
         
         // Read up to size of buffer, 1 Page of 256Bytes from file
         while ((nRead = fis.read(buf)) != -1) {
-        	
-        	System.out.printf("Sending %d bytes: %3d%%%n", nRead, 100*(total+nRead)/totalLength);
-        	
+            LOGGER.info("Sending {} bytes: {}%", nRead, String.format("%3d", 100*(total+nRead)/totalLength));
+        	// System.out.printf("Sending %d bytes: %3d%%%n", nRead, 100*(total+nRead)/totalLength);
+
             int nDone = 0;
             // Bytes left to write
             while (nDone < nRead) {
 
             	// Calculate payload size for next telegram
             	// sufficient data left, use maximum payload size
+                LOGGER.debug("nDone {}, progSize {}, payLoad {}, nRead {}", nDone, progSize, payload, nRead);
             	if (progSize + payload < nRead)
 				{
 					payload = MAX_PAYLOAD;	// maximum payload size
@@ -1007,6 +910,7 @@ public class Updater implements Runnable {
 					payload = nRead - progSize;	// remaining bytes
 					doProg = true;
 				}
+                LOGGER.debug("progSize {}, payLoad {}, nRead {}, doProg {}", progSize, payload, nRead, doProg);
 
                 if (payload > MAX_PAYLOAD)
                 {
@@ -1016,10 +920,10 @@ public class Updater implements Runnable {
                     doProg = false;
                 }
 /*
-            	// Handle last telegram with <= 11 bytes
+            	// Handle last telegram with <= MAX_PAYLOAD bytes
                 if ((total + nRead) == totalLength)
                 {
-                    if (nRead <= MAX_PAYLOAD) { // Handle last telegram with less than 11 bytes
+                    if (nRead <= MAX_PAYLOAD) { // Handle last telegram with less than MAX_PAYLOAD bytes
                         payload = nRead;
                         doProg = true;
                     } else if ((payload + MAX_PAYLOAD) == ) {
@@ -1032,41 +936,39 @@ public class Updater implements Runnable {
                 	// Message length is payload +1 byte for position
                     byte[] txBuf = new byte[payload + 1];
 
-                    for (int i = 0; i < payload; i++) {
-                        txBuf[i + 1] = buf[i + nDone];	//Shift payload into send buffer
-                    }
+                    //Shift payload into send buffer
+                    System.arraycopy(buf, nDone, txBuf, 1, payload);
+
                     // First byte contains start address of following data
                     txBuf[0] = (byte)progSize;
 
-                    if (data_send_delay != 0)
-                    	Thread.sleep(data_send_delay);	//Reduce bus load during data upload, ohne 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
+                    if (dataSendDelay > 0)
+                    	Thread.sleep(dataSendDelay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
                     try{
                         result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA.id, txBuf);
 
                         if (checkResult(result, false) != 0) {
-                            mc.restart(pd);
-                            throw new RuntimeException(
-                                    "Selfbus update failed.");
+                            restartProgrammingDevice(mc, pd);
+                            throw new UpdaterException("Selfbus update failed.");
                         }
                     }
-                    // wenn eine Timeout Exception gesendet wird, ist ein Fehler bei der Datenübertragung vorgekommen
-                    // daher werden die letzten Daten noch einmal neu gesendet
-                    catch(KNXTimeoutException e){
-                        timeoutOccured = true;
-                        timeoutCount++;
+                        // mc.sendUpdateData timed out, we need to resend the last sent data
+                        catch(KNXTimeoutException e){
+                            timeoutOccurred = true;
+                            timeoutCount++;
                     }
 
-                    if(!timeoutOccured) { // wenn kein Timeout Fehler vorgekommen ist, soll die Abarbeitung fortgesetzt werden
+                    if(!timeoutOccurred) {
                         // Update CRC, skip byte 0 which is not part of payload
                     	crc32Block.update(txBuf, 1, payload);
                         nDone += payload;		// keep track of buffer bytes send (to determine end of while-loop)
                         progSize += payload;	// keep track of page/sector bytes send
                         total += payload;		// keep track of total bytes send from file
-                    }else{ // wenn ein Timeout passiert ist, muss der Merker wieder zurückgesetzt werden
-                        LOGGER.warn("Timeout");
-                        System.out.print(ConColors.BRIGHT_RED + "x" );
-                        System.out.print(ConColors.RESET);
-                        timeoutOccured = false;
+                    }
+                    else { // in case of a Timeout, reset the marker timeoutOccurred
+                        LOGGER.warn("{}Timeout{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                        // System.out.print(ConColors.BRIGHT_RED + "x" + ConColors.RESET);
+                        timeoutOccurred = false;
                     }
                 }
 
@@ -1074,19 +976,16 @@ public class Updater implements Runnable {
                     doProg = false;
                     byte[] progPars = new byte[3 * 4];
                     long crc = crc32Block.getValue();
-                    integerToStream(progPars, 0, progSize);
-                    integerToStream(progPars, 4, progAddress);
-                    integerToStream(progPars, 8, (int) crc);
+                    Utils.integerToStream(progPars, 0, progSize);
+                    Utils.integerToStream(progPars, 4, progAddress);
+                    Utils.integerToStream(progPars, 8, (int) crc);
                     System.out.println();
-                    String txt = String.format("Program device at flash address 0x%04X with %3d bytes and CRC32 0x%08X ... ",
-                                                progAddress, progSize, crc);
-                    LOGGER.info(txt);
-                    result = mc.sendUpdateData(pd, UPDCommand.PROGRAM.id,
-                            progPars);
+                    LOGGER.info("Program device at flash address 0x{} with {} bytes and CRC32 0x{}...",
+                            String.format("%04X", progAddress), String.format("%3d", progSize), String.format("%08X", crc));
+                    result = mc.sendUpdateData(pd, UPDCommand.PROGRAM.id, progPars);
                     if (checkResult(result) != 0) {
-                        mc.restart(pd);
-                        throw new RuntimeException(
-                                "Selfbus update failed.");
+                        restartProgrammingDevice(mc, pd);
+                        throw new UpdaterException("Selfbus update failed.");
                     }
                     progAddress += progSize;
                     progSize = 0;	// reset page/sector byte counter
@@ -1094,20 +993,24 @@ public class Updater implements Runnable {
                 }
             }
         }
-        long flash_time_duration = System.currentTimeMillis() - flash_time_start;
         fis.close();
-        System.out.printf("Wrote %d bytes from file to device in %tM:%<tS.", total, flash_time_duration);
-        float bytesPerSecond = (float)((float)(total)/(flash_time_duration/1000));
+
+        long flash_time_duration = System.currentTimeMillis() - flash_time_start;
+        float bytesPerSecond = (float)total/(flash_time_duration/1000f);
+        String col;
         if (bytesPerSecond >= 50.0) {
-            System.out.printf(ConColors.BRIGHT_GREEN + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+            col = ConColors.BRIGHT_GREEN;
         }
         else {
-            System.out.printf(ConColors.BRIGHT_RED + " (%.2f B/s)" + ConColors.RESET, bytesPerSecond);
+            col = ConColors.BRIGHT_RED;
         }
+        ///\todo find a better way to build the infoMsg, check possible logback functions
+        String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
+                total, flash_time_duration, col, bytesPerSecond, ConColors.RESET);
 
         if (timeoutCount > 0) {
-            System.out.printf(ConColors.BG_RED + "Timeout(s): %d" + ConColors.RESET, timeoutCount);
+            infoMsg += String.format(" %sTimeout(s): %d%s", ConColors.BG_RED, timeoutCount, ConColors.RESET);
         }
-        //Thread.sleep(100);	//TODO, can be removed
+        LOGGER.info("{}", infoMsg);
     }
 }

@@ -5,13 +5,17 @@ import java.util.List;
 import java.util.zip.CRC32;
 
 import org.hkfree.knxduino.updater.ConColors;
+import org.hkfree.knxduino.updater.UpdaterException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 
 public class FlashDiff {
+    private final static Logger logger = LoggerFactory.getLogger(FlashDiff.class.getName());
     private static final int MINIMUM_PATTERN_LENGTH = 6; // less that this is not efficient (metadata would be larger than data)
     private static final int MAX_COPY_LENGTH = 2048-1; // 2^12 = 8 bits + 6 bits (remaining in CMD byte). Needs to match flash PAGE_SIZE?
     private static final int MAX_LENGTH_SHORT = 64-1;    // 2^6 = 6 bits (remaining in CMD byte)
@@ -50,7 +54,7 @@ public class FlashDiff {
         }
     }
 
-    public SearchResult letLongestCommonBytes(byte[] ar1, byte ar2[], int patternOffset, int oldDataMinimumAddr, int maxLength) {
+    public SearchResult letLongestCommonBytes(byte[] ar1, byte[] ar2, int patternOffset, int oldDataMinimumAddr, int maxLength) {
         // search as long as possible ar2[beginOffset..n] bytes (pattern) common with ar1[s..t], where n and t are up to length-1 of appropriate arrays and s is unknown
         int logestCandidateSrcOffset = 0;
         int logestCandidateLength = 0;
@@ -76,11 +80,11 @@ public class FlashDiff {
                 // truncate to a single destination page
                 logestCandidateLength = (firstDstPage + 1) * FlashPage.PAGE_SIZE - patternOffset;
             }
-//            if (logestCandidateLength >= MINIMUM_PATTERN_LENGTH) {
-//                System.out.println(ar1[logestCandidateSrcOffset] & 0xff);
-//                System.out.println(ar1[logestCandidateSrcOffset + 1] & 0xff);
-//                System.out.println(ar1[logestCandidateSrcOffset + 2] & 0xff);
-//            }
+            if (logestCandidateLength >= MINIMUM_PATTERN_LENGTH) {
+                logger.trace("{}", ar1[logestCandidateSrcOffset] & 0xff);
+                logger.trace("{}", ar1[logestCandidateSrcOffset + 1] & 0xff);
+                logger.trace("{}", ar1[logestCandidateSrcOffset + 2] & 0xff);
+            }
             return new SearchResult(logestCandidateSrcOffset, logestCandidateLength);
         } else {
             return new SearchResult(0, 0);
@@ -121,7 +125,8 @@ public class FlashDiff {
         return totalBytesTransferred;
     }
 
-    public void generateDiff(BinImage img1Orig, BinImage img2, FlashProgrammer flashProgrammer) throws InterruptedException, KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException {
+    public void generateDiff(BinImage img1Orig, BinImage img2, FlashProgrammer flashProgrammer)
+            throws InterruptedException, KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, UpdaterException {
         // TODO check if old image can be truncated for smaller new image, first test was fine
     	//BinImage img1 = new BinImage(img1Orig); // make copy to keep img1Orig untouched, this fails if arraycopy at 203, when new image is larger than old
         BinImage img1 = new BinImage(img1Orig,img2.getBinData().length); // make copy to keep img1Orig untouched, ensure old bin buffer is same size as new bin file
@@ -146,7 +151,7 @@ public class FlashDiff {
             SearchResult bestResult = (rForwardOldFlash.length > rBackwardRamWindow.length) ? rForwardOldFlash : rBackwardRamWindow;
             if (bestResult.length >= MINIMUM_PATTERN_LENGTH) {
                 size += possiblyFinishRawBuffer(rawBuffer, outputDiffStream);
-                //System.out.println(String.format("%08x ", i) + bestResult);
+                logger.trace("{} bestResult={}", String.format("%08x ", i), bestResult);
                 i += bestResult.length;
                 size += 5;
                 byte cmdByte = (byte)CMD_COPY;
@@ -161,7 +166,7 @@ public class FlashDiff {
                     outputDiffStream.add(cmdByte);
                     outputDiffStream.add(lengthLowByte);
                 }
-                // 3 bytes are enough to address ROM or RAM buffer, highest bit indicates ROM or RAM source
+                // 3 bytes are enough to address ROM or RAM buffer, the highest bit indicates ROM or RAM source
                 byte addr1 = (byte)(bestResult.offset & 0xff);  // low byte
                 byte addr2 = (byte)((bestResult.offset >> 8) & 0xff);  // middle byte
                 byte addr3 = (byte)((bestResult.offset >> 16) & 0xff);  // high byte
@@ -185,7 +190,8 @@ public class FlashDiff {
                 debug("\n");
             }
             else {
-                //System.out.println(String.format("%08x RAW: %02x", i, img2.getBinData()[i]));
+                logger.trace("{} RAW: {}", String.format("%08x", i), String.format("%02x", img2.getBinData()[i]));
+
                 debug("@ b=%02X i=%d raw", (img2.getBinData()[i] & 0xff), i);
                 rawBuffer.add(img2.getBinData()[i]);
                 i++;
@@ -234,7 +240,7 @@ public class FlashDiff {
             System.out.print("Page " + pages + ", ");
             flashProgrammer.sendCompressedPage(outputDiffStream, crc32Block.getValue());
             totalBytesTransferred = size;
-            System.out.println("OK! Total diff stream length = " + ConColors.BRIGHT_GREEN + size + " bytes" + ConColors.RESET);
+            logger.debug("OK! Total diff stream length={}{}{} bytes", ConColors.BRIGHT_GREEN, size, ConColors.RESET);
         }
         //dumpSideBySide(img1, img2);
     }

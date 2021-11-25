@@ -39,10 +39,13 @@ public class FlashDiffTests {
     @Test
     public void testDiff() {
         // test of upgrade from old version to newer (longer)
-        URL url1 = Thread.currentThread().getContextClassLoader().getResource("knxduino.ino.slto.v1.hex");
-        URL url2 = Thread.currentThread().getContextClassLoader().getResource("knxduino.ino.slto.v2.hex");
-        BinImage img1 = BinImage.readFromHex(url1.getPath());
-        BinImage img2 = BinImage.readFromHex(url2.getPath());
+        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+        URL url1 = contextClassLoader.getResource("knxduino.ino.slto.v1.hex");
+        URL url2 = contextClassLoader.getResource("knxduino.ino.slto.v2.hex");
+        String file1 = url1.getPath();
+        String file2 = url2.getPath();
+        BinImage img1 = BinImage.readFromHex(file1);
+        BinImage img2 = BinImage.readFromHex(file2);
         performTest(img1, img2);
     }
 
