@@ -38,8 +38,8 @@
 #   define SERIAL_TX_PIN PIO2_8 //!< on a 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
 #endif
 
-//#define SERIAL_SPEED 115200 //!< baudrate serial from serial.h should run for debugging
-//#define INCLUDE_SERIAL      //!< library should open serial for us
+// #define SERIAL_SPEED 115200 //!< baudrate e.g. 115200, 230400, 576000 serial port should run for debugging
+// #define INCLUDE_SERIAL      //!< library should open serial for us
 
 // #define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
 
