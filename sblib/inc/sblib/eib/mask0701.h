@@ -36,6 +36,9 @@ public:
     virtual const char* getBcuType() const { return "BIM112"; }
     virtual const unsigned short getMaskVersion() const { return 0x701; }
 
+    virtual bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
+    virtual bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
+
     /** Start address of the user RAM when ETS talks with us. */
     const int userRamStartDefault = 0x5FC;
 
