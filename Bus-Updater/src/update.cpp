@@ -19,7 +19,6 @@
  -----------------------------------------------------------------------------*/
 
 #include <string.h>
-#include <sblib/eib.h>
 #include <sblib/eib/bus.h>
 #include <sblib/eib/apci.h>
 #include <sblib/timeout.h>
@@ -594,9 +593,8 @@ static unsigned char updSendData(BcuUpdate bcu, bool * sendTel, unsigned char * 
     bytesReceived += nCount;
 
     memcpy((void *) &ramBuffer[ramLocation], data + 4, nCount); //ab dem 4. Byte sind die Daten verfügbar
-==== BASE ====
     lastError = IAP_SUCCESS;
-    setLastError((UDP_State)IAP_SUCCESS, sendTel);
+    setLastError(bcu, (UDP_State)IAP_SUCCESS, sendTel);
     for(unsigned int i=0; i<nCount; i++)
     {
         d2(data[i+4],HEX,2);
@@ -618,7 +616,7 @@ static unsigned char updSendData(BcuUpdate bcu, bool * sendTel, unsigned char * 
  * @note          device must be unlocked
  * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updProgramFlash(BcuUpdate bcu, bool * sendTel, unsigned char * data)
+static unsigned char updProgram(BcuUpdate bcu, bool * sendTel, unsigned char * data)
 {
     unsigned int crcRamBuffer;
     unsigned int flash_count = streamToUIn32(data + 3);
@@ -893,13 +891,13 @@ static unsigned char updUpdateBootDescriptorBlock(BcuUpdate bcu, bool * sendTel,
         else if (result == UDP_ADDRESS_NOT_ALLOWED_TO_FLASH)
         {
             d3(serial.println(" -->executeProgramFlash: UDP_ADDRESS_NOT_ALLOWED_TO_FLASH"));
-            setLastError(UDP_ADDRESS_NOT_ALLOWED_TO_FLASH, sendTel);
+            setLastError(bcu, UDP_ADDRESS_NOT_ALLOWED_TO_FLASH, sendTel);
             return (T_ACK_PDU);
         }
         else
         {
             d3(serial.println(" -->executeProgramFlash: ", result, DEC, 2));
-            setLastError((UDP_State)result, sendTel);
+            setLastError(bcu, (UDP_State)result, sendTel);
         }
     }
     // dumpFlashContent((AppDescriptionBlock *) ramBuffer);
@@ -1074,7 +1072,7 @@ unsigned char handleMemoryRequests(BcuBase* bcuBase, int apciCmd, bool * sendTel
             return (updSendData(bcu, sendTel, data, count));
 
         case UPD_PROGRAM:
-            return (updProgram(sendTel, data));
+            return (updProgram(bcu, sendTel, data));
 
         case UPD_SEND_DATA_TO_DECOMPRESS:
             return (updSendDataToDecompress(bcu, sendTel, data, count));

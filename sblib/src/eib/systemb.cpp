@@ -23,6 +23,14 @@
 #include <sblib/eib/propertiesSYSTEMB.h>
 #include <sblib/eib/bus.h>
 
+// Enable informational debug statements
+#if defined(INCLUDE_SERIAL)
+#   include <sblib/serial.h>
+#   define DB(x) x
+#else
+#   define DB(x)
+#endif
+
 void SYSTEMB::processDirectTelegram(int apci)
 {
     const int senderAddr = (bus->telegram[1] << 8) | bus->telegram[2];
@@ -336,3 +344,42 @@ SYSTEMB::SYSTEMB(UserRamSYSTEMB* userRam, UserEepromSYSTEMB* userEeprom, ComObje
 		//comObjects(comObjects),
 		//addrTables(addrTables)
 {}
+
+bool SYSTEMB::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
+{
+    // special handling of DMP_LoadStateMachineRead_RCo_Mem (APCI_MEMORY_READ_PDU)
+    // See KNX Spec. 3/5/2 3.30.2 p.121  (deprecated)
+    if (addressStart >= 0xb6e9 && addressStart < 0xb6e9 + INTERFACE_OBJECT_COUNT)
+    {
+        memcpy(payLoad, userEeprom->loadState() + (addressStart - 0xb6e9), lengthPayLoad);
+        DB(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX));
+        return true;
+    }
+
+	return BcuBase::processApciMemoryReadPDU(addressStart, payLoad, lengthPayLoad);
+}
+
+bool SYSTEMB::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad)
+{
+    // special handling of DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU)
+    // See KNX Spec. 3/5/2 3.28.2 p.109 (deprecated)
+    if (addressStart == 0x104)
+    {
+        unsigned int objectIdx = payLoad[0] >> 4;
+        DB(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
+        if (objectIdx < INTERFACE_OBJECT_COUNT)
+        {
+            userEeprom->loadState()[objectIdx] = properties->loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
+            userEeprom->modified();
+            DB(serial.println());
+            return true;
+        }
+        else
+        {
+            DB(serial.println(" not found"));
+            return false;
+        }
+    }
+
+    return BcuBase::processApciMemoryWritePDU(addressStart, payLoad, lengthPayLoad);
+}

@@ -59,10 +59,10 @@
 //#define DEBUG_BUS_BITLEVEL  //!< extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow of the trace buffer
 
 //to avoid trace buffer overflow DUMP_TELEGRAMS should not be used in parallel with DEBUG_BUS or DEBUG_BUS_BITLEVEL"
-//#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack over serial interface
-#define DUMP_COM_OBJ    //!< dump object handling information on app-server level over serial interface
-#define DUMP_MEM_OPS    //!< dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
-#define DUMP_PROPERTIES //!< dump interface object and property handling over serial interface
+#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack over serial interface
+//#define DUMP_COM_OBJ    //!< dump object handling information on app-server level over serial interface
+//#define DUMP_MEM_OPS    //!< dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
+//#define DUMP_PROPERTIES //!< dump interface object and property handling over serial interface
 
 /// \todo following #defines should be moved to this libconfig.h file
 // IAP_EMULATION        /// \todo from platform.h & analog_pin.cpp (used for catch-unit tests of the sblib)

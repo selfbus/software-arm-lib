@@ -141,7 +141,7 @@ public:
      *
      * @return true if successfully written, otherwise false
      */
-    bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
+    virtual bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
 
     /**
      * Process a APCI_MEMORY_READ_PDU
@@ -153,7 +153,7 @@ public:
      *
      * @return true if successfully read, otherwise false
      */
-    bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
+    virtual bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
 
     /**
      * Process a APCI_MEMORY_READ_PDU or APCI_MEMORY_WRITE_PDU depending on

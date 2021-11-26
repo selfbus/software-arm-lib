@@ -731,6 +731,10 @@ void Bus::handleTelegram(bool valid)
 		{
 			processTel = true;
 		}
+		else
+		{
+			DB(serial.println(" not processed: ", destAddr, HEX));
+		}
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
 		if (!(bcu->userRam->status & BCU_STATUS_TL))
@@ -782,7 +786,9 @@ void Bus::handleTelegram(bool valid)
 					//check if an ACK is requested by the sender of the telegram ->  not needed by bit1=1 in the control field, or poll frame
 					if (! ( (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG)  ||   (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)) )
 					{
+						if (destAddr != 0) {
 						sendAck = SB_BUS_ACK;
+						}
 						//need_to_send_ack_to_remote= true;
 					}
 				}

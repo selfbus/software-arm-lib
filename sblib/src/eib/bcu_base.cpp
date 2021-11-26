@@ -232,7 +232,7 @@ void BcuBase::loop()
 	}
 #endif
 
-	if (bus.telegramReceived() && (!bus.sendingTelegram()) && (bus.state == Bus::IDLE) && (userRam.status & BCU_STATUS_TL))
+	if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE) && (userRam->status & BCU_STATUS_TL))
 	{
 		processTelegram();
 	}
@@ -377,17 +377,6 @@ bool BcuBase::processApciMemoryReadPDU(int addressStart, byte *payLoad, int leng
        serial.print(" count: ", lengthPayLoad, DEC);
     );
 
-#ifdef LOAD_STATE_ADDR
-    // special handling of DMP_LoadStateMachineRead_RCo_Mem (APCI_MEMORY_READ_PDU)
-    // See KNX Spec. 3/5/2 3.30.2 p.121  (deprecated)
-    if (addressStart >= LOAD_STATE_ADDR && addressStart < LOAD_STATE_ADDR + INTERFACE_OBJECT_COUNT)
-    {
-        memcpy(payLoad, userEeprom.loadState + (addressStart - LOAD_STATE_ADDR), lengthPayLoad);
-        DB(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX));
-        return true;
-    }
-#endif
-
     bool result = processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, true);
 
     DB(if (result)
@@ -414,28 +403,6 @@ bool BcuBase::processApciMemoryWritePDU(int addressStart, byte *payLoad, int len
        }
        serial.print(" count: ", lengthPayLoad, DEC);
     );
-
-#ifdef LOAD_CONTROL_ADDR
-    // special handling of DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU)
-    // See KNX Spec. 3/5/2 3.28.2 p.109 (deprecated)
-    if (addressStart == LOAD_CONTROL_ADDR)
-    {
-        unsigned int objectIdx = payLoad[0] >> 4;
-        DB(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
-        if (objectIdx < INTERFACE_OBJECT_COUNT)
-        {
-            userEeprom.loadState[objectIdx] = loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
-            userEeprom.modified();
-            DB(serial.println());
-            return true;
-        }
-        else
-        {
-            DB(serial.println(" not found"));
-            return false;
-        }
-    }
-#endif
 
     return processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, false);
 }

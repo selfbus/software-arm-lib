@@ -67,34 +67,34 @@ void BcuUpdate::processTelegram()
     );
     */
 
-    unsigned short destAddr = (unsigned short)((bus.telegram[3] << 8) | bus.telegram[4]);
-    unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
-    unsigned short apci = (unsigned short)(((bus.telegram[6] & 3) << 8) | bus.telegram[7]);
-    dump2(byte isSequenced = (byte)((bus.telegram[6] >> 6) & 0x01););
+    unsigned short destAddr = (unsigned short)((bus->telegram[3] << 8) | bus->telegram[4]);
+    unsigned char tpci = bus->telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
+    unsigned short apci = (unsigned short)(((bus->telegram[6] & 3) << 8) | bus->telegram[7]);
+    dump2(byte isSequenced = (byte)((bus->telegram[6] >> 6) & 0x01););
 
-    if ((bus.telegram[5] & 0x80) != 0) // discard non physical destination addresses
+    if ((bus->telegram[5] & 0x80) != 0) // discard non physical destination addresses
     {
-        bus.discardReceivedTelegram();
+        bus->discardReceivedTelegram();
         return;
     }
 
-    if (destAddr != bus.ownAddress()) // discard telegrams not for us
-        {
-        bus.discardReceivedTelegram();
+    if (destAddr != ownAddress()) // discard telegrams not for us
+	{
+        bus->discardReceivedTelegram();
         return;
-            }
+	}
     dump2(
         dumpTicks();
         if (isSequenced != 0)
             {
-            serial.print("#", (bus.telegram[6] & 0b00111100) >> 2, DEC, 2);
+            serial.print("#", (bus->telegram[6] & 0b00111100) >> 2, DEC, 2);
             serial.print(" ");
         }
     );
 
     if (tpci & 0x80)  // A connection control command
     {
-        processConControlTelegram(bus.telegram[6]);
+        processConControlTelegram(bus->telegram[6]);
     }
     else
     {
@@ -107,8 +107,8 @@ void BcuUpdate::processTelegram()
 void BcuUpdate::processDirectTelegram(int apci)
 {
     dump2(serial.print("procDirectT "));
-    const int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
-    const int senderSeqNo = bus.telegram[6] & 0x3c; // 0b00111100 // sequence number
+    const int senderAddr = (bus->telegram[1] << 8) | bus->telegram[2];
+    const int senderSeqNo = bus->telegram[6] & 0x3c; // 0b00111100 // sequence number
     unsigned char sendAckTpu = 0;
     bool sendTel = false;
 
@@ -130,7 +130,7 @@ void BcuUpdate::processDirectTelegram(int apci)
     int apciCommand = apci & APCI_GROUP_MASK;
     if ((apciCommand == APCI_MEMORY_READ_PDU) | (apciCommand == APCI_MEMORY_WRITE_PDU))
     {
-        sendAckTpu = handleMemoryRequests(apciCommand, &sendTel, &bus.telegram[7]);
+        sendAckTpu = handleMemoryRequests(this, apciCommand, &sendTel, &bus->telegram[7]);
     }
     else if (apciCommand == APCI_RESTART_PDU)
     {
@@ -181,7 +181,7 @@ void BcuUpdate::processDirectTelegram(int apci)
             }
             serial.println("TX-sendTel");
         );
-        sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
+        sendTelegram[0] = 0xb0 | (bus->telegram[0] & 0x0c); // Control byte
         // 1+2 contain the sender address, which is set by bus.sendTelegram()
         sendTelegram[3] = static_cast<byte>(connectedAddr >> 8);
         sendTelegram[4] = static_cast<byte>(connectedAddr);
@@ -194,9 +194,9 @@ void BcuUpdate::processDirectTelegram(int apci)
         }
         else
             incConnectedSeqNo = false;
-==== BASE ====
+
         dump2(serial.println("TX-DATA"));
-        bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
+        bus->sendTelegram(sendTelegram, telegramSize(sendTelegram));
     }
     else
     {
@@ -211,7 +211,7 @@ void BcuUpdate::processDirectTelegram(int apci)
 void BcuUpdate::processConControlTelegram(int tpci)
 {
     dump2(serial.print("procControlT "));
-    int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
+    int senderAddr = (bus->telegram[1] << 8) | bus->telegram[2];
 
     if (tpci & 0x40)  // An acknowledgement
     {
@@ -357,7 +357,7 @@ void BcuUpdate::sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byt
     restartResponseTelegram[8] = (byte)(processTime >> 8);
     restartResponseTelegram[9] = processTime & 0xff;
     telegramCount++;
-    bus.sendTelegram(restartResponseTelegram, sizeof(restartResponseTelegram)/sizeof(restartResponseTelegram[0]));
+    bus->sendTelegram(restartResponseTelegram, sizeof(restartResponseTelegram)/sizeof(restartResponseTelegram[0]));
 }
 
 void BcuUpdate::loop()
