@@ -953,8 +953,13 @@ public class Updater implements Runnable {
                     ///\todo happened while a Selfbus Firmware's Update and a parallel ETS programming device MDT BE-GT2Tx.01 Glastaster II Smart mit Temperatursensor
                     ///\todo java.lang.ArrayIndexOutOfBoundsException: arraycopy: last source index 264 out of bounds for byte[256]
                     ///\todo nDone 253, progSize 0, payLoad 3, nRead 256
-                    LOGGER.debug("nDone {}, payLoad {}, nRead {}, doProg {}", nDone, progSize, payload, nRead, doProg);
+                    LOGGER.debug("nDone {}, progSize{}, payLoad {}, nRead {}, doProg {}", nDone, progSize, payload, nRead, doProg);
                     System.arraycopy(buf, nDone, txBuf, 1, payload);
+                    /* old version
+                    for (int i = 0; i < payload; i++) {
+                        txBuf[i + 1] = buf[i + nDone];	//Shift payload into send buffer
+                    }
+                    */
 
                     // First byte contains start address of following data
                     txBuf[0] = (byte)progSize;
