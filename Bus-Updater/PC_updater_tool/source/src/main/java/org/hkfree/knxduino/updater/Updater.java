@@ -16,6 +16,8 @@ import java.util.Arrays;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
 import java.util.zip.CRC32;
 
 import cz.jaybee.intelhex.Parser;
@@ -37,6 +39,7 @@ import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
+import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -127,7 +130,6 @@ public class Updater implements Runnable {
 
     public static void main(final String[] args) {
         try {
-            // System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "TRACE");
             final Updater d = new Updater(args);
             final ShutdownHandler sh = new ShutdownHandler().register();
             d.run();
@@ -299,6 +301,14 @@ public class Updater implements Runnable {
             } catch (final NumberFormatException e) {
                 return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
             }
+        } else if (cliOptions.tpuart().length() > 0) {
+            // create TPUART network link
+            KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.tpuart(), medium, Collections.emptyList());
+            ///\todo cli option for tpuart ack knx address
+            linkTpuart.addAddress(new IndividualAddress(PHYS_ADDRESS_BOOTLOADER_AREA,
+                                                        PHYS_ADDRESS_BOOTLOADER_LINE,
+                                                        PHYS_ADDRESS_TPUART_DEVICE));
+            return linkTpuart;
         }
 
         // create local and remote socket address for network link
@@ -332,7 +342,7 @@ public class Updater implements Runnable {
      * @param args
      *            array with command line options
      */
-/*
+/* ///\todo remove before release
     private void parseOptions(final String[] args) {
         if (args.length == 0)
             return;
@@ -453,7 +463,7 @@ public class Updater implements Runnable {
         else
             throw new KNXIllegalArgumentException("unknown medium");
     }
-/*
+/* ///\todo remove before release
     private static boolean isOption(final String arg, final String longOpt,
                                     final String shortOpt) {
         return arg.equals(longOpt) || arg.equals(shortOpt);
@@ -492,6 +502,8 @@ public class Updater implements Runnable {
     public static final int PHYS_ADDRESS_BOOTLOADER_AREA = 15;    //!< area part of the physical address the bootloader is using
     public static final int PHYS_ADDRESS_BOOTLOADER_LINE = 15;    //!< line part of the physical address the bootloader is using
     public static final int PHYS_ADDRESS_BOOTLOADER_DEVICE = 192; //!< device part of the physical address the bootloader is using
+
+    public static final int PHYS_ADDRESS_TPUART_DEVICE = PHYS_ADDRESS_BOOTLOADER_DEVICE + 1; //!< device part of the physical address the TPUART is using
 
     private static final int VECTOR_TABLE_END = 0xD0;  //!> vector table end of the mcu
     private static final int BL_ID_STRING_LENGTH = 12; //!> length of bootloader identity string
@@ -891,8 +903,7 @@ public class Updater implements Runnable {
         
         // Read up to size of buffer, 1 Page of 256Bytes from file
         while ((nRead = fis.read(buf)) != -1) {
-            LOGGER.info("Sending {} bytes: {}%", nRead, String.format("%3d", 100*(total+nRead)/totalLength));
-        	// System.out.printf("Sending %d bytes: %3d%%%n", nRead, 100*(total+nRead)/totalLength);
+            LOGGER.info("Sending {} bytes: {}%", nRead, String.format("%3.1f", (float)100*(total+nRead)/totalLength));
 
             int nDone = 0;
             // Bytes left to write
@@ -900,6 +911,7 @@ public class Updater implements Runnable {
 
             	// Calculate payload size for next telegram
             	// sufficient data left, use maximum payload size
+                ///\todo  	nDone 253, progSize 0, payLoad 3, nRead 256
                 LOGGER.debug("nDone {}, progSize {}, payLoad {}, nRead {}", nDone, progSize, payload, nRead);
             	if (progSize + payload < nRead)
 				{
@@ -910,6 +922,7 @@ public class Updater implements Runnable {
 					payload = nRead - progSize;	// remaining bytes
 					doProg = true;
 				}
+                ///\todo progSize 0, payLoad 11, nRead 256, doProg false
                 LOGGER.debug("progSize {}, payLoad {}, nRead {}, doProg {}", progSize, payload, nRead, doProg);
 
                 if (payload > MAX_PAYLOAD)
@@ -937,6 +950,10 @@ public class Updater implements Runnable {
                     byte[] txBuf = new byte[payload + 1];
 
                     //Shift payload into send buffer
+                    ///\todo happened while a Selfbus Firmware's Update and a parallel ETS programming device MDT BE-GT2Tx.01 Glastaster II Smart mit Temperatursensor
+                    ///\todo java.lang.ArrayIndexOutOfBoundsException: arraycopy: last source index 264 out of bounds for byte[256]
+                    ///\todo nDone 253, progSize 0, payLoad 3, nRead 256
+                    LOGGER.debug("nDone {}, payLoad {}, nRead {}, doProg {}", nDone, progSize, payload, nRead, doProg);
                     System.arraycopy(buf, nDone, txBuf, 1, payload);
 
                     // First byte contains start address of following data
