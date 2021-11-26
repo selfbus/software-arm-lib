@@ -1,0 +1,78 @@
+diff --git a/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/TransportLayerImpl.java b/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/TransportLayerImpl.java
+index aec4413..e8e1eba 100644
+--- a/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/TransportLayerImpl.java
++++ b/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/TransportLayerImpl.java
+@@ -517,8 +517,17 @@ public class TransportLayerImpl implements TransportLayer
+ 					&& repeated < MAX_REPEAT) {
+ 				; // do nothing, we will send message again
+ 			}
+-			else
+-				disconnectIndicate(p, true);
++			else {
++				// commented out for Selfbus updater
++				// see this issue #96 https://github.com/calimero-project/calimero-core/issues/96
++				//disconnectIndicate(p, true);
++				logger.error("more then one positive ack by {} ctrl=0x{} (0b{}) (ctrl & 0xC3)=0x{} #Seq={}",
++								d.getAddress(),
++								Integer.toHexString(ctrl),
++								Integer.toBinaryString(ctrl),
++								Integer.toHexString(ctrl & 0xC3),
++								Objects.requireNonNull(p).getSeqSend());
++			}
+ 		}
+ 	}
+ 
+diff --git a/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/UpdatableManagementClientImpl.java b/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/UpdatableManagementClientImpl.java
+index 03cf850..cd265c6 100644
+--- a/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/UpdatableManagementClientImpl.java
++++ b/Bus-Updater/PC_updater_tool/source/src/main/java/tuwien/auto/calimero/mgmt/UpdatableManagementClientImpl.java
+@@ -94,7 +94,7 @@ import tuwien.auto.calimero.secure.SecurityControl.DataSecurity;
+  *
+  * @author B. Malinowsky
+  */
+-public class ManagementClientImpl implements ManagementClient
++public class UpdatableManagementClientImpl implements ManagementClient
+ {
+ 	private static final int ADC_READ = 0x0180;
+ 	private static final int ADC_RESPONSE = 0x01C0;
+@@ -237,13 +237,13 @@ public class ManagementClientImpl implements ManagementClient
+ 	 * @param link network link used for communication with a KNX network, the client does not take ownership
+ 	 * @throws KNXLinkClosedException if the network link is closed
+ 	 */
+-	public ManagementClientImpl(final KNXNetworkLink link) throws KNXLinkClosedException
++	public UpdatableManagementClientImpl(final KNXNetworkLink link) throws KNXLinkClosedException
+ 	{
+ 		this(link, new TransportLayerImpl(link));
+ 		detachTransportLayer = true;
+ 	}
+ 
+-	protected ManagementClientImpl(final KNXNetworkLink link, final TransportLayer transportLayer)
++	protected UpdatableManagementClientImpl(final KNXNetworkLink link, final TransportLayer transportLayer)
+ 	{
+ 		tl = transportLayer;
+ 		logger = LogService.getLogger("calimero.mgmt.MC " + link.getName());
+@@ -1396,4 +1396,24 @@ public class ManagementClientImpl implements ManagementClient
+ 			prop[i] = apdu[i + 6];
+ 		return prop;
+ 	}
++
++	// for Selfbus updater
++	public byte[] sendUpdateData(final Destination dst, final int cmd, final byte[] data)
++			throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException,
++			KNXLinkClosedException, InterruptedException
++	{
++		final byte[] asdu = new byte[data.length + 3];
++		asdu[0] = (byte) data.length;
++		asdu[1] = 0;
++		asdu[2] = (byte) cmd;
++		for (int i = 0; i < data.length; ++i)
++			asdu[3 + i] = data[i];
++		if (dst.isConnectionOriented())
++			tl.connect(dst);
++		else
++			logger.error("write memory in connectionless mode, " + dst.toString());
++		final byte[] send = DataUnitBuilder.createLengthOptimizedAPDU(MEMORY_WRITE, asdu);
++		final byte[] apdu = sendWait(dst, priority, send, MEMORY_RESPONSE, 0, 65);
++		return apdu;
++	}
+ }

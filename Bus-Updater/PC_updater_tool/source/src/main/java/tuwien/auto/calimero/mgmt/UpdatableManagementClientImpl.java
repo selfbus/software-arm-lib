@@ -94,7 +94,7 @@ import tuwien.auto.calimero.secure.SecurityControl.DataSecurity;
  *
  * @author B. Malinowsky
  */
-public class ManagementClientImpl implements ManagementClient
+public class UpdatableManagementClientImpl implements ManagementClient
 {
 	private static final int ADC_READ = 0x0180;
 	private static final int ADC_RESPONSE = 0x01C0;
@@ -237,13 +237,13 @@ public class ManagementClientImpl implements ManagementClient
 	 * @param link network link used for communication with a KNX network, the client does not take ownership
 	 * @throws KNXLinkClosedException if the network link is closed
 	 */
-	public ManagementClientImpl(final KNXNetworkLink link) throws KNXLinkClosedException
+	public UpdatableManagementClientImpl(final KNXNetworkLink link) throws KNXLinkClosedException
 	{
 		this(link, new TransportLayerImpl(link));
 		detachTransportLayer = true;
 	}
 
-	protected ManagementClientImpl(final KNXNetworkLink link, final TransportLayer transportLayer)
+	protected UpdatableManagementClientImpl(final KNXNetworkLink link, final TransportLayer transportLayer)
 	{
 		tl = transportLayer;
 		logger = LogService.getLogger("calimero.mgmt.MC " + link.getName());
@@ -1395,5 +1395,25 @@ public class ManagementClientImpl implements ManagementClient
 		for (int i = 0; i < prop.length; ++i)
 			prop[i] = apdu[i + 6];
 		return prop;
+	}
+
+	// for Selfbus updater
+	public byte[] sendUpdateData(final Destination dst, final int cmd, final byte[] data)
+			throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException,
+			KNXLinkClosedException, InterruptedException
+	{
+		final byte[] asdu = new byte[data.length + 3];
+		asdu[0] = (byte) data.length;
+		asdu[1] = 0;
+		asdu[2] = (byte) cmd;
+		for (int i = 0; i < data.length; ++i)
+			asdu[3 + i] = data[i];
+		if (dst.isConnectionOriented())
+			tl.connect(dst);
+		else
+			logger.error("write memory in connectionless mode, " + dst.toString());
+		final byte[] send = DataUnitBuilder.createLengthOptimizedAPDU(MEMORY_WRITE, asdu);
+		final byte[] apdu = sendWait(dst, priority, send, MEMORY_RESPONSE, 0, 65);
+		return apdu;
 	}
 }
