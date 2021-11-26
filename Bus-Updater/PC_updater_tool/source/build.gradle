@@ -20,8 +20,18 @@ task fatJar(type: Jar) {
     manifest.from jar.manifest
     duplicatesStrategy = DuplicatesStrategy.WARN
     archiveClassifier = 'all'
-    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+    }
+
     with jar
+}
+
+artifacts {
+    archives fatJar
 }
 
 repositories {
@@ -37,29 +47,30 @@ gradle.projectsEvaluated{
 }
 
 dependencies {
-    // calimero knx bus access libary
+    // calimero knx bus access library
     // implementation 'com.github.calimero:calimero-core:2.5'
-    // testImplementation 'com.github.calimero:calimero-core:2.5'
 
-    ///\todo dependency of the calimero lib, can be removed after eliminating calimero source code in our repo
+    ///\todo has dependency to calimero-core so it will only work after calimero is removed from our repo
+    /*
+    implementation('com.github.calimero:calimero-rxtx:2.4') {
+        exclude group: 'com.github.calimero', module: 'calimero-core'
+    }
+    */
+
+    ///\todo dependency of the calimero-core lib, can be removed after eliminating calimero source code in our repo
     implementation 'org.usb4java:usb4java-javax:1.3.0'
-
 
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.2.1'
-    testImplementation 'net.harawata:appdirs:1.2.1'
 
-    ///\todo
-    implementation 'com.google.guava:guava:21+'
-    testImplementation 'com.google.guava:guava:21+'
+    // For search in byte array
+    implementation 'com.google.guava:guava:31.0.1-jre'
 
     // command line option
     implementation 'commons-cli:commons-cli:1.5.0'
-    testImplementation 'commons-cli:commons-cli:1.5.0'
 
     // console and file logging
     implementation 'ch.qos.logback:logback-classic:1.3.0-alpha10'
-    testImplementation 'ch.qos.logback:logback-classic:1.3.0-alpha10'
 
     // unit test
     testImplementation group: 'junit', name: 'junit', version: '4.12'
