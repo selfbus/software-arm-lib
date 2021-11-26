@@ -48,7 +48,7 @@ Selfbus KNX-Firmware update tool options::
  -v,--verbose                       enable verbose status output (not used/implemented)
  -f0,--NO_FLASH                     for debugging use only, disable flashing firmware!
 ```
-##Common use cases:
+## Common use cases:
 Recommended for new firmware versions if UID is unknown (requires active Prog. mode to unlock device):
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -nat
@@ -61,10 +61,10 @@ Manual specification of parameters if the App-Version pointer is not found/integ
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
 ```
-##Used IDE's:
+## Used IDE's:
 IntelliJ IDEA Community 2021.2.3 (Build -> Build Artifacts)<br>
 eclipse project is currently not maintained
-##gradle:
+## gradle:
 update [gradle wrapper](gradle/wrapper) to the newest version:
 ```
 gradlew wrapper
