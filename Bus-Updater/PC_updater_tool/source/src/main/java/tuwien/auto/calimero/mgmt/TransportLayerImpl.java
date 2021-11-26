@@ -509,9 +509,15 @@ public class TransportLayerImpl implements TransportLayer
 				logger.trace("positive ack by {}", d.getAddress());
 			}
 			else {
-				// commented out for selfbus updater
+				// commented out for Selfbus updater
+				// see also issue #96 https://github.com/calimero-project/calimero-core/issues/96
 				//disconnectIndicate(p, true);
-				logger.error("more then one positive ack by {}", d.getAddress());
+				logger.error("more then one positive ack by {} ctrl=0x{} (0b{}) (ctrl & 0xC3)=0x{} #Seq={}",
+								d.getAddress(),
+								Integer.toHexString(ctrl),
+								Integer.toBinaryString(ctrl),
+								Integer.toHexString(ctrl & 0xC3),
+								Objects.requireNonNull(p).getSeqSend());
 			}
 		}
 		else if ((ctrl & 0xC3) == NACK) {
