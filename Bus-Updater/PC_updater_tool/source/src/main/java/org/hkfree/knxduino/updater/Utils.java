@@ -7,7 +7,6 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Map;
 
 public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class.getName());
@@ -40,7 +39,8 @@ public class Utils {
         }
         return txt;
     }
-
+///\todo remove on release
+/*
     public static void parseHost(final String host, final boolean local,
                                   final Map<String, Object> options) {
         try {
@@ -55,7 +55,7 @@ public class Utils {
                     "failed to read host " + host, e);
         }
     }
-
+*/
     public static InetAddress parseHost(final String host) {
         try {
             InetAddress res = InetAddress.getByName(host);
