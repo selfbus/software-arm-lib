@@ -1,4 +1,4 @@
-<!-- this file goes in src/main/resources/logback.xml -->
+<!-- this file goes in src/main/resources/logback-test.xml -->
 
 <configuration>
 
@@ -31,7 +31,7 @@
         </encoder>
     </appender>
 
-    <appender name="htmlErrorAppender" class="ch.qos.logback.core.FileAppender">
+    <appender name="htmlWarnAppender" class="ch.qos.logback.core.FileAppender">
         <file>${application.home:-.}/log/updater-${appStartTimestamp}-warn.html</file>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>WARN</level>
@@ -49,6 +49,6 @@
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="logFile" />
         <appender-ref ref="htmlAppender" />
-        <appender-ref ref="htmlErrorAppender" />
+        <appender-ref ref="htmlWarnAppender" />
     </root>
 </configuration>
