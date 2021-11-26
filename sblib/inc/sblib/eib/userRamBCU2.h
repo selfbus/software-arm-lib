@@ -19,10 +19,10 @@
 class UserRamBCU2 : public UserRamBCU1
 {
 public:
-	UserRamBCU2() : UserRamBCU1() {};
+	UserRamBCU2() : UserRamBCU1(0, 0x100, 0) {};
 
 protected:
-	UserRamBCU2(int start, int size) : UserRamBCU1(start, size) {}
+	UserRamBCU2(int start, int size, int shadowSize) : UserRamBCU1(start, size, shadowSize) {}
 };
 
 #endif /* SBLIB_EIB_USERRAM_H_ */

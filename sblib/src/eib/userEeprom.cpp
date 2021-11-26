@@ -7,17 +7,18 @@
 
 #include <sblib/eib/userEeprom.h>
 #include <sblib/internal/iap.h>
+#include <sblib/eib/bcu_base.h>
 #include <sblib/eib/bus.h>
 #include <cstring>
 
 inline int UserEeprom::numEepromPages() const
 {
-	return FLASH_SECTOR_SIZE / userEepromFlashSize();
+	return FLASH_SECTOR_SIZE / userEepromFlashSize;
 }
 
 inline byte* UserEeprom::lastEepromPage() const
 {
-	return flashSectorAddress() + userEepromFlashSize() * (numEepromPages() - 1);
+	return flashSectorAddress() + userEepromFlashSize * (numEepromPages() - 1);
 }
 
 inline byte* UserEeprom::flashSectorAddress() const
@@ -38,7 +39,7 @@ byte* UserEeprom::findValidPage()
         if (page[userEepromSize - 1] != 0xff)
             return page;
 
-        page -= userEepromFlashSize();
+        page -= userEepromFlashSize;
     }
 
     return 0;
@@ -62,26 +63,31 @@ void UserEeprom::writeUserEeprom()
         return;
 
     // Wait for an idle bus and then disable the interrupts
-    while (!bus->idle())
+    while (!bcu->bus->idle())
         ;
     noInterrupts();
 
     byte* page = findValidPage();
     if (page == lastEepromPage())
     {
+        page = flashSectorAddress();
+    }
+    else if (page)
+        page += userEepromFlashSize;
+    else{
+    	page = flashSectorAddress();
+    }
+
+    if (page == flashSectorAddress())
+    {
         // Erase the sector
-        int sectorId = iapSectorOfAddress(flashSectorAddress());
+        int sectorId = iapSectorOfAddress(page);
         IAP_Status rc = iapEraseSector(sectorId);
         if (rc != IAP_SUCCESS)
         {
             fatalError(); // erasing failed
         }
-
-        page = flashSectorAddress();
     }
-    else if (page)
-        page += userEepromFlashSize();
-    else page = flashSectorAddress();
 
     userEepromData[userEepromSize - 1] = 0; // mark the page as in use
 
@@ -105,5 +111,5 @@ void UserEeprom::writeUserEeprom()
     userEepromModified = 0;
 }
 
-UserEeprom::UserEeprom(Bus* bus, int start, int size) :
-		userEepromData(new byte[size]), bus(bus), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size) {};
+UserEeprom::UserEeprom(BcuBase* bcu, int start, int size, int flashSize) :
+		userEepromData(new byte[size]), bcu(bcu), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size), userEepromFlashSize(flashSize) {};

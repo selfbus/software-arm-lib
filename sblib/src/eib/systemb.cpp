@@ -334,7 +334,7 @@ inline bool SYSTEMB::applicationRunning() const
         userEeprom->loadState()[OT_APPLICATION] == LS_LOADED;   // Application object. All three in State "Loaded"
 }
 
-SYSTEMB::SYSTEMB() : SYSTEMB(new UserRamSYSTEMB(), new UserEepromSYSTEMB(bus), new ComObjectsSYSTEMB(this), new AddrTablesSYSTEMB(this), new PropertiesSYSTEMB(this))
+SYSTEMB::SYSTEMB() : SYSTEMB(new UserRamSYSTEMB(), new UserEepromSYSTEMB(this), new ComObjectsSYSTEMB(this), new AddrTablesSYSTEMB(this), new PropertiesSYSTEMB(this))
 {}
 
 SYSTEMB::SYSTEMB(UserRamSYSTEMB* userRam, UserEepromSYSTEMB* userEeprom, ComObjectsSYSTEMB* comObjects, AddrTablesSYSTEMB* addrTables, PropertiesSYSTEMB* properties) :

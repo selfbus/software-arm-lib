@@ -19,10 +19,10 @@
 class UserRamSYSTEMB : public UserRamMASK0701
 {
 public:
-	UserRamSYSTEMB() : UserRamMASK0701(0, 0x304) {}
+	UserRamSYSTEMB() : UserRamMASK0701(0x5FC, 0x304, 3) {}
 
 protected:
-	UserRamSYSTEMB(int start, int size) : UserRamMASK0701(start, size) {}
+	UserRamSYSTEMB(int start, int size, int shadowSize) : UserRamMASK0701(start, size, shadowSize) {}
 };
 
 #endif /* SBLIB_EIB_USERRAM_H_ */

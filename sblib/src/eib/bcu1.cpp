@@ -202,7 +202,7 @@ inline bool BCU1::applicationRunning() const
         userRam->runState == 1 && userEeprom->runError() == 0xff); // ETS sets the run error to 0 when programming
 }
 
-BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(bus), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
+BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(this), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
 {}
 
 BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables) :

@@ -799,7 +799,6 @@ void Bus::handleTelegram(bool valid)
 					{
 						//if(destAddr != 0)  // test no ack for BC
 						sendAck = SB_BUS_ACK;
-						}
 						//need_to_send_ack_to_remote= true;
 					}
 				}

@@ -43,7 +43,7 @@ enum DeviceControl
 class UserRam
 {
 public:
-	UserRam(int start, int size) : userRamData(new byte[size]), userRamStart(start), userRamSize(size), userRamEnd(start+size) {};
+	UserRam(int start, int size, int shadowSize) : userRamData(new byte[size + shadowSize]), userRamStart(start), userRamSize(size), userRamEnd(start+size) {};
 
     byte status; // real status 0x0100
     byte runState; // 0x0101

@@ -17,7 +17,7 @@
 #   define DB(x)
 #endif
 
-MASK0701::MASK0701() : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(bus), new ComObjectsMASK0701(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this))
+MASK0701::MASK0701() : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(this), new ComObjectsMASK0701(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this))
 {}
 
 MASK0701::MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsMASK0701* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties) :
@@ -34,8 +34,9 @@ bool MASK0701::processApciMemoryReadPDU(int addressStart, byte *payLoad, int len
     // See KNX Spec. 3/5/2 3.30.2 p.121  (deprecated)
     if (addressStart >= 0xb6e9 && addressStart < 0xb6e9 + INTERFACE_OBJECT_COUNT)
     {
-        memcpy(payLoad, userEeprom->loadState() + (addressStart - 0xb6e9), lengthPayLoad);
-        DB(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX));
+    	unsigned int objectIdx = addressStart - 0xb6e9;
+        memcpy(payLoad, &userEeprom->loadState()[objectIdx], lengthPayLoad);
+        DB(serial.print(" LOAD_STATE_ADDR: ", addressStart, HEX); serial.println(", objIdx: ", objectIdx, HEX));
         return true;
     }
 
