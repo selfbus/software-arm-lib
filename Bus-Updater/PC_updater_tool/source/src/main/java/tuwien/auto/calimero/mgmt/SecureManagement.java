@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,9 +45,11 @@ import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.Priority;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.internal.EventListeners;
-import tuwien.auto.calimero.internal.SecureApplicationLayer;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
+import tuwien.auto.calimero.secure.SecureApplicationLayer;
+import tuwien.auto.calimero.secure.Security;
 
 public class SecureManagement extends SecureApplicationLayer {
 
@@ -85,7 +87,7 @@ public class SecureManagement extends SecureApplicationLayer {
 	};
 
 
-	protected SecureManagement(final TransportLayerImpl transportLayer, final byte[] serialNumber,
+	protected SecureManagement(final TransportLayerImpl transportLayer, final SerialNumber serialNumber,
 			final long sequenceNumber, final Map<IndividualAddress, byte[]> deviceToolKeys) {
 		super(transportLayer.link(), serialNumber, sequenceNumber, deviceToolKeys);
 		this.transportLayer = transportLayer;
@@ -94,7 +96,7 @@ public class SecureManagement extends SecureApplicationLayer {
 	}
 
 	SecureManagement(final TransportLayer transportLayer, final Map<IndividualAddress, byte[]> deviceToolKeys) {
-		this((TransportLayerImpl) transportLayer, new byte[6], 0, deviceToolKeys);
+		this((TransportLayerImpl) transportLayer, SerialNumber.Zero, 0, deviceToolKeys);
 	}
 
 	public void addListener(final TransportListener l) { listeners.add(l); }
@@ -139,4 +141,7 @@ public class SecureManagement extends SecureApplicationLayer {
 		final int tpci = tlMode | seqSend << 2;
 		return tpci;
 	}
+
+	@Override
+	protected Security security() { return super.security(); };
 }

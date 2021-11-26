@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2020 B. Malinowsky
+    Copyright (c) 2020, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,9 +37,9 @@
 package tuwien.auto.calimero.dptxlator;
 
 import java.util.Map;
+import java.util.Optional;
 
 import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
 
 /**
  * Translator for KNX DPTs with main number 252, type <b>relative control RGBW</b>. The KNX data
@@ -62,6 +62,8 @@ public class DptXlatorRelativeControlRgbw extends DPTXlator {
 	private static final String Green = "G";
 	private static final String Blue = "B";
 	private static final String White = "W";
+
+	private enum Component { Red, Green, Blue, White }
 
 	private final DPTXlator3BitControlled t = new DPTXlator3BitControlled(DPTXlator3BitControlled.DPT_CONTROL_DIMMING);
 
@@ -101,23 +103,100 @@ public class DptXlatorRelativeControlRgbw extends DPTXlator {
 		return fromDpt(0);
 	}
 
+	public final Optional<StepControl> red() {
+		return component(Component.Red);
+	}
+
+	public final Optional<StepControl> green() {
+		return component(Component.Green);
+	}
+
+	public final Optional<StepControl> blue() {
+		return component(Component.Blue);
+	}
+
+	public final Optional<StepControl> white() {
+		return component(Component.White);
+	}
+
+	private Optional<StepControl> component(final Component what) {
+		int offset;
+		int validBit;
+		if (what == Component.Red) {
+			offset = 0;
+			validBit = 8;
+		}
+		else if (what == Component.Green) {
+			offset = 1;
+			validBit = 4;
+		}
+		else if (what == Component.Blue) {
+			offset = 2;
+			validBit = 2;
+		}
+		else if (what == Component.White) {
+			offset = 3;
+			validBit = 1;
+		}
+		else
+			throw new Error("illegal control value");
+
+		if ((data[4] & validBit) == 0)
+			return Optional.empty();
+		return Optional.of(StepControl.from(data[offset]));
+	}
+
 	/**
 	 * Sets one new translation item, replacing any old items.
 	 *
-	 * @param increaseRed increase or decrease value
-	 * @param redStepcode stepcode, <code>0 &le; redStepcode &le; 7</code>
-	 * @param increaseGreen increase or decrease value
-	 * @param greenStepcode stepcode, <code>0 &le; greenStepcode &le; 7</code>
-	 * @param increaseBlue increase or decrease value
-	 * @param blueStepcode stepcode, <code>0 &le; blueStepcode &le; 7</code>
-	 * @param increaseWhite increase or decrease value
-	 * @param whiteStepcode stepcode, <code>0 &le; whiteStepcode &le; 7</code>
+	 * @param red step control for red
+	 * @param green step control for green
+	 * @param blue step control for blue
+	 * @param white step control for white
 	 */
-	public final void setValue(final boolean increaseRed, final int redStepcode, final boolean increaseGreen,
-			final int greenStepcode, final boolean increaseBlue, final int blueStepcode, final boolean increaseWhite,
-			final int whiteStepcode) {
-		data = toDpt(increaseRed, redStepcode, increaseGreen, greenStepcode, increaseBlue, blueStepcode, increaseWhite,
-				whiteStepcode);
+	public final void setValue(final StepControl red, final StepControl green, final StepControl blue,
+			final StepControl white) {
+		data = toDpt(red, green, blue, white);
+	}
+
+	public final void setRed(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 0;
+		final int validBit = 8;
+		data[offset] = d;
+		data[4] |= validBit;
+	}
+
+	public final void setGreen(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 1;
+		final int validBit = 4;
+		data[offset] = d;
+		data[4] |= validBit;
+	}
+
+	public final void setBlue(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 2;
+		final int validBit = 2;
+		data[offset] = d;
+		data[4] |= validBit;
+	}
+
+	public final void setWhite(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 3;
+		final int validBit = 1;
+		data[offset] = d;
+		data[4] |= validBit;
 	}
 
 	@Override
@@ -216,29 +295,18 @@ public class DptXlatorRelativeControlRgbw extends DPTXlator {
 		return t.getData()[0];
 	}
 
-	private short[] toDpt(final boolean increaseRed, final int redStepcode, final boolean increaseGreen,
-			final int greenStepcode, final boolean increaseBlue, final int blueStepcode, final boolean increaseWhite,
-			final int whiteStepcode) {
-		rangeCheck(redStepcode);
-		rangeCheck(greenStepcode);
-		rangeCheck(blueStepcode);
-		rangeCheck(whiteStepcode);
-
-		t.setValue(increaseRed, redStepcode);
-		final short red = ubyte(t.getData()[0]);
-		t.setValue(increaseGreen, greenStepcode);
-		final short green = ubyte(t.getData()[0]);
-		t.setValue(increaseBlue, blueStepcode);
-		final short blue = ubyte(t.getData()[0]);
-		t.setValue(increaseWhite, whiteStepcode);
-		final short white = ubyte(t.getData()[0]);
+	private short[] toDpt(final StepControl red, final StepControl green, final StepControl blue,
+			final StepControl white) {
+		t.setValue(red);
+		final short r = ubyte(t.getData()[0]);
+		t.setValue(green);
+		final short g = ubyte(t.getData()[0]);
+		t.setValue(blue);
+		final short b = ubyte(t.getData()[0]);
+		t.setValue(white);
+		final short w = ubyte(t.getData()[0]);
 
 		final int valid = 0b1111;
-		return new short[] { red, green, blue, white, valid };
-	}
-
-	private void rangeCheck(final int clrStepcode) {
-		if (clrStepcode < 0 || clrStepcode > 7)
-			throw new KNXIllegalArgumentException("stepcode " + clrStepcode + " out of range [0..7]");
+		return new short[] { r, g, b, w, valid };
 	}
 }

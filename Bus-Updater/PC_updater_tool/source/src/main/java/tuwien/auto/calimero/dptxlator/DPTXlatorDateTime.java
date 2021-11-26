@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,10 +36,21 @@
 
 package tuwien.auto.calimero.dptxlator;
 
+import java.time.DateTimeException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Month;
+import java.time.MonthDay;
+import java.time.format.TextStyle;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.StringTokenizer;
+import java.util.stream.IntStream;
 
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -263,7 +274,6 @@ public class DPTXlatorDateTime extends DPTXlator
 
 	/**
 	 * Returns the year information.
-	 * <p>
 	 *
 	 * @return year value, 0 &lt;= second &lt;= 59
 	 */
@@ -274,7 +284,6 @@ public class DPTXlatorDateTime extends DPTXlator
 
 	/**
 	 * Returns the month information.
-	 * <p>
 	 *
 	 * @return month value, 0 &lt; month &lt;= 12, might be 0 on unused field
 	 */
@@ -282,6 +291,12 @@ public class DPTXlatorDateTime extends DPTXlator
 	{
 		return data[MONTH];
 	}
+
+	/**
+	 * @return month-of-year if month information is available
+	 * @throws DateTimeException if month information is 0
+	 */
+	public final Month month() { return Month.of(getMonth()); }
 
 	/**
 	 * Returns the day of month information.
@@ -322,6 +337,20 @@ public class DPTXlatorDateTime extends DPTXlator
 	{
 		return data[3] >> 5;
 	}
+
+	/**
+	 * @return day of the week if day-of-week is set, empty if no day was set (any day)
+	 */
+	public final Optional<DayOfWeek> dayOfWeek() {
+		final int dayOfWeek = getDayOfWeek();
+		return dayOfWeek == 0 ? Optional.empty() : Optional.of(DayOfWeek.of(dayOfWeek));
+	}
+
+	/**
+	 * @return the month-day if date information is available
+	 * @throws DateTimeException if day is 0 or day-of-month is invalid for the month
+	 */
+	public final MonthDay monthDay() { return MonthDay.of(getMonth(), getDay()); }
 
 	/**
 	 * Sets the hour, minute and second information for the first date/time item.
@@ -378,6 +407,30 @@ public class DPTXlatorDateTime extends DPTXlator
 	}
 
 	/**
+	 * Sets the year, date, time, and day-of-week information for the first date/time item.
+	 * Working day information is set to not valid ({@link #isValidField(int)} with {@link #WORKDAY} returns
+	 * <code>false</code>). Daylight saving time is always <code>false</code>.
+	 *
+	 * @param dateTime local date-time to set
+	 */
+	public void setValue(final LocalDateTime dateTime) {
+		data = new short[8];
+		set(data, 0, YEAR, dateTime.getYear());
+		set(data, 0, MONTH, dateTime.getMonthValue());
+		set(data, 0, DAY, dateTime.getDayOfMonth());
+		set(data, 0, HOUR, dateTime.getHour());
+		set(data, 0, MINUTE, dateTime.getMinute());
+		set(data, 0, SECOND, dateTime.getSecond());
+		set(data, 0, DOW, dateTime.getDayOfWeek().getValue());
+		data[6] |= NO_WD;
+	}
+
+	@Override
+	public void setValue(final double milliseconds) {
+		setValue((long) milliseconds);
+	}
+
+	/**
 	 * Sets the date/time for the first date/time item using UTC millisecond information.
 	 * <p>
 	 * Following fields are set: year, month, day, day of week, hour, minute, second,
@@ -425,13 +478,50 @@ public class DPTXlatorDateTime extends DPTXlator
 	 *
 	 * @return the date/time in milliseconds as long,
 	 * @throws KNXFormatException on required, but not set fields, if date/time
-	 *         information does not represent a valid calendar time,
+	 *         information does not represent a valid calendar time
 	 */
 	public final long getValueMilliseconds() throws KNXFormatException
 	{
 		return fromDPTMilliseconds(0);
 	}
 
+	/**
+	 * Returns the local date-time information of the first translation item if year, date, and optionally time
+	 * information is available.
+	 * Workday, day of week, and daylight saving time information is ignored.
+	 *
+	 * @return local date/time object
+	 * @throws KNXFormatException on faulty clock, missing year or date information
+	 * @throws DateTimeException on a problem calculating date-time
+	 */
+	public final LocalDateTime localDateTime() throws KNXFormatException {
+		return localDateTime(0);
+	}
+
+	private LocalDateTime localDateTime(final int index) throws KNXFormatException {
+		if (isBitSet(index, FAULT))
+			throw new KNXFormatException("faulty clock");
+		if (!isValidField(index, YEAR) || !isValidField(index, DATE))
+			throw new KNXFormatException("insufficient date information for local date-time");
+
+		final var ld = LocalDate.of(getYear(), getMonth(), getDay());
+		if (isValidField(index, TIME)) {
+			// we use LocalTime.MAX for 24:00:00
+			final boolean cheat = getHour() == 24;
+			final var lt = cheat ? LocalTime.MAX : LocalTime.of(getHour(), getMinute(), getSecond());
+			return LocalDateTime.of(ld, lt);
+		}
+		return LocalDateTime.of(ld, LocalTime.MIN);
+	}
+
+	/**
+	 * Returns the date and time information of the first translation item in UTC milliseconds.
+	 * This method uses the year, month, day, DST and, optionally, hour, minute, second and
+	 * day of week field for calculation.
+	 *
+	 * @throws KNXFormatException on required, but not set fields, if date/time
+	 *         information does not represent a valid calendar time
+	 */
 	@Override
 	public double getNumericValue() throws KNXFormatException
 	{
@@ -704,8 +794,16 @@ public class DPTXlatorDateTime extends DPTXlator
 			sb.append('/').append(data[i + 2]);
 		}
 		if (extFormat) {
-			if (!isBitSet(index, NO_DOW))
-				sb.append(", ").append(DAYS[data[i + 3] >> 5]);
+			if (!isBitSet(index, NO_DOW)) {
+				sb.append(", ");
+				final int dayOfWeek = data[i + 3] >> 5;
+				if (dayOfWeek == 0)
+					sb.append("any day");
+				else {
+					final var displayName = localizedDayOfWeek(dayOfWeek);
+					sb.append(displayName);
+				}
+			}
 			if (!isBitSet(index, NO_WD))
 				sb.append(" (").append(isBitSet(index, WD) ? WORKDAY_SIGN : HOLIDAY_SIGN).append(')');
 		}
@@ -720,6 +818,10 @@ public class DPTXlatorDateTime extends DPTXlator
 		if (extFormat && isBitSetEx(index, QUALITY))
 			sb.append(" (" + SYNC_SIGN + ")");
 		return sb.toString();
+	}
+
+	private static String localizedDayOfWeek(final int dayOfWeek) {
+		return DayOfWeek.of(dayOfWeek).getDisplayName(TextStyle.SHORT, Locale.getDefault());
 	}
 
 	private long fromDPTMilliseconds(final int index) throws KNXFormatException
@@ -826,9 +928,10 @@ public class DPTXlatorDateTime extends DPTXlator
 	@Override
 	protected void toDPT(final String value, final short[] dst, final int index) throws KNXFormatException
 	{
-		final StringTokenizer t = new StringTokenizer(value, ":-/ (,.)");
+		// don't tokenize on dot, which is used in some localized day-of-week abbreviations and in German dates
+		final StringTokenizer t = new StringTokenizer(value, ":-/ (,)");
 		final int k = 8 * index;
-		// dpt fields: yr mth day [doW hr] min sec [dst wd] sync
+		// dpt fields: | yr | mth | day | doW, hr | min | sec | dst, wd | sync, src |
 		// mark all fields not used
 		dst[k + 6] = NO_WD | NO_YEAR | NO_DATE | NO_DOW | NO_TIME;
 
@@ -842,15 +945,19 @@ public class DPTXlatorDateTime extends DPTXlator
 		for (int i = 0; i < maxTokens && t.hasMoreTokens(); ++i) {
 			final String s = t.nextToken();
 			try {
-				final short no = Short.parseShort(s);
-				if (no < 0)
-					throw newException("negative date/time " + s, s);
-				if (no >= MIN_YEAR && no <= MAX_YEAR) {
-					set(dst, index, YEAR, no);
-					setBit(dst, index, NO_YEAR, false);
+				// split on dots to recognize German date
+				final String[] noDots = s.split("\\.");
+				for (final var v : noDots) {
+					final short no = Short.parseShort(v);
+					if (no < 0)
+						throw newException("negative date/time " + s, s);
+					if (no >= MIN_YEAR && no <= MAX_YEAR) {
+						set(dst, index, YEAR, no);
+						setBit(dst, index, NO_YEAR, false);
+					}
+					else
+						numbers[count++] = no;
 				}
-				else
-					numbers[count++] = no;
 			}
 			catch (final NumberFormatException e) {
 				// parse number failed, check for word token
@@ -870,16 +977,21 @@ public class DPTXlatorDateTime extends DPTXlator
 						throw newException("duplicate flag", s);
 					setBitEx(dst, index, QUALITY, true);
 				}
-				else if (s.length() == 3 && ++day == 1) {
+				else if (++day == 1) {
 					final String prefix = s.toLowerCase();
-					int dow = DAYS.length - 1;
-					while (dow >= 0 && !DAYS[dow].toLowerCase().startsWith(prefix))
-						--dow;
-					final boolean anyday = dow == 0 && t.hasMoreTokens()
-						&& t.nextToken().equalsIgnoreCase("day");
-					if (dow <= 0 && !anyday)
-						throw newException(s + ": wrong weekday", s, null);
-					set(dst, index, DOW, dow);
+					final var optDow = IntStream.range(1, 8).filter(n -> localizedDayOfWeek(n).equals(prefix)).findFirst();
+					if (optDow.isPresent())
+						set(dst, index, DOW, optDow.getAsInt());
+					else {
+						int dow = DAYS.length - 1;
+						while (dow >= 0 && !DAYS[dow].toLowerCase().startsWith(prefix))
+							--dow;
+						final boolean anyday = dow == 0 && t.hasMoreTokens() && t.nextToken().equalsIgnoreCase("day");
+						if (dow <= 0 && !anyday)
+							throw newException(s + ": wrong weekday", s, null);
+						set(dst, index, DOW, dow);
+					}
+
 					setBit(dst, index, NO_DOW, false);
 				}
 				else

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,19 +37,18 @@
 package tuwien.auto.calimero.knxnetip;
 
 import static tuwien.auto.calimero.DataUnitBuilder.toHex;
+import static tuwien.auto.calimero.knxnetip.Net.hostPort;
 import static tuwien.auto.calimero.knxnetip.SecureConnection.secureSymbol;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.math.BigInteger;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.security.GeneralSecurityException;
 import java.security.Key;
@@ -64,7 +63,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
@@ -81,24 +79,26 @@ import javax.crypto.spec.IvParameterSpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.KnxSecureException;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.knxnetip.servicetype.KNXnetIPHeader;
 import tuwien.auto.calimero.knxnetip.servicetype.PacketHelper;
 import tuwien.auto.calimero.knxnetip.util.HPAI;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.log.LogService.LogLevel;
+import tuwien.auto.calimero.secure.KnxSecureException;
 
 /**
  * Connection management for TCP connections to KNXnet/IP servers, and for KNX IP secure sessions.
  */
-public final class Connection implements Closeable {
+public final class TcpConnection implements Closeable {
 
 	// pseudo connection, so we can still run with udp
-	static Connection Udp = new Connection(new InetSocketAddress(0));
+	static final TcpConnection Udp = new TcpConnection(new InetSocketAddress(0));
 
 	private static final Duration connectionTimeout = Duration.ofMillis(5000);
 
@@ -121,6 +121,9 @@ public final class Connection implements Closeable {
 
 
 
+	/**
+	 * A KNX IP secure session used over a TCP connection.
+	 */
 	public static final class SecureSession implements AutoCloseable {
 
 		// service codes
@@ -166,7 +169,7 @@ public final class Connection implements Closeable {
 		private enum SessionState { Idle, Unauthenticated, Authenticated }
 
 
-		private final Connection conn;
+		private final TcpConnection conn;
 		private final int user;
 		private final SecretKey userKey;
 		private final SecretKey deviceAuthKey;
@@ -174,7 +177,7 @@ public final class Connection implements Closeable {
 		private PrivateKey privateKey;
 		private final byte[] publicKey = new byte[keyLength];
 
-		private final byte[] sno;
+		private final SerialNumber sno;
 
 		private int sessionId;
 		private volatile SessionState sessionState = SessionState.Idle;
@@ -195,7 +198,7 @@ public final class Connection implements Closeable {
 		private final Logger logger;
 
 
-		private SecureSession(final Connection connection, final int user, final byte[] userKey,
+		private SecureSession(final TcpConnection connection, final int user, final byte[] userKey,
 			final byte[] deviceAuthCode) {
 			this.conn = connection;
 			this.user = user;
@@ -208,7 +211,7 @@ public final class Connection implements Closeable {
 
 			sno = deriveSerialNumber(conn.localEndpoint());
 
-			logger = LoggerFactory.getLogger("calimero.knxnetip." + secureSymbol + " Session " + addressPort(conn.server));
+			logger = LoggerFactory.getLogger("calimero.knxnetip." + secureSymbol + " Session " + hostPort(conn.server));
 		}
 
 		public int id() { return sessionId; }
@@ -217,9 +220,9 @@ public final class Connection implements Closeable {
 
 		public SecretKey userKey() { return userKey; }
 
-		public byte[] serialNumber() { return sno.clone(); }
+		public SerialNumber serialNumber() { return sno; }
 
-		public Connection connection() { return conn; }
+		public TcpConnection connection() { return conn; }
 
 		@Override
 		public void close() {
@@ -267,9 +270,26 @@ public final class Connection implements Closeable {
 
 		long nextReceiveSeq() { return rcvSeq.getAndIncrement(); }
 
+		static int newChannelStatus(final KNXnetIPHeader h, final byte[] data, final int offset)
+				throws KNXFormatException {
+
+			if (h.getServiceType() != SecureSessionStatus)
+				throw new KNXIllegalArgumentException("no secure channel status");
+			if (h.getTotalLength() != 8)
+				throw new KNXFormatException("invalid length " + h.getTotalLength() + " for a secure channel status");
+
+			// 0: auth success
+			// 1: auth failed
+			// 2: error unauthorized
+			// 3: timeout
+			final int status = data[offset] & 0xff;
+			return status;
+		}
+
 		private void setupSecureSession()
 				throws KNXTimeoutException, KNXConnectionClosedException, InterruptedException {
 			conn.sessionRequestLock.lock();
+			final var hostPort = hostPort(conn.server);
 			try {
 				if (sessionState == SessionState.Authenticated)
 					return;
@@ -277,7 +297,7 @@ public final class Connection implements Closeable {
 				sessionStatus = Setup;
 				conn.inSessionRequestStage = this;
 
-				logger.debug("setup secure session with {}", conn.server);
+				logger.debug("setup secure session with {}", hostPort);
 
 				initKeys();
 				conn.connect();
@@ -290,24 +310,24 @@ public final class Connection implements Closeable {
 					throw new KnxSecureException("secure session " + SecureConnection.statusMsg(sessionStatus));
 				}
 				if (sessionState == SessionState.Idle)
-					throw new KNXTimeoutException("timeout establishing secure session with " + conn.server);
+					throw new KNXTimeoutException("timeout establishing secure session with " + hostPort);
 
 				final var delay = keepAliveInvterval.toMillis();
 				keepAliveFuture = keepAliveSender.scheduleWithFixedDelay(this::sendKeepAlive, delay, delay,
 						TimeUnit.MILLISECONDS);
 			}
 			catch (final GeneralSecurityException e) {
-				throw new KnxSecureException("error creating key pair for " + conn.server, e);
+				throw new KnxSecureException("error creating key pair for " + hostPort, e);
 			}
 			catch (final SocketTimeoutException e) {
 				Thread.currentThread().interrupt();
 				throw new InterruptedException(
-						"interrupted I/O establishing secure session with " + conn.server + ": " + e.getMessage());
+						"interrupted I/O establishing secure session with " + hostPort + ": " + e.getMessage());
 			}
 			catch (final IOException e) {
 				close();
 				conn.close();
-				throw new KNXConnectionClosedException("I/O error establishing secure session with " + conn.server, e);
+				throw new KNXConnectionClosedException("I/O error establishing secure session with " + hostPort, e);
 			}
 			finally {
 				conn.sessionRequestLock.unlock();
@@ -342,7 +362,7 @@ public final class Connection implements Closeable {
 				}
 			}
 			if (remaining <= 0)
-				throw new KNXTimeoutException("timeout establishing secure session with " + addressPort(conn.server));
+				throw new KNXTimeoutException("timeout establishing secure session with " + hostPort(conn.server));
 		}
 
 		private boolean acceptServiceType(final KNXnetIPHeader h, final byte[] data, final int offset, final int length)
@@ -377,14 +397,12 @@ public final class Connection implements Closeable {
 				}
 			}
 			else if (svc == SecureWrapper) {
-				final Object[] fields = unwrap(h, data, offset);
-
-				final byte[] packet = (byte[]) fields[1];
+				final byte[] packet = unwrap(h, data, offset);
 				final var plainHeader = new KNXnetIPHeader(packet, 0);
 				final var hdrLen = plainHeader.getStructLength();
 
 				if (plainHeader.getServiceType() == SecureSessionStatus) {
-					sessionStatus = SecureConnection.newChannelStatus(plainHeader, packet, hdrLen);
+					sessionStatus = newChannelStatus(plainHeader, packet, hdrLen);
 
 					if (sessionState == SessionState.Unauthenticated) {
 						if (sessionStatus == AuthSuccess)
@@ -412,6 +430,20 @@ public final class Connection implements Closeable {
 
 		private void dispatchToConnection(final KNXnetIPHeader header, final byte[] data, final int offset,
 				final int length) {
+
+			final int svcType = header.getServiceType();
+			if (svcType == KNXnetIPHeader.SearchResponse || svcType == KNXnetIPHeader.DESCRIPTION_RES) {
+				for (final var client : securedConnections.values())
+					try {
+						client.handleServiceType(header, data, offset, conn.server.getAddress(), conn.server.getPort());
+					}
+					catch (KNXFormatException | IOException e) {
+						logger.warn("{} error processing {}", client, header, e);
+					}
+				return;
+			}
+
+
 			final var channelId = channelId(header, data, offset);
 			var connection = securedConnections.get(channelId);
 			if (connection == null) {
@@ -433,8 +465,7 @@ public final class Connection implements Closeable {
 					logger.warn("communication channel {} does not exist", channelId);
 			}
 			catch (KNXFormatException | IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				logger.warn("{} error processing {}", connection, header, e);
 			}
 		}
 
@@ -456,7 +487,7 @@ public final class Connection implements Closeable {
 			return SecureConnection.newSecurePacket(sessionId, nextSendSeq(), sno, 0, plainPacket, secretKey);
 		}
 
-		private Object[] unwrap(final KNXnetIPHeader h, final byte[] data, final int offset) throws KNXFormatException {
+		private byte[] unwrap(final KNXnetIPHeader h, final byte[] data, final int offset) throws KNXFormatException {
 			final Object[] fields = SecureConnection.unwrap(h, data, offset, secretKey);
 
 			final int sid = (int) fields[0];
@@ -468,14 +499,13 @@ public final class Connection implements Closeable {
 				throw new KnxSecureException("received secure packet with sequence " + seq + " < expected " + rcvSeq);
 			rcvSeq.incrementAndGet();
 
-			final long snLong = (long) fields[2];
-			final byte[] sn = ByteBuffer.allocate(6).putShort((short) (snLong >> 32)).putInt((int) snLong).array();
+			final var sn = (SerialNumber) fields[2];
 			final int tag = (int) fields[3];
 			if (tag != 0)
 				throw new KnxSecureException("expected message tag 0, received " + tag);
 			final byte[] knxipPacket = (byte[]) fields[4];
-			logger.trace("received (seq {} S/N {}) {}", seq, toHex(sn, ""), toHex(knxipPacket, " "));
-			return new Object[] { sn, fields[4] };
+			logger.trace("received (seq {} S/N {}) {}", seq, sn, toHex(knxipPacket, " "));
+			return knxipPacket;
 		}
 
 		private byte[] parseSessionResponse(final KNXnetIPHeader h, final byte[] data, final int offset,
@@ -506,7 +536,7 @@ public final class Connection implements Closeable {
 
 			final boolean skipDeviceAuth = Arrays.equals(deviceAuthKey.getEncoded(), new byte[16]);
 			if (skipDeviceAuth) {
-				logger.warn("skipping device authentication of {} (no device key)", addressPort(remote));
+				logger.warn("skipping device authentication of {} (no device key)", hostPort(remote));
 			}
 			else {
 				final ByteBuffer mac = SecureConnection.decrypt(buffer, deviceAuthKey,
@@ -585,65 +615,71 @@ public final class Connection implements Closeable {
 			return gen.generateKeyPair();
 		}
 
-		private static byte[] deriveSerialNumber(final InetSocketAddress localEP) {
+		private static SerialNumber deriveSerialNumber(final InetSocketAddress localEP) {
 			try {
 				if (localEP != null)
 					return deriveSerialNumber(NetworkInterface.getByInetAddress(localEP.getAddress()));
 			}
 			catch (final SocketException ignore) {}
-			return new byte[6];
+			return SerialNumber.Zero;
 		}
 
-		private static byte[] deriveSerialNumber(final NetworkInterface netif) {
+		private static SerialNumber deriveSerialNumber(final NetworkInterface netif) {
 			try {
 				if (netif != null) {
 					final byte[] hardwareAddress = netif.getHardwareAddress();
 					if (hardwareAddress != null)
-						return Arrays.copyOf(hardwareAddress, 6);
+						return SerialNumber.from(Arrays.copyOf(hardwareAddress, 6));
 				}
 			}
 			catch (final SocketException ignore) {}
-			return new byte[6];
+			return SerialNumber.Zero;
 		}
 	}
 
-	public static Connection newTcpConnection(final InetSocketAddress local, final InetSocketAddress server) {
-		return new Connection(local, server);
+	/**
+	 * Creates a new TCP connection to a KNXnet/IP server.
+	 *
+	 * @param local local endpoint address
+	 * @param server remote endpoint address
+	 * @return a new TCP connection
+	 */
+	public static TcpConnection newTcpConnection(final InetSocketAddress local, final InetSocketAddress server) {
+		return new TcpConnection(local, server);
 	}
 
-	private Connection(final InetSocketAddress server) {
+	private TcpConnection(final InetSocketAddress server) {
 		this.server = server;
 		socket = new Socket();
-		logger = LoggerFactory.getLogger("calimero.knxnetip.tcp " + addressPort(server));
+		logger = LoggerFactory.getLogger("calimero.knxnetip.tcp " + hostPort(server));
 	}
 
-	protected Connection(final InetSocketAddress local, final InetSocketAddress server) {
+	protected TcpConnection(final InetSocketAddress local, final InetSocketAddress server) {
 		this(server);
-		if (local.isUnresolved())
-			throw new KNXIllegalArgumentException("unresolved address " + local);
-
-		var bind = local;
-		if (local.getAddress().isAnyLocalAddress()) {
-			try {
-				final InetAddress addr = Optional.ofNullable(server.getAddress())
-						.flatMap(SecureConnection::onSameSubnet).orElse(InetAddress.getLocalHost());
-				bind = new InetSocketAddress(addr, local.getPort());
-			}
-			catch (final UnknownHostException e) {
-				throw new KnxRuntimeException("no local host address available", e);
-			}
-		}
-
+		InetSocketAddress bind = null;
 		try {
+			bind = Net.matchRemoteEndpoint(local, server, false);
 			socket.bind(bind);
 			// socket returns any-local after socket is closed, so keep actual address after bind
 			localEndpoint = (InetSocketAddress) socket.getLocalSocketAddress();
+		}
+		catch (final KNXException e) {
+			throw new KnxRuntimeException("no local host address available", e.getCause());
 		}
 		catch (final IOException e) {
 			throw new KnxRuntimeException("binding to local address " + bind, e);
 		}
 	}
 
+	/**
+	 * Creates a new secure session for this TCP connection.
+	 *
+	 * @param user user to authenticate for the session
+	 * @param userKey user key with {@code userKey.length == 16}
+	 * @param deviceAuthCode device authentication code with {@code deviceAuthCode.length == 16}, a
+	 *        {@code deviceAuthCode.length == 0} will skip device authentication
+	 * @return new secure session
+	 */
 	public SecureSession newSecureSession(final int user, final byte[] userKey, final byte[] deviceAuthCode) {
 		return new SecureSession(this, user, userKey, deviceAuthCode);
 	}
@@ -659,6 +695,9 @@ public final class Connection implements Closeable {
 		return connected;
 	}
 
+	/**
+	 * Closes this connection and all its contained KNXnet/IP connections and secure sessions.
+	 */
 	@Override
 	public void close() {
 		unsecuredConnections.values().forEach(ClientConnection::close);
@@ -676,7 +715,7 @@ public final class Connection implements Closeable {
 	@Override
 	public String toString() {
 		final var state = socket.isClosed() ? "closed" : socket.isConnected() ? "connected" : "bound";
-		return addressPort(localEndpoint()) + " " + addressPort(server) + " (" + state +")";
+		return hostPort(localEndpoint()) + " " + hostPort(server) + " (" + state +")";
 	}
 
 	Socket socket() { return socket; }
@@ -691,16 +730,15 @@ public final class Connection implements Closeable {
 
 	void unregisterConnectRequest(final ClientConnection c) {
 		ongoingConnectRequests.remove(c);
+		registerConnection(c);
+	}
+
+	public void registerConnection(final ClientConnection c) {
 		if (c.getState() == KNXnetIPConnection.OK)
 			unsecuredConnections.put(c.channelId, c);
 	}
 
-	// InetSocketAddress::toString always prepends a '/' even if there is no host name
-	static String addressPort(final InetSocketAddress addr) {
-		return addr.getAddress().getHostAddress() + ":" + addr.getPort();
-	}
-
-	synchronized void connect() throws IOException {
+	public synchronized void connect() throws IOException {
 		if (!socket.isConnected()) {
 			socket.connect(server, (int) connectionTimeout.toMillis());
 			startTcpReceiver();
@@ -708,7 +746,7 @@ public final class Connection implements Closeable {
 	}
 
 	private void startTcpReceiver() {
-		final Thread t = new Thread(this::runReceiveLoop, "KNXnet/IP tcp receiver " + addressPort(server));
+		final Thread t = new Thread(this::runReceiveLoop, "KNXnet/IP tcp receiver " + hostPort(server));
 		t.setDaemon(true);
 		t.start();
 	}
@@ -762,7 +800,8 @@ public final class Connection implements Closeable {
 			Thread.currentThread().interrupt();
 		}
 		catch (IOException | RuntimeException e) {
-			logger.error("receiver communication failure", e);
+			if (!socket.isClosed())
+				logger.error("receiver communication failure", e);
 		}
 		finally {
 			close();
@@ -787,6 +826,13 @@ public final class Connection implements Closeable {
 
 	private void dispatchToConnection(final KNXnetIPHeader header, final byte[] data, final int offset)
 			throws IOException, KNXFormatException {
+		final int svcType = header.getServiceType();
+		if (svcType == KNXnetIPHeader.SearchResponse || svcType == KNXnetIPHeader.DESCRIPTION_RES) {
+			for (final var client : unsecuredConnections.values())
+				client.handleServiceType(header, data, offset, server.getAddress(), server.getPort());
+			return;
+		}
+
 		final var channelId = channelId(header, data, offset);
 		var connection = unsecuredConnections.get(channelId);
 		if (connection == null) {
@@ -798,7 +844,7 @@ public final class Connection implements Closeable {
 
 		if (connection != null) {
 			connection.handleServiceType(header, data, offset, server.getAddress(), server.getPort());
-			if (header.getServiceType() == KNXnetIPHeader.DISCONNECT_RES)
+			if (svcType == KNXnetIPHeader.DISCONNECT_RES)
 				unsecuredConnections.remove(channelId);
 		}
 		else
@@ -814,6 +860,8 @@ public final class Connection implements Closeable {
 		case KNXnetIPHeader.DEVICE_CONFIGURATION_REQ:
 		case KNXnetIPHeader.TunnelingFeatureResponse:
 		case KNXnetIPHeader.TunnelingFeatureInfo:
+		case KNXnetIPHeader.ObjectServerRequest:
+		case KNXnetIPHeader.ObjectServerAck:
 			channelIdOffset = offset + 1;
 		}
 		final var channelId = data[channelIdOffset] & 0xff;

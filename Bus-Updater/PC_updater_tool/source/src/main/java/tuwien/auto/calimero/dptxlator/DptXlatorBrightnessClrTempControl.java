@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2018, 2020 B. Malinowsky
+    Copyright (c) 2018, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,16 +38,16 @@ package tuwien.auto.calimero.dptxlator;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
 
 /**
  * Translator for KNX DPTs with main number 250, type <b>brightness &amp; color temperature control</b>. The KNX data
  * type width is 3 bytes. The default return value after creation is the value with all parts not valid
  * (<code>- -</code>).
  */
-public class DptXlatorBrightnessClrTempCtrl extends DPTXlator {
+public class DptXlatorBrightnessClrTempControl extends DPTXlator {
 	public static final String Description = "brightness & color temperature control";
 
 	/**
@@ -74,7 +74,7 @@ public class DptXlatorBrightnessClrTempCtrl extends DPTXlator {
 	 *
 	 * @throws KNXFormatException on not available DPT
 	 */
-	public DptXlatorBrightnessClrTempCtrl() throws KNXFormatException {
+	public DptXlatorBrightnessClrTempControl() throws KNXFormatException {
 		this(DptBrightnessClrTempCtrl);
 	}
 
@@ -84,7 +84,7 @@ public class DptXlatorBrightnessClrTempCtrl extends DPTXlator {
 	 * @param dpt the requested datapoint type
 	 * @throws KNXFormatException on not supported or not available DPT
 	 */
-	public DptXlatorBrightnessClrTempCtrl(final DPT dpt) throws KNXFormatException {
+	public DptXlatorBrightnessClrTempControl(final DPT dpt) throws KNXFormatException {
 		this(dpt.getID());
 	}
 
@@ -94,7 +94,7 @@ public class DptXlatorBrightnessClrTempCtrl extends DPTXlator {
 	 * @param dptId available implemented datapoint type ID
 	 * @throws KNXFormatException on wrong formatted or not expected (available) <code>dptId</code>
 	 */
-	public DptXlatorBrightnessClrTempCtrl(final String dptId) throws KNXFormatException {
+	public DptXlatorBrightnessClrTempControl(final String dptId) throws KNXFormatException {
 		super(3);
 		setTypeID(types, dptId);
 		data = new short[3];
@@ -105,17 +105,42 @@ public class DptXlatorBrightnessClrTempCtrl extends DPTXlator {
 		return fromDpt(0);
 	}
 
+	public Optional<StepControl> brightness() {
+		return field(Brightness);
+	}
+
+	public Optional<StepControl> colorTemp() {
+		return field(ColorTemp);
+	}
+
 	/**
 	 * Sets one new translation item, replacing any old items.
 	 *
-	 * @param increaseClrTemp increase or decrease value
-	 * @param clrTempStepcode color temperature stepcode, <code>1 &le; clrTempStepcode &le; 7</code>
-	 * @param increaseBrightness increase or decrease value
-	 * @param brightnessStepcode brightness stepcode, <code>1 &le; brightnessStepcode &le; 7</code>
+	 * @param colorTemp color temperature
+	 * @param brightness brightness
 	 */
-	public final void setValue(final boolean increaseClrTemp, final int clrTempStepcode, final boolean increaseBrightness,
-			final int brightnessStepcode) {
-		data = toDpt(increaseClrTemp, clrTempStepcode, increaseBrightness, brightnessStepcode);
+	public final void setValue(final StepControl colorTemp, final StepControl brightness) {
+		data = toDpt(colorTemp, brightness);
+	}
+
+	public final void setBrightness(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 1;
+		final int validBit = 1;
+		data[offset] = d;
+		data[2] |= validBit;
+	}
+
+	public final void setColorTemp(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 0;
+		final int validBit = 2;
+		data[offset] = d;
+		data[2] |= validBit;
 	}
 
 	@Override
@@ -163,6 +188,17 @@ public class DptXlatorBrightnessClrTempCtrl extends DPTXlator {
 		else
 			s += " " + brightnessSuffix + " -";
 		return s;
+	}
+
+	private static final int Brightness = 0;
+	private static final int ColorTemp = 1;
+
+	private Optional<StepControl> field(final int field) {
+		final int valid = data[2];
+		final int validBit = 1 << field;
+		if ((valid & validBit) == validBit)
+			return Optional.of(StepControl.from(data[1 - field]));
+		return Optional.empty();
 	}
 
 	@Override
@@ -225,23 +261,13 @@ public class DptXlatorBrightnessClrTempCtrl extends DPTXlator {
 		return t.getData()[0];
 	}
 
-	private short[] toDpt(final boolean increaseClrTemp, final int clrTempStepcode, final boolean increaseBrightness,
-			final int brightnessStepcode) {
-		rangeCheck(clrTempStepcode, brightnessStepcode);
-
-		t.setValue(increaseClrTemp, clrTempStepcode);
+	private short[] toDpt(final StepControl colorTemp, final StepControl brightness) {
+		t.setValue(colorTemp);
 		final short clrtemp = ubyte(t.getData()[0]);
-		t.setValue(increaseBrightness, brightnessStepcode);
+		t.setValue(brightness);
 		final short bright = ubyte(t.getData()[0]);
 		final int valid = 0b11;
 
 		return new short[] { clrtemp, bright, valid };
-	}
-
-	private void rangeCheck(final int clrTempStepcode, final int brightnessStepcode) {
-		if (clrTempStepcode < 1 || clrTempStepcode > 7)
-			throw new KNXIllegalArgumentException("color temperature stepcode " + clrTempStepcode + " out of range [1..7]");
-		if (brightnessStepcode < 1 || brightnessStepcode > 7)
-			throw new KNXIllegalArgumentException("brightness stepcode " + brightnessStepcode + " out of range [1..7]");
 	}
 }

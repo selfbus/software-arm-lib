@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXInvalidResponseException;
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.ServiceType;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMIDevMgmt;
 import tuwien.auto.calimero.knxnetip.servicetype.ErrorCodes;
@@ -55,6 +56,7 @@ import tuwien.auto.calimero.knxnetip.servicetype.PacketHelper;
 import tuwien.auto.calimero.knxnetip.servicetype.ServiceAck;
 import tuwien.auto.calimero.knxnetip.servicetype.ServiceRequest;
 import tuwien.auto.calimero.knxnetip.util.CRI;
+import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.log.LogService.LogLevel;
 
 /**
@@ -72,6 +74,8 @@ public class KNXnetIPDevMgmt extends ClientConnection
 	// client SHALL wait 10 seconds for a device config response from server
 	private static final int CONFIGURATION_REQ_TIMEOUT = 10;
 
+	static final CRI cri = CRI.createRequest(DEVICE_MGMT_CONNECTION);
+
 	/**
 	 * Creates a new KNXnet/IP device management connection to a remote device.
 	 *
@@ -88,17 +92,21 @@ public class KNXnetIPDevMgmt extends ClientConnection
 	public KNXnetIPDevMgmt(final InetSocketAddress localEP, final InetSocketAddress serverCtrlEP, final boolean useNAT)
 		throws KNXException, InterruptedException
 	{
-		super(KNXnetIPHeader.DEVICE_CONFIGURATION_REQ, KNXnetIPHeader.DEVICE_CONFIGURATION_ACK, 4,
-				CONFIGURATION_REQ_TIMEOUT);
-		final CRI cri = CRI.createRequest(DEVICE_MGMT_CONNECTION, null);
+		this(serverCtrlEP);
 		connect(localEP, serverCtrlEP, cri, useNAT);
 	}
 
-	public KNXnetIPDevMgmt(final Connection connection) throws KNXException, InterruptedException {
+	public KNXnetIPDevMgmt(final TcpConnection connection) throws KNXException, InterruptedException {
 		super(KNXnetIPHeader.DEVICE_CONFIGURATION_REQ, KNXnetIPHeader.DEVICE_CONFIGURATION_ACK, 4,
 				CONFIGURATION_REQ_TIMEOUT, connection);
-		final CRI cri = CRI.createRequest(DEVICE_MGMT_CONNECTION, null);
 		connect(connection, cri);
+	}
+
+	KNXnetIPDevMgmt(final InetSocketAddress serverCtrlEP) {
+		super(KNXnetIPHeader.DEVICE_CONFIGURATION_REQ, KNXnetIPHeader.DEVICE_CONFIGURATION_ACK, 4,
+				CONFIGURATION_REQ_TIMEOUT);
+		ctrlEndpt = serverCtrlEP;
+		logger = LogService.getLogger("calimero.knxnetip." + name());
 	}
 
 	/**
@@ -116,9 +124,9 @@ public class KNXnetIPDevMgmt extends ClientConnection
 	}
 
 	@Override
-	public String getName()
+	public String name()
 	{
-		return "KNXnet/IP DevMgmt " + super.getName();
+		return "KNXnet/IP DevMgmt " + super.name();
 	}
 
 	@Override
@@ -131,7 +139,7 @@ public class KNXnetIPDevMgmt extends ClientConnection
 		if (svc != serviceRequest)
 			return false;
 
-		final ServiceRequest req = getServiceRequest(h, data, offset);
+		final ServiceRequest<ServiceType> req = ServiceRequest.from(h, data, offset);
 		if (!checkChannelId(req.getChannelID(), "request"))
 			return true;
 
@@ -152,10 +160,7 @@ public class KNXnetIPDevMgmt extends ClientConnection
 			close(CloseEvent.INTERNAL, "protocol version changed", LogLevel.ERROR, null);
 			return true;
 		}
-		final CEMI cemi = req.getCEMI();
-		// leave if we are working with an empty (broken) service request
-		if (cemi == null)
-			return true;
+		final CEMI cemi = req.service();
 		final int mc = cemi.getMessageCode();
 		if (mc == CEMIDevMgmt.MC_PROPINFO_IND || mc == CEMIDevMgmt.MC_RESET_IND)
 			fireFrameReceived(cemi);

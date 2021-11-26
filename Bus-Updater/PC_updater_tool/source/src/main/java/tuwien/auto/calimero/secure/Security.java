@@ -1,6 +1,6 @@
 /*
     Calimero - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero.internal;
+package tuwien.auto.calimero.secure;
 
 import java.util.List;
 import java.util.Map;
@@ -43,8 +43,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.Keyring;
+import tuwien.auto.calimero.SerialNumber;
 
+/**
+ * Contains key and address information required for KNX secure process communication and management.
+ */
 public final class Security {
 
 	private static final Security defInst = new Security();
@@ -52,8 +55,22 @@ public final class Security {
 	private final Map<IndividualAddress, byte[]> deviceToolKeys = new ConcurrentHashMap<>();
 	private final Map<GroupAddress, byte[]> groupKeys = new ConcurrentHashMap<>();
 	private final Map<GroupAddress, Set<IndividualAddress>> groupSenders = new ConcurrentHashMap<>();
+	private final Map<SerialNumber, byte[]> broadcastToolKeys = new ConcurrentHashMap<>();
 
-	private Security() {}
+
+	/**
+	 * Creates a new security object, mainly for use with KNX installations other than the {@link #defaultInstallation()}.
+	 */
+	public static Security newSecurity() { return new Security(); }
+
+	static Security withKeys(final Map<IndividualAddress, byte[]> deviceToolKeys,
+			final Map<GroupAddress, byte[]> groupKeys, final Map<GroupAddress, Set<IndividualAddress>> groupSenders) {
+		final var s = new Security();
+		s.deviceToolKeys.putAll(deviceToolKeys);
+		s.groupKeys.putAll(groupKeys);
+		s.groupSenders.putAll(groupSenders);
+		return s;
+	}
 
 	/**
 	 * Returns the security object for the default KNX installation.
@@ -61,9 +78,22 @@ public final class Security {
 	 * @return instance used for default KNX installation
 	 */
 	// ??? naming: knx installation id is linked to project id and not stored in keyring nor in many interfaces
-	public static final Security defaultInstallation() { return defInst; }
+	public static Security defaultInstallation() { return defInst; }
 
+
+	private Security() {}
+
+	/**
+	 * Adds KNX secure information of the supplied keyring to this security instance;
+	 * keyring entries will overwrite existing key data.
+	 *
+	 * @param keyring keyring to add, keyring has to have a valid signature
+	 * @param password keyring password
+	 */
 	public void useKeyring(final Keyring keyring, final char[] password) {
+		if (!keyring.verifySignature(password))
+			throw new KnxSecureException("keyring signature mismatch (invalid keyring or wrong password)");
+
 		final var devices = keyring.devices();
 		devices.forEach((addr, device) -> device.toolKey().ifPresent(
 				toolkey -> deviceToolKeys.put(addr, keyring.decryptKey(toolkey, password))));
@@ -86,15 +116,33 @@ public final class Security {
 		return set;
 	}
 
+	/**
+	 * Returns the device toolkeys currently configured for this security object.
+	 *
+	 * @return modifiable mapping of device address to tool key
+	 */
 	public Map<IndividualAddress, byte[]> deviceToolKeys() {
 		return deviceToolKeys;
 	}
 
+	/**
+	 * Returns the group keys currently configured for this security object.
+	 *
+	 * @return modifiable mapping of group address to group key
+	 */
 	public Map<GroupAddress, byte[]> groupKeys() {
 		return groupKeys;
 	}
 
+	/**
+	 * Returns the secure datapoints currently configured for this security object, together with the addresses
+	 * of devices acting as senders for that specific datapoint.
+	 *
+	 * @return modifiable mapping of group address to set of senders
+	 */
 	public Map<GroupAddress, Set<IndividualAddress>> groupSenders() {
 		return groupSenders;
 	}
+
+	Map<SerialNumber, byte[]> broadcastToolKeys() { return broadcastToolKeys; }
 }

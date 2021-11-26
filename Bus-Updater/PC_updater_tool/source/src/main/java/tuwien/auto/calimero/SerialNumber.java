@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2021, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,54 +36,54 @@
 
 package tuwien.auto.calimero;
 
-import java.util.Objects;
+import java.nio.ByteBuffer;
 
-public final class SecurityControl {
-	public enum DataSecurity {
-		None, Auth, AuthConf;
+/**
+ * Represents a KNX serial number.
+ */
+public final class SerialNumber {
 
-		@Override
-		public String toString() { return this == AuthConf ? "auth+conf" : super.toString().toLowerCase(); }
-	}
+	/** Size of a KNX serial number in bytes. */
+	public static final int Size = 6;
 
-	private final DataSecurity security;
-	private final boolean toolAccess;
+	/** Serial number 0. */
+	public static final SerialNumber Zero = SerialNumber.of(0);
 
-	public static final SecurityControl Plain = new SecurityControl(DataSecurity.None);
+	private final long sno;
 
-	public static SecurityControl of(final DataSecurity security, final boolean toolAccess) {
-		if (security == DataSecurity.None) {
-			if (toolAccess)
-				throw new IllegalArgumentException("tool access requires security");
-			return Plain;
-		}
-		return new SecurityControl(security, toolAccess);
-	}
+	private SerialNumber(final long serialNumber) { sno = serialNumber & 0xffff_ffff_ffffL; }
 
-	private SecurityControl(final DataSecurity security) { this(security, false); }
+	public static SerialNumber of(final long serialNumber) { return new SerialNumber(serialNumber); }
 
-	private SecurityControl(final DataSecurity security, final boolean toolAccess) {
-		this.security = security;
-		this.toolAccess = toolAccess;
-	}
+	/**
+	 * Parses the supplied byte array into a serial number.
+	 *
+	 * @param serialNumber serial number, {@code serialNumber.length = 6}
+	 * @return serial number instance
+	 */
+	public static SerialNumber from(final byte[] serialNumber) { return new SerialNumber(unsigned(serialNumber)); }
 
-	public DataSecurity security() { return security; }
+	public long number() { return sno; }
 
-	public boolean toolAccess() { return toolAccess; }
-
-	@Override
-	public int hashCode() { return Objects.hash(security, toolAccess); }
+	public byte[] array() { return ByteBuffer.allocate(6).putShort((short) (sno >> 32)).putInt((int) sno).array(); }
 
 	@Override
 	public boolean equals(final Object obj) {
-		if (!(obj instanceof SecurityControl))
-			return false;
-		final var sc = (SecurityControl) obj;
-		return security == sc.security && toolAccess == sc.toolAccess;
+		return obj instanceof SerialNumber && ((SerialNumber) obj).sno == sno;
 	}
 
 	@Override
-	public String toString() {
-		return security + (toolAccess ? ", tool access" : "");
+	public int hashCode() { return Long.hashCode(sno); }
+
+	@Override
+	public String toString() { return String.format("%04x:%08x", sno >> 32, sno & 0xffff_ffff); }
+
+	private static long unsigned(final byte[] data) {
+		if (data.length != Size)
+			throw new KNXIllegalArgumentException("invalid size for a KNX serial number");
+		long l = 0;
+		for (final byte b : data)
+			l = (l << 8) + (b & 0xff);
+		return l;
 	}
 }

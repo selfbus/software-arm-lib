@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -46,24 +46,19 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
 
-import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXAckTimeoutException;
 import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXListener;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.ReturnCode;
 import tuwien.auto.calimero.cemi.CEMIDevMgmt;
 import tuwien.auto.calimero.cemi.CEMILData;
-import tuwien.auto.calimero.knxnetip.Connection;
-import tuwien.auto.calimero.knxnetip.Connection.SecureSession;
 import tuwien.auto.calimero.knxnetip.KNXConnectionClosedException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.knxnetip.KNXnetIPDevMgmt;
@@ -74,6 +69,8 @@ import tuwien.auto.calimero.knxnetip.LostMessageEvent;
 import tuwien.auto.calimero.knxnetip.RoutingBusyEvent;
 import tuwien.auto.calimero.knxnetip.RoutingListener;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
+import tuwien.auto.calimero.knxnetip.TcpConnection;
+import tuwien.auto.calimero.knxnetip.TcpConnection.SecureSession;
 import tuwien.auto.calimero.knxnetip.TunnelingListener;
 import tuwien.auto.calimero.knxnetip.servicetype.TunnelingFeature;
 import tuwien.auto.calimero.knxnetip.servicetype.TunnelingFeature.InterfaceFeature;
@@ -153,7 +150,7 @@ public class KNXNetworkLinkIP extends AbstractLink<KNXnetIPConnection>
 		return new KNXNetworkLinkIP(TUNNELING, localEP, remoteEP, useNAT, settings);
 	}
 
-	public static KNXNetworkLinkIP newTunnelingLink(final Connection connection, final KNXMediumSettings settings)
+	public static KNXNetworkLinkIP newTunnelingLink(final TcpConnection connection, final KNXMediumSettings settings)
 			throws KNXException, InterruptedException {
 		return new KNXNetworkLinkIP(TunnelingV2, KNXnetIPTunnel.newTcpTunnel(TunnelingLayer.LinkLayer, connection,
 				settings.getDeviceAddress()), settings);
@@ -291,7 +288,7 @@ public class KNXNetworkLinkIP extends AbstractLink<KNXnetIPConnection>
 		mode = serviceMode;
 		conn.addConnectionListener(notifier);
 		if (c instanceof KNXnetIPTunnel && mode == TunnelingV2) {
-			customEvents.put(TunnelingFeature.class, ConcurrentHashMap.newKeySet());
+			notifier.registerEventType(TunnelingFeature.class);
 
 			final var tunnel = (KNXnetIPTunnel) c;
 			tunnel.addConnectionListener(new TunnelingListener() {
@@ -332,28 +329,28 @@ public class KNXNetworkLinkIP extends AbstractLink<KNXnetIPConnection>
 				@Override
 				public void frameReceived(final FrameEvent e) {}
 
-				@Override
-				public void connectionClosed(final CloseEvent e) {}
-
 				private void setTunnelingAddress(final TunnelingFeature feature) {
 					getKNXMedium().setDeviceAddress(new IndividualAddress(feature.featureValue().get()));
 				}
 			});
-			tunnel.send(InterfaceFeature.EnableFeatureInfoService, (byte) 1);
-			tunnel.send(InterfaceFeature.IndividualAddress);
-			tunnel.send(InterfaceFeature.MaxApduLength);
-			tunnel.send(InterfaceFeature.DeviceDescriptorType0);
+			try {
+				tunnel.send(InterfaceFeature.EnableFeatureInfoService, (byte) 1);
+			}
+			catch (final KNXAckTimeoutException e) {
+				throw e;
+			}
+			catch (final KNXTimeoutException ok) {}
+			getTunnelingFeature(tunnel, InterfaceFeature.IndividualAddress);
+			getTunnelingFeature(tunnel, InterfaceFeature.MaxApduLength);
+			getTunnelingFeature(tunnel, InterfaceFeature.DeviceDescriptorType0);
 		}
 		else if (c instanceof KNXnetIPRouting) {
-			customEvents.put(LostMessageEvent.class, ConcurrentHashMap.newKeySet());
-			customEvents.put(RoutingBusyEvent.class, ConcurrentHashMap.newKeySet());
+			notifier.registerEventType(LostMessageEvent.class);
+			notifier.registerEventType(RoutingBusyEvent.class);
 
 			c.addConnectionListener(new RoutingListener() {
 				@Override
 				public void frameReceived(final FrameEvent e) {}
-
-				@Override
-				public void connectionClosed(final CloseEvent e) {}
 
 				@Override
 				public void routingBusy(final RoutingBusyEvent e) {
@@ -365,6 +362,19 @@ public class KNXNetworkLinkIP extends AbstractLink<KNXnetIPConnection>
 					dispatchCustomEvent(e);
 				}
 			});
+		}
+	}
+
+	private void getTunnelingFeature(final KNXnetIPTunnel tunnel, final InterfaceFeature feature)
+			throws KNXConnectionClosedException, KNXAckTimeoutException, InterruptedException {
+		try {
+			tunnel.send(feature);
+		}
+		catch (final KNXAckTimeoutException e) {
+			throw e;
+		}
+		catch (final KNXTimeoutException e) {
+			// no tunneling feature response, which is fine
 		}
 	}
 
@@ -413,41 +423,57 @@ public class KNXNetworkLinkIP extends AbstractLink<KNXnetIPConnection>
 			conn.send(msg, waitForCon ? WaitForCon : WaitForAck);
 			logger.trace("send {}->{} succeeded", msg.getSource(), msg.getDestination());
 		}
-		catch (InterruptedException | KNXConnectionClosedException e) {
+		catch (final InterruptedException e) {
+			close();
+			Thread.currentThread().interrupt();
+			throw new KNXLinkClosedException("link closed (interrupted)");
+		}
+		catch (final KNXConnectionClosedException e) {
 			logger.error("send error, closing link", e);
 			close();
-			if (e instanceof InterruptedException)
-				Thread.currentThread().interrupt();
 			throw new KNXLinkClosedException("link closed, " + e.getMessage());
 		}
 	}
 
 	@Override
+	@SuppressWarnings("try")
+	void baosMode(final boolean enable) throws KNXException, InterruptedException {
+		try (var __ = newMgmt(mgmtLocalEp, mgmtRemoteEp, mgmtNat)) {
+			super.baosMode(enable);
+		}
+	}
+
+	@Override
 	void onSend(final CEMIDevMgmt frame)
-		throws KNXTimeoutException, KNXConnectionClosedException, InterruptedException {
+			throws KNXTimeoutException, KNXConnectionClosedException, InterruptedException {
 		mgmt.send(frame, WaitForCon);
 	}
 
+	// need to store mgmt config for baos mode switch
+	private InetSocketAddress mgmtLocalEp;
+	private InetSocketAddress mgmtRemoteEp;
+	private boolean mgmtNat;
+
+	@SuppressWarnings("try")
 	private void configureWithServerSettings(final InetSocketAddress localEP, final InetSocketAddress serverCtrlEP,
-		final boolean useNat) throws InterruptedException {
-		try (KNXnetIPDevMgmt mgmt = new KNXnetIPDevMgmt(new InetSocketAddress(localEP.getAddress(), 0), serverCtrlEP, useNat)) {
-			this.mgmt = mgmt;
-			mgmt.addConnectionListener(new KNXListener() {
-				@Override
-				public void frameReceived(final FrameEvent e) {
-					onDevMgmt((CEMIDevMgmt) e.getFrame());
-				}
-
-				@Override
-				public void connectionClosed(final CloseEvent e) {}
-			});
-
+			final boolean useNat) throws InterruptedException {
+		mgmtLocalEp = localEP;
+		mgmtRemoteEp = serverCtrlEP;
+		mgmtNat = useNat;
+		try (var __ = newMgmt(localEP, serverCtrlEP, useNat)) {
 			mediumType();
 			setMaxApduLength();
 		}
 		catch (KNXException | RuntimeException e) {
 			logger.warn("skip link configuration (use defaults)", e);
 		}
+	}
+
+	private KNXnetIPDevMgmt newMgmt(final InetSocketAddress localEP, final InetSocketAddress serverCtrlEP,
+			final boolean useNat) throws KNXException, InterruptedException {
+		mgmt = new KNXnetIPDevMgmt(new InetSocketAddress(localEP.getAddress(), 0), serverCtrlEP, useNat);
+		mgmt.addConnectionListener(e -> onDevMgmt((CEMIDevMgmt) e.getFrame()));
+		return mgmt;
 	}
 
 	private static KNXnetIPConnection newConnection(final int serviceMode, final InetSocketAddress localEP,

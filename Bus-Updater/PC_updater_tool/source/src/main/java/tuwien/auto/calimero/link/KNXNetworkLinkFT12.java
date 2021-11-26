@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,12 +36,18 @@
 
 package tuwien.auto.calimero.link;
 
+import java.util.function.Function;
+
 import tuwien.auto.calimero.DataUnitBuilder;
+import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.KNXListener;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.cemi.CEMILData;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.serial.ConnectionEvent;
+import tuwien.auto.calimero.serial.ConnectionStatus;
 import tuwien.auto.calimero.serial.FT12Connection;
 import tuwien.auto.calimero.serial.KNXPortClosedException;
 
@@ -116,6 +122,16 @@ public class KNXNetworkLinkFT12 extends AbstractLink<FT12Connection>
 		sendCEmiAsByteArray = true;
 		linkLayerMode();
 		conn.addConnectionListener(notifier);
+		conn.addConnectionListener(new KNXListener() {
+			@Override
+			public void frameReceived(final FrameEvent e) {}
+
+			@ConnectionEvent
+			void connectionStatus(final ConnectionStatus status) {
+				if (status == ConnectionStatus.Reset)
+					connectionReset();
+			}
+		});
 	}
 
 	@Override
@@ -152,11 +168,31 @@ public class KNXNetworkLinkFT12 extends AbstractLink<FT12Connection>
 		}
 	}
 
+	private void connectionReset() {
+		// don't run this in notification thread!
+		final Runnable modeSetter = () -> {
+			try {
+				if (baosMode)
+					baosMode(true);
+				else
+					linkLayerMode();
+			}
+			catch (final KNXException e) {
+				close();
+			}
+			catch (final InterruptedException e) {
+				close();
+				Thread.currentThread().interrupt();
+			}
+		};
+		new Thread(modeSetter, "FT1.2 connection reset mode switcher").start();
+	}
+
 	private void linkLayerMode() throws KNXException {
-		new BcuSwitcher(conn).linkLayerMode(cEMI);
+		new BcuSwitcher<>(conn, logger, Function.identity()).linkLayerMode(cEMI);
 	}
 
 	private void normalMode() throws KNXTimeoutException, KNXPortClosedException, KNXLinkClosedException {
-		new BcuSwitcher(conn).normalMode(cEMI);
+		new BcuSwitcher<>(conn, logger, Function.identity()).normalMode(cEMI);
 	}
 }

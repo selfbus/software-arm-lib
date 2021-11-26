@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2018 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,11 +40,14 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import tuwien.auto.calimero.DeviceDescriptor.DD0;
+import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXInvalidResponseException;
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 
 /**
@@ -87,15 +90,33 @@ public interface ManagementProcedures extends AutoCloseable
 	 * <p>
 	 * This method corresponds to the KNX <i>NM_IndividualAddress_SerialNumber_Read</i> procedure.
 	 *
-	 * @param serialNo byte array with serial number, <code>serialNo.length</code> = 6
-	 * @return the individual address
+	 * @param serialNo device serial number
+	 * @return the individual address of the device
 	 * @throws KNXTimeoutException on a timeout during send or no address response was received
 	 * @throws KNXInvalidResponseException on invalid read response message
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 * @throws KNXException on other read address errors
 	 * @throws InterruptedException on interrupted thread
 	 */
-	IndividualAddress readAddress(byte[] serialNo) throws KNXException, InterruptedException;
+	IndividualAddress readAddress(SerialNumber serialNo) throws KNXException, InterruptedException;
+
+	/**
+	 * Reads the individual address of a KNX device with known serial number.
+	 * <p>
+	 * This method corresponds to the KNX <i>NM_IndividualAddress_SerialNumber_Read</i> procedure.
+	 *
+	 * @param serialNo byte array with serial number, <code>serialNo.length</code> = 6
+	 * @return the individual address of the device
+	 * @throws KNXTimeoutException on a timeout during send or no address response was received
+	 * @throws KNXInvalidResponseException on invalid read response message
+	 * @throws KNXLinkClosedException if network link to KNX network is closed
+	 * @throws KNXException on other read address errors
+	 * @throws InterruptedException on interrupted thread
+	 * @see #readAddress(SerialNumber)
+	 */
+	default IndividualAddress readAddress(final byte[] serialNo) throws KNXException, InterruptedException {
+		return readAddress(SerialNumber.from(serialNo));
+	}
 
 	/**
 	 * Writes the individual address of a single KNX device set to programming mode.
@@ -123,16 +144,30 @@ public interface ManagementProcedures extends AutoCloseable
 	 * Note that this procedure, in contrast to {@link #writeAddress(IndividualAddress)}, does not
 	 * restart the programmed device.
 	 *
-	 * @param serialNo the device serial number to be programmed, <code>serialNo.length = 6</code>
+	 * @param serialNo the device serial number
 	 * @param newAddress the new address for the device identified by <code>serialNo</code>
 	 * @return <code>true</code> if the new address is set and was verified successfully,
-	 *         <code>false</code> if the device reports back a differing (e.g., old) address on
-	 *         verification
-	 * @throws KNXException on any errors attempting to write or verify the written individual
-	 *         device address
+	 *         <code>false</code> if the device reports back a differing (e.g., old) address on verification
+	 * @throws KNXException on any errors attempting to write or verify the written individual device address
 	 * @throws InterruptedException on interrupted thread
 	 */
-	boolean writeAddress(byte[] serialNo, IndividualAddress newAddress) throws KNXException, InterruptedException;
+	boolean writeAddress(SerialNumber serialNo, IndividualAddress newAddress) throws KNXException, InterruptedException;
+
+	/**
+	 * Writes the individual address of a single KNX device with known serial number.
+	 *
+	 * @param serialNo the device serial number, <code>serialNo.length = 6</code>
+	 * @param newAddress the new address for the device identified by <code>serialNo</code>
+	 * @return <code>true</code> if the new address is set and was verified successfully,
+	 *         <code>false</code> if the device reports back a differing (e.g., old) address on verification
+	 * @throws KNXException on any errors attempting to write or verify the written individual device address
+	 * @throws InterruptedException on interrupted thread
+	 * @see #writeAddress(SerialNumber, IndividualAddress)
+	 */
+	default boolean writeAddress(final byte[] serialNo, final IndividualAddress newAddress) throws KNXException,
+			InterruptedException {
+		return writeAddress(SerialNumber.from(serialNo), newAddress);
+	}
 
 	/**
 	 * Sets the individual address of all devices which are in programming mode to the
@@ -244,15 +279,38 @@ public interface ManagementProcedures extends AutoCloseable
 	 * @param line the KNX network line to scan for network devices, <code>0 &le; line &le; 0x0F</code>; devices in the
 	 *        main line of an area are assigned line address 0. for a definition of line, see {@link IndividualAddress}
 	 * @param device consumer called for every device found during the scan
-	 * @throws KNXTimeoutException on communication timeouts during the scan
 	 * @throws KNXLinkClosedException on a closed KNXNetworkLink to the KNX network
 	 * @throws InterruptedException if this thread was interrupted while scanning the network devices
 	 */
-	void scanNetworkDevices(int area, int line, Consumer<IndividualAddress> device)
-		throws KNXTimeoutException, KNXLinkClosedException, InterruptedException;
+	default void scanNetworkDevices(final int area, final int line, final Consumer<IndividualAddress> device)
+			throws KNXLinkClosedException, InterruptedException {
+		scanNetworkDevices(area, line, device, (__, ___) -> {});
+	}
 
 	/**
-	 * Determines the serial numbers of all KNX devices that have its individual address set to the
+	 * Determines the existing KNX network devices on a specific KNX subnetwork. This method corresponds to the KNX
+	 * network management subnetwork devices scan procedure <i>NM_SubnetworkDevices_Scan</i>. This procedure scans a
+	 * specific KNX subnetwork, identified by the <code>area</code> and <code>line</code> of the KNX network.<br>
+	 * For this procedure to work, the individual address (and the domain address for open media) of the used routers in
+	 * the KNX network have to be configured.
+	 *
+	 * @param area the KNX network area to scan for network devices, <code>0 &le; area &le; 0x0F</code>; devices in the
+	 *        backbone line of areas are assigned area address 0. For a definition of area, see
+	 *        {@link IndividualAddress}.
+	 * @param line the KNX network line to scan for network devices, <code>0 &le; line &le; 0x0F</code>; devices in the
+	 *        main line of an area are assigned line address 0. for a definition of line, see {@link IndividualAddress}
+	 * @param device consumer called for every device found during the scan
+	 * @param deviceWithDescriptor consumer called for every device which answers to a device descriptor read during the
+	 *        scan
+	 * @throws KNXLinkClosedException on a closed KNXNetworkLink to the KNX network
+	 * @throws InterruptedException if this thread was interrupted while scanning the network devices
+	 */
+	void scanNetworkDevices(int area, int line, Consumer<IndividualAddress> device,
+			BiConsumer<IndividualAddress, DD0> deviceWithDescriptor) throws KNXLinkClosedException, InterruptedException;
+
+	/**
+	 * Determines the serial numbers of all KNX de@Override
+	vices that have its individual address set to the
 	 * default individual address.
 	 * <p>
 	 * This method corresponds to the KNX <i>NM_SerialNumberDefaultIA_Scan</i> procedure.<br>
@@ -278,7 +336,20 @@ public interface ManagementProcedures extends AutoCloseable
 	// ??? can we automatically detect the medium in this procedure?
 	List<byte[]> scanSerialNumbers(int medium) throws KNXException, InterruptedException;
 
-	// mode querying/setting procedures
+	/**
+	 * Tests whether a group address is in use within the range {@code startAddress} to
+	 * {@code startAddress + range - 1}. This method corresponds to the KNX <i>NM_GroupAddress_Scan</i> procedure.
+	 *
+	 * @param startAddress start address of group addresses to check
+	 * @param range test addresses in the range {@code startAddress + range - 1}, with {@code 0 < range < 256}; use 1 to
+	 *        test for a single group address
+	 * @return address list of responding devices which have assigned 1 or more addresses in the specfied range, empty
+	 *         list on no resopnse
+	 * @throws KNXException on network or reading error during the address check
+	 * @throws InterruptedException on interrupted thread
+	 */
+	List<IndividualAddress> scanGroupAddresses(GroupAddress startAddress, int range)
+		throws KNXException, InterruptedException;
 
 	/**
 	 * Sets the programming mode of a KNX network device.
@@ -359,6 +430,9 @@ public interface ManagementProcedures extends AutoCloseable
 	 */
 	void detach();
 
+	/**
+	 * Calls {@link ManagementProcedures#detach()}.
+	 */
 	@Override
 	default void close() { detach(); }
 }

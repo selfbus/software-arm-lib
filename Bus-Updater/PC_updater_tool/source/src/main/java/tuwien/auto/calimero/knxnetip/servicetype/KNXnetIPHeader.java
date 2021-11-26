@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
 package tuwien.auto.calimero.knxnetip.servicetype;
 
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -181,6 +182,11 @@ public class KNXnetIPHeader
 	public static final int TunnelingFeatureSet = 0x0424;
 	public static final int TunnelingFeatureInfo = 0x0425;
 
+	// BAOS ObjectServer
+
+	public static final int ObjectServerRequest = 0xf080;
+	public static final int ObjectServerAck = 0xf081;
+
 
 	private static final int HEADER_SIZE_10 = 0x06;
 
@@ -188,6 +194,22 @@ public class KNXnetIPHeader
 	private final int service;
 	private final int totalsize;
 	private final int version;
+
+
+	public static KNXnetIPHeader from(final byte[] frame, final int offset) throws KNXFormatException {
+		final var buf = ByteBuffer.wrap(frame, offset, frame.length);
+		if (buf.remaining() < HEADER_SIZE_10)
+			throw new KNXFormatException("buffer too short for KNXnet/IP header");
+
+		final int headersize = buf.get() & 0xFF;
+		if (headersize != HEADER_SIZE_10)
+			throw new KNXFormatException("unsupported header size, expected " + HEADER_SIZE_10, headersize);
+
+		final int version = buf.get() & 0xFF;
+		final int service = buf.getShort() & 0xffff;
+		final int totalsize = buf.getShort() & 0xffff;
+		return new KNXnetIPHeader(service, version, totalsize - HEADER_SIZE_10);
+	}
 
 	/**
 	 * Creates a new KNXnet/IP header by reading in the header of a KNXnet/IP frame.
@@ -214,10 +236,10 @@ public class KNXnetIPHeader
 
 		if (headersize != HEADER_SIZE_10)
 			throw new KNXFormatException("unsupported header size, expected " + HEADER_SIZE_10, headersize);
-		if (version != KNXNETIP_VERSION_10)
+		final int expectedVersion = version(service);
+		if (version != expectedVersion)
 			throw new KNXFormatException(
-					String.format("unsupported KNXnet/IP protocol version, expected 0x%1h", KNXNETIP_VERSION_10),
-					version);
+					String.format("unsupported KNXnet/IP protocol version, expected 0x%1h", expectedVersion), version);
 	}
 
 	/**
@@ -229,13 +251,27 @@ public class KNXnetIPHeader
 	 */
 	public KNXnetIPHeader(final int serviceType, final int serviceLength)
 	{
-		if (serviceLength < 0)
-			throw new IllegalArgumentException("negative length of message body");
+		this(serviceType, version(serviceType), serviceLength);
+	}
+
+	/**
+	 * Creates a new KNXnet/IP header for the given service.
+	 *
+	 * @param serviceType service type identifier specifying the service followed after
+	 *        the header, 0 &lt;= type &lt;= 0xFFFF
+	 * @param version protocol version, 0x10 &le; version &le; 0xff
+	 * @param serviceLength length of the service structure in bytes
+	 */
+	public KNXnetIPHeader(final int serviceType, final int version, final int serviceLength) {
 		if (serviceType < 0 || serviceType > 0xFFFF)
 			throw new KNXIllegalArgumentException("service type out of range [0..0xFFFF]");
+		if (version < 0x10 || version > 0xff)
+			throw new KNXIllegalArgumentException("version out of range [0x10..0xFF]");
+		if (serviceLength < 0)
+			throw new IllegalArgumentException("negative length of message body");
 		headersize = HEADER_SIZE_10;
 		service = serviceType;
-		version = KNXNETIP_VERSION_10;
+		this.version = version;
 		totalsize = headersize + serviceLength;
 	}
 
@@ -245,7 +281,6 @@ public class KNXnetIPHeader
 
 	/**
 	 * Returns the service type identifier.
-	 * <p>
 	 *
 	 * @return service type as unsigned 16 bit value
 	 */
@@ -256,7 +291,6 @@ public class KNXnetIPHeader
 
 	/**
 	 * Returns the KNXnet/IP protocol version of the frame.
-	 * <p>
 	 *
 	 * @return protocol version as unsigned 8 bit value
 	 */
@@ -267,7 +301,6 @@ public class KNXnetIPHeader
 
 	/**
 	 * Returns the length of the KNXnet/IP header structure.
-	 * <p>
 	 *
 	 * @return the length in bytes
 	 */
@@ -291,7 +324,6 @@ public class KNXnetIPHeader
 
 	/**
 	 * Returns the byte representation of the KNXnet/IP header structure.
-	 * <p>
 	 *
 	 * @return byte array containing structure
 	 */
@@ -309,7 +341,6 @@ public class KNXnetIPHeader
 
 	/**
 	 * Returns a textual representation of this KNXnet/IP header.
-	 * <p>
 	 *
 	 * @return a string representation of the object
 	 */
@@ -374,5 +405,9 @@ public class KNXnetIPHeader
 		default:
 			return "unknown service";
 		}
+	}
+
+	private static int version(final int serviceType) {
+		return serviceType == ObjectServerRequest || serviceType == ObjectServerAck ? 0x20 : KNXNETIP_VERSION_10;
 	}
 }

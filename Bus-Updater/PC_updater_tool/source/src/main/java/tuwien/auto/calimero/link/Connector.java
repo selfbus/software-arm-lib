@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2020 B. Malinowsky
+    Copyright (c) 2015, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,7 +50,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -75,7 +74,7 @@ public final class Connector
 	}
 
 	private boolean onSend = true;
-	private long reconnectDelay = 2000; // [ms]
+	private long reconnectDelay = 4000; // [ms]
 	// reconnect on disconnect caused by:
 	private boolean initialError;
 	private boolean serverError = true;
@@ -85,7 +84,7 @@ public final class Connector
 	public static final long NoMaxAttempts = Long.MAX_VALUE;
 	private long maxAttempts = NoMaxAttempts;
 
-	private Consumer<Boolean> connectionStatusChanged = __ -> {};
+	private volatile Consumer<Boolean> connectionStatusChanged = __ -> {};
 
 	public Connector() {}
 
@@ -360,14 +359,6 @@ public final class Connector
 		}
 
 		@Override
-		public void indication(final FrameEvent e)
-		{}
-
-		@Override
-		public void confirmation(final FrameEvent e)
-		{}
-
-		@Override
 		public String toString() {
 			final var v = impl;
 			return v != null ? v.toString() : "link connecting...";
@@ -444,12 +435,20 @@ public final class Connector
 						link.setKNXMedium(settings);
 						link.setHopCount(hopCount);
 						link.addLinkListener(this);
+						if (link instanceof AbstractLink<?>) {
+							final var abstractLink = (AbstractLink<?>) link;
+							abstractLink.wrappedByConnector = true;
+						}
 						listeners.forEach(l -> link.addLinkListener((NetworkLinkListener) l));
 					}
 					else if (t instanceof KNXNetworkMonitor) {
 						final KNXNetworkMonitor monitor = (KNXNetworkMonitor) t;
 						monitor.setDecodeRawFrames(decodeRawFrames);
 						monitor.addMonitorListener(this);
+						if (monitor instanceof AbstractMonitor<?>) {
+							final var abstractLink = (AbstractMonitor<?>) monitor;
+							abstractLink.wrappedByConnector = true;
+						}
 						listeners.forEach(monitor::addMonitorListener);
 					}
 					impl = t;

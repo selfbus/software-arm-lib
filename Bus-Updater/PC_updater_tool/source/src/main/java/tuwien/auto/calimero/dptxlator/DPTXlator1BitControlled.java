@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2020 B. Malinowsky
+    Copyright (c) 2010, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@ package tuwien.auto.calimero.dptxlator;
 import java.util.Map;
 
 import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 
 /**
  * Translator for KNX DPTs with main number 2, type <b>1 Bit controlled</b>.
@@ -73,8 +74,8 @@ public class DPTXlator1BitControlled extends DPTXlator
 		/**
 		 * Creates a new datapoint type information structure for the 1 Bit controlled DPT.
 		 *
-		 * @param typeID {@inheritDoc}
-		 * @param description {@inheritDoc}
+		 * @param typeID datapoint type identifier
+		 * @param description short textual description
 		 * @param value the DPT of the control information
 		 */
 		public DPT1BitControlled(final String typeID, final String description, final DPT value)
@@ -194,11 +195,20 @@ public class DPTXlator1BitControlled extends DPTXlator
 		data = new short[1];
 	}
 
+	@Override
+	public void setValue(final double value) {
+		if (value < 0 || value > 3)
+			throw new KNXIllegalArgumentException("value " + value + " out of range [0..3]");
+		final int i = (int) value;
+		final boolean control = (i & 0x02) != 0;
+		final boolean v = (i & 0x01) != 0;
+		setValue(control, v);
+	}
+
 	/**
 	 * Sets one new translation item, replacing any old items.
 	 *
-	 * @param control control field, <code>false</code> is <i>no control</i>, <code>true</code> is
-	 *        <i>control</i>
+	 * @param control control field, <code>false</code> is <i>no control</i>, <code>true</code> is <i>control</i>
 	 * @param value value field
 	 * @see #setControlBit(boolean)
 	 */
@@ -209,9 +219,6 @@ public class DPTXlator1BitControlled extends DPTXlator
 		setValueBit(value);
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#getAllValues()
-	 */
 	@Override
 	public String[] getAllValues()
 	{
@@ -268,7 +275,6 @@ public class DPTXlator1BitControlled extends DPTXlator
 
 	/**
 	 * Returns the value field of the first translation item.
-	 * <p>
 	 *
 	 * @return value field
 	 */
@@ -277,9 +283,16 @@ public class DPTXlator1BitControlled extends DPTXlator
 		return value(0);
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#setData(byte[], int)
+	/**
+	 * Returns the numeric representation of both control and value bit.
+	 *
+	 * @return one of the values 0, 1, 2, or 3
 	 */
+	@Override
+	public double getNumericValue() {
+		return data[0] & 0x03;
+	}
+
 	@Override
 	public void setData(final byte[] data, final int offset)
 	{
@@ -289,9 +302,6 @@ public class DPTXlator1BitControlled extends DPTXlator
 			this.data[i] = (short) (this.data[i] & 0x03);
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#getData(byte[], int)
-	 */
 	@Override
 	public byte[] getData(final byte[] dst, final int offset)
 	{
@@ -301,9 +311,6 @@ public class DPTXlator1BitControlled extends DPTXlator
 		return dst;
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#getSubTypes()
-	 */
 	@Override
 	public final Map<String, DPT> getSubTypes()
 	{

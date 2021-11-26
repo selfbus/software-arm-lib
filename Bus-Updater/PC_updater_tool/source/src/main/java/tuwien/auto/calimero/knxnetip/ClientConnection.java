@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2020 B. Malinowsky
+    Copyright (c) 2010, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,17 +36,12 @@
 
 package tuwien.auto.calimero.knxnetip;
 
+import static tuwien.auto.calimero.knxnetip.Net.hostPort;
+
 import java.io.IOException;
-import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.Optional;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.IndividualAddress;
@@ -80,7 +75,7 @@ import tuwien.auto.calimero.log.LogService.LogLevel;
  *
  * @author B. Malinowsky
  */
-abstract class ClientConnection extends ConnectionBase
+public abstract class ClientConnection extends ConnectionBase
 {
 	// IMPLEMENTATION NOTE: on MS Windows platforms, interruptible I/O is not supported,
 	// i.e., a blocked I/O method remains blocked after interrupt of the thread.
@@ -111,22 +106,22 @@ abstract class ClientConnection extends ConnectionBase
 	private volatile boolean cleanup;
 
 	final boolean tcp;
-	private final Connection connection;
+	private final TcpConnection connection;
 
 	// logger is initialized in connect, when name of connection is available
-	ClientConnection(final int serviceRequest, final int serviceAck, final int maxSendAttempts,
-			final int responseTimeout, final Connection connection) {
+	protected ClientConnection(final int serviceRequest, final int serviceAck, final int maxSendAttempts,
+			final int responseTimeout, final TcpConnection connection) {
 		super(serviceRequest, serviceAck, maxSendAttempts, responseTimeout);
-		tcp = connection != Connection.Udp;
+		tcp = connection != TcpConnection.Udp;
 		this.connection = connection;
 	}
 
-	ClientConnection(final int serviceRequest, final int serviceAck, final int maxSendAttempts,
+	protected ClientConnection(final int serviceRequest, final int serviceAck, final int maxSendAttempts,
 			final int responseTimeout) {
-		this(serviceRequest, serviceAck, maxSendAttempts, responseTimeout, Connection.Udp);
+		this(serviceRequest, serviceAck, maxSendAttempts, responseTimeout, TcpConnection.Udp);
 	}
 
-	protected void connect(final Connection c, final CRI cri) throws KNXException, InterruptedException {
+	protected void connect(final TcpConnection c, final CRI cri) throws KNXException, InterruptedException {
 		try {
 			c.connect();
 			c.registerConnectRequest(this);
@@ -172,35 +167,23 @@ abstract class ClientConnection extends ConnectionBase
 			throw new KNXIllegalArgumentException("server control endpoint cannot be a multicast address ("
 					+ ctrlEndpt.getAddress().getHostAddress() + ")");
 		useNat = useNAT;
-		logger = LogService.getLogger("calimero.knxnetip." + getName());
+		logger = LogService.getLogger("calimero.knxnetip." + name());
 		// if we allow localEP to be null, we would create an unbound socket
 		if (localEP == null)
 			throw new KNXIllegalArgumentException("no local endpoint specified");
-		InetSocketAddress local = localEP;
+		final InetSocketAddress local = Net.matchRemoteEndpoint(localEP, serverCtrlEP, useNAT);
 		try {
-			if (local.isUnresolved())
-				throw new KNXIllegalArgumentException("unresolved address " + local);
-			if (local.getAddress().isAnyLocalAddress()) {
-				final InetAddress addr = useNAT ? null
-					: Optional.ofNullable(serverCtrlEP.getAddress()).flatMap(this::onSameSubnet)
-							.orElse(InetAddress.getLocalHost());
-				local = new InetSocketAddress(addr, localEP.getPort());
-			}
-
 			if (!tcp) {
 				socket = new DatagramSocket(local);
 				ctrlSocket = socket;
 			}
 
 			final var lsa = localSocketAddress();
-			logger.debug("establish connection from {} to {} ({})", lsa, ctrlEndpt, tcp ? "tcp" : "udp");
+			logger.debug("establish connection from {} to {} ({})", hostPort(lsa), hostPort(ctrlEndpt), tcp ? "tcp" : "udp");
 			// HPAI throws if wildcard local address (0.0.0.0) is supplied
 			final var hpai = tcp ? HPAI.Tcp : new HPAI(HPAI.IPV4_UDP, useNat ? null : lsa);
-			final byte[] buf = PacketHelper.toPacket(new ConnectRequest(cri, hpai, hpai));
+			final byte[] buf = PacketHelper.toPacket(protocolVersion(), new ConnectRequest(cri, hpai, hpai));
 			send(buf, ctrlEndpt);
-		}
-		catch (final UnknownHostException e) {
-			throw new KNXException("no local host address available", e);
 		}
 		catch (IOException | SecurityException e) {
 			closeSocket();
@@ -208,10 +191,10 @@ abstract class ClientConnection extends ConnectionBase
 			if (local.getAddress().isLoopbackAddress())
 				logger.warn("local endpoint uses loopback address ({}), try with a different IP address",
 						local.getAddress());
-			throw new KNXException("connecting from " + local + " to " + serverCtrlEP + ": " + e.getMessage());
+			throw new KNXException("connecting from " + hostPort(local) + " to " + hostPort(ctrlEndpt) + ": " + e.getMessage());
 		}
 
-		logger.debug("wait for connect response from " + ctrlEndpt + " ...");
+		logger.debug("wait for connect response from {} ...", hostPort(ctrlEndpt));
 		if (!tcp)
 			startReceiver();
 		try {
@@ -230,11 +213,11 @@ abstract class ClientConnection extends ConnectionBase
 			}
 			final KNXException e;
 			if (!changed)
-				e = new KNXTimeoutException("timeout connecting to control endpoint " + ctrlEndpt);
+				e = new KNXTimeoutException("timeout connecting to control endpoint " + hostPort(ctrlEndpt));
 			else if (state == ACK_ERROR)
-				e = new KNXRemoteException("error response from control endpoint " + ctrlEndpt + ": " + status);
+				e = new KNXRemoteException("error response from control endpoint " + hostPort(ctrlEndpt) + ": " + status);
 			else
-				e = new KNXInvalidResponseException("invalid connect response from " + ctrlEndpt);
+				e = new KNXInvalidResponseException("invalid connect response from " + hostPort(ctrlEndpt));
 			// quit, cleanup and notify user
 			connectCleanup(e);
 			throw e;
@@ -381,7 +364,7 @@ abstract class ClientConnection extends ConnectionBase
 				setStateNotify(res.getStatus() == ErrorCodes.NO_ERROR ? CEMI_CON_PENDING : ACK_ERROR);
 				if (logger.isTraceEnabled())
 					logger.trace("received service ack {} from {} (channel {})",
-							res.getSequenceNumber(), ctrlEndpt, channelId);
+							res.getSequenceNumber(), hostPort(ctrlEndpt), channelId);
 				if (internalState == ACK_ERROR)
 					logger.warn("received service acknowledgment status " + res.getStatusString());
 			}
@@ -408,21 +391,20 @@ abstract class ClientConnection extends ConnectionBase
 	{
 		// requests with wrong channel ID are ignored (conforming to spec)
 		if (req.getChannelID() == channelId) {
-			final byte[] buf = PacketHelper.toPacket(new DisconnectResponse(channelId,
-					ErrorCodes.NO_ERROR));
-			final DatagramPacket p = new DatagramPacket(buf, buf.length, ctrlEndpt.getAddress(),
-					ctrlEndpt.getPort());
+			final byte[] buf = PacketHelper.toPacket(new DisconnectResponse(channelId, ErrorCodes.NO_ERROR));
 			try {
-				ctrlSocket.send(p);
+				send(buf, ctrlEndpt);
 			}
 			catch (final IOException e) {
-				logger.error("communication failure", e);
+				logger.warn("communication failure", e);
 			}
 			finally {
 				cleanup(CloseEvent.SERVER_REQUEST, "server request", LogLevel.INFO, null);
 			}
 		}
 	}
+
+	protected int protocolVersion() { return KNXNETIP_VERSION_10; }
 
 	/**
 	 * Checks for supported protocol version in KNX header.
@@ -435,7 +417,7 @@ abstract class ClientConnection extends ConnectionBase
 	 */
 	private boolean checkVersion(final KNXnetIPHeader h)
 	{
-		if (h.getVersion() != KNXNETIP_VERSION_10) {
+		if (h.getVersion() != protocolVersion()) {
 			status = "protocol version changed";
 			close(CloseEvent.INTERNAL, "protocol version changed", LogLevel.ERROR, null);
 			return false;
@@ -458,35 +440,6 @@ abstract class ClientConnection extends ConnectionBase
 			socket.close();
 	}
 
-	// finds a local IPv4 address with its network prefix "matching" the remote address
-	private Optional<InetAddress> onSameSubnet(final InetAddress remote)
-	{
-		try {
-			return Collections.list(NetworkInterface.getNetworkInterfaces()).stream()
-					.flatMap(ni -> ni.getInterfaceAddresses().stream())
-					.filter(ia -> ia.getAddress() instanceof Inet4Address)
-					.peek(ia -> logger.trace("match local address {}/{} to {}", ia.getAddress(),
-							ia.getNetworkPrefixLength(), remote))
-					.filter(ia -> matchesPrefix(ia.getAddress(), ia.getNetworkPrefixLength(), remote))
-					.map(ia -> ia.getAddress()).findFirst();
-		}
-		catch (final SocketException ignore) {}
-		return Optional.empty();
-	}
-
-	static boolean matchesPrefix(final InetAddress local, final int maskLength, final InetAddress remote)
-	{
-		final byte[] a1 = local.getAddress();
-		final byte[] a2 = remote.getAddress();
-		final long mask = (0xffffffffL >> maskLength) ^ 0xffffffffL;
-		for (int i = 0; i < a1.length; i++) {
-			final int byteMask = (int) ((mask >> (24 - 8 * i)) & 0xff);
-			if ((a1[i] & byteMask) != (a2[i] & byteMask))
-				return false;
-		}
-		return true;
-	}
-
 	private final class HeartbeatMonitor extends Thread
 	{
 		// client SHALL wait 10 seconds for a connection state response from server
@@ -505,7 +458,7 @@ abstract class ClientConnection extends ConnectionBase
 		public void run()
 		{
 			final var hpai = tcp ? HPAI.Tcp : new HPAI(HPAI.IPV4_UDP, useNat ? null : localSocketAddress());
-			final byte[] buf = PacketHelper.toPacket(new ConnectionstateRequest(channelId, hpai));
+			final byte[] buf = PacketHelper.toPacket(protocolVersion(), new ConnectionstateRequest(channelId, hpai));
 			try {
 				while (true) {
 					Thread.sleep(HEARTBEAT_INTERVAL * 1000);

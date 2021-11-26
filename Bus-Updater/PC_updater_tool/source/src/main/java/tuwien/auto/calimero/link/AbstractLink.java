@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2020 B. Malinowsky
+    Copyright (c) 2015, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,14 +38,10 @@ package tuwien.auto.calimero.link;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodHandles.Lookup;
-import java.lang.reflect.Method;
+import java.lang.invoke.MethodType;
 import java.nio.ByteBuffer;
-import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.StringJoiner;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 
@@ -60,7 +56,6 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.Priority;
-import tuwien.auto.calimero.baos.BaosService;
 import tuwien.auto.calimero.cemi.AdditionalInfo;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMIDevMgmt;
@@ -106,6 +101,7 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 	 * protocol during initialization.
 	 */
 	protected final EventNotifier<NetworkLinkListener> notifier;
+	volatile boolean wrappedByConnector;
 
 	/** The message format to generate: cEMI or EMI1/EMI2. */
 	protected boolean cEMI = true;
@@ -125,14 +121,26 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 
 	private CEMIDevMgmt devMgmt;
 
-	final Map<Class<?>, Set<MethodHandle>> customEvents = new ConcurrentHashMap<>();
 
-
+	private static final MethodHandle baosServiceFactory_MH;
+	static {
+		MethodHandle mh = null;
+		try {
+			final var clazz = Class.forName("tuwien.auto.calimero.baos.BaosService");
+			final var lookup = MethodHandles.lookup();
+			final var baosModeType = MethodType.methodType(clazz, ByteBuffer.class);
+			mh = lookup.findStatic(clazz, "from", baosModeType);
+		}
+		catch (ClassNotFoundException | IllegalAccessException | NoSuchMethodException e) {}
+		baosServiceFactory_MH = mh;
+	}
 
 	private final class LinkNotifier extends EventNotifier<NetworkLinkListener>
 	{
-		LinkNotifier()
-		{
+		private static final int PeiIdentifyCon = 0xa8;
+		private static final int BaosMainService = 0xf0;
+
+		LinkNotifier() {
 			super(AbstractLink.this, AbstractLink.this.logger);
 		}
 
@@ -147,7 +155,6 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 					if (BcuSwitcher.isEmi1GetValue(frame[0] & 0xff))
 						return;
 
-					final int PeiIdentifyCon = 0xa8;
 					if ((frame[0] & 0xff) == PeiIdentifyCon) {
 						logger.info("PEI identify {}", DataUnitBuilder.toHex(frame, " "));
 						final int manufacturer = unsigned(frame[3], frame[4]);
@@ -156,11 +163,19 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 						}
 					}
 
-					// intercept BAOS services (ObjectServer protocol)
-					final int BaosMainService = 0xf0;
-					if ((frame[0] & 0xff) == BaosMainService) {
-						final var baosEvent = BaosService.from(ByteBuffer.wrap(frame));
-						dispatchCustomEvent(baosEvent);
+					// intercept BAOS services (ObjectServer protocol), necessary because BaosLinkAdapter has no direct
+					// access to frame receive events
+					if (baosServiceFactory_MH != null && (frame[0] & 0xff) == BaosMainService) {
+						try {
+							final var baosEvent = baosServiceFactory_MH.invoke(ByteBuffer.wrap(frame));
+							dispatchCustomEvent(baosEvent);
+						}
+						catch (KNXFormatException | RuntimeException ex) {
+							throw ex;
+						}
+						catch (final Throwable t) {
+							t.printStackTrace();
+						}
 						return;
 					}
 				}
@@ -187,7 +202,7 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 								DataUnitBuilder.toHex(ldata.toByteArray(), " "));
 				}
 				else
-					logger.warn("unspecified frame event - ignored, msg code = 0x" + Integer.toHexString(mc));
+					logger.warn("unspecified L-data frame event - ignored, msg code = 0x" + Integer.toHexString(mc));
 			}
 			catch (final KNXFormatException | RuntimeException ex) {
 				logger.warn("received unspecified frame {}", DataUnitBuilder.toHex(e.getFrameBytes(), " "), ex);
@@ -198,8 +213,13 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 		public void connectionClosed(final CloseEvent e)
 		{
 			AbstractLink.this.closed = true;
+			logger.debug("link closed");
+			if (wrappedByConnector) {
+				getListeners().listeners().stream().filter(Connector.Link.class::isInstance)
+					.forEach(l -> l.linkClosed(e));
+				return;
+			}
 			super.connectionClosed(e);
-			logger.info("link closed");
 		}
 	};
 
@@ -255,7 +275,6 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 	public void addLinkListener(final NetworkLinkListener l)
 	{
 		notifier.addListener(l);
-		registerCustomEvents(l);
 	}
 
 	@Override
@@ -474,7 +493,9 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 		return read(0, pidMaxApduLength).map(AbstractLink::unsigned);
 	}
 
-	void baosMode() throws KNXException, InterruptedException {
+	volatile boolean baosMode;
+
+	void baosMode(final boolean enable) throws KNXException, InterruptedException {
 		final IndividualAddress dst = KNXMediumSettings.BackboneRouter;
 		if (cEMI) {
 			final int pidBaosSupport = 201;
@@ -484,8 +505,8 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 			if (!supported)
 				throw new KNXException("device does not support BAOS mode");
 
-			final var frame = BcuSwitcher.commModeRequest(BcuSwitcher.BaosMode);
-			onSend(dst, frame, true);
+			final var frame = BcuSwitcher.cemiCommModeRequest(enable ? BcuSwitcher.BaosMode : BcuSwitcher.DataLinkLayer);
+			onSend(frame);
 			responseFor(CEMIDevMgmt.MC_PROPWRITE_CON, BcuSwitcher.pidCommMode);
 
 			final var recheck = new CEMIDevMgmt(CEMIDevMgmt.MC_PROPREAD_REQ, cemiServerObject, 1,
@@ -494,6 +515,7 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 			responseFor(CEMIDevMgmt.MC_PROPREAD_CON, BcuSwitcher.pidCommMode)
 					.ifPresent(mode -> logger.debug("comm mode {}",
 							(mode[0] & 0xff) == 0xf0 ? "BAOS" : DataUnitBuilder.toHex(mode, "")));
+			baosMode = enable;
 		}
 		// ??? check baos support ahead
 //		else if (activeEmi == EmiType.Emi1) {
@@ -501,9 +523,9 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 //		}
 		else {
 			// NYI EMI2
-			final int PeiIdentifyReq = 0xa7;
+			final int peiIdentifyReq = 0xa7;
 //			final int PeiIdentifyCon = 0xa8;
-			onSend(dst, new byte[] { (byte) PeiIdentifyReq }, true);
+			onSend(dst, new byte[] { (byte) peiIdentifyReq }, true);
 		}
 	}
 
@@ -561,21 +583,22 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 		String s = "";
 		if (medium instanceof PLSettings) {
 			final CEMILDataEx f = (CEMILDataEx) msg;
-			if (f.getAdditionalInfo(AdditionalInfo.PlMedium) == null)
-				f.additionalInfo().add(AdditionalInfo.of(AdditionalInfo.PlMedium, ((PLSettings) medium).getDomainAddress()));
+			if (f.getAdditionalInfo(AdditionalInfo.PlMedium) != null)
+				return;
+			f.additionalInfo().add(AdditionalInfo.of(AdditionalInfo.PlMedium, ((PLSettings) medium).getDomainAddress()));
 		}
 		else if (medium.getMedium() == KNXMediumSettings.MEDIUM_RF) {
 			final CEMILDataEx f = (CEMILDataEx) msg;
-			if (f.getAdditionalInfo(AdditionalInfo.RfMedium) == null) {
-				final RFSettings rf = (RFSettings) medium;
-				final byte[] sn = f.isDomainBroadcast() ? rf.getDomainAddress() : rf.getSerialNumber();
-				f.additionalInfo().add(new RFMediumInfo(true, rf.isUnidirectional(), sn, 255));
-				s = f.isDomainBroadcast() ? "(using domain address)" : "(using device SN)";
-			}
+			if (f.getAdditionalInfo(AdditionalInfo.RfMedium) != null)
+				return;
+			final RFSettings rf = (RFSettings) medium;
+			final byte[] sn = f.isDomainBroadcast() ? rf.getDomainAddress() : rf.serialNumber().array();
+			f.additionalInfo().add(new RFMediumInfo(true, rf.isUnidirectional(), sn, 255, f.isSystemBroadcast()));
+			s = f.isDomainBroadcast() ? " (using domain address)" : " (using device SN)";
 		}
 		else
 			return;
-		logger.trace("add cEMI additional info for {} {}", medium.getMediumString(), s);
+		logger.trace("add cEMI additional info for {}{}", medium.getMediumString(), s);
 	}
 
 	// Creates the target EMI format using L-Data message parameters
@@ -606,7 +629,7 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 	{
 		final IndividualAddress src = medium.getDeviceAddress();
 		// use default address 0 in system broadcast
-		final KNXAddress d = dst == null ? new GroupAddress(0) : dst;
+		final KNXAddress d = dst == null ? GroupAddress.Broadcast : dst;
 		final boolean repeat = mc == CEMILData.MC_LDATA_IND ? false : true;
 		final boolean tp = medium.getMedium() == KNXMediumSettings.MEDIUM_TP1;
 		if (nsdu.length <= 16 && tp)
@@ -633,51 +656,7 @@ public abstract class AbstractLink<T extends AutoCloseable> implements KNXNetwor
 		return true;
 	}
 
-	// TODO we currently register events multiple times if method also exists as annotated default method on interface
-	private void registerCustomEvents(final NetworkLinkListener listener) {
-		// check default methods on implemented interfaces
-		for (final var iface : listener.getClass().getInterfaces())
-			for (final var method : iface.getDeclaredMethods())
-				inspectMethodForLinkEvent(method, listener);
-		// check normal methods on classes
-		for (final var method : listener.getClass().getDeclaredMethods())
-			inspectMethodForLinkEvent(method, listener);
-	}
-
-	private static final Lookup lookup = MethodHandles.lookup();
-
-	private void inspectMethodForLinkEvent(final Method method, final NetworkLinkListener listener) {
-		if (method.getAnnotation(LinkEvent.class) == null)
-			return;
-		final var paramTypes = method.getParameterTypes();
-		if (paramTypes.length != 1) {
-			logger.warn("cannot register {}: parameter count not 1", method);
-			return;
-		}
-		final var paramType = paramTypes[0];
-		if (!customEvents.containsKey(paramType)) {
-			logger.warn("unsupported event type {}", method);
-			return;
-		}
-		try {
-			final var privateLookup = MethodHandles.privateLookupIn(listener.getClass(), lookup);
-			final var boundMethod = privateLookup.unreflect(method).bindTo(listener);
-			customEvents.get(paramType).add(boundMethod);
-			logger.debug("registered {} for {}s", method, paramType.getSimpleName());
-		}
-		catch (final Exception e) {
-			logger.warn("failed to register {}", method, e);
-		}
-	}
-
 	void dispatchCustomEvent(final Object event) {
-		customEvents.get(event.getClass()).forEach(mh -> {
-			try {
-				mh.invoke(event);
-			}
-			catch (final Throwable e) {
-				e.printStackTrace();
-			}
-		});
+		notifier.dispatchCustomEvent(event);
 	}
 }

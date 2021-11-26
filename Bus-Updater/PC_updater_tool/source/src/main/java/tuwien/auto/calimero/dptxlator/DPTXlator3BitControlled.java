@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -78,8 +78,8 @@ public class DPTXlator3BitControlled extends DPTXlator
 		 * Such a DPT has a value range from the lower value information like returned from the control DPT information
 		 * and stepcode 7, to the upper value control DPT and stepcode 7.
 		 *
-		 * @param typeID {@inheritDoc}
-		 * @param description {@inheritDoc}
+		 * @param typeID datapoint type identifier
+		 * @param description short textual description
 		 * @param control the DPT of the control information
 		 */
 		public DPT3BitControlled(final String typeID, final String description, final DPT control)
@@ -146,6 +146,11 @@ public class DPTXlator3BitControlled extends DPTXlator
 		data = new short[1];
 	}
 
+	@Override
+	public void setValue(final double value) {
+		setValue((int) value);
+	}
+
 	/**
 	 * Sets one new translation item with the given signed value, replacing any old items.
 	 * <p>
@@ -192,6 +197,10 @@ public class DPTXlator3BitControlled extends DPTXlator
 		data = new short[1];
 		setControlBit(control);
 		setStepCode(stepcode);
+	}
+
+	public final void setValue(final StepControl value) {
+		setValue(value.step().value(), value.stepcode());
 	}
 
 	@Override

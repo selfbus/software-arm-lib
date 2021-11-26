@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,11 +36,6 @@
 
 package tuwien.auto.calimero;
 
-import static java.util.stream.Collectors.joining;
-
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
 /**
  * General settings used in Calimero as well as library user information.
  *
@@ -48,13 +43,13 @@ import java.util.stream.Stream;
  */
 public final class Settings
 {
-	private static final String version = "2.5-dev";
+	private static final String version = "2.5";
 	private static final String library = "Calimero";
 	private static final String desc = "A library for KNX network access";
 
 	private static final String tuwien = "Vienna University of Technology";
 	private static final String group = "Automation Systems Group";
-	private static final String copyright = "Copyright \u00A9 2006-2020";
+	private static final String copyright = "Copyright \u00A9 2006-2021";
 
 	// just use newline, it's easier to deal with
 	private static final String sep = "\n";
@@ -90,7 +85,7 @@ public final class Settings
 	public static String getLibraryHeader(final boolean verbose)
 	{
 		if (!verbose)
-			return library + " version " + version;
+			return library + " " + version;
 		final StringBuilder buf = new StringBuilder();
 		buf.append(library).append(" version ").append(version).append(" - ");
 		buf.append(desc).append(sep);
@@ -116,29 +111,8 @@ public final class Settings
 	{
 		if (args.length > 0 && (args[0].equals("--version") || args[0].equals("-v")))
 			out(getLibraryHeader(false));
-		else {
+		else
 			out(getLibraryHeader(true));
-			out(sep + "Supported protocols: " + supportedProtocols().collect(joining(", ")));
-		}
-	}
-
-	private static Stream<String> supportedProtocols() {
-		final String[] proto = { "KNXnet/IP (Security)", "KNX IP", "FT1.2", "TP-Uart", "KNX USB", "KNX RF USB" };
-		final String prefix = "tuwien.auto.calimero.";
-		final String[] check = { "knxnetip.KNXnetIPConnection", "knxnetip.KNXnetIPConnection", "serial.FT12Connection",
-			"serial.TpuartConnection", "serial.usb.UsbConnection", "serial.usb.UsbConnection" };
-
-		return IntStream.range(0, proto.length).filter(i -> loadable(prefix + check[i])).mapToObj(i -> proto[i]);
-	}
-
-	private static boolean loadable(final String className) {
-		try {
-			final ClassLoader cl = Settings.class.getClassLoader();
-			cl.loadClass(className);
-			return true;
-		}
-		catch (ClassNotFoundException | NoClassDefFoundError ignored) {}
-		return false;
 	}
 
 	private static void out(final String s)

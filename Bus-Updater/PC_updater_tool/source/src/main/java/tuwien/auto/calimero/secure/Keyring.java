@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
     version.
 */
 
-package tuwien.auto.calimero;
+package tuwien.auto.calimero.secure;
 
 import static java.util.function.Predicate.isEqual;
 import static java.util.function.Predicate.not;
@@ -70,8 +70,10 @@ import javax.crypto.spec.SecretKeySpec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import tuwien.auto.calimero.knxnetip.KNXnetIPRouting;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.GroupAddress;
+import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.xml.KNXMLException;
 import tuwien.auto.calimero.xml.XmlInputFactory;
 import tuwien.auto.calimero.xml.XmlReader;
@@ -83,7 +85,21 @@ import tuwien.auto.calimero.xml.XmlReader;
 public final class Keyring {
 
 	public static final class Interface {
-		private final String type;
+		public enum Type {
+			Backbone, Tunneling, Usb;
+
+			// parse value from xsd Type enumeration
+			static Type from(final String type) {
+				switch (type) {
+					case "Backbone": return Backbone;
+					case "Tunneling": return Tunneling;
+					case "USB": return Usb; // important: USB is specified upper-case
+				}
+				throw new KNXIllegalArgumentException("unknown interface type " + type);
+			}
+		}
+
+		private final String type; // TODO candidate for subtyping via sealed interface
 		private final IndividualAddress addr;
 		private final int user;
 		private final byte[] pwd;
@@ -98,6 +114,8 @@ public final class Keyring {
 			this.pwd = pwd;
 			this.auth = auth;
 		}
+
+		public Type type() { return Type.from(type); }
 
 		public IndividualAddress address() { return addr; }
 
@@ -190,13 +208,13 @@ public final class Keyring {
 
 		Backbone(final InetAddress multicastGroup, final byte[] groupKey, final Duration latency) {
 			this.mcGroup = multicastGroup;
-			this.groupKey = groupKey.clone();
+			this.groupKey = groupKey;
 			this.latency = latency;
 		}
 
 		public InetAddress multicastGroup() { return mcGroup; }
 
-		public byte[] groupKey() { return groupKey.clone(); }
+		public Optional<byte[]> groupKey() { return optional(groupKey); }
 
 		public Duration latencyTolerance() { return latency; }
 
@@ -212,6 +230,11 @@ public final class Keyring {
 			final Backbone other = (Backbone) obj;
 			return Objects.equals(mcGroup, other.mcGroup) && Objects.equals(latency, other.latency)
 					&& Arrays.equals(groupKey, other.groupKey);
+		}
+
+		@Override
+		public String toString() {
+			return multicastGroup().getHostAddress() + " (latency tolerance " + latency.toMillis() + " ms)";
 		}
 	}
 
@@ -267,7 +290,7 @@ public final class Keyring {
 
 	void load() {
 		int line = 0;
-		try (var reader = XmlInputFactory.newInstance().createXMLReader(keyringUri)) {
+		try (final var reader = XmlInputFactory.newInstance().createXMLReader(keyringUri)) {
 			// call nextTag() to dive straight into first element, so we can check the keyring namespace
 			reader.nextTag();
 
@@ -322,11 +345,15 @@ public final class Keyring {
 				line = reader.getLocation().getLineNumber();
 				if ("Backbone".equals(name)) { // [0, 1]
 					final var mcastGroup = InetAddress.getByName(reader.getAttributeValue(null, "MulticastAddress"));
-					if (!KNXnetIPRouting.isValidRoutingMulticast(mcastGroup))
+					if (!validRoutingMulticast(mcastGroup))
 						throw new KNXMLException("loading keyring '" + keyringUri + "': " + mcastGroup.getHostAddress()
 								+ " is not a valid KNX multicast address");
-					final var groupKey = decode(reader.getAttributeValue(null, "Key"));
-					final var latency = Duration.ofMillis(Integer.parseInt(reader.getAttributeValue(null, "Latency")));
+
+					String val = reader.getAttributeValue(null, "Key");
+					final var groupKey = val != null ? decode(val) : null;
+
+					val = reader.getAttributeValue(null, "Latency");
+					final var latency = val != null ? Duration.ofMillis(Integer.parseInt(val)) : Duration.ZERO;
 
 					backbone = new Backbone(mcastGroup, groupKey, latency);
 				}
@@ -336,9 +363,9 @@ public final class Keyring {
 					final var type = reader.getAttributeValue(null, "Type"); // { Backbone, Tunneling, USB }
 					// rest is optional
 					String attr = reader.getAttributeValue(null, "Host");
-					final var host = attr != null ? new IndividualAddress(attr) : KNXMediumSettings.BackboneRouter;
+					final var host = attr != null ? new IndividualAddress(attr) : new IndividualAddress(0);
 					attr = reader.getAttributeValue(null, "IndividualAddress");
-					final var addr = attr != null ? new IndividualAddress(attr) : KNXMediumSettings.BackboneRouter;
+					final var addr = attr != null ? new IndividualAddress(attr) : new IndividualAddress(0);
 					final var user = readAttribute(reader, "UserID", Integer::parseInt, 0);
 					final var pwd = readAttribute(reader, "Password", Keyring::decode, null);
 					final var auth = readAttribute(reader, "Authentication", Keyring::decode, null);
@@ -349,12 +376,14 @@ public final class Keyring {
 				}
 				else if (iface != null && "Group".equals(name)) { // [0, *]
 					final var addr = new GroupAddress(reader.getAttributeValue(null, "Address"));
-					final var senders = reader.getAttributeValue(null, "Senders"); // (empty) list of addresses
 
+					final var senders = reader.getAttributeValue(null, "Senders"); // optional, (empty) list of addresses
 					final var list = new ArrayList<IndividualAddress>();
-					final Matcher matcher = Pattern.compile("[^\\s]+").matcher(senders);
-					while (matcher.find())
-						list.add(new IndividualAddress(matcher.group()));
+					if (senders != null) {
+						final Matcher matcher = Pattern.compile("[^\\s]+").matcher(senders);
+						while (matcher.find())
+							list.add(new IndividualAddress(matcher.group()));
+					}
 
 					if (iface.groups.isEmpty())
 						iface.groups = new HashMap<>();
@@ -493,6 +522,19 @@ public final class Keyring {
 		finally {
 			Arrays.fill(keyringPwdHash, (byte) 0);
 		}
+	}
+
+	private static final long DefaultMulticast = unsigned(new byte[] { (byte) 224, 0, 23, 12 });
+
+	private static boolean validRoutingMulticast(final InetAddress address) {
+		return address != null && address.isMulticastAddress() && unsigned(address.getAddress()) >= DefaultMulticast;
+	}
+
+	private static long unsigned(final byte[] data) {
+		long l = 0;
+		for (final byte b : data)
+			l = l << 8 | (b & 0xff);
+		return l;
 	}
 
 	private static <R> R readAttribute(final XmlReader reader, final String attribute, final Function<String, R> parser,

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,17 +40,19 @@ import static tuwien.auto.calimero.knxnetip.KNXnetIPConnection.BlockingMode.NonB
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
-import java.net.SocketException;
+import java.net.StandardProtocolFamily;
 import java.net.StandardSocketOptions;
+import java.nio.ByteBuffer;
+import java.nio.channels.DatagramChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.BiFunction;
 
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
@@ -63,13 +65,15 @@ import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMILData;
-import tuwien.auto.calimero.internal.UdpSocketLooper;
 import tuwien.auto.calimero.knxnetip.servicetype.KNXnetIPHeader;
 import tuwien.auto.calimero.knxnetip.servicetype.PacketHelper;
 import tuwien.auto.calimero.knxnetip.servicetype.RoutingBusy;
 import tuwien.auto.calimero.knxnetip.servicetype.RoutingIndication;
 import tuwien.auto.calimero.knxnetip.servicetype.RoutingLostMessage;
 import tuwien.auto.calimero.knxnetip.servicetype.RoutingSystemBroadcast;
+import tuwien.auto.calimero.knxnetip.servicetype.SearchRequest;
+import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
+import tuwien.auto.calimero.knxnetip.util.HPAI;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.log.LogService.LogLevel;
 
@@ -126,7 +130,8 @@ public class KNXnetIPRouting extends ConnectionBase
 
 	private final InetAddress multicast;
 
-	private MulticastSocket sysBcastSocket;
+	private DatagramChannel dc;
+	private DatagramChannel dcSysBcast;
 
 	private volatile boolean loopbackEnabled;
 	// This list is used for multicast packets that are looped back in loopback mode. If loopback
@@ -136,6 +141,7 @@ public class KNXnetIPRouting extends ConnectionBase
 	private final List<CEMILData> loopbackFrames = new ArrayList<>();
 	private static final int maxLoopbackQueueSize = 20;
 
+	private volatile BiFunction<KNXnetIPHeader, ByteBuffer, SearchResponse> searchRequestCallback;
 
 	/**
 	 * Creates a new KNXnet/IP routing service.
@@ -168,7 +174,7 @@ public class KNXnetIPRouting extends ConnectionBase
 	{
 		super(KNXnetIPHeader.ROUTING_IND, 0, 1, 0);
 		if (mcGroup == null)
-			multicast = Discoverer.SYSTEM_SETUP_MULTICAST;
+			multicast = DefaultMulticast;
 		else if (!isValidRoutingMulticast(mcGroup))
 			throw new KNXIllegalArgumentException("non-valid routing multicast " + mcGroup);
 		else
@@ -177,7 +183,6 @@ public class KNXnetIPRouting extends ConnectionBase
 
 	/**
 	 * Sends a cEMI frame to the joined multicast group.
-	 * <p>
 	 *
 	 * @param frame cEMI message to send
 	 * @param mode arbitrary value, does not influence behavior, since routing is always a
@@ -196,16 +201,18 @@ public class KNXnetIPRouting extends ConnectionBase
 				logger.trace("add to multicast loopback frame buffer: {}", frame);
 			}
 			// filter IP system broadcasts and always send them unsecured
-			if (RoutingSystemBroadcast.isSystemBroadcast(frame)) {
-				final byte[] buf = PacketHelper.toPacket(new RoutingSystemBroadcast(frame));
-				final DatagramPacket p = new DatagramPacket(buf, buf.length, systemBroadcast, DEFAULT_PORT);
-				if (sysBcastSocket != null)
-					sysBcastSocket.send(p);
+			if (RoutingSystemBroadcast.validSystemBroadcast(frame)) {
+				final var buf = ByteBuffer.wrap(PacketHelper.toPacket(new RoutingSystemBroadcast(frame)));
+				final InetSocketAddress dst = new InetSocketAddress(systemBroadcast, DEFAULT_PORT);
+				logger.trace("sending cEMI frame, SBC {} {}", NonBlocking, DataUnitBuilder.toHex(buf.array(), " "));
+				if (dcSysBcast != null)
+					dcSysBcast.send(buf, dst);
 				else
-					socket.send(p);
+					dc.send(buf, dst);
 			}
 			else
 				super.send(frame, NonBlocking);
+
 			// we always succeed...
 			setState(OK);
 		}
@@ -225,9 +232,9 @@ public class KNXnetIPRouting extends ConnectionBase
 	}
 
 	@Override
-	public String getName()
+	public String name()
 	{
-		return "KNXnet/IP Routing " + super.getName();
+		return "KNXnet/IP Routing " + super.name();
 	}
 
 	/**
@@ -245,7 +252,7 @@ public class KNXnetIPRouting extends ConnectionBase
 		if (hopCount < 0 || hopCount > 255)
 			throw new KNXIllegalArgumentException("hop count out of range");
 		try {
-			((MulticastSocket) socket).setTimeToLive(hopCount);
+			dc.setOption(StandardSocketOptions.IP_MULTICAST_TTL, hopCount);
 		}
 		catch (final IOException e) {
 			logger.error("failed to set hop count", e);
@@ -253,17 +260,15 @@ public class KNXnetIPRouting extends ConnectionBase
 	}
 
 	/**
-	 * Returns the default hop count (TTL) used in the IP header of encapsulated cEMI
-	 * messages.
-	 * <p>
-	 * The hop count value is queried from the used multicast socket.
+	 * Returns the current hop count (time-to-live) used in the IP header of encapsulated cEMI messages when
+	 * sending multicast datagrams.
 	 *
 	 * @return hop count in the range 0 to 255
 	 */
 	public final int getHopCount()
 	{
 		try {
-			return ((MulticastSocket) socket).getTimeToLive();
+			return dc.getOption(StandardSocketOptions.IP_MULTICAST_TTL);
 		}
 		catch (final IOException e) {
 			logger.error("failed to get hop count", e);
@@ -273,9 +278,10 @@ public class KNXnetIPRouting extends ConnectionBase
 
 	public final NetworkInterface networkInterface() {
 		try {
-			return ((MulticastSocket) socket).getNetworkInterface();
+			final NetworkInterface netif = dc.getOption(StandardSocketOptions.IP_MULTICAST_IF);
+			return netif == null ? Net.defaultNetif : netif;
 		}
-		catch (final SocketException e) {
+		catch (final IOException e) {
 			throw new KnxRuntimeException("socket error getting network interface", e);
 		}
 	}
@@ -289,7 +295,7 @@ public class KNXnetIPRouting extends ConnectionBase
 	public final boolean usesMulticastLoopback()
 	{
 		try {
-			return socket.getOption(StandardSocketOptions.IP_MULTICAST_LOOP);
+			return dc.getOption(StandardSocketOptions.IP_MULTICAST_LOOP);
 		}
 		catch (final IOException e) {
 			// if we can't access loopback mode, we assume that we also couldn't set it
@@ -307,7 +313,7 @@ public class KNXnetIPRouting extends ConnectionBase
 	public static boolean isValidRoutingMulticast(final InetAddress address)
 	{
 		return address != null && address.isMulticastAddress()
-				&& toLong(address) >= toLong(Discoverer.SYSTEM_SETUP_MULTICAST);
+				&& toLong(address) >= toLong(DefaultMulticast);
 	}
 
 	/**
@@ -331,38 +337,39 @@ public class KNXnetIPRouting extends ConnectionBase
 	{
 		ctrlEndpt = new InetSocketAddress(multicast, DEFAULT_PORT);
 		dataEndpt = ctrlEndpt;
-		logger = LogService.getLogger("calimero.knxnetip." + getName());
+		logger = LogService.getLogger("calimero.knxnetip." + name());
 
-		MulticastSocket s = null;
 		try {
-			s = new MulticastSocket(DEFAULT_PORT);
-			if (!multicast.equals(systemBroadcast))
-				sysBcastSocket = new MulticastSocket(DEFAULT_PORT);
+			dc = newChannel();
+			dcSysBcast = !multicast.equals(systemBroadcast) ? newChannel() : null;
 
-			if (netIf != null)
-				s.setNetworkInterface(netIf);
+			var setNetif = netIf;
+			if (setNetif != null) {
+				dc.setOption(StandardSocketOptions.IP_MULTICAST_IF, setNetif);
+				if (dcSysBcast != null)
+					dcSysBcast.setOption(StandardSocketOptions.IP_MULTICAST_IF, setNetif);
+			}
+			else
+				setNetif = Net.defaultNetif;
 
-			final var setNetif = s.getNetworkInterface();
-			logger.debug("join multicast group {} on {}", multicast.getHostAddress(), setNetif);
+			logger.debug("join multicast group {} on {}", multicast.getHostAddress(), setNetif.getName());
+			dc.join(multicast, setNetif);
+			if (dcSysBcast != null)
+				dcSysBcast.join(systemBroadcast, setNetif);
 
-			// port number is not used in join group
-			s.joinGroup(new InetSocketAddress(multicast, 0), setNetif);
-			if (sysBcastSocket != null)
-				sysBcastSocket.joinGroup(new InetSocketAddress(systemBroadcast, 0), setNetif);
-
-			// send out beyond local network
-			s.setTimeToLive(64);
+			// socket is unused
+			socket = dc.socket();
 		}
 		catch (final IOException e) {
-			if (s != null)
-				s.close();
+			closeSilently(dc, e);
+			closeSilently(dcSysBcast, e);
 			throw new KNXException(
-					"initializing multicast socket (group " + multicast.getHostAddress() + "): " + e.getMessage(), e);
+					"initializing multicast (group " + multicast.getHostAddress() + "): " + e.getMessage(), e);
 		}
-		socket = s;
 		try {
-			if (!useMulticastLoopback)
-				socket.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, false);
+			dc.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, useMulticastLoopback);
+			if (dcSysBcast != null)
+				dcSysBcast.setOption(StandardSocketOptions.IP_MULTICAST_LOOP, useMulticastLoopback);
 			loopbackEnabled = usesMulticastLoopback();
 			logger.info("multicast loopback mode " + (loopbackEnabled ? "enabled" : "disabled"));
 		}
@@ -371,47 +378,72 @@ public class KNXnetIPRouting extends ConnectionBase
 		}
 
 		if (startReceiver)
-			startReceiver();
-		if (sysBcastSocket != null) {
-			final UdpSocketLooper sysBcastLooper = new UdpSocketLooper(sysBcastSocket, true) {
+			startChannelReceiver(new ChannelReceiver(this, dc), "KNXnet/IP receiver");
+		if (dcSysBcast != null) {
+			final var sysBcastLooper = new ChannelReceiver(this, dcSysBcast) {
 				@Override
 				protected void onReceive(final InetSocketAddress source, final byte[] data, final int offset,
-					final int length) {
+						final int length) {
 					try {
 						final KNXnetIPHeader h = new KNXnetIPHeader(data, offset);
 						if (h.getTotalLength() > length)
 							logger.warn("received frame length " + length + " for " + h + " - ignored");
 						else if (h.getVersion() != KNXNETIP_VERSION_10)
 							close(CloseEvent.INTERNAL, "protocol version changed", LogLevel.ERROR, null);
+						else if (h.getServiceType() == KNXnetIPHeader.SEARCH_REQ
+								|| h.getServiceType() == KNXnetIPHeader.SearchRequest)
+							searchRequest(source, h, data, offset + h.getStructLength());
 						else
-							systemBroadcast(h, data, offset + h.getStructLength(), source.getAddress(),
-									source.getPort());
+							systemBroadcast(h, data, offset + h.getStructLength());
 					}
-					catch (KNXFormatException | RuntimeException e) {
+					catch (KNXFormatException | IOException | RuntimeException e) {
 						logger.warn("received invalid frame", e);
 					}
 				}
 			};
-
-			final var t = new Thread(() -> {
-				try {
-					sysBcastLooper.loop();
-				}
-				catch (final IOException e) {
-					close(CloseEvent.INTERNAL, "receiver communication failure", LogLevel.ERROR, e);
-				}
-			}, "KNX IP system broadcast receiver");
-			t.setDaemon(true);
-			t.start();
+			startChannelReceiver(sysBcastLooper, "KNX IP system broadcast receiver");
 		}
 		setState(OK);
 	}
 
+	private static DatagramChannel newChannel() throws IOException {
+		return DatagramChannel.open(StandardProtocolFamily.INET)
+				.setOption(StandardSocketOptions.SO_REUSEADDR, true)
+				.bind(new InetSocketAddress(DEFAULT_PORT))
+				.setOption(StandardSocketOptions.IP_MULTICAST_TTL, 64);
+	}
+
+	private void startChannelReceiver(final ReceiverLoop looper, final String name) {
+		final Thread t = new Thread(looper, name);
+		t.setDaemon(true);
+		t.start();
+	}
+
+	private static class ChannelReceiver extends ReceiverLoop {
+		private final DatagramChannel dc;
+
+		ChannelReceiver(final KNXnetIPRouting r, final DatagramChannel dc) {
+			super(r, null, 0x200, 0, 0);
+			this.dc = dc;
+		}
+
+		@Override
+		protected void setTimeout(final int timeout) {}
+
+		@Override
+		protected void receive(final byte[] buf) throws IOException {
+			final ByteBuffer buffer = ByteBuffer.wrap(buf);
+			final var source = dc.receive(buffer);
+			buffer.flip();
+			onReceive((InetSocketAddress) source, buf, buffer.position(), buffer.remaining());
+		}
+	}
+
+	protected DatagramChannel channel() { return dc; }
+
 	@Override
 	protected boolean handleServiceType(final KNXnetIPHeader h, final byte[] data,
-		final int offset, final InetAddress src, final int port)
-		throws KNXFormatException, IOException
-	{
+			final int offset, final InetAddress src, final int port) throws KNXFormatException, IOException {
 		final int svc = h.getServiceType();
 		if (h.getVersion() != KNXNETIP_VERSION_10)
 			close(CloseEvent.INTERNAL, "protocol version changed", LogLevel.ERROR, null);
@@ -432,8 +464,10 @@ public class KNXnetIPRouting extends ConnectionBase
 			fireRoutingBusy(new InetSocketAddress(src, port), busy);
 		}
 		else if (svc == KNXnetIPHeader.RoutingSystemBroadcast && multicast.equals(systemBroadcast)) {
-			return systemBroadcast(h, data, offset, src, port);
+			return systemBroadcast(h, data, offset);
 		}
+		else if (svc == KNXnetIPHeader.SEARCH_REQ || svc == KNXnetIPHeader.SearchRequest)
+			searchRequest(new InetSocketAddress(src, port), h, data, offset);
 		else if (svc == GiraUnsupportedSvcType) {
 			if (!loggedGiraUnsupportedSvcType)
 				logger.warn("received unsupported Gira-specific service type 0x538, will be silently ignored: {}",
@@ -441,16 +475,38 @@ public class KNXnetIPRouting extends ConnectionBase
 			loggedGiraUnsupportedSvcType = true;
 		}
 		// skip multicast packets from searches & secure services, to avoid logged warnings about unknown frames
-		else if (!h.isSecure() && svc != KNXnetIPHeader.SEARCH_REQ && svc != KNXnetIPHeader.SEARCH_RES
-				&& svc != KNXnetIPHeader.SearchRequest && svc != KNXnetIPHeader.SearchResponse)
+		else if (!h.isSecure() && svc != KNXnetIPHeader.SEARCH_RES && svc != KNXnetIPHeader.SearchResponse)
 			return super.handleServiceType(h, data, offset, src, port);
 		return true;
 	}
 
+	private void searchRequest(final InetSocketAddress source, final KNXnetIPHeader h, final byte[] data,
+			final int offset) throws KNXFormatException, IOException {
+		final var callback = searchRequestCallback;
+		if (callback == null)
+			return;
+		final HPAI endpoint = SearchRequest.from(h, data, offset).getEndpoint();
+		if (endpoint.getHostProtocol() != HPAI.IPV4_UDP) {
+			logger.warn("KNX IP has protocol support for UDP/IP only");
+			return;
+		}
+		final var response = callback.apply(h, ByteBuffer.wrap(data).position(offset));
+		if (response != null) {
+			@SuppressWarnings("resource")
+			final var channel = dcSysBcast != null ? dcSysBcast : dc;
+			channel.send(ByteBuffer.wrap(PacketHelper.toPacket(response)), createResponseAddress(endpoint, source));
+		}
+	}
+
+	private static InetSocketAddress createResponseAddress(final HPAI endpoint, final InetSocketAddress sender) {
+		// NAT: if the data EP is incomplete or left empty, we fall back to the IP address and port of the sender.
+		if (endpoint.getAddress().isAnyLocalAddress() || endpoint.getPort() == 0)
+			return sender;
+		return new InetSocketAddress(endpoint.getAddress(), endpoint.getPort());
+	}
+
 	@Override
-	protected void close(final int initiator, final String reason, final LogLevel level,
-		final Throwable t)
-	{
+	protected void close(final int initiator, final String reason, final LogLevel level, final Throwable t) {
 		synchronized (this) {
 			if (closing > 0)
 				return;
@@ -458,27 +514,21 @@ public class KNXnetIPRouting extends ConnectionBase
 		}
 
 		LogService.log(logger, level, "close connection - " + reason, t);
-		final var netIf = networkInterface();
-		try {
-			((MulticastSocket) socket).leaveGroup(new InetSocketAddress(multicast, 0), netIf);
-		}
-		catch (final IOException e) {
-			logger.debug("problem leaving multicast group {} on {} ({})", multicast.getHostAddress(), netIf, e.getMessage());
-		}
-		finally {
-			stopReceiver();
-			socket.close();
-			cleanup(initiator, reason, level, t);
-		}
 
-		if (sysBcastSocket != null) {
-			try {
-				sysBcastSocket.leaveGroup(new InetSocketAddress(systemBroadcast, 0), netIf);
-			}
-			catch (final IOException ignore) {}
-			finally {
-				sysBcastSocket.close();
-			}
+		closeSilently(dc, null);
+		closeSilently(dcSysBcast, null);
+
+		cleanup(initiator, reason, level, t);
+	}
+
+	private static void closeSilently(final DatagramChannel dc, final Exception e) {
+		try {
+			if (dc != null)
+				dc.close();
+		}
+		catch (final IOException ioe) {
+			if (e != null)
+				e.addSuppressed(ioe);
 		}
 	}
 
@@ -508,8 +558,13 @@ public class KNXnetIPRouting extends ConnectionBase
 		}
 	}
 
-	private boolean systemBroadcast(final KNXnetIPHeader h, final byte[] data, final int offset, final InetAddress src,
-		final int port) throws KNXFormatException {
+	@Override
+	protected void send(final byte[] packet, final InetSocketAddress dst) throws IOException {
+		dc.send(ByteBuffer.wrap(packet), dst);
+	}
+
+	private boolean systemBroadcast(final KNXnetIPHeader h, final byte[] data, final int offset)
+			throws KNXFormatException {
 
 		final int svc = h.getServiceType();
 		if (svc == KNXnetIPHeader.RoutingSystemBroadcast) {

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -90,9 +90,6 @@ public class TransportLayerImpl implements TransportLayer
 	private final class NLListener implements NetworkLinkListener
 	{
 		@Override
-		public void confirmation(final FrameEvent e) {}
-
-		@Override
 		public void indication(final FrameEvent e)
 		{
 			final var cemi = e.getFrame();
@@ -103,6 +100,9 @@ public class TransportLayerImpl implements TransportLayer
 			}
 
 			final CEMILData f = (CEMILData) cemi;
+			if (f.getSource().equals(link().getKNXMedium().getDeviceAddress()))
+				return;
+
 			final int ctrl = f.getPayload()[0] & 0xfc;
 			if (ctrl == 0) {
 				final KNXAddress dst = f.getDestination();
@@ -160,7 +160,6 @@ public class TransportLayerImpl implements TransportLayer
 	// maximum repetitions of send in connected mode
 	private static final int MAX_REPEAT = 3;
 
-	private static final GroupAddress broadcast = new GroupAddress(0);
 	// used as default on incoming conn.oriented messages from unknown remote devices
 	private final Destination unknownPartner = new Destination(new AggregatorProxy(this),
 		new IndividualAddress(0), true);
@@ -383,7 +382,7 @@ public class TransportLayerImpl implements TransportLayer
 	public void broadcast(final boolean system, final Priority p, final byte[] tsdu)
 		throws KNXTimeoutException, KNXLinkClosedException
 	{
-		sendData(system ? null : broadcast, p, tsdu);
+		sendData(system ? null : GroupAddress.Broadcast, p, tsdu);
 	}
 
 	/**
@@ -508,17 +507,8 @@ public class TransportLayerImpl implements TransportLayer
 				p.setState(OpenIdle);
 				logger.trace("positive ack by {}", d.getAddress());
 			}
-			else {
-				// commented out for Selfbus updater
-				// see also issue #96 https://github.com/calimero-project/calimero-core/issues/96
-				//disconnectIndicate(p, true);
-				logger.error("more then one positive ack by {} ctrl=0x{} (0b{}) (ctrl & 0xC3)=0x{} #Seq={}",
-								d.getAddress(),
-								Integer.toHexString(ctrl),
-								Integer.toBinaryString(ctrl),
-								Integer.toHexString(ctrl & 0xC3),
-								Objects.requireNonNull(p).getSeqSend());
-			}
+			else
+				disconnectIndicate(p, true);
 		}
 		else if ((ctrl & 0xC3) == NACK) {
 			if (d.getState() == Disconnected || !sender.equals(d.getAddress()))

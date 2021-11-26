@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2014, 2020 B. Malinowsky
+    Copyright (c) 2014, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.CloseEvent;
+import tuwien.auto.calimero.Connection;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.GroupAddress;
@@ -82,7 +83,7 @@ import tuwien.auto.calimero.log.LogService.LogLevel;
  *
  * @author B. Malinowsky
  */
-public class TpuartConnection implements AutoCloseable
+public class TpuartConnection implements Connection<byte[]>
 {
 	// UART services
 
@@ -126,12 +127,18 @@ public class TpuartConnection implements AutoCloseable
 
 	private static final int OK = 0;
 	private static final int ConPending = 1;
-	// set to 3 if tpuart is told not to repeat frames
-//	private static int MaxSendAttempts = 1; //3;
-	// XXX tune, includes receive timeout of 2-2.5 ms to detect end of packet
-	private static final long ExchangeTimeout = 50;
+
 	// time interval to check on TP UART state
 	private static final long UartStateReadInterval = 5_000_000; // [us]
+
+	private static final int UartBaudRate = 19_200;
+	private static final int Tp1BaudRate = 9_600;
+
+	private static final int OneBitTime = (int) Math.ceil(1d / Tp1BaudRate * 1_000_000);
+	private static final int BitTimes_50 = 50 * OneBitTime; // [us]
+
+	private static final int MaxSendAttempts = 4;
+
 
 	private final String portId;
 	private final LibraryAdapter adapter;
@@ -173,11 +180,11 @@ public class TpuartConnection implements AutoCloseable
 	{
 		this.portId = portId;
 		logger = LogService.getAsyncLogger("calimero.serial.tpuart:" + portId);
-		adapter = LibraryAdapter.open(logger, portId, 19200, 0);
+		adapter = LibraryAdapter.open(logger, portId, UartBaudRate, 0);
 		os = adapter.getOutputStream();
 		is = adapter.getInputStream();
 
-		addresses.add(new GroupAddress(0));
+		addresses.add(GroupAddress.Broadcast);
 		addresses.addAll(acknowledge);
 
 		receiver = new Receiver();
@@ -220,6 +227,7 @@ public class TpuartConnection implements AutoCloseable
 	 *
 	 * @param l the listener to add
 	 */
+	@Override
 	public final void addConnectionListener(final KNXListener l)
 	{
 		listeners.add(l);
@@ -231,9 +239,16 @@ public class TpuartConnection implements AutoCloseable
 	 *
 	 * @param l the listener to remove
 	 */
+	@Override
 	public final void removeConnectionListener(final KNXListener l)
 	{
 		listeners.remove(l);
+	}
+
+	@Override
+	public String name()
+	{
+		return portId;
 	}
 
 	/**
@@ -269,6 +284,12 @@ public class TpuartConnection implements AutoCloseable
 		addresses.remove(ack);
 	}
 
+	@Override
+	public void send(final byte[] frame, final BlockingMode blockingMode)
+			throws KNXPortClosedException, KNXAckTimeoutException, InterruptedException {
+		send(frame, blockingMode == BlockingMode.NonBlocking ? false : true);
+	}
+
 	/**
 	 * Sends a cEMI L-Data frame, either waiting for confirmation or non-blocking. Sending is not-permitted in
 	 * busmonitor mode. A cEMI frame for TP1 does not require any additional information, any additional information is
@@ -285,28 +306,36 @@ public class TpuartConnection implements AutoCloseable
 		throws KNXPortClosedException, KNXAckTimeoutException, InterruptedException
 	{
 		try {
-			final byte[] data = toUartServices(cEmiToTP1(frame));
+			final byte[] tp1Frame = cEmiToTP1(frame);
+			final byte[] data = toUartServices(tp1Frame);
 			if (logger.isTraceEnabled())
 				logger.trace("create UART services {}", DataUnitBuilder.toHex(data, " "));
 			req = frame.clone();
-			final long start = System.nanoTime();
 
+			// force cool down period if we got a crispy chip
+			final long coolDownMillis = (receiver.coolDownUntil - System.nanoTime()) / 1_000_000;
+			if (coolDownMillis > 0)
+				Thread.sleep(coolDownMillis);
+
+			final long start = System.nanoTime();
 			final boolean group = (frame[3] & 0x80) == 0x80;
 			if (group)
 				sending.put(new GroupAddress(new byte[] { frame[6], frame[7] }), start);
 
+			final boolean logReadyForSending = !idle;
 			synchronized (enterIdleLock) {
 				while (!idle)
 					enterIdleLock.wait();
 			}
-			logger.trace("UART ready for sending after {} us", (System.nanoTime() - start) / 1000);
+			if (logReadyForSending)
+				logger.trace("UART ready for sending after {} us", (System.nanoTime() - start) / 1000);
 
 			logger.debug("write UART services, {}", (waitForCon ? "waiting for .con" : "non-blocking"));
 			os.write(data);
 			state = ConPending;
 			if (!waitForCon)
 				return;
-			if (waitForCon())
+			if (waitForCon(tp1Frame.length))
 				return;
 			throw new KNXAckTimeoutException("no ACK for L-Data.con");
 		}
@@ -369,7 +398,9 @@ public class TpuartConnection implements AutoCloseable
 		// skip 1 byte mc + 1 byte add.info length + any add.info
 		final int skipToCtrl1 = 2 + frame[1] & 0xff;
 		final int cemiPrefix = skipToCtrl1 + 8;
-		final boolean std = frame.length <= cemiPrefix + stdMaxApdu;
+
+		final boolean extended = (frame[skipToCtrl1] & 0x80) == 0;
+		final boolean std = !extended && frame.length <= cemiPrefix + stdMaxApdu;
 
 		final byte[] tp1;
 		if (std) {
@@ -426,20 +457,27 @@ public class TpuartConnection implements AutoCloseable
 		return data.toByteArray();
 	}
 
-	private boolean waitForCon() throws InterruptedException
+	private boolean waitForCon(final int frameLen) throws InterruptedException
 	{
-		long remaining = ExchangeTimeout;
-		final long now = System.currentTimeMillis();
-		final long end = now + remaining;
+		// time from start-bit to start-bit of inner frame consecutive characters, 13 bit times [us]
+		final int innerFrameChar = 13 * OneBitTime;
+		final int bitTimes_15 = 15 * OneBitTime; // [us]
+		final int maxExchangeTimeout = MaxSendAttempts * (BitTimes_50 + frameLen * innerFrameChar + 2 * bitTimes_15) / 1000;
+
+		long remaining = maxExchangeTimeout;
+		final long start = System.currentTimeMillis();
+		final long end = start + remaining;
 		synchronized (lock) {
 			while (state == ConPending && remaining > 0) {
 				lock.wait(remaining);
 				remaining = end - System.currentTimeMillis();
 			}
 		}
-		final boolean rcvdCon = remaining > 0;
+		final boolean rcvdCon = state == OK;
 		if (rcvdCon)
-			logger.trace("ACK received after {} ms", ExchangeTimeout - remaining);
+			logger.trace("ACK received after {} ms", maxExchangeTimeout - remaining);
+		else
+			logger.debug("no ACK received after {} ms", System.currentTimeMillis() - start);
 		return rcvdCon;
 	}
 
@@ -464,7 +502,8 @@ public class TpuartConnection implements AutoCloseable
 	}
 
 	// Stores the currently used max. inter-byte delay, to also be available for subsequent tpuart connections.
-	private static AtomicInteger maxInterByteDelay = new AtomicInteger(5200); // 50 bit times [us]
+	// Defaults to 50 bit times [us]
+	private static final AtomicInteger maxInterByteDelay = new AtomicInteger(BitTimes_50);
 	static {
 		final var key = "calimero.serial.tpuart.maxInterByteDelay";
 		try {
@@ -645,7 +684,8 @@ public class TpuartConnection implements AutoCloseable
 							else {
 								// check repetition of a directly preceding correctly received frame
 								final boolean repeated = (data[0] & RepeatFlag) == 0;
-								if (repeated && Arrays.equals(lastReceived, 0, lastReceived.length - 2, frame, 0, data.length - 2)) {
+								if (repeated && Arrays.equals(lastReceived, 0, lastReceived.length - 2, frame, 0,
+										data.length - 2)) {
 									logger.debug("ignore repetition of directly preceding correctly received frame");
 								}
 								else {
@@ -680,7 +720,7 @@ public class TpuartConnection implements AutoCloseable
 					lastRead = System.nanoTime() / 1000;
 					parseFrame(minBytes[read - 1]);
 				}
-				logger.trace("finished reading {} bytes {} us", read, initialMinBytes);
+				logger.trace("finished reading {} bytes after {} us", read, initialMinBytes);
 			}
 			// busmon mode only: short acks
 			else if (c == Ack || c == Nak || c == Busy)
@@ -750,9 +790,9 @@ public class TpuartConnection implements AutoCloseable
 			final boolean con = (c & 0x7f) == LData_con;
 			if (con) {
 				final boolean pos = (c & 0x80) == 0x80;
-				onConfirmation(pos);
 				final String status = pos ? "positive" : "negative";
 				logger.debug("{} L_Data.con", status);
+				onConfirmation(pos);
 			}
 			return con;
 		}
@@ -815,15 +855,14 @@ public class TpuartConnection implements AutoCloseable
 			if (pos) {
 				// set confirm bit to no error
 				frame[2] &= 0xfe;
-				// wake up one blocked sender, if any
-				synchronized (lock) {
-					state = OK;
-					lock.notify();
-				}
 			}
 			else {
 				// set confirm bit to error
 				frame[2] |= 0x01;
+			}
+			synchronized (lock) {
+				state = OK;
+				lock.notifyAll();
 			}
 			fireFrameReceived(frame);
 		}

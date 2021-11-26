@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2020 B. Malinowsky
+    Copyright (c) 2020, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,9 +37,9 @@
 package tuwien.auto.calimero.dptxlator;
 
 import java.util.Map;
+import java.util.Optional;
 
 import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
 
 /**
  * Translator for KNX DPTs with main number 253, type <b>relative control xyY</b>. The KNX data
@@ -96,19 +96,86 @@ public class DptXlatorRelativeControlXyY extends DPTXlator {
 		return fromDpt(0);
 	}
 
+	public final Optional<StepControl> x() {
+		return component(x);
+	}
+
+	public final Optional<StepControl> y() {
+		return component(y);
+	}
+
+	public final Optional<StepControl> brightness() {
+		return component(Y);
+	}
+
+	// component id with shift for valid Bit field
+	private static final int x = 2;
+	private static final int y = 1;
+	private static final int Y = 0;
+
+	private Optional<StepControl> component(final int c) {
+		final int validBit = 1 << c;
+		if ((data[3] & validBit) == 0)
+			return Optional.empty();
+
+		final int offset = 2 - c;
+		return Optional.of(StepControl.from(data[offset]));
+	}
+
 	/**
 	 * Sets one new translation item, replacing any old items.
 	 *
-	 * @param increaseX increase or decrease value
-	 * @param xStepcode stepcode, <code>0 &le; xStepcode &le; 7</code>
-	 * @param increaseY increase or decrease value
-	 * @param yStepcode stepcode, <code>0 &le; yStepcode &le; 7</code>
-	 * @param increaseBrightness increase or decrease value
-	 * @param brightnessStepcode stepcode, <code>0 &le; brightnessStepcode &le; 7</code>
+	 * @param x step control for x
+	 * @param y step control for y
+	 * @param brightness step control for brightness
 	 */
-	public final void setValue(final boolean increaseX, final int xStepcode, final boolean increaseY,
-			final int yStepcode, final boolean increaseBrightness, final int brightnessStepcode) {
-		data = toDpt(increaseX, xStepcode, increaseY, yStepcode, increaseBrightness, brightnessStepcode);
+	public final void setValue(final StepControl x, final StepControl y, final StepControl brightness) {
+		data = toDpt(x, y, brightness);
+	}
+
+	/**
+	 * Sets the step control for the x component of chromaticity.
+	 *
+	 * @param value step control of the x component
+	 */
+	public final void setX(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 0;
+		final int validBit = 4;
+		data[offset] = d;
+		data[3] |= validBit;
+	}
+
+	/**
+	 * Sets the step control for the y component of chromaticity.
+	 *
+	 * @param value step control of the y component
+	 */
+	public final void setY(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 1;
+		final int validBit = 2;
+		data[offset] = d;
+		data[3] |= validBit;
+	}
+
+	/**
+	 * Sets the step control for the Y component.
+	 *
+	 * @param value step control of the Y component
+	 */
+	public final void setBrightness(final StepControl value) {
+		t.setValue(value);
+		final short d = ubyte(t.getData()[0]);
+
+		final int offset = 2;
+		final int validBit = 1;
+		data[offset] = d;
+		data[3] |= validBit;
 	}
 
 	@Override
@@ -206,25 +273,15 @@ public class DptXlatorRelativeControlXyY extends DPTXlator {
 		return t.getData()[0];
 	}
 
-	private short[] toDpt(final boolean increaseX, final int xStepcode, final boolean increaseY,
-			final int yStepcode, final boolean increaseBrightness, final int brightnessStepcode) {
-		rangeCheck(xStepcode);
-		rangeCheck(yStepcode);
-		rangeCheck(brightnessStepcode);
-
-		t.setValue(increaseX, xStepcode);
-		final short red = ubyte(t.getData()[0]);
-		t.setValue(increaseY, yStepcode);
-		final short green = ubyte(t.getData()[0]);
-		t.setValue(increaseBrightness, brightnessStepcode);
-		final short blue = ubyte(t.getData()[0]);
+	private short[] toDpt(final StepControl x, final StepControl y, final StepControl brightness) {
+		t.setValue(x);
+		final short x_ = ubyte(t.getData()[0]);
+		t.setValue(y);
+		final short y_ = ubyte(t.getData()[0]);
+		t.setValue(brightness);
+		final short br = ubyte(t.getData()[0]);
 
 		final int valid = 0b111;
-		return new short[] { red, green, blue, valid };
-	}
-
-	private void rangeCheck(final int stepcode) {
-		if (stepcode < 0 || stepcode > 7)
-			throw new KNXIllegalArgumentException("stepcode " + stepcode + " out of range [0..7]");
+		return new short[] { x_, y_, br, valid };
 	}
 }

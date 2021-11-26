@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2017 B. Malinowsky
+    Copyright (c) 2015, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,6 +40,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
 
 import javax.xml.stream.FactoryConfigurationError;
 import javax.xml.stream.XMLOutputFactory;
@@ -48,8 +49,7 @@ import javax.xml.stream.XMLStreamWriter;
 
 /**
  * Proxies the XML stream writer interface {@link XMLStreamWriter} with the derived Calimero stream
- * writer interface. This avoids a direct dependency on javax.xml.stream when using the Java SE
- * compact1 profile, or on Java ME Embedded.
+ * writer interface. This avoids a direct dependency on the java.xml module.
  *
  * @author B. Malinowsky
  */
@@ -61,7 +61,8 @@ public final class XmlStreamWriterProxy implements XmlWriter
 	public static XmlStreamWriterProxy createXmlStreamWriter(final OutputStream stream, final Closeable onClose)
 		throws XMLStreamException, FactoryConfigurationError
 	{
-		return new XmlStreamWriterProxy(XMLOutputFactory.newInstance().createXMLStreamWriter(stream), onClose);
+		return new XmlStreamWriterProxy(XMLOutputFactory.newInstance().createXMLStreamWriter(stream,
+				StandardCharsets.UTF_8.name()), onClose);
 	}
 
 	public static XmlStreamWriterProxy createXmlStreamWriter(final Writer stream)

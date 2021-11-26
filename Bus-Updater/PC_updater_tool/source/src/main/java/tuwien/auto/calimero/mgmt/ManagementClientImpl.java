@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -71,17 +71,19 @@ import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.ReturnCode;
-import tuwien.auto.calimero.SecurityControl;
-import tuwien.auto.calimero.SecurityControl.DataSecurity;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMILData;
 import tuwien.auto.calimero.dptxlator.PropertyTypes;
 import tuwien.auto.calimero.internal.EventListeners;
-import tuwien.auto.calimero.internal.Security;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.log.LogService;
 import tuwien.auto.calimero.mgmt.PropertyAccess.PID;
+import tuwien.auto.calimero.secure.KnxSecureException;
+import tuwien.auto.calimero.secure.Security;
+import tuwien.auto.calimero.secure.SecurityControl;
+import tuwien.auto.calimero.secure.SecurityControl.DataSecurity;
 
 /**
  * Implementation of management client.
@@ -147,6 +149,8 @@ public class ManagementClientImpl implements ManagementClient
 	private static final int MemoryExtendedRead = 0b0111111101;
 	private static final int MemoryExtendedReadResponse = 0b0111111110;
 
+	private static final int DomainAddressSerialNumberWrite = 0b1111101110;
+
 	// serves as both req and res
 	private static final int RESTART = 0x0380;
 
@@ -184,7 +188,7 @@ public class ManagementClientImpl implements ManagementClient
 		@Override
 		public void linkClosed(final CloseEvent e)
 		{
-			logger.info("attached link was closed");
+			logger.debug("attached link was closed");
 		}
 
 		private void checkResponse(final FrameEvent e) {
@@ -221,6 +225,8 @@ public class ManagementClientImpl implements ManagementClient
 	private final Logger logger;
 
 	private final EventListeners<Consumer<FrameEvent>> listeners;
+
+	SecureManagement secureApplicationLayer() { return sal; }
 
 	/**
 	 * Creates a new management client attached to the supplied KNX network link.
@@ -309,8 +315,7 @@ public class ManagementClientImpl implements ManagementClient
 	public void writeAddress(final IndividualAddress newAddress) throws KNXTimeoutException,
 		KNXLinkClosedException
 	{
-		tl.broadcast(false, Priority.SYSTEM,
-				DataUnitBuilder.createAPDU(IND_ADDR_WRITE, newAddress.toByteArray()));
+		tl.broadcast(false, Priority.SYSTEM, createAPDU(IND_ADDR_WRITE, newAddress.toByteArray()));
 	}
 
 	@Override
@@ -328,40 +333,57 @@ public class ManagementClientImpl implements ManagementClient
 	}
 
 	@Override
-	public void writeAddress(final byte[] serialNo, final IndividualAddress newAddress)
-		throws KNXTimeoutException, KNXLinkClosedException
-	{
-		if (serialNo.length != 6)
-			throw new KNXIllegalArgumentException("length of serial number not 6 bytes");
-		final byte[] asdu = new byte[12];
-		for (int i = 0; i < 6; ++i)
-			asdu[i] = serialNo[i];
-		asdu[6] = (byte) (newAddress.getRawAddress() >>> 8);
-		asdu[7] = (byte) newAddress.getRawAddress();
-		tl.broadcast(false, Priority.SYSTEM, DataUnitBuilder.createAPDU(IND_ADDR_SN_WRITE, asdu));
+	public void writeAddress(final SerialNumber serialNo, final IndividualAddress newAddress)
+			throws KNXTimeoutException, KNXLinkClosedException {
+		final byte[] apdu = DataUnitBuilder.apdu(IND_ADDR_SN_WRITE).put(serialNo.array()).put(newAddress.toByteArray())
+				.putShort(0).putShort(0).build();
+		broadcast(serialNo, new IndividualAddress(0), false, Priority.SYSTEM, apdu, false);
 	}
 
 	@Override
-	public IndividualAddress readAddress(final byte[] serialNo)
-		throws KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException
-	{
-		if (serialNo.length != 6)
-			throw new KNXIllegalArgumentException("length of serial number not 6 bytes");
+	public IndividualAddress readAddress(final SerialNumber serialNumber)
+			throws KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException {
 		final long start = registerActiveService(IND_ADDR_SN_RESPONSE);
-		tl.broadcast(false, Priority.SYSTEM, DataUnitBuilder.createAPDU(IND_ADDR_SN_READ, serialNo));
+		tl.broadcast(false, Priority.SYSTEM, createAPDU(IND_ADDR_SN_READ, serialNumber.array()));
 		final byte[] address = waitForResponses(IND_ADDR_SN_RESPONSE, 10, 10, start, responseTimeout, (source,
-			apdu) -> Arrays.equals(serialNo, 0, 6, apdu, 2, 8) ? Optional.of(source.toByteArray()) : Optional.empty(),
-				true).get(0);
+			apdu) -> Arrays.equals(serialNumber.array(), 0, 6, apdu, 2, 8) ? Optional.of(source.toByteArray())
+					: Optional.empty(), true).get(0);
 		return new IndividualAddress(address);
 	}
 
 	@Override
-	public void writeDomainAddress(final byte[] domain) throws KNXTimeoutException,
-		KNXLinkClosedException
-	{
+	public void writeDomainAddress(final byte[] domain) throws KNXTimeoutException, KNXLinkClosedException {
 		if (domain.length != 2 && domain.length != 6)
 			throw new KNXIllegalArgumentException("invalid length of domain address");
-		tl.broadcast(true, priority, DataUnitBuilder.createAPDU(DOA_WRITE, domain));
+		broadcast(SerialNumber.Zero, new IndividualAddress(0), true, priority, createAPDU(DOA_WRITE, domain), false);
+	}
+
+	@Override
+	public void writeDomainAddress(final SerialNumber serialNumber, final byte[] domain)
+			throws KNXTimeoutException, KNXLinkClosedException {
+		if (domain.length != 2 && domain.length != 4 && domain.length != 6 && domain.length != 21)
+			throw new KNXIllegalArgumentException("domain address with invalid length " + domain.length);
+		final var apdu = DataUnitBuilder.apdu(DomainAddressSerialNumberWrite).put(serialNumber.array()).put(domain).build();
+		final boolean requireSecure = domain.length == 21;
+		broadcast(serialNumber, new IndividualAddress(0), true, priority, apdu, requireSecure);
+	}
+
+	private void broadcast(final SerialNumber serialNumber, final IndividualAddress dst, final boolean systemBcast,
+			final Priority p, final byte[] apdu, final boolean requireSecure)
+			throws KNXTimeoutException, KNXLinkClosedException {
+		try {
+			final var securityCtrl = systemBcast ? SecurityControl.SystemBroadcast
+					: SecurityControl.of(DataSecurity.AuthConf, true);
+			final var tsdu = sal.secureBroadcastData(src, serialNumber, dst, apdu, securityCtrl).orElseGet(() -> {
+				if (requireSecure)
+					throw new KnxSecureException("broadcast requires data security");
+				return apdu;
+			});
+			tl.broadcast(systemBcast, p, tsdu);
+		}
+		catch (final InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
 	}
 
 	@Override
@@ -399,10 +421,8 @@ public class ManagementClientImpl implements ManagementClient
 			throw new KNXIllegalArgumentException("length of domain address not 2 bytes");
 		if (range < 0 || range > 255)
 			throw new KNXIllegalArgumentException("range out of range [0..255]");
-		final byte[] addr = start.toByteArray();
-		return makeDOAs(readBroadcast(priority,
-				DataUnitBuilder.createAPDU(DOA_SELECTIVE_READ, new byte[] { domain[0], domain[1],
-					addr[0], addr[1], (byte) range }), DOA_RESPONSE, 2, 2, false));
+		final var apdu = DataUnitBuilder.apdu(DOA_SELECTIVE_READ).put(domain).put(start.toByteArray()).put(range).build();
+		return makeDOAs(readBroadcast(priority, apdu, DOA_RESPONSE, 2, 2, false));
 	}
 
 	@Override
@@ -440,6 +460,43 @@ public class ManagementClientImpl implements ManagementClient
 	}
 
 	@Override
+	public List<TestResult> readNetworkParameter(final int objectType, final int pid, final byte... testInfo)
+			throws KNXLinkClosedException, KNXTimeoutException, KNXInvalidResponseException, InterruptedException	{
+		final long start = registerActiveService(NetworkParamResponse);
+		sendNetworkParameter(NetworkParamRead, null, objectType, pid, testInfo);
+
+		final var responses = new ArrayList<TestResult>();
+		final BiFunction<IndividualAddress, byte[], Optional<byte[]>> testResponse = (responder, apdu) -> {
+			if (apdu.length < 5)
+				return Optional.empty();
+
+			final int receivedIot = (apdu[2] & 0xff) << 8 | (apdu[3] & 0xff);
+			final int receivedPid = apdu[4] & 0xff;
+			if (apdu.length == 5) {
+				final String s = receivedPid == 0xff ? receivedIot == 0xffff ? "object type" : "PID" : "response";
+				logger.info("network parameter read response from {} for interface object type {} "
+						+ "PID {}: unsupported {}", responder, objectType, pid, s);
+				return Optional.empty();
+			}
+			if (receivedIot == objectType && receivedPid == pid) {
+				final int prefix = 2 + 3 + testInfo.length;
+				final byte[] testResult = Arrays.copyOfRange(apdu, prefix, apdu.length);
+				responses.add(new TestResult(responder, testResult));
+				return Optional.of(apdu);
+			}
+			return Optional.empty();
+		};
+
+		try {
+			waitForResponses(NetworkParamResponse, 3, 14, start, responseTimeout, testResponse, false);
+			return responses;
+		}
+		catch (final KNXTimeoutException e) {
+			return List.of();
+		}
+	}
+
+	@Override
 	public void writeNetworkParameter(final IndividualAddress remote, final int objectType, final int pid,
 		final byte... value) throws KNXLinkClosedException, KNXTimeoutException
 	{
@@ -459,7 +516,7 @@ public class ManagementClientImpl implements ManagementClient
 			asdu[3 + i] = value[i];
 
 		final Priority p = Priority.SYSTEM;
-		final byte[] tsdu = DataUnitBuilder.createAPDU(apci, asdu);
+		final byte[] tsdu = createAPDU(apci, asdu);
 		if (remote != null)
 			tl.sendData(remote, p, tsdu);
 		else
@@ -524,7 +581,7 @@ public class ManagementClientImpl implements ManagementClient
 		final byte[] asdu = allocate(4 + value.length).putShort((short) objectType).putShort((short) (pid << 4))
 				.put(value).array();
 
-		final byte[] tsdu = DataUnitBuilder.createAPDU(apci, asdu);
+		final byte[] tsdu = createAPDU(apci, asdu);
 		tl.broadcast(true, Priority.SYSTEM, tsdu);
 	}
 
@@ -547,30 +604,28 @@ public class ManagementClientImpl implements ManagementClient
 	public void restart(final Destination dst) throws KNXTimeoutException, KNXLinkClosedException, InterruptedException
 	{
 		try {
-			restart(true, dst, 0, 0);
+			restart(true, dst, null, 0);
 		}
 		catch (KNXRemoteException | KNXDisconnectException ignore) {}
 	}
 
 	@Override
-	public int restart(final Destination dst, final int eraseCode, final int channel)
-		throws KNXTimeoutException, KNXRemoteException, KNXLinkClosedException,
-		KNXDisconnectException, InterruptedException
-	{
+	public Duration restart(final Destination dst, final EraseCode eraseCode, final int channel) throws KNXTimeoutException,
+			KNXRemoteException, KNXDisconnectException, KNXLinkClosedException, InterruptedException {
 		return restart(false, dst, eraseCode, channel);
 	}
 
 	// for erase codes 1,3,4 the channel should be 0
-	private int restart(final boolean basic, final Destination dst, final int eraseCode,
-		final int channel) throws KNXTimeoutException, KNXRemoteException, KNXLinkClosedException,
-		KNXDisconnectException, InterruptedException
+	private Duration restart(final boolean basic, final Destination dst, final EraseCode eraseCode,
+		final int channel) throws KNXTimeoutException, KNXRemoteException, KNXDisconnectException,
+		KNXLinkClosedException, InterruptedException
 	{
 		int time = 0;
 		if (basic) {
 			send(dst, priority, DataUnitBuilder.createLengthOptimizedAPDU(RESTART), 0);
 		}
 		else {
-			final byte[] sdu = new byte[] { 0x01, (byte) eraseCode, (byte) channel, };
+			final byte[] sdu = new byte[] { 0x01, (byte) eraseCode.code(), (byte) channel, };
 			final byte[] send = DataUnitBuilder.createLengthOptimizedAPDU(RESTART, sdu);
 			final byte[] apdu = sendWait2(dst, priority, send, RESTART, 3, 3);
 			// check we get a restart response
@@ -613,7 +668,7 @@ public class ManagementClientImpl implements ManagementClient
 			// always force a disconnect from our side
 			tl.disconnect(dst);
 		}
-		return time;
+		return Duration.ofSeconds(time);
 	}
 
 	@Override
@@ -647,14 +702,10 @@ public class ManagementClientImpl implements ManagementClient
 		final List<KNXRemoteException> exceptions = new ArrayList<>();
 
 		for (int i = 0; i < elements; i += elemsInAsdu) {
-			final byte[] asdu = new byte[4];
-			asdu[0] = (byte) objIndex;
-			asdu[1] = (byte) propertyId;
 			final int queryElements = Math.min(elemsInAsdu, elements - i);
-			asdu[2] = (byte) ((queryElements << 4) | (((start + i) >>> 8) & 0xF));
-			asdu[3] = (byte) (start + i);
-
-			final long startSend = send(dst, priority, DataUnitBuilder.createAPDU(PROPERTY_READ, asdu), PROPERTY_RESPONSE);
+			final var send = DataUnitBuilder.apdu(PROPERTY_READ).put(objIndex).put(propertyId)
+					.put((queryElements << 4) | (((start + i) >>> 8) & 0xF)).put(start + i).build();
+			final long startSend = send(dst, priority, send, PROPERTY_RESPONSE);
 			waitForResponses(PROPERTY_RESPONSE, 4, maxAsduLength, startSend, responseTimeout, (source, apdu) -> {
 				try {
 					if (source.equals(dst.getAddress())) {
@@ -704,7 +755,7 @@ public class ManagementClientImpl implements ManagementClient
 		asdu[3] = (byte) start;
 		for (int i = 0; i < data.length; ++i)
 			asdu[4 + i] = data[i];
-		final byte[] send = DataUnitBuilder.createAPDU(PROPERTY_WRITE, asdu);
+		final byte[] send = createAPDU(PROPERTY_WRITE, asdu);
 		final byte[] apdu = sendWait2(dst, priority, send, PROPERTY_RESPONSE, 4, maxAsduLength(dst));
 		// if number of elements is 0, remote app had problems
 		final int elems = (apdu[4] & 0xFF) >> 4;
@@ -719,6 +770,75 @@ public class ManagementClientImpl implements ManagementClient
 		for (int i = 4; i < asdu.length; ++i)
 			if (apdu[2 + i] != asdu[i])
 				throw new KNXRemoteException("read back failed (erroneous property data)");
+	}
+
+	private static final int PropertyExtWrite = 0b0111001110;
+	private static final int PropertyExtWriteResponse = 0b0111001111;
+
+	@Override
+	public void writeProperty(final Destination dst, final int objectType, final int objectInstance,
+			final int propertyId, final int start, final int elements, final byte[] data) throws KNXException,
+			InterruptedException {
+
+		final long startSend = sendProperty(PropertyExtWrite, PropertyExtWriteResponse, dst, objectType, objectInstance,
+				propertyId, start, elements, data);
+
+		final BiFunction<IndividualAddress, byte[], Optional<byte[]>> responseFilter = (responder, apdu) -> {
+			if (!responder.equals(dst.getAddress()) || apdu.length != 11)
+				return Optional.empty();
+			final int receivedIot = (apdu[2] & 0xff) << 8 | (apdu[3] & 0xff);
+			final int receivedObjInst = (apdu[4] & 0xff) << 4 | (apdu[5] & 0xf0) >> 4;
+			final int receivedPid = (apdu[5] & 0xf) << 8 | apdu[6] & 0xff;
+			final int receivedStart = (apdu[8] & 0xff) << 8 | apdu[9] & 0xff;
+			return receivedIot == objectType && receivedObjInst == objectInstance && receivedPid == propertyId
+					&& receivedStart == start ? Optional.of(apdu) : Optional.empty();
+		};
+
+		final var response = waitForResponses(PropertyExtWriteResponse, 9, 9, startSend, responseTimeout,
+				responseFilter, true);
+		final var returnCode = ReturnCode.of(response.get(0)[8] & 0xff);
+		if (returnCode != ReturnCode.Success)
+			throw new KNXRemoteException(format("write property response for %d(%d)|%d: %s",
+					objectType, objectInstance, propertyId, returnCode.friendly()));
+	}
+
+	private long sendProperty(final int svc, final int svcRes, final Destination dst, final int objectType,
+			final int objectInstance, final int propertyId, final int start, final int elements, final byte[] data)
+			throws KNXTimeoutException, KNXDisconnectException, KNXLinkClosedException, InterruptedException {
+
+		if (objectType < 0 || objectType > 0xffff || propertyId < 0 || propertyId > 0xfff || start < 0 || start > 0xffff
+				|| elements < 0 || elements > 255 || data.length == 0)
+			throw new KNXIllegalArgumentException("argument value out of range");
+
+		final int securityObjectType = 17;
+		final int pidToolKey = 56;
+		final var deviceToolKeys = sal.security().deviceToolKeys();
+		byte[] updateToolKey = null;
+		byte[] oldToolKey = null;
+		if (objectType == securityObjectType && objectInstance == 1 && propertyId == pidToolKey) {
+			updateToolKey = data.clone();
+			oldToolKey = deviceToolKeys.get(dst.getAddress());
+		}
+
+		final var apdu = DataUnitBuilder.apdu(svc).putShort(objectType)
+				.putShort((objectInstance << 4) | propertyId >> 8).put(propertyId).put(elements).putShort(start)
+				.put(data).build();
+		try {
+			final long s = send(dst, priority, apdu, svcRes, updateToolKey);
+			updateToolKey = oldToolKey;
+			return s;
+		}
+		catch (KNXException | InterruptedException | RuntimeException e) {
+			if (updateToolKey != null) {
+				final var toolKey = oldToolKey;
+				deviceToolKeys.compute(dst.getAddress(), (__, ___) -> toolKey);
+			}
+			throw e;
+		}
+		finally {
+			if (updateToolKey != null)
+				Arrays.fill(updateToolKey, (byte) 0);
+		}
 	}
 
 	private static final int PropertyExtDescRead = 0b0111010010;
@@ -751,23 +871,19 @@ public class ManagementClientImpl implements ManagementClient
 		return i;
 	}
 
-	private Description readPropertyExtDescription(final Destination dst, final int objIndex, final int propertyId,
-		final int propIndex) throws KNXTimeoutException, KNXRemoteException, KNXDisconnectException,
-		KNXLinkClosedException, InterruptedException {
-		if (objIndex < 0 || objIndex > 255 || propertyId < 0 || propertyId > 255 || propIndex < 0 || propIndex > 255)
+	@Override
+	public Description readPropertyDescription(final Destination dst, final int objectType, final int objInstance,
+			final int propertyId, final int propertyIndex) throws KNXTimeoutException, KNXRemoteException,
+			KNXDisconnectException, KNXLinkClosedException, InterruptedException {
+
+		if (objectType < 0 || objectType > 0xffff || objInstance < 0 || objInstance > 0xfff || propertyId < 0
+				|| propertyId > 0xfff || propertyIndex < 0 || propertyIndex > 0xfff)
 			throw new KNXIllegalArgumentException("argument value out of range");
 
-		final var ioList = getOrQueryInterfaceObjectList(dst);
-		if (!(ioList.length > objIndex))
-			return null;
-
-		final int objType = ioList[objIndex];
-		final int objInstance = 1;
 		final int propDescType = 0;
-		final byte[] send = DataUnitBuilder.createAPDU(PropertyExtDescRead,
-				new byte[] { (byte) (objType >> 8), (byte) objType, (byte) (objInstance >> 4),
-					(byte) (((objInstance & 0xf) << 4) | (propertyId >> 8)), (byte) propertyId,
-					(byte) ((propDescType << 4) | (propIndex >> 8)), (byte) (propertyId == 0 ? propIndex : 0) });
+		final int pidx = propertyId != 0 ? 0 : propertyIndex;
+		final byte[] send = DataUnitBuilder.apdu(PropertyExtDescRead).putShort(objectType).put(objInstance >> 4)
+				.putShort(((objInstance & 0xf) << 12) | propertyId).putShort((propDescType << 12) | pidx).build();
 
 		for (int i = 0; i < 2; i++) {
 			final byte[] apdu = sendWait2(dst, priority, send, PropertyExtDescResponse, 15, 15);
@@ -777,11 +893,11 @@ public class ManagementClientImpl implements ManagementClient
 
 			final int rcvObjectType = (apdu[2] & 0xff) << 8 | apdu[3] & 0xff;
 			// make sure the response contains the requested description
-			final boolean objTypeOk = objType == rcvObjectType;
+			final boolean objTypeOk = objectType == rcvObjectType;
 			final int rcvObjInstance = (apdu[4] & 0xff) << 4 | (apdu[5] & 0xf0) >> 4;
 			final boolean oiOk = objInstance == rcvObjInstance;
 			final boolean pidOk = propertyId == 0 || propertyId == rcvPropertyId;
-			final boolean pidxOk = propertyId != 0 || propIndex == rcvPropertyIdx;
+			final boolean pidxOk = propertyId != 0 || propertyIndex == rcvPropertyIdx;
 
 			final int dptMain = (apdu[9] & 0xff) << 8 | apdu[10] & 0xff;
 			final int dptSub = (apdu[11] & 0xff) << 8 | apdu[12] & 0xff;
@@ -799,12 +915,28 @@ public class ManagementClientImpl implements ManagementClient
 				throw new KNXRemoteException("property description type " + rcvPropDescType + " not supported");
 
 			if (objTypeOk && oiOk && pidOk && pidxOk)
-				return Description.of(objIndex, Arrays.copyOfRange(apdu, 2, apdu.length));
+				return Description.of(0, Arrays.copyOfRange(apdu, 2, apdu.length));
 
-			logger.warn("wrong description response for OI {} PID {} prop idx {} (got {}({})|{} (idx {}))", objIndex,
-					propertyId, propIndex, rcvObjectType, rcvObjInstance, rcvPropertyId, rcvPropertyIdx);
+			logger.warn("wrong description response for {}({})|{} prop idx {} (got {}({})|{} (idx {}))", objectType,
+					objInstance, propertyId, propertyIndex, rcvObjectType, rcvObjInstance, rcvPropertyId, rcvPropertyIdx);
 		}
 		throw new KNXTimeoutException("timeout occurred while waiting for data response");
+	}
+
+	private Description readPropertyExtDescription(final Destination dst, final int objIndex, final int propertyId,
+			final int propIndex) throws KNXTimeoutException, KNXRemoteException, KNXDisconnectException,
+			KNXLinkClosedException, InterruptedException {
+		if (objIndex < 0 || objIndex > 0xfff || propertyId < 0 || propertyId > 0xfff || propIndex < 0 || propIndex > 0xfff)
+			throw new KNXIllegalArgumentException("argument value out of range");
+
+		final var ioList = getOrQueryInterfaceObjectList(dst);
+		if (!(ioList.length > objIndex))
+			return null;
+
+		final int objType = ioList[objIndex];
+		final int objInstance = 1;
+
+		return readPropertyDescription(dst, objType, objInstance, propertyId, propIndex);
 	}
 
 	private static final boolean useExtPropertyServices = false;
@@ -1123,11 +1255,22 @@ public class ManagementClientImpl implements ManagementClient
 
 	// helper which sets the expected svc response, and sends in CO or CL mode
 	private long send(final Destination d, final Priority p, final byte[] apdu, final int response)
-		throws KNXTimeoutException, KNXDisconnectException, KNXLinkClosedException, InterruptedException
-	{
+			throws KNXTimeoutException, KNXDisconnectException, KNXLinkClosedException, InterruptedException {
+		return send(d, p, apdu, response, null);
+	}
+
+	private long send(final Destination d, final Priority p, final byte[] apdu, final int response,
+			final byte[] updateToolKey) throws KNXTimeoutException, KNXDisconnectException, KNXLinkClosedException,
+			InterruptedException {
 		final long start = registerActiveService(response);
 		final var secCtrl = SecurityControl.of(DataSecurity.AuthConf, toolAccess);
 		final var sapdu = sal.secureData(src, d.getAddress(), apdu, secCtrl).orElse(apdu);
+
+		if (updateToolKey != null) {
+			sal.security().deviceToolKeys().put(d.getAddress(), updateToolKey);
+			logger.info("update device toolkey for {}", d.getAddress());
+		}
+
 		if (d.isConnectionOriented())
 			tl.sendData(d, p, sapdu);
 		else

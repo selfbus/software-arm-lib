@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -52,6 +52,13 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
  */
 public class DPTXlatorBoolean extends DPTXlator
 {
+	interface BooleanType<E extends Enum<E> & BooleanType<E>> {
+		@SuppressWarnings("unchecked")
+		default boolean value() { return ((Enum<E>) this).ordinal() == 1 ? true : false; }
+	}
+
+	public enum Step implements BooleanType<Step> { Decrease, Increase }
+
 	/**
 	 * DPT ID 1.001, Switch; values <b>off</b>, <b>on</b>.
 	 */
@@ -220,6 +227,16 @@ public class DPTXlatorBoolean extends DPTXlator
 		data = new short[1];
 	}
 
+	@Override
+	public void setValue(final double value) {
+		if (value == 0)
+			setValue(false);
+		else if (value == 1)
+			setValue(true);
+		else
+			throw new KNXIllegalArgumentException("value " + value + " out of range [0..1]");
+	}
+
 	/**
 	 * Sets the translation value from a boolean.
 	 * <p>
@@ -230,6 +247,10 @@ public class DPTXlatorBoolean extends DPTXlator
 	public final void setValue(final boolean value)
 	{
 		data = new short[] { (short) (value ? 1 : 0) };
+	}
+
+	public final void setValue(final BooleanType<?> value) {
+		setValue(value.value());
 	}
 
 	/**
@@ -243,18 +264,12 @@ public class DPTXlatorBoolean extends DPTXlator
 		return (data[0] & 0x01) != 0 ? true : false;
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#getValue()
-	 */
 	@Override
 	public String getValue()
 	{
 		return fromDPT(0);
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#getAllValues()
-	 */
 	@Override
 	public String[] getAllValues()
 	{
@@ -277,9 +292,6 @@ public class DPTXlatorBoolean extends DPTXlator
 		return getValueBoolean() ? 1 : 0;
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#setData(byte[], int)
-	 */
 	@Override
 	public void setData(final byte[] data, final int offset)
 	{
@@ -294,9 +306,6 @@ public class DPTXlatorBoolean extends DPTXlator
 			this.data[i] = (short) (data[offset + i] & 0x01);
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#getData(byte[], int)
-	 */
 	@Override
 	public byte[] getData(final byte[] dst, final int offset)
 	{
@@ -309,9 +318,6 @@ public class DPTXlatorBoolean extends DPTXlator
 		return dst;
 	}
 
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.dptxlator.DPTXlator#getSubTypes()
-	 */
 	@Override
 	public final Map<String, DPT> getSubTypes()
 	{

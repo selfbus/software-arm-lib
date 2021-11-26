@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2018 B. Malinowsky
+    Copyright (c) 2010, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ import tuwien.auto.calimero.internal.UdpSocketLooper;
 import tuwien.auto.calimero.knxnetip.servicetype.KNXnetIPHeader;
 import tuwien.auto.calimero.log.LogService.LogLevel;
 
-final class ReceiverLoop extends UdpSocketLooper implements Runnable
+class ReceiverLoop extends UdpSocketLooper implements Runnable
 {
 	private final ConnectionBase conn;
 	private final Logger logger;
@@ -84,14 +84,13 @@ final class ReceiverLoop extends UdpSocketLooper implements Runnable
 		final int offset, final int length) throws IOException
 	{
 		try {
-			final KNXnetIPHeader h = new KNXnetIPHeader(data, offset);
+			final KNXnetIPHeader h = KNXnetIPHeader.from(data, offset);
 			if (h.getTotalLength() > length)
 				logger.warn("received frame length " + length + " for " + h + " - ignored");
 			else if (h.getServiceType() == 0)
 				// check service type for 0 (invalid type), so unused service types of us can stay 0 by default
 				logger.warn("received frame with service type 0x0 - ignored");
-			else if (!conn.handleServiceType(h, data, offset + h.getStructLength(),
-					source.getAddress(), source.getPort()))
+			else if (!conn.handleServiceType(h, data, offset + h.getStructLength(), source))
 				logger.info("received unknown frame with service type 0x"
 						+ Integer.toHexString(h.getServiceType()) + " - ignored");
 		}

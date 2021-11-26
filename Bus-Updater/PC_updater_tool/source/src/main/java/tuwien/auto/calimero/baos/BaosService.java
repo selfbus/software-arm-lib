@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2019, 2020 B. Malinowsky
+    Copyright (c) 2019, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,15 +50,17 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.ServiceType;
 
 /**
  * Implementation of the ObjectServer protocol service data structure, based on BAOS Binary Protocol v2.1.
  */
-public final class BaosService {
+public final class BaosService implements ServiceType {
 
 	public enum ErrorCode {
 		NoError,
@@ -429,6 +431,8 @@ public final class BaosService {
 		case GetDatapointHistory       : return "GetDatapointHistory";
 		case GetTimer                  : return "GetTimer";
 		case SetTimer                  : return "SetTimer";
+		}
+		switch (subService) {
 		case DatapointValueIndication  : return "DatapointValueIndication";
 		case ServerItemIndication      : return "ServerItemIndication";
 		default: return "" + subService;
@@ -441,6 +445,7 @@ public final class BaosService {
 	private static final int MinimumFrameSize = 6;
 
 	private final int subService;
+	private final boolean response;
 	private final int start;
 	private final int count;
 
@@ -505,8 +510,14 @@ public final class BaosService {
 		return new BaosService(SetTimer, timers[0].id(), timers.length, timerByteArray(timers));
 	}
 
+	static BaosService response(final int subService, final int startItem, final Item<?>... items) {
+		final byte[] itemData = Stream.of(items).map(Item<?>::toByteArray).collect(ByteArrayOutputStream::new,
+				ByteArrayOutputStream::writeBytes, (c1, c2) -> c1.writeBytes(c2.toByteArray())).toByteArray();
+		return new BaosService(subService, true, startItem, items.length, itemData);
+	}
+
 	static BaosService errorResponse(final int subService, final int startItem, final ErrorCode error) {
-		return new BaosService(subService, startItem, 0, (byte) error.code());
+		return new BaosService(subService, true, startItem, 0, (byte) error.code());
 	}
 
 	public static BaosService from(final ByteBuffer data) throws KNXFormatException {
@@ -527,17 +538,22 @@ public final class BaosService {
 			return errorResponse(subService, start, error);
 		}
 
-		if (subService == GetParameterByte) {
+		if (subService == GetParameterByte && response) {
 			ensureMinSize(GetParameterByte, MinimumFrameSize + items, size);
 			final byte[] bytes = new byte[items];
 			data.get(bytes);
-			return new BaosService(subService, start, items, bytes);
+			return new BaosService(subService, response, start, items, bytes);
 		}
-		return new BaosService(subService, start, items, data);
+		return new BaosService(subService, response, start, items, data);
 	}
 
 	private BaosService(final int service, final int startItem, final int items, final byte... additionalData) {
+		this(service, false, startItem, items, additionalData);
+	}
+
+	private BaosService(final int service, final boolean response, final int startItem, final int items, final byte... additionalData) {
 		subService = service;
+		this.response = response;
 		start = startItem;
 		this.count = items;
 		this.data = additionalData;
@@ -548,33 +564,44 @@ public final class BaosService {
 		if (items.length == 0)
 			throw new KNXIllegalArgumentException("no item supplied");
 		subService = service;
+		response = false;
 		start = items[0].id();
 		this.count = items.length;
 		this.data = new byte[0];
 		this.items = List.of(items);
 	}
 
-	private BaosService(final int service, final int start, final int items, final ByteBuffer buf)
+	private BaosService(final int service, final boolean response, final int start, final int items, final ByteBuffer buf)
 			throws KNXFormatException {
 		subService = service;
+		this.response = response;
 		this.start = start;
 		this.count = items;
 		this.data = new byte[0];
-		this.items = List.copyOf(parseItems(buf));
+		this.items = response || buf.hasRemaining() ? List.copyOf(parseItems(buf)) : List.of();
 	}
 
 	public int subService() { return subService; }
+
+	public boolean isResponse() { return response; }
 
 	public ErrorCode error() { return count == 0 ? ErrorCode.of(data[0]) : ErrorCode.NoError; }
 
 	public List<Item<?>> items() { return items; }
 
-	public byte[] toByteArray() {
+	@Override
+	public int length() {
 		final int collectionSize = items.stream().mapToInt(Item::size).sum();
 		final int capacity = 6 + data.length + collectionSize;
-		final var frame = allocate(capacity);
+		return capacity;
+	}
 
-		frame.put((byte) MainService).put((byte) subService).putShort((short) start).putShort((short) count);
+	@Override
+	public byte[] toByteArray() {
+		final var frame = allocate(length());
+
+		final int svcField = response ? subService | 0x80 : subService;
+		frame.put((byte) MainService).put((byte) svcField).putShort((short) start).putShort((short) count);
 		frame.put(data);
 		items.stream().map(Item::toByteArray).forEach(frame::put);
 
@@ -583,7 +610,7 @@ public final class BaosService {
 
 	@Override
 	public String toString() {
-		final String response = (subService & ResponseFlag) != 0 ? ".res" : "";
+		final String response = this.response ? ".res" : "";
 		final String svc = subServiceString(subService);
 		if (count == 0)
 			return svc + response + " item " + start + " (" + ErrorCode.of(data[0] & 0xff) + ")";

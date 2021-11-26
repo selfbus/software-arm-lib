@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2018 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ import tuwien.auto.calimero.GroupAddress;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXAddress;
 import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.LteHeeTag;
 import tuwien.auto.calimero.Priority;
 
 /**
@@ -108,6 +109,9 @@ public abstract class RawFrameBase implements RawFrame
 	 */
 	protected byte[] tpdu;
 
+	private int eff; // extended frame format in extended ctrl field,
+
+
 	@Override
 	public final int getFrameType()
 	{
@@ -116,7 +120,6 @@ public abstract class RawFrameBase implements RawFrame
 
 	/**
 	 * Returns the KNX individual source address.
-	 * <p>
 	 *
 	 * @return address of type IndividualAddress
 	 */
@@ -127,7 +130,6 @@ public abstract class RawFrameBase implements RawFrame
 
 	/**
 	 * Returns the KNX destination address.
-	 * <p>
 	 *
 	 * @return destination address of type KNXAddress
 	 */
@@ -138,7 +140,6 @@ public abstract class RawFrameBase implements RawFrame
 
 	/**
 	 * Returns the message priority used for this frame.
-	 * <p>
 	 *
 	 * @return the used Priority
 	 */
@@ -149,7 +150,6 @@ public abstract class RawFrameBase implements RawFrame
 
 	/**
 	 * Returns the hop count of this frame.
-	 * <p>
 	 *
 	 * @return hop count in the range 0 &lt;= count &lt;= 7
 	 */
@@ -200,11 +200,15 @@ public abstract class RawFrameBase implements RawFrame
 	@Override
 	public String toString()
 	{
+		final int lteHeeExtAddrType = 0x04;
+		final boolean lte = ext && (eff & lteHeeExtAddrType) == lteHeeExtAddrType;
+		final var dstAddr = lte ? LteHeeTag.from(eff, (GroupAddress) dst) : dst;
+
 		final StringBuilder sb = new StringBuilder();
-		sb.append(type == LDATA_FRAME ? "L-Data" : "L-Polldata").append(".req ");
+		sb.append(src).append("->").append(dstAddr);
+		sb.append(type == LDATA_FRAME ? " L-Data" : " L-Polldata").append(".req");
 		if (ext)
-			sb.append("(ext) ");
-		sb.append(src).append("->").append(dst);
+			sb.append(" (ext)");
 		sb.append(", ").append(p).append(" priority");
 		if (repetition)
 			sb.append(" repeat");
@@ -243,6 +247,7 @@ public abstract class RawFrameBase implements RawFrame
 		repetition = (ctrl & 0x20) == 0;
 		p = Priority.get((ctrl >> 2) & 0x3);
 		final int ctrle = ext ? readCtrlEx(is) : 0;
+		eff = ctrle & 0x0f;
 
 		if (parseDoA) {
 			doa = new byte[2];
@@ -271,11 +276,9 @@ public abstract class RawFrameBase implements RawFrame
 		dst = group ? (KNXAddress) new GroupAddress(addr) : new IndividualAddress(addr);
 	}
 
-	int readCtrlEx(final ByteArrayInputStream is) throws KNXFormatException
+	int readCtrlEx(final ByteArrayInputStream is)
 	{
 		final int ctrle = is.read();
-		if ((ctrle & 0xf) != 0)
-			throw new KNXFormatException("LTE-HEE frame not supported");
 		return ctrle;
 	}
 }

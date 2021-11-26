@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -42,10 +42,12 @@ import java.util.function.BiConsumer;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXInvalidResponseException;
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.Priority;
+import tuwien.auto.calimero.SerialNumber;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 
@@ -108,7 +110,7 @@ public interface ManagementClient extends AutoCloseable
 	 * A management client will use the transport layer for creating the destination.
 	 *
 	 * @param remote destination KNX individual address
-	 * @param connectionOriented <code>true</code> for connection oriented mode,
+	 * @param connectionOriented <code>true</code> for connection-oriented mode,
 	 *        <code>false</code> for connectionless mode
 	 * @return destination representing the logical connection
 	 */
@@ -121,10 +123,10 @@ public interface ManagementClient extends AutoCloseable
 	 * A management client will use the transport layer for creating the destination.
 	 *
 	 * @param remote destination KNX individual address
-	 * @param connectionOriented <code>true</code> for connection oriented mode,
+	 * @param connectionOriented <code>true</code> for connection-oriented mode,
 	 *        <code>false</code> for connectionless mode
 	 * @param keepAlive <code>true</code> to prevent a timing out of the logical
-	 *        connection in connection oriented mode, <code>false</code> to use default
+	 *        connection in connection-oriented mode, <code>false</code> to use default
 	 *        connection timeout
 	 * @param verifyMode <code>true</code> to indicate the destination has verify mode
 	 *        enabled, <code>false</code> otherwise
@@ -170,6 +172,9 @@ public interface ManagementClient extends AutoCloseable
 	 */
 	IndividualAddress[] readAddress(boolean oneAddressOnly) throws KNXException, InterruptedException;
 
+	void writeAddress(SerialNumber serialNo, IndividualAddress newAddress) throws KNXTimeoutException,
+			KNXLinkClosedException;
+
 	/**
 	 * Modifies the individual address of a communication partner identified using an
 	 * unique serial number in the KNX network.
@@ -181,8 +186,12 @@ public interface ManagementClient extends AutoCloseable
 	 * @throws KNXTimeoutException on a timeout during send
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 */
-	void writeAddress(byte[] serialNo, IndividualAddress newAddress)
-		throws KNXTimeoutException, KNXLinkClosedException;
+	default void writeAddress(final byte[] serialNo, final IndividualAddress newAddress) throws KNXTimeoutException,
+			KNXLinkClosedException {
+		writeAddress(SerialNumber.from(serialNo), newAddress);
+	}
+
+	IndividualAddress readAddress(SerialNumber serialNumber) throws KNXException, InterruptedException;
 
 	/**
 	 * Reads the individual address of a communication partner identified using an unique
@@ -199,22 +208,33 @@ public interface ManagementClient extends AutoCloseable
 	 * @throws KNXException on other read address errors
 	 * @throws InterruptedException on interrupted thread
 	 */
-	IndividualAddress readAddress(byte[] serialNo) throws KNXException,
-		InterruptedException;
+	default IndividualAddress readAddress(final byte[] serialNo) throws KNXException, InterruptedException {
+		return readAddress(SerialNumber.from(serialNo));
+	}
 
 	/**
-	 * Modifies the domain address of a communication partner in the KNX network.
+	 * Modifies the domain address of a communication partner in the KNX network which is in programming mode.
 	 * <p>
-	 * This service uses system broadcast communication mode.<br>
-	 * The communication partner is a device in programming mode.
+	 * This service uses system broadcast communication mode.
 	 *
 	 * @param domain byte array with domain address, <code>domain.length</code> = 2 (on
 	 *        powerline medium) or <code>domain.length</code> = 6 (on RF medium)
 	 * @throws KNXTimeoutException on a timeout during send
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 */
-	void writeDomainAddress(byte[] domain) throws KNXTimeoutException,
-		KNXLinkClosedException;
+	void writeDomainAddress(byte[] domain) throws KNXTimeoutException, KNXLinkClosedException;
+
+	/**
+	 * Modifies the domain address of the communication partner with the specified serial number in the KNX network.
+	 * This service uses system broadcast communication mode.
+	 *
+	 * @param serialNumber device serial number
+	 * @param domain byte array with domain address, <code>domain.length</code> = 2 on
+	 *        powerline medium, <code>domain.length</code> = 6 on RF medium, {@code domain.length = 4 or 21} on IP medium
+	 * @throws KNXTimeoutException on a timeout during send
+	 * @throws KNXLinkClosedException if network link to KNX network is closed
+	 */
+	void writeDomainAddress(SerialNumber serialNumber, byte[] domain) throws KNXTimeoutException, KNXLinkClosedException;
 
 	/**
 	 * Reads the domain address of a communication partner in the KNX network.
@@ -289,15 +309,13 @@ public interface ManagementClient extends AutoCloseable
 		throws KNXException, InterruptedException;
 
 	/**
-	 * Reads the current configuration of a network parameter from a {@code remote} endpoint. In broadcast communication
-	 * mode, the remote endpoint will ignore a network parameter read request on 1) reading a network parameter that is
-	 * not supported by the remote endpoint in question, or 2) on a negative check with respect to the supplied
-	 * parameters against the test information {@code testInfo}.<br>
-	 * In point-to-point communication mode, the remote endpoint will answer with a negative response if 1) the
+	 * Reads the current configuration of a network parameter in point-to-point communication mode from a {@code remote}
+	 * endpoint.
+	 * The remote endpoint will answer with a negative response if 1) the
 	 * interface object type is not supported, 2) the PID is not supported, or 3) on a negative check of the
 	 * investigated parameters against the test information.
 	 *
-	 * @param remote address of remote endpoint, or <code>null</code> to use broadcast communication mode
+	 * @param remote address of remote endpoint
 	 * @param objectType interface object type, <code>0 &le; objectType &lt; 0xffff</code>
 	 * @param pid KNX property identifier, <code>0 &le; pid &lt; 0xff</code>
 	 * @param testInfo test information, <code>0 &lt; testInfo.length &lt; </code> parameter-specific
@@ -309,6 +327,45 @@ public interface ManagementClient extends AutoCloseable
 	 */
 	List<byte[]> readNetworkParameter(IndividualAddress remote, int objectType, int pid, byte... testInfo)
 		throws KNXException, InterruptedException;
+
+	final class TestResult {
+		private final IndividualAddress remote;
+		private final byte[] response;
+
+		TestResult(final IndividualAddress remote, final byte[] response) {
+			this.remote = remote;
+			this.response = response;
+		}
+
+		public IndividualAddress remote() {
+			return remote;
+		}
+
+		/**
+		 * @return byte array with response, <code>length &gt; 0</code>
+		 */
+		public byte[] result() {
+			return response;
+		}
+	}
+
+	/**
+	 * Reads the current configuration of a network parameter using broadcast communication mode.
+	 * The remote endpoint will ignore a network parameter read request if 1) reading a network parameter that is
+	 * not supported by the remote endpoint in question, or 2) on a negative check with respect to the supplied
+	 * parameters against the test information {@code testInfo}.
+	 *
+	 * @param objectType interface object type, <code>0 &le; objectType &lt; 0xffff</code>
+	 * @param pid KNX property identifier, <code>0 &le; pid &lt; 0xff</code>
+	 * @param testInfo test information, <code>0 &lt; testInfo.length &lt; </code> parameter-specific
+	 * @return received responses with test results as (empty) list
+	 * @throws KNXLinkClosedException if network link to KNX network is closed
+	 * @throws KNXTimeoutException on timeout during send or waiting for a response
+	 * @throws KNXInvalidResponseException on invalid read response message
+	 * @throws InterruptedException on interrupted thread
+	 */
+	List<TestResult> readNetworkParameter(int objectType, int pid, byte... testInfo)
+			throws KNXException, InterruptedException;
 
 	/**
 	 * Writes a network parameter to a {@code remote} endpoint. The remote endpoint will neglect unknown parameter types
@@ -385,7 +442,7 @@ public interface ManagementClient extends AutoCloseable
 	 * @return byte array containing device descriptor information
 	 * @throws KNXTimeoutException on a timeout during send
 	 * @throws KNXInvalidResponseException on invalid read response message
-	 * @throws KNXDisconnectException on disconnect in connection oriented mode
+	 * @throws KNXDisconnectException on disconnect in connection-oriented mode
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 * @throws KNXException on other read device descriptor errors
 	 * @throws InterruptedException on interrupted thread
@@ -408,21 +465,76 @@ public interface ManagementClient extends AutoCloseable
 	void restart(Destination dst) throws KNXTimeoutException, KNXLinkClosedException, InterruptedException;
 
 	/**
+	 * Erase codes used with a master reset restart service.
+	 */
+	enum EraseCode {
+		/** Confirmed alternative to the unconfirmed basic restart. */
+		ConfirmedRestart,
+		/** Reset the device to its ex-factory state. */
+		FactoryReset,
+		/** Reset the device address to the medium-specific default address. */
+		ResetIndividualAddress,
+		/** Reset the application program memory to the default application. */
+		ResetApplicationProgram,
+		/** Reset the application parameter memory to its default value. */
+		ResetApplicationParameters,
+		/**
+		 * Reset link information for group objects (Group Address Table, Group Object Association Table) to its
+		 * default state.
+		 */
+		ResetLinks,
+		/** Reset the device to its ex-factory state, the device address(es) shall not be reset. */
+		FactoryResetWithoutIndividualAddress;
+
+		public static EraseCode of(final int eraseCode) {
+			if (eraseCode > 0 && eraseCode <= values().length)
+				return values()[eraseCode - 1];
+			throw new KNXIllegalArgumentException("unsupported erase code " + eraseCode);
+		}
+
+		public int code() { return ordinal() + 1; }
+	}
+
+	/**
 	 * Initiates a master reset of the controller of a communication partner.
 	 * <p>
-	 * A master reset clears link information in the group address table and group object
-	 * association table, resets application parameters, resets the application to the default
-	 * application, resets the device individual address to the (medium-dependent) default address,
-	 * and subsequently performs a basic restart.<br>
-	 * If the requested master reset exceeds a processing time of 5 seconds, this is indicated by
-	 * the KNX device using a worst-case process time, which is returned by this method. Otherwise,
-	 * the process time indication might be left to its default of 0 by the remote endpoint.
+	 * Depending on the erase code, a master reset clears link information in the group address table and group object
+	 * association table, resets application parameters, resets the application to the default application, resets the
+	 * device individual address to the (medium-dependent) default address, and subsequently performs a basic
+	 * restart.<br>
+	 * The {@code channel} parameter is used with erase codes {@link EraseCode#FactoryReset},
+	 * {@link EraseCode#ResetApplicationParameters}, {@link EraseCode#ResetLinks}, and
+	 * {@link EraseCode#FactoryResetWithoutIndividualAddress}. For erase codes {@link EraseCode#ConfirmedRestart},
+	 * {@link EraseCode#ResetIndividualAddress}, and {@link EraseCode#ResetApplicationProgram}, {@code channel} should
+	 * be 0.<br>
+	 * If the requested master reset exceeds a processing time of 5 seconds, this is indicated by the KNX device using a
+	 * worst-case process time, which is returned by this method. Otherwise, the process time indication might be left
+	 * at its default value of 0 by the remote endpoint.
 	 * <p>
 	 * This service uses point-to-point connectionless or connection-oriented communication mode.<br>
-	 * Invoking this method may result in a termination of the transport layer connection (i.e.,
-	 * state transition into disconnected for the supplied destination).
+	 * Invoking this method may result in a termination of the transport layer connection (i.e., transition to
+	 * disconnected state for the supplied destination).
+	 *
+	 * @param dst destination to reset
+	 * @param eraseCode specifies the resources that shall be reset prior to restarting the device
+	 * @param channel the number of the application channel that shall be reset and the application parameters set to
+	 *        default values, use 0 to clear all link information in the group address table and group object
+	 *        association table and reset all application parameters
+	 * @return the worst case execution time of the device for the requested master reset or a default of 0, with time
+	 *         &ge; 0
+	 * @throws KNXTimeoutException on a timeout during send
+	 * @throws KNXRemoteException on error to restart the communication partner
+	 * @throws KNXDisconnectException on transport layer disconnect in connection-oriented mode
+	 * @throws KNXLinkClosedException if network link to KNX network is closed
+	 * @throws InterruptedException on interrupted thread
+	 */
+	Duration restart(Destination dst, EraseCode eraseCode, int channel) throws KNXTimeoutException,
+			KNXRemoteException, KNXDisconnectException, KNXLinkClosedException, InterruptedException;
+
+	/**
+	 * Initiates a master reset of the controller of a communication partner.
 	 * <p>
-	 * Available Erase Codes:
+	 * Available erase codes:
 	 * <ul>
 	 * <li>1: confirmed restart (basic restart with confirmation)</li>
 	 * <li>2: factory reset (used together with <code>channel</code>)</li>
@@ -430,12 +542,11 @@ public interface ManagementClient extends AutoCloseable
 	 * <li>4: reset application program memory to default application</li>
 	 * <li>5: reset application parameter memory (used together with <code>channel</code>)</li>
 	 * <li>6: reset links (used together with <code>channel</code></li>
-	 * <li>7: factory reset without resetting the device individual address (used together with
-	 * <code>channel</code>)</li>
+	 * <li>7: factory reset without resetting the device individual address (used together with <code>channel</code>)</li>
 	 * </ul>
 	 *
 	 * @param dst destination to reset
-	 * @param eraseCode specifies the resources that shall be reset prior to resetting the device
+	 * @param eraseCode specifies the resources that shall be reset prior to restarting the device
 	 * @param channel the number of the application channel that shall be reset and the application
 	 *        parameters set to default values, use 0 to clear all link information in the group
 	 *        address table and group object association table and reset all application parameters
@@ -447,9 +558,12 @@ public interface ManagementClient extends AutoCloseable
 	 * @throws KNXDisconnectException on transport layer disconnect in connection-oriented mode
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 * @throws InterruptedException on interrupted thread
+	 * @see #restart(Destination, EraseCode, int)
 	 */
-	int restart(Destination dst, int eraseCode, int channel) throws KNXTimeoutException,
-		KNXRemoteException, KNXDisconnectException, KNXLinkClosedException, InterruptedException;
+	default int restart(final Destination dst, final int eraseCode, final int channel) throws KNXTimeoutException,
+			KNXRemoteException, KNXDisconnectException, KNXLinkClosedException, InterruptedException {
+		return (int) restart(dst, EraseCode.of(eraseCode), channel).toSeconds();
+	}
 
 	/**
 	 * Reads the value of a property of an interface object of a communication partner.
@@ -462,7 +576,7 @@ public interface ManagementClient extends AutoCloseable
 	 * index <code>i</code> (zero based) is calculated the following way:<br>
 	 * <code>offset = (data.length / elements) * i</code>.<br>
 	 * Note that interface objects with active access protection are only accessible over
-	 * connection oriented communication.
+	 * connection-oriented communication.
 	 *
 	 * @param dst destination to read from
 	 * @param objIndex interface object index
@@ -474,7 +588,7 @@ public interface ManagementClient extends AutoCloseable
 	 * @throws KNXRemoteException if tried to access a non existing property or forbidden
 	 *         property access (not sufficient access rights)
 	 * @throws KNXInvalidResponseException if received number of elements differ
-	 * @throws KNXDisconnectException on disconnect in connection oriented mode
+	 * @throws KNXDisconnectException on disconnect in connection-oriented mode
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 * @throws KNXException on other read property error
 	 * @throws InterruptedException on interrupted thread
@@ -489,7 +603,7 @@ public interface ManagementClient extends AutoCloseable
 	 * communication mode.<br>
 	 * The value of the written property is explicitly read back after writing.<br>
 	 * Note that interface objects with active access protection are only accessible over
-	 * connection oriented communication.
+	 * connection-oriented communication.
 	 *
 	 * @param dst destination to write to
 	 * @param objIndex interface object index
@@ -503,13 +617,96 @@ public interface ManagementClient extends AutoCloseable
 	 *         was written
 	 * @throws KNXInvalidResponseException if received number of elements differ or the
 	 *         data length read back differs from the written data length
-	 * @throws KNXDisconnectException on disconnect in connection oriented mode
+	 * @throws KNXDisconnectException on disconnect in connection-oriented mode
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 * @throws KNXException on other read property error
 	 * @throws InterruptedException on interrupted thread
 	 */
 	void writeProperty(Destination dst, int objIndex, int propertyId, int start, int elements,
 		byte[] data) throws KNXException, InterruptedException;
+
+	/**
+	 * Modifies the value of a property of an interface object of a communication partner.
+	 * <p>
+	 * This service uses point-to-point connectionless or connection-oriented communication mode. Interface objects with
+	 * active access protection are only accessible over connection-oriented communication.
+	 *
+	 * @param dst destination to write to
+	 * @param objectType interface object type
+	 * @param objectInstance interface object instance
+	 * @param propertyId property identifier
+	 * @param start start index in the property value to start writing to
+	 * @param elements number of elements to write
+	 * @param data byte array containing property value data to write
+	 * @throws KNXTimeoutException on a timeout during send
+	 * @throws KNXRemoteException if tried to access a non existing property or forbidden property access (not
+	 *         sufficient access rights) or erroneous property data was written
+	 * @throws KNXInvalidResponseException if received number of elements differ or the data length read back differs
+	 *         from the written data length
+	 * @throws KNXDisconnectException on disconnect in connection-oriented mode
+	 * @throws KNXLinkClosedException if network link to KNX network is closed
+	 * @throws KNXException on other read property error
+	 * @throws InterruptedException on interrupted thread
+	 */
+	void writeProperty(Destination dst, int objectType, int objectInstance, int propertyId, int start, int elements,
+			byte[] data) throws KNXException, InterruptedException;
+
+	/**
+	 * Reads the description of a property of an interface object of a communication partner. The interface object
+	 * is specified using its object type and object instance.
+	 * <p>
+	 * This service corresponds to A_PropertyExtDescription_Read and uses point-to-point connectionless or
+	 * connection-oriented communication mode.<br>
+	 * The property of the object is addressed either with the <code>propertyId</code>
+	 * or with the <code>propertyIndex</code>. The property index is only used if the property
+	 * identifier is 0, otherwise the index is ignored.
+	 * When using the property ID for access, the property index in the returned
+	 * description is either the correct property index of the addressed property or 0.
+	 *
+	 * @param dst destination to read from
+	 * @param objectType interface object type
+	 * @param objInstance interface object instance
+	 * @param propertyId property identifier, specify 0 to use the property index
+	 * @param propertyIndex property index, starts with index 0 for the first property
+	 * @return the property description
+	 * @throws KNXTimeoutException on a timeout during send
+	 * @throws KNXRemoteException if the response contains no description (e.g. if tried
+	 *         to access a non existing property)
+	 * @throws KNXDisconnectException on disconnect in connection-oriented mode
+	 * @throws KNXLinkClosedException if network link to KNX network is closed
+	 * @throws InterruptedException on interrupted thread
+	 */
+	Description readPropertyDescription(Destination dst, int objectType, int objInstance, int propertyId,
+			int propertyIndex) throws KNXTimeoutException, KNXRemoteException, KNXDisconnectException,
+			KNXLinkClosedException, InterruptedException;
+
+	/**
+	 * Reads the description of a property of an interface object of a communication partner.
+	 * <p>
+	 * This service uses point-to-point connectionless or connection-oriented
+	 * communication mode.<br>
+	 * The property of the object is addressed either with a the <code>propertyId</code>
+	 * or with the <code>propIndex</code>. The property index is only used if the property
+	 * identifier is 0, otherwise the index is ignored. When using the property ID for access, the property index in
+	 * the returned description is either the correct property index of the addressed property or 0.
+	 *
+	 * @param dst destination to read from
+	 * @param objIndex interface object index
+	 * @param propertyId property identifier, specify 0 to use the property index
+	 * @param propertyIndex property index, starts with index 0 for the first property
+	 * @return the property description
+	 * @throws KNXTimeoutException on a timeout during send
+	 * @throws KNXRemoteException if the response contains no description (e.g. if tried
+	 *         to access a non existing property)
+	 * @throws KNXDisconnectException on disconnect in connection-oriented mode
+	 * @throws KNXLinkClosedException if network link to KNX network is closed
+	 * @throws KNXException on other read property description error
+	 * @throws InterruptedException on interrupted thread
+	 */
+	default Description readPropertyDescription(final Destination dst, final int objIndex, final int propertyId,
+			final int propertyIndex) throws KNXException, InterruptedException {
+		return new Description(0, readPropertyDesc(dst, objIndex, propertyId, propertyIndex));
+	}
 
 	/**
 	 * Reads the description of a property of an interface object of a communication
@@ -532,10 +729,11 @@ public interface ManagementClient extends AutoCloseable
 	 * @throws KNXTimeoutException on a timeout during send
 	 * @throws KNXRemoteException if the response contains no description (e.g. if tried
 	 *         to access a non existing property)
-	 * @throws KNXDisconnectException on disconnect in connection oriented mode
+	 * @throws KNXDisconnectException on disconnect in connection-oriented mode
 	 * @throws KNXLinkClosedException if network link to KNX network is closed
 	 * @throws KNXException on other read property description error
 	 * @throws InterruptedException on interrupted thread
+	 * @see #readPropertyDescription(Destination, int, int, int)
 	 */
 	byte[] readPropertyDesc(Destination dst, int objIndex, int propertyId, int propIndex)
 		throws KNXException, InterruptedException;

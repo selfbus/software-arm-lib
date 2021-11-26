@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2017 B. Malinowsky
+    Copyright (c) 2010, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,10 +38,14 @@ package tuwien.auto.calimero.internal;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.io.UncheckedIOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.channels.ClosedChannelException;
+import java.util.Arrays;
 
 /**
  * @author B. Malinowsky
@@ -69,7 +73,6 @@ public abstract class UdpSocketLooper
 
 	/**
 	 * Creates a socket looper for the supplied UDP socket.
-	 * <p>
 	 *
 	 * @param socket the UDP socket to loop on
 	 * @param closeSocket <code>true</code> to close the socket on {@link #quit()},
@@ -113,7 +116,7 @@ public abstract class UdpSocketLooper
 		final byte[] buf = new byte[maxRcvBuf];
 		try {
 			if (timeout > 0)
-				s.setSoTimeout(timeout);
+				setTimeout(timeout);
 			while (!quit) {
 				if (total > 0) {
 					final long now = System.currentTimeMillis();
@@ -122,16 +125,13 @@ public abstract class UdpSocketLooper
 						break;
 					// query socket timeout directly from socket since subtypes might
 					// have modified the timeout during looping
-					final int sto = s.getSoTimeout();
+					final int sto = timeout();
 					if (sto > 0)
 						to = Math.min(to, sto);
-					s.setSoTimeout(to);
+					setTimeout(to);
 				}
 				try {
-					final DatagramPacket p = new DatagramPacket(buf, buf.length);
-					s.receive(p);
-					final byte[] data = p.getData();
-					onReceive((InetSocketAddress) p.getSocketAddress(), data, p.getOffset(), p.getLength());
+					receive(buf);
 				}
 				catch (final SocketTimeoutException e) {
 					if (total == 0 || start + total > System.currentTimeMillis())
@@ -147,7 +147,8 @@ public abstract class UdpSocketLooper
 		catch (final InterruptedIOException e) {
 			Thread.currentThread().interrupt();
 		}
-		catch (final IOException e) {
+		catch (final ClosedChannelException ignore) {}
+		catch (IOException | UncheckedIOException e) {
 			if (!quit)
 				throw e;
 		}
@@ -156,15 +157,33 @@ public abstract class UdpSocketLooper
 		}
 	}
 
+	protected int timeout() throws SocketException {
+		if (s == null) return 0;
+		return s.getSoTimeout();
+	}
+
+	protected void setTimeout(final int timeout) throws SocketException {
+		if (s == null) return;
+		s.setSoTimeout(timeout);
+	}
+
+	protected void receive(final byte[] buf) throws IOException {
+		Arrays.fill(buf, (byte) 0);
+		final DatagramPacket p = new DatagramPacket(buf, buf.length);
+		s.receive(p);
+		// weird jdk 17/18 behavior if socket got closed
+		if (p.getLength() == 0)
+			return;
+		onReceive((InetSocketAddress) p.getSocketAddress(), buf, p.getOffset(), p.getLength());
+	}
+
 	/**
 	 * Invoked on socket timeout.
 	 */
-	protected void onTimeout()
-	{}
+	protected void onTimeout() {}
 
 	/**
 	 * Invoked on receiving a datagram over the socket.
-	 * <p>
 	 *
 	 * @param source the sender's address, where the data is coming from
 	 * @param data the received data
@@ -184,7 +203,7 @@ public abstract class UdpSocketLooper
 		// On platforms with non-interruptible network sockets, the receiver
 		// might not handle the interrupt flag for a longer period of time.
 		// That's why the closeSocket option can be set during construction.
-		if (closeSocket)
+		if (closeSocket && s != null)
 			s.close();
 	}
 }

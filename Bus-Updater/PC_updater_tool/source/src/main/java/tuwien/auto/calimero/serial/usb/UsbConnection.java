@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2020 B. Malinowsky
+    Copyright (c) 2015, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -95,6 +95,7 @@ import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
 import tuwien.auto.calimero.CloseEvent;
+import tuwien.auto.calimero.Connection;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DeviceDescriptor.DD0;
 import tuwien.auto.calimero.FrameEvent;
@@ -106,6 +107,8 @@ import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.KnxRuntimeException;
 import tuwien.auto.calimero.cemi.CEMIFactory;
 import tuwien.auto.calimero.internal.EventListeners;
+import tuwien.auto.calimero.serial.ConnectionEvent;
+import tuwien.auto.calimero.serial.ConnectionStatus;
 import tuwien.auto.calimero.serial.KNXPortClosedException;
 import tuwien.auto.calimero.serial.usb.HidReport.BusAccessServerFeature;
 import tuwien.auto.calimero.serial.usb.HidReportHeader.PacketType;
@@ -119,7 +122,7 @@ import tuwien.auto.calimero.serial.usb.TransferProtocolHeader.Protocol;
  *
  * @author B. Malinowsky
  */
-public class UsbConnection implements AutoCloseable
+public class UsbConnection implements Connection<HidReport>
 {
 	/**
 	 * Available EMI types and their respective bit value representation.
@@ -174,7 +177,7 @@ public class UsbConnection implements AutoCloseable
 	private static final Map<Integer, List<Integer>> vendorProductIds = loadKnxUsbVendorProductIds();
 
 	private static Map<Integer, List<Integer>> loadKnxUsbVendorProductIds() {
-		try (final var is = UsbConnection.class.getResourceAsStream("/knxUsbVendorProductIds")) {
+		try (var is = UsbConnection.class.getResourceAsStream("/knxUsbVendorProductIds")) {
 			final var lines = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines();
 			final int[] currentVendor = new int[1];
 			return Map.copyOf(lines.filter(s -> !s.startsWith("#") && !s.isBlank())
@@ -192,7 +195,7 @@ public class UsbConnection implements AutoCloseable
 		return line.startsWith("\t") ? List.of(line.split("#")[0].split(",")).stream().map(s -> fromHex(s)) : Stream.of();
 	}
 
-	private final EventListeners<KNXListener> listeners = new EventListeners<>();
+	private final EventListeners<KNXListener> listeners;
 
 	private final UsbDevice dev;
 	private final UsbInterface knxUsbIf;
@@ -281,7 +284,12 @@ public class UsbConnection implements AutoCloseable
 						setResponse(r);
 					else if (tph.getService() == BusAccessServerService.Info) {
 						final BusAccessServerFeature feature = r.getFeatureId();
-						logger.info("{} {}", feature, DataUnitBuilder.toHex(r.getData(), ""));
+						logger.trace("{} {}", feature, DataUnitBuilder.toHex(r.getData(), ""));
+					}
+
+					if (r.getFeatureId() == BusAccessServerFeature.ConnectionStatus) {
+						final int status = r.getData()[0];
+						listeners.dispatchCustomEvent(status == 1 ? ConnectionStatus.Online : ConnectionStatus.Offline);
 					}
 				}
 				else
@@ -421,8 +429,11 @@ public class UsbConnection implements AutoCloseable
 	{
 		dev = device;
 		this.name = name.isEmpty() ? toDeviceId(device) : name;
+		logger = LoggerFactory.getLogger(logPrefix + "." + name());
+		listeners = new EventListeners<>(logger, ConnectionEvent.class);
+		listeners.registerEventType(ConnectionStatus.class);
+
 		try {
-			logger = LoggerFactory.getLogger(logPrefix + "." + getName());
 			final Object[] usbIfInOut = open(device);
 
 			knxUsbIf = (UsbInterface) usbIfInOut[0];
@@ -459,6 +470,7 @@ public class UsbConnection implements AutoCloseable
 	 *
 	 * @param l the listener to add
 	 */
+	@Override
 	public void addConnectionListener(final KNXListener l)
 	{
 		listeners.add(l);
@@ -470,9 +482,16 @@ public class UsbConnection implements AutoCloseable
 	 *
 	 * @param l the listener to remove
 	 */
+	@Override
 	public void removeConnectionListener(final KNXListener l)
 	{
 		listeners.remove(l);
+	}
+
+	@Override
+	public void send(final HidReport frame, final BlockingMode blockingMode)
+			throws KNXPortClosedException, KNXTimeoutException {
+		send(frame, blockingMode == BlockingMode.NonBlocking ? false : true);
 	}
 
 	@SuppressWarnings("unused")
@@ -577,7 +596,8 @@ public class UsbConnection implements AutoCloseable
 	/**
 	 * @return the name of this USB connection, usually in the format {@code <vendorID>:<productID>}
 	 */
-	public final String getName()
+	@Override
+	public final String name()
 	{
 		return name;
 	}
@@ -801,7 +821,7 @@ public class UsbConnection implements AutoCloseable
 	private void fireFrameReceived(final KnxTunnelEmi emiType, final byte[] frame) throws KNXFormatException
 	{
 		logger.debug("received {} frame {}", emiType, DataUnitBuilder.toHex(frame, ""));
-		final FrameEvent fe ;
+		final FrameEvent fe;
 		// check baos main service and forward frame as raw bytes
 		if ((frame[0] & 0xff) == 0xf0)
 			fe = new FrameEvent(this, frame);
@@ -1102,7 +1122,7 @@ public class UsbConnection implements AutoCloseable
 			slogger.error("LibUsb initialization error {}: {}", -err, LibUsb.strError(err));
 			return null;
 		}
-		try {
+//		try {
 			final DeviceList list = new DeviceList();
 			final int res = LibUsb.getDeviceList(ctx, list);
 			if (res < 0) {
@@ -1126,11 +1146,11 @@ public class UsbConnection implements AutoCloseable
 			finally {
 				LibUsb.freeDeviceList(list, true);
 			}
-		}
-		finally {
+//		}
+//		finally {
 			// we can't call exit here, as we return a Device for subsequent usage
 //			LibUsb.exit(ctx);
-		}
+//		}
 		return null;
 	}
 

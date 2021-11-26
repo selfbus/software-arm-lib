@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 
 import tuwien.auto.calimero.CloseEvent;
+import tuwien.auto.calimero.Connection;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.FrameEvent;
 import tuwien.auto.calimero.GroupAddress;
@@ -73,7 +74,7 @@ import tuwien.auto.calimero.log.LogService;
  *
  * @author B. Malinowsky
  */
-public class FT12Connection implements AutoCloseable
+public class FT12Connection implements Connection<byte[]>
 {
 	/**
 	 * State of communication: in idle state, no error, ready to send.
@@ -155,10 +156,10 @@ public class FT12Connection implements AutoCloseable
 	private volatile KNXAddress keepForCon;
 	private static final IndividualAddress NoLDataAddress = new IndividualAddress(0xffff);
 
-	private int sendFrameCount;
-	private int rcvFrameCount;
+	private volatile int sendFrameCount;
+	private volatile int rcvFrameCount;
 
-	private final EventListeners<KNXListener> listeners = new EventListeners<>();
+	private final EventListeners<KNXListener> listeners;
 
 	/**
 	 * Creates a new connection to a BCU2 using the FT1.2 protocol.
@@ -239,9 +240,12 @@ public class FT12Connection implements AutoCloseable
 				idleTimeout(baudrate)), portId, cemi);
 	}
 
-	FT12Connection(final LibraryAdapter connection, final String portId, final boolean cemi)
+	protected FT12Connection(final LibraryAdapter connection, final String portId, final boolean cemi)
 			throws KNXException, InterruptedException {
 		logger = LogService.getLogger("calimero.serial.ft12:" + portId);
+		listeners = new EventListeners<>(logger);
+		listeners.registerEventType(ConnectionStatus.class);
+
 		adapter = connection;
 		port = portId;
 		exchangeTimeout = exchangeTimeout(adapter.getBaudRate());
@@ -277,6 +281,7 @@ public class FT12Connection implements AutoCloseable
 	 *
 	 * @param l the listener to add
 	 */
+	@Override
 	public void addConnectionListener(final KNXListener l)
 	{
 		listeners.add(l);
@@ -290,9 +295,16 @@ public class FT12Connection implements AutoCloseable
 	 *
 	 * @param l the listener to remove
 	 */
+	@Override
 	public void removeConnectionListener(final KNXListener l)
 	{
 		listeners.remove(l);
+	}
+
+	@Override
+	public String name()
+	{
+		return port;
 	}
 
 	/**
@@ -338,6 +350,12 @@ public class FT12Connection implements AutoCloseable
 	public final int getState()
 	{
 		return state;
+	}
+
+	@Override
+	public void send(final byte[] frame, final BlockingMode blockingMode)
+			throws KNXTimeoutException, KNXPortClosedException, InterruptedException {
+		send(frame, blockingMode == BlockingMode.NonBlocking ? false : true);
 	}
 
 	/**
@@ -633,8 +651,10 @@ public class FT12Connection implements AutoCloseable
 				}
 			}
 			catch (final IOException | InterruptedException e) {
-				if (!quit)
+				if (!quit) {
+					logger.warn("I/O error in FT1.2 receiver", e);
 					close(false, "receiver communication failure");
+				}
 			}
 		}
 
@@ -660,24 +680,51 @@ public class FT12Connection implements AutoCloseable
 					final int fc = buf[0] & 0x0f;
 					logger.trace("received " + (fc == RESET ? "reset" : fc == REQ_STATUS
 							? "status" : "unknown function code "));
+					if (fc == RESET) {
+						sendFrameCount = FRAMECOUNT_BIT;
+						rcvFrameCount = FRAMECOUNT_BIT;
+						notifyReset();
+					}
+
 					return true;
 				}
 			}
 			return false;
 		}
 
+		private void notifyReset() {
+			listeners.dispatchCustomEvent(ConnectionStatus.Reset);
+		}
+
 		private boolean readFrame() throws IOException, InterruptedException
 		{
-			final int len = is.read();
-			final byte[] buf = new byte[len + 4];
+			final byte[] header = is.readNBytes(3);
+			// check end of stream
+			if (header.length != 3)
+				return false;
+
+			final int len = header[0] & 0xff;
+			final int lenCheck = header[1] & 0xff;
+			if (len != lenCheck) {
+				logger.debug("invalid frame header, length fields mismatch {} != {}", len, lenCheck);
+				return false;
+			}
+			final int startMarker = header[2] & 0xff;
+			if (startMarker != START) {
+				logger.debug("invalid frame header, expected START: {}", Integer.toHexString(startMarker));
+				return false;
+			}
+
+			final int total = len + 2;
 			// read rest of frame, check header, ctrl, and end tag
-			final int read = is.read(buf);
-			if (read == len + 4 && (buf[0] & 0xff) == len && (buf[1] & 0xff) == START && (buf[len + 3] & 0xff) == END) {
+			final byte[] buf = is.readNBytes(total);
+			final int read = buf.length;
+			if (read == total && (buf[len + 1] & 0xff) == END) {
 				final byte chk = buf[buf.length - 2];
-				if (!checkCtrlField(buf[2] & 0xff, chk))
+				if (!checkCtrlField(buf[0] & 0xff, chk))
 					return false;
 
-				if (checksum(buf, 2, len) != chk)
+				if (checksum(buf, 0, len) != chk)
 					logger.warn("invalid checksum in frame " + DataUnitBuilder.toHex(buf, " "));
 				else {
 					sendAck();
@@ -685,7 +732,7 @@ public class FT12Connection implements AutoCloseable
 					rcvFrameCount ^= FRAMECOUNT_BIT;
 					final byte[] ldata = new byte[len - 1];
 					for (int i = 0; i < ldata.length; ++i)
-						ldata[i] = buf[3 + i];
+						ldata[i] = buf[1 + i];
 
 					fireFrameReceived(ldata);
 
@@ -725,9 +772,9 @@ public class FT12Connection implements AutoCloseable
 			final int emi1LDataCon = 0x4e;
 			final int svc = ldata[0] & 0xff;
 			final boolean isLDataCon = svc == CEMILData.MC_LDATA_CON || svc == emi1LDataCon;
-			final int ctrl1Offset = cemi ? 2 : 1;
-			final boolean posCon = (ldata[ctrl1Offset] & 0x01) == 0;
-			if (isLDataCon && posCon) {
+//			final int ctrl1Offset = cemi ? 2 : 1;
+//			final boolean posCon = (ldata[ctrl1Offset] & 0x01) == 0;
+			if (isLDataCon) {
 				final var dst = ldataDestination(ldata);
 				if (dst.equals(keepForCon))
 					signalCon();

@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2010, 2020 B. Malinowsky
+    Copyright (c) 2010, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,7 +45,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 
 import org.slf4j.Logger;
 
@@ -56,6 +55,7 @@ import tuwien.auto.calimero.KNXAckTimeoutException;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXListener;
 import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.ServiceType;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.internal.EventListeners;
 import tuwien.auto.calimero.knxnetip.servicetype.DisconnectRequest;
@@ -220,7 +220,7 @@ public abstract class ConnectionBase implements KNXnetIPConnection
 				if (serviceRequest == KNXnetIPHeader.ROUTING_IND)
 					buf = PacketHelper.toPacket(new RoutingIndication(frame));
 				else
-					buf = PacketHelper.toPacket(new ServiceRequest(serviceRequest, channelId, getSeqSend(), frame));
+					buf = PacketHelper.toPacket(new ServiceRequest<>(serviceRequest, channelId, getSeqSend(), frame));
 				keepForCon = frame;
 				int attempt = 0;
 				for (; attempt < maxSendAttempts; ++attempt) {
@@ -301,12 +301,12 @@ public abstract class ConnectionBase implements KNXnetIPConnection
 	}
 
 	@Override
-	public String getName()
+	public String name()
 	{
 		// only the control endpoint is set when our logger is initialized (the data
 		// endpoint gets assigned later in connect)
 		// to keep the name short, avoid a prepended host name as done by InetAddress
-		return ctrlEndpt.getAddress().getHostAddress() + ":" + ctrlEndpt.getPort();
+		return Net.hostPort(ctrlEndpt);
 	}
 
 	@Override
@@ -317,7 +317,7 @@ public abstract class ConnectionBase implements KNXnetIPConnection
 
 	@Override
 	public String toString() {
-		return getName() + (channelId != 0 ? (" channel " + channelId) : "") + " (state " + connectionState() + ")";
+		return name() + (channelId != 0 ? (" channel " + channelId) : "") + " (state " + connectionState() + ")";
 	}
 
 	/**
@@ -366,6 +366,11 @@ public abstract class ConnectionBase implements KNXnetIPConnection
 	{
 		final FrameEvent fe = new FrameEvent(this, frame);
 		listeners.fire(l -> l.frameReceived(fe));
+	}
+
+	boolean handleServiceType(final KNXnetIPHeader h, final byte[] data, final int offset,
+			final InetSocketAddress source) throws KNXFormatException, IOException {
+		return handleServiceType(h, data, offset, source.getAddress(), source.getPort());
 	}
 
 	/**
@@ -507,29 +512,13 @@ public abstract class ConnectionBase implements KNXnetIPConnection
 	}
 
 	/**
-	 * Extracts the service request out of the supplied packet data.
-	 *
-	 * @param h packet KNXnet/IP header
-	 * @param data contains the data following the KNXnet/IP header
-	 * @param offset offset into <code>data</code> to message structure past KNXnet/IP header
-	 * @return the service request
-	 * @throws KNXFormatException on failure to extract (even an empty) service request
+	 * @deprecated No replacement. Use {@link ServiceRequest#from(KNXnetIPHeader, byte[], int)}.
 	 */
-	protected ServiceRequest getServiceRequest(final KNXnetIPHeader h, final byte[] data, final int offset)
+	@Deprecated
+	protected ServiceRequest<ServiceType> getServiceRequest(final KNXnetIPHeader h, final byte[] data, final int offset)
 		throws KNXFormatException
 	{
-		try {
-			return PacketHelper.getServiceRequest(h, data, offset);
-		}
-		catch (final KNXFormatException e) {
-			// check if at least the connection header of the service request
-			// is correct and try to get its values
-			final ServiceRequest req = PacketHelper.getEmptyServiceRequest(h, data, offset);
-			logger.warn("received request with unknown cEMI data " + DataUnitBuilder.toHex(
-					Arrays.copyOfRange(data, offset + 4, offset + h.getTotalLength() - h.getStructLength()),
-					" "), e);
-			return req;
-		}
+		return ServiceRequest.from(h, data, offset);
 	}
 
 	final void startReceiver()

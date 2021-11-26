@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2019 B. Malinowsky
+    Copyright (c) 2006, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,10 +37,10 @@
 package tuwien.auto.calimero.knxnetip.util;
 
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
-import java.util.Iterator;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.StringJoiner;
 
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
@@ -60,52 +60,92 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
 public class ServiceFamiliesDIB extends DIB
 {
 	/**
-	 * Service family identifier representing the service type 'KNXnet/IP Core'.
+	 * KNXnet/IP service family identifiers.
 	 */
+	public enum ServiceFamily {
+		Core,
+		DeviceManagement,
+		Tunneling,
+		Routing,
+		RemoteLogging,
+		RemoteConfigurationDiagnosis,
+		ObjectServer,
+		Security,
+		Baos;
+
+		public int id() {
+			if (this == Baos)
+				return 0xf0;
+			return ordinal() + 2;
+		}
+
+		@Override
+		public String toString() {
+			// ??? Configuration/Diagnosis now has a space, not a slash
+			return name().replaceAll("(\\p{Lower})\\B([A-Z])", "$1 $2");
+		}
+
+		public static ServiceFamily of(final int familyId) {
+			if (familyId == Baos.id())
+				return Baos;
+			if (familyId < Core.id() || familyId > Security.id())
+				throw new KNXIllegalArgumentException(familyId + " is not a supported service family");
+
+			return values()[familyId - 2];
+		}
+	}
+
+	/**
+	 * @deprecated
+	 */
+	@Deprecated
 	public static final int CORE = 0x02;
 
 	/**
-	 * Service family identifier representing the service type 'KNXnet/IP Device
-	 * Management'.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final int DEVICE_MANAGEMENT = 0x03;
 
 	/**
-	 * Service family identifier representing the service type 'KNXnet/IP Tunneling'.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final int TUNNELING = 0x04;
 
 	/**
-	 * Service family identifier representing the service type 'KNXnet/IP Routing'.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final int ROUTING = 0x05;
 
 	/**
-	 * Service family identifier representing the service type 'KNXnet/IP Remote Logging'.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final int REMOTE_LOGGING = 0x06;
 
 	/**
-	 * Service family identifier representing the service type 'KNXnet/IP Remote
-	 * Configuration and Diagnosis'.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final int REMOTE_CONFIGURATION_DIAGNOSIS = 0x07;
 
 	/**
-	 * Service family identifier representing the service type 'KNXnet/IP Object Server'.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final int OBJECT_SERVER = 0x08;
 
 	/**
-	 * Service family identifier representing the service type 'Security'.
+	 * @deprecated
 	 */
+	@Deprecated
 	public static final int Security = 0x09;
 
-	private static final String[] familyNames = { null, null, "Core", "Device Management",
-		"Tunneling", "Routing", "Remote Logging", "Remote Configuration/Diagnosis", "Object Server", "Security" };
 
-	private final int[] ids;
-	private final int[] versions;
+	private final EnumMap<ServiceFamily, Integer> families = new EnumMap<>(ServiceFamily.class);
+
 
 	/**
 	 * Creates a service families DIB out of a byte array.
@@ -120,151 +160,57 @@ public class ServiceFamiliesDIB extends DIB
 		if (type != SUPP_SVC_FAMILIES && type != SecureServiceFamilies)
 			throw new KNXFormatException("not a supported service families DIB", type);
 		final ByteArrayInputStream is = new ByteArrayInputStream(data, offset + 2, size - 2);
-		ids = new int[size / 2 - 1];
-		versions = new int[ids.length];
-		for (int i = 0; i < ids.length; ++i) {
-			ids[i] = is.read();
-			versions[i] = is.read();
+		final int length = size / 2 - 1;
+		try {
+			for (int i = 0; i < length; ++i) {
+				final int familyId = is.read();
+				families.put(ServiceFamily.of(familyId), is.read());
+			}
+		}
+		catch (final KNXIllegalArgumentException e) {
+			throw new KNXFormatException(e.getMessage());
 		}
 	}
 
-	public static ServiceFamiliesDIB newSecureServiceFamilies(final int[] familyIds, final int[] familyVersions) {
-		return new ServiceFamiliesDIB(true, familyIds, familyVersions);
-	}
-
-	/**
-	 * Creates a service families DIB using the provided service families and versions
-	 * arrays.
-	 * <p>
-	 * The service families are added to the DIB in the same order they are listed in the
-	 * service family array <code>familyIDs</code>, accessed by increasing index. The two
-	 * arrays <code>familyIDs</code> and <code>familyVersions</code> have to be of same
-	 * length, <code>familyIDs.length == familyVersions.length</code>. A service family ID
-	 * shall be contained only once in <code>familyIDs</code>. Otherwise, all but the last
-	 * of that specific service family ID are ignored (as well as their version number).
-	 *
-	 * @param familyIDs array containing the supported service family identifiers, use the
-	 *        service family identifier constants as provided by this class;
-	 *        <code>0 &le; familyIDs[i] &le; 255</code>, for all i with
-	 *        <code>0 &le; i &lt; familyIDs.length</code>
-	 * @param familyVersions array containing the version of the corresponding items
-	 *        listed in the <code>familyIDs</code> parameter with the same index;
-	 *        <code>0 &le; familyVersions[i] &le; 255</code>, for all i with
-	 *        <code>0 &le; i &lt; familyVersions.length</code>
-	 */
-	public ServiceFamiliesDIB(final int[] familyIDs, final int[] familyVersions)
-	{
-		this(false, familyIDs, familyVersions);
-	}
-
-	private ServiceFamiliesDIB(final boolean secure, final int[] familyIds, final int[] familyVersions)
-	{
-		super(2 + 2 * familyIds.length, secure ? SecureServiceFamilies : SUPP_SVC_FAMILIES);
-		// maximum size of 20 is arbitrarily chosen as sanitation measure, but considered
-		// a reasonable boundary
-		if (familyIds.length != familyVersions.length || familyIds.length > 20)
-			throw new KNXIllegalArgumentException("size of arrays have to match, with size <= 20");
-
-		ids = new int[familyIds.length];
-		versions = new int[ids.length];
-		for (int i = 0; i < ids.length; ++i)
-			add(familyIds[i], familyVersions[i], i);
+	public static ServiceFamiliesDIB newSecureServiceFamilies(final Map<ServiceFamily, Integer> families) {
+		return new ServiceFamiliesDIB(true, families);
 	}
 
 	/**
 	 * Creates a service families DIB using the provided service family entries.
-	 * <p>
-	 * The family entries are added to the DIB in arbitrary order (for example, it might
-	 * be the order as returned by the <code>families</code> entry iterator).
 	 *
-	 * @param families (unmodifiable) map containing the supported service families, with
-	 *        the service family of type {@link Integer} being the key, and the version of
-	 *        type {@link Integer} being the value.
+	 * @param families map containing the supported service families, with the value being the supported version in the
+	 * range [0..255]
 	 */
-	public ServiceFamiliesDIB(final Map<Integer, Integer> families)
+	public ServiceFamiliesDIB(final Map<ServiceFamily, Integer> families)
 	{
 		super(2 + 2 * families.size(), SUPP_SVC_FAMILIES);
-		// maximum size of 20 is arbitrarily chosen as sanitation measure, but considered
-		// a reasonable boundary
-		if (families.size() > 20)
-			throw new KNXIllegalArgumentException("number of families must not exceed 20");
+		for (final var entry : families.entrySet())
+			add(entry.getKey(), entry.getValue());
+	}
 
-		ids = new int[families.size()];
-		versions = new int[ids.length];
-		int count = 0;
-		for (final Iterator<Entry<Integer, Integer>> i = families.entrySet().iterator(); i
-				.hasNext();) {
-			final Entry<Integer, Integer> e = i.next();
-			add(e.getKey().intValue(), e.getValue().intValue(), count++);
-		}
+	private ServiceFamiliesDIB(final boolean secure, final Map<ServiceFamily, Integer> families)
+	{
+		super(2 + 2 * families.size(), secure ? SecureServiceFamilies : SUPP_SVC_FAMILIES);
+		this.families.putAll(families);
 	}
 
 	/**
 	 * Returns the service families of this DIB, each family together with the version it
 	 * is implemented and supported up to.
-	 * <p>
-	 * The returned set holds <code>Map.Entry</code> items, with the service family of
-	 * type {@link Integer} being the key, and the version of type {@link Integer} being
-	 * the value.
 	 *
-	 * @return an unmodifiable set containing supported entries (family-version pair)
+	 * @return an unmodifiable map containing family-version mappings
 	 */
-	//public final Map getFamilies()
-	//{
-	//	return Collections.unmodifiableSet(map.entrySet());
-	//}
+	public final Map<ServiceFamily, Integer> families() { return Collections.unmodifiableMap(families); }
 
-	/**
-	 * Returns the service families of this DIB as array of family IDs.
-	 * <p>
-	 *
-	 * @return a new array containing the IDs of the supported service families, the array
-	 *         size reflects the number of supported service families
-	 */
-	public final int[] getFamilyIds()
-	{
-		return ids.clone();
-	}
-
-	/**
-	 * Returns the version associated to a given supported service family.
-	 * <p>
-	 * If the service family is not supported, 0 is returned.
-	 *
-	 * @param familyId supported service family ID to lookup
-	 * @return version as unsigned byte, or 0
-	 */
-	public final int getVersion(final int familyId)
-	{
-		for (int i = 0; i < ids.length; i++) {
-			if (ids[i] == familyId)
-				return versions[i];
-		}
-		return 0;
-	}
-
-	/**
-	 * Returns the service family name for the supplied family ID.
-	 *
-	 * @param familyId service family ID to get name for
-	 * @return family name as string, or <code>null</code> on no name available
-	 */
-	public final String getFamilyName(final int familyId)
-	{
-		return familyId < familyNames.length ? familyNames[familyId] : null;
-	}
-
-	/* (non-Javadoc)
-	 * @see tuwien.auto.calimero.knxnetip.util.DIB#toByteArray()
-	 */
 	@Override
 	public byte[] toByteArray()
 	{
 		final byte[] buf = super.toByteArray();
 		int k = 2;
-		for (int i = 0; i < ids.length; i++) {
-			buf[k++] = (byte) ids[i];
-			buf[k++] = (byte) versions[i];
+		for (final var entry : families.entrySet()) {
+			buf[k++] = (byte) entry.getKey().id();
+			buf[k++] = (byte) (int) entry.getValue();
 		}
 		return buf;
 	}
@@ -275,29 +221,19 @@ public class ServiceFamiliesDIB extends DIB
 	 * @return a string representation of the DIB object
 	 */
 	@Override
-	public String toString()
-	{
-		if (type == SecureServiceFamilies && ids.length == 0)
+	public String toString() {
+		if (type == SecureServiceFamilies && families.isEmpty())
 			return "KNX IP Secure n/a";
-		final StringBuilder buf = new StringBuilder();
-		for (int i = 0; i < ids.length; i++) {
-			if (type == SecureServiceFamilies)
-				buf.append("Secure ");
-			buf.append(getFamilyName(ids[i]));
-			buf.append(" (v").append(versions[i]).append(")");
-			if (i + 1 < ids.length)
-				buf.append(", ");
-		}
+		final var buf = new StringJoiner(", ");
+		final String prefix = type == SecureServiceFamilies ? "Secure " : "";
+		for (final var entry : families.entrySet())
+			buf.add(prefix + entry.getKey() + " (v" + entry.getValue() + ")");
 		return buf.toString();
 	}
 
 	@Override
 	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + Arrays.hashCode(ids);
-		result = prime * result + Arrays.hashCode(versions);
-		return result;
+		return families.hashCode();
 	}
 
 	@Override
@@ -307,14 +243,14 @@ public class ServiceFamiliesDIB extends DIB
 		if (!(obj instanceof ServiceFamiliesDIB))
 			return false;
 		final ServiceFamiliesDIB other = (ServiceFamiliesDIB) obj;
-		return Arrays.equals(ids, other.ids) && Arrays.equals(versions, other.versions);
+		return families.equals(other.families);
 	}
 
-	private void add(final int familyId, final int familyVersion, final int position)
+	private void add(final ServiceFamily familyId, final int familyVersion)
 	{
-		if (familyId < 0 || familyId > 255 || familyVersion < 0 || familyVersion > 255)
-			throw new KNXIllegalArgumentException("value out of range [0..255]");
-		ids[position] = familyId;
-		versions[position] = familyVersion;
+		if (familyVersion < 0 || familyVersion > 255)
+			throw new KNXIllegalArgumentException("version out of range [0..255]");
+
+		families.put(familyId, familyVersion);
 	}
 }

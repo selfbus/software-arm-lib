@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2006, 2020 B. Malinowsky
+    Copyright (c) 2018, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,21 +34,48 @@
     version.
 */
 
-package tuwien.auto.calimero.mgmt;
+package tuwien.auto.calimero.knxnetip;
 
-import tuwien.auto.calimero.CloseEvent;
+import static tuwien.auto.calimero.knxnetip.Net.hostPort;
 
-/**
- * @deprecated Use lambda expression.
- * @author B. Malinowsky
- */
-@Deprecated(forRemoval = true)
-public interface PropertyAdapterListener
-{
-	/**
-	 * @deprecated
-	 * @param e close event object
-	 */
-	@Deprecated
-	void adapterClosed(CloseEvent e);
+import java.io.IOException;
+import java.net.InetSocketAddress;
+
+import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.knxnetip.TcpConnection.SecureSession;
+import tuwien.auto.calimero.knxnetip.util.CRI;
+
+final class SecureDeviceManagement extends KNXnetIPDevMgmt {
+	private final SecureSession session;
+
+	SecureDeviceManagement(final SecureSession session) throws KNXException, InterruptedException {
+		super(session.connection());
+		this.session = session;
+
+		session.registerConnectRequest(this);
+		try {
+			final var cri = CRI.createRequest(DEVICE_MGMT_CONNECTION);
+			super.connect(session.connection().localEndpoint(), session.connection().server(), cri, false);
+		}
+		finally {
+			session.unregisterConnectRequest(this);
+		}
+	}
+
+	@Override
+	public String name() {
+		return "KNX IP " + SecureConnection.secureSymbol + " Management " + hostPort(ctrlEndpt);
+	}
+
+	@Override
+	protected void connect(final TcpConnection c, final CRI cri) {
+		// we don't have session assigned yet, connect in ctor
+	}
+
+	@Override
+	protected void send(final byte[] packet, final InetSocketAddress dst) throws IOException {
+		final byte[] wrapped = SecureConnection.newSecurePacket(session.id(), session.nextSendSeq(),
+				session.serialNumber(), 0, packet, session.secretKey);
+		super.send(wrapped, dst);
+	}
 }

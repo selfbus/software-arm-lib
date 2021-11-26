@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2019 B. Malinowsky
+    Copyright (c) 2015, 2021 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -44,7 +44,6 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.cemi.CEMI;
 import tuwien.auto.calimero.cemi.CEMIDevMgmt;
-import tuwien.auto.calimero.knxnetip.KNXConnectionClosedException;
 import tuwien.auto.calimero.link.BcuSwitcher.BcuMode;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.PLSettings;
@@ -110,13 +109,13 @@ public class KNXNetworkMonitorUsb extends AbstractMonitor<UsbConnection>
 	protected KNXNetworkMonitorUsb(final UsbConnection c, final KNXMediumSettings settings)
 		throws KNXException, InterruptedException
 	{
-		super(c, c.getName(), settings);
+		super(c, c.name(), settings);
 		try {
 			if (!conn.isKnxConnectionActive())
-				throw new KNXConnectionClosedException("USB interface is not connected to KNX network");
+				throw new KNXLinkClosedException("USB interface is not connected to KNX network");
 			emiTypes = conn.getSupportedEmiTypes();
 			if (!trySetActiveEmi(EmiType.CEmi) && !trySetActiveEmi(EmiType.Emi2) && !trySetActiveEmi(EmiType.Emi1)) {
-				throw new KNXConnectionClosedException("failed to set active any supported EMI type");
+				throw new KNXLinkClosedException("failed to set active any supported EMI type");
 			}
 			try {
 				// report device descriptor before switching to busmonitor mode
@@ -159,7 +158,8 @@ public class KNXNetworkMonitorUsb extends AbstractMonitor<UsbConnection>
 			//findFrame(CEMIDevMgmt.MC_PROPWRITE_CON);
 		}
 		else if (activeEmi == EmiType.Emi1) {
-			new BcuSwitcher(conn, logger).enter(extBusmon ? BcuMode.ExtBusmonitor : BcuMode.Busmonitor);
+			new BcuSwitcher<>(conn, logger, frame -> HidReport.create(KnxTunnelEmi.Emi1, frame).get(0))
+				.enter(extBusmon ? BcuMode.ExtBusmonitor : BcuMode.Busmonitor);
 		}
 		else {
 			final byte[] switchBusmon = { (byte) PEI_SWITCH, (byte) 0x90, 0x18, 0x34, 0x56, 0x78, 0x0A, };
@@ -183,7 +183,7 @@ public class KNXNetworkMonitorUsb extends AbstractMonitor<UsbConnection>
 			conn.send(HidReport.create(KnxTunnelEmi.CEmi, frame.toByteArray()).get(0), true);
 		}
 		else if (activeEmi == EmiType.Emi1) {
-			new BcuSwitcher(conn, logger).reset();
+			new BcuSwitcher<>(conn, logger, frame -> HidReport.create(KnxTunnelEmi.Emi1, frame).get(0)).reset();
 		}
 		else if (activeEmi == EmiType.Emi2) {
 			final byte[] switchNormal = { (byte) PEI_SWITCH, 0x1E, 0x12, 0x34, 0x56, 0x78, (byte) 0x9A, };
