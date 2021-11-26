@@ -606,7 +606,7 @@ int PropertiesBCU2::loadProperty(int objectIdx, const byte* data, int len)
 
 bool PropertiesBCU2::propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start)
 {
-    // IF_DUMP_PROPERTIES(serial.print("propertyValueReadTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
+    IF_DUMP_PROPERTIES(serial.print("propertyValueReadTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def) return false; // not found
 

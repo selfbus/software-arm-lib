@@ -13,11 +13,11 @@
 class UserEepromMASK0705 : public UserEepromMASK0701
 {
 public:
-	UserEepromMASK0705(Bus* bus) : UserEepromMASK0701(bus, 0x3f00, 3072) {};
+	UserEepromMASK0705(BcuBase* bcu) : UserEepromMASK0701(bcu, 0x3f00, 3072, 4096) {};
 	virtual ~UserEepromMASK0705() = default;
 
 protected:
-	UserEepromMASK0705(Bus* bus, int start, int size) : UserEepromMASK0701(bus, start, size) {};
+	UserEepromMASK0705(BcuBase* bcu, int start, int size, int flashSize) : UserEepromMASK0701(bcu, start, size, flashSize) {};
 };
 
 #endif

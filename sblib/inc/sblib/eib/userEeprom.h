@@ -15,16 +15,16 @@
 /** number of interface objects supported */
 #define INTERFACE_OBJECT_COUNT 8
 
-class Bus;
+class BcuBase;
 
 class UserEeprom
 {
 public:
-	UserEeprom(Bus* bus, int start, int size);
+	UserEeprom(BcuBase* bcu, int start, int size, int flashSize);
 	virtual ~UserEeprom() = default;
 
 	byte *userEepromData;
-	Bus* bus;
+	BcuBase* bcu;
 
 	virtual byte& manufacturerH() const = 0;
 	virtual byte& manufacturerL() const = 0;
@@ -72,8 +72,7 @@ public:
     const int userEepromStart;
     const int userEepromSize;
     const int userEepromEnd;
-
-    virtual int userEepromFlashSize() const = 0;
+    const int userEepromFlashSize;
 
     virtual int numEepromPages() const;
     virtual byte* lastEepromPage() const;

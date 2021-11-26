@@ -19,10 +19,10 @@
 class UserRamMASK0701 : public UserRamBCU2
 {
 public:
-	UserRamMASK0701() : UserRamBCU2(0, 0x304) {}
+	UserRamMASK0701() : UserRamBCU2(0x5FC, 0x304, 3) {}
 
 protected:
-	UserRamMASK0701(int start, int size) : UserRamBCU2(start, size) {}
+	UserRamMASK0701(int start, int size, int shadowSize) : UserRamBCU2(start, size, shadowSize) {}
 
 #if 0
 	union __attribute__ ((aligned (4)))

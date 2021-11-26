@@ -19,10 +19,10 @@
 class UserRamMASK0705 : public UserRamMASK0701
 {
 public:
-	UserRamMASK0705() : UserRamMASK0701(0, 0x304) {}
+	UserRamMASK0705() : UserRamMASK0701(0x5FC, 0x304, 3) {}
 
 protected:
-	UserRamMASK0705(int start, int size) : UserRamMASK0701(start, size) {}
+	UserRamMASK0705(int start, int size, int shadowSize) : UserRamMASK0701(start, size, shadowSize) {}
 };
 
 #endif /* SBLIB_EIB_USERRAM_H_ */

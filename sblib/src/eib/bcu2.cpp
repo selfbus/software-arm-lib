@@ -326,7 +326,7 @@ inline bool BCU2::applicationRunning() const
 			userEeprom->loadState()[OT_APPLICATION] == LS_LOADED;   // Application object. All three in State "Loaded"
 }
 
-BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(bus), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
+BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(this), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
 {}
 
 BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties) :

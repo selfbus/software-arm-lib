@@ -19,7 +19,7 @@
 class UserRamBCU1 : public UserRam
 {
 public:
-	UserRamBCU1() : UserRam(0, 0x100) {}
+	UserRamBCU1() : UserRam(0, 0x100, 3) {}
 
 	static const int deviceControlOffset = 0x62;
 	static const int peiTypeOffset = 0x63;
@@ -30,7 +30,7 @@ public:
 	virtual byte& peiType() const { return userRamData[peiTypeOffset]; }
 
 protected:
-	UserRamBCU1(int start, int size) : UserRam(start, size) {}
+	UserRamBCU1(int start, int size, int shadowSize) : UserRam(start, size, shadowSize) {}
 
 #if 0
 	union __attribute__ ((aligned (4)))
