@@ -15,7 +15,7 @@
 #include <sblib/eib/bus.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/bcu_base.h>
-#include <cstring>
+#include <sblib/types.h>
 
 #if defined(BCU2) || BCU_TYPE == 0x20 || BCU_TYPE == 20
 	#include <sblib/eib/bcu2.h>
@@ -44,9 +44,18 @@
 #define objectRead(x) bcu.comObjects->objectRead(x)
 #define requestObjectRead(x) bcu.comObjects->requestObjectRead(x)
 #define nextUpdatedObject() bcu.comObjects->nextUpdatedObject()
+#define objectUpdate(x, y) bcu.comObjects->objectUpdate(x, y)
+#define objectWritten(x) bcu.comObjects->objectWritten(x)
 
+#define userEepromData userEeprom.userEepromData
+#define userRamData userRam.userRamData
 #define userEeprom (*(bcu.userEeprom))
-#define bus (*(bcu.bus))
+#define userRam (*(bcu.userRam))
 
+#define USER_EEPROM_START userEeprom.userEepromStart
+#define USER_EEPROM_SIZE userEeprom.userEepromSize
+#define USER_EEPROM_END userEeprom.userEepromEnd
+
+#define bus (*(bcu.bus))
 
 #endif /*sblib_eib_h*/
