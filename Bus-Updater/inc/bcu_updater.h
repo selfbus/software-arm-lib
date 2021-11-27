@@ -89,6 +89,14 @@ protected:
     void sendConControlTelegram(int cmd, int senderSeqNo);
 
     /**
+     * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
+     * @param senderSeqNo Senders sequence number
+     *
+     * @return true if sequence number was added, otherwise false
+     */
+    bool sendDirectTelegram(int senderSequenceNumber);
+
+    /**
      * @brief Sends a A_Restart_Response-PDU
      * @details response to A_Restart-PDU KNX Spec. 3/5/2
      *
@@ -99,6 +107,39 @@ protected:
      */
      void sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byte errorCode, unsigned int processTime);
 
+     /**
+      * @brief Process a TP Layer 4 @ref T_CONNECT_PDU
+      * @details T_Connect.req see KNX Spec. 2.1 3/3/4 page 13
+      *
+      * @param senderAddr physical KNX address of the sender
+      * @return true if successful, otherwise false
+      */
+     bool processConControlConnectPDU(int senderAddr);
+
+     /**
+      * @brief Process a TP Layer 4 @ref T_DISCONNECT_PDU
+      * @details T_Disconnect.req see KNX Spec. 2.1 3/3/4 page 14
+      *
+      * @param senderAddr physical KNX address of the sender
+      * @return true if successful, otherwise false
+      */
+     bool processConControlDisconnectPDU(int senderAddr);
+
+     /**
+      * @brief Process a TP Layer 4 @ref T_ACK_PDU and @ref T_NACK_PDU
+      * @details T_ACK-PDU & T_NAK-PDU see KNX Spec. 2.1 3/3/4 page 6
+      *
+      * @param senderAddr physical KNX address of the sender
+      * @param tpci the TPCI to process
+      * @return true if successful, otherwise false
+      */
+     bool processConControlAcknowledgmentPDU(int senderAddr, int tpci);
+
+     /**
+      * @brief Reset the TP Layer 4 connection to idle
+      *
+      */
+     void resetConnection();
 
 private:
      unsigned int lastTick; //!< last systemtick a telegram was received or sent
