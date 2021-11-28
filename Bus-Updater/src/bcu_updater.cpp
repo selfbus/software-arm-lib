@@ -34,6 +34,11 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 #   define dump2(x)
 #endif
 
+int getSequenceNumber(byte tpci)
+{
+    return ((tpci & T_SEQUENCE_NUMBER_Msk) >> T_SEQUENCE_NUMBER_FIRST_BIT_Pos);
+}
+
 void BcuUpdate::dumpTicks()
 {
     dump2(
@@ -87,7 +92,7 @@ void BcuUpdate::processTelegram()
         dumpTicks();
         if (isSequenced != 0)
         {
-            serial.print("#", (bus.telegram[6] & 0b00111100) >> 2, DEC, 2);
+            serial.print("#", getSequenceNumber(bus.telegram[6]), DEC, 2);
             serial.print(" ");
         }
     );
@@ -124,39 +129,55 @@ void BcuUpdate::processDirectTelegram(int apci)
         return;
     }
 
+    if (senderSeqNo == lastSenderSequenceNumber)
+    {
+        dump2(
+                serial.print("DROPPING DUPLICATE ");
+                serial.print("old/new ");
+                serial.print(lastSenderSequenceNumber, DEC, 2);
+                serial.print(" ");
+                serial.print(getSequenceNumber(senderSeqNo), DEC, 2);
+                serial.print(" ");
+             );
+        //return;
+    }
+
     connectedTime = systemTime;
     sendTelegram[6] = 0;
 
     int apciCommand = apci & APCI_GROUP_MASK;
-    if ((apciCommand == APCI_MEMORY_READ_PDU) | (apciCommand == APCI_MEMORY_WRITE_PDU))
+    switch(apciCommand)
     {
-        sendAckTpu = handleMemoryRequests(apciCommand, &sendTel, &bus.telegram[7]);
-    }
-    else if (apciCommand == APCI_RESTART_PDU)
-    {
-        // attention we check acpi not like before apciCommand!
-        if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
-        {
-            // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
-            // restart with parameters, we need to start in flashmode
-            dump2(serial.print("MAGIC "));
-            unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
-            *magicWord = BOOTLOADER_MAGIC_WORD;
-        }
-        dump2(serial.println("APCI_RESTART_PDU"));
-        sendAckTpu = T_ACK_PDU;
-        sendRestartResponseControlTelegram(APCI_RESTART_RESPONSE_PDU, senderSeqNo, 0, 1); // we need 1s reset time
-        restartRequest(RESET_DELAY_MS); // Software Reset
-    }
-    else
-    {
-        dump2(serial.println("APCI_UNKNOWN 0x", apciCommand, HEX, 4));
-        sendAckTpu = T_NACK_PDU;  // Command not supported
-        //XXX in case we run into this, maybe Reset?
+        case APCI_MEMORY_READ_PDU:
+        case APCI_MEMORY_WRITE_PDU:
+            sendAckTpu = handleMemoryRequests(apciCommand, &sendTel, &bus.telegram[7]);
+            break;
+
+        case APCI_RESTART_PDU:
+            // attention we check acpi not like before apciCommand!
+            if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
+            {
+                // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
+                // restart with parameters, we need to start in flashmode
+                dump2(serial.print("MAGIC "));
+                unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+                *magicWord = BOOTLOADER_MAGIC_WORD;
+            }
+            dump2(serial.println("APCI_RESTART_PDU"));
+            sendAckTpu = T_ACK_PDU;
+            sendRestartResponseControlTelegram(APCI_RESTART_RESPONSE_PDU, senderSeqNo, 0, 1); // we need 1s reset time
+            restartRequest(RESET_DELAY_MS); // Software Reset
+            break;
+
+        default:
+            dump2(serial.println("APCI_UNKNOWN 0x", apciCommand, HEX, 4));
+            sendAckTpu = T_NACK_PDU;  // Command not supported
     }
 
+    // T_ACK / T_NACK
     if (sendAckTpu)
     {
+        lastSenderSequenceNumber = getSequenceNumber(senderSeqNo);
         sendConControlTelegram(sendAckTpu, senderSeqNo);
     }
     else
@@ -164,7 +185,7 @@ void BcuUpdate::processDirectTelegram(int apci)
         sendCtrlTelegram[0] = 0;
         dump2(
             dumpTicks();
-            serial.print("#", senderSeqNo >> 2, DEC, 2);
+            serial.print("#", getSequenceNumber(senderSeqNo), DEC, 2);
             serial.println(" sendAckTpu=false");
         );
     }
@@ -177,7 +198,7 @@ void BcuUpdate::processDirectTelegram(int apci)
     {
         dump2(
             dumpTicks();
-            serial.print("#", senderSeqNo >> 2, DEC, 2);
+            serial.print("#", getSequenceNumber(senderSeqNo), DEC, 2);
             serial.println(" sendTel=false");
         );
     }
@@ -232,7 +253,7 @@ bool BcuUpdate::sendDirectTelegram(int senderSequenceNumber)
         if (sendTelegram[6] & 0x40)
         {
             dumpTicks();
-            serial.print("#", senderSequenceNumber >> 2, DEC, 2);
+            serial.print("#", getSequenceNumber(senderSequenceNumber), DEC, 2);
             serial.print(" ");
         }
         serial.println("TX-sendTel");
@@ -335,6 +356,7 @@ void BcuUpdate::resetConnection()
     connectedSeqNo = 0;
     lastAckSeqNo = -1;
     incConnectedSeqNo = false;
+    lastSenderSequenceNumber = -1;
     resetProtocol();
     dump2(serial.println("resetConnection"));
 }
@@ -346,7 +368,7 @@ void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
         if (cmd & 0x40)
         {
             dumpTicks();
-            serial.print("#", senderSeqNo >> 2, DEC, 2);
+            serial.print("#", getSequenceNumber(senderSeqNo), DEC, 2);
             serial.print(" ");
         }
         serial.print("sendConControl ");

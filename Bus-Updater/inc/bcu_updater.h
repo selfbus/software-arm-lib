@@ -141,9 +141,11 @@ protected:
       */
      void resetConnection();
 
+     int lastSenderSequenceNumber = -1; //!< The last sequence number we received from the sender
+
 private:
-     unsigned int lastTick; //!< last systemtick a telegram was received or sent
-     unsigned int telegramCount; //!< number of telegrams received in one "connect" session
+     unsigned int lastTick = 0; //!< last systemtick a telegram was received or sent
+     unsigned int telegramCount = 0; //!< number of telegrams received in one "connect" session
      void dumpTicks();
 
 };

@@ -603,7 +603,7 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
     }
     d3(serial.print("at: ", ramLocation, DEC, 3));
     d3(serial.println(" #", nCount, DEC, 2));
-
+    // *sendTel = false; ///\todo delete on release
     return (T_ACK_PDU);
 }
 
