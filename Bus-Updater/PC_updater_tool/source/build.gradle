@@ -57,7 +57,7 @@ dependencies {
     }
     */
 
-    ///\todo dependency of the calimero-core lib, can be removed after eliminating calimero source code in our repo
+    ///\todo can be removed after eliminating calimero source code in our repo and adding calimero-core as a dependency
     implementation 'org.usb4java:usb4java-javax:1.3.0'
 
     // find specific directories under linux and windows

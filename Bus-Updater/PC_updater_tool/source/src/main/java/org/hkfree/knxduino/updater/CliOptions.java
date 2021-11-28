@@ -278,7 +278,7 @@ public class CliOptions {
 
             if (cmdLine.hasOption(OPT_SHORT_NO_FLASH)) {
                 NO_FLASH = true;
-                logger.warn("--NO_FLASH => only boot description block will be written");
+                logger.warn("--NO_FLASH => {}only boot description block will be written{}", ConColors.RED, ConColors.RESET);
             }
             logger.debug("NO_FLASH={}", NO_FLASH);
 
