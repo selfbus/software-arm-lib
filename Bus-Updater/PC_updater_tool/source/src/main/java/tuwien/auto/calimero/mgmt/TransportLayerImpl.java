@@ -520,7 +520,7 @@ public class TransportLayerImpl implements TransportLayer
 			else {
 				// commented out for Selfbus updater
 				// see this issue #96 https://github.com/calimero-project/calimero-core/issues/96
-				//disconnectIndicate(p, true);
+				disconnectIndicate(p, true);
 				logger.error("more then one positive ack by {} ctrl=0x{} (0b{}) (ctrl & 0xC3)=0x{} #Seq={}",
 								d.getAddress(),
 								Integer.toHexString(ctrl),

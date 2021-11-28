@@ -83,7 +83,7 @@ import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private static final String version = "0.57"; ///\todo also change in README.md and build.gradle
+    private static final String version = "0.60"; ///\todo also change in README.md and build.gradle
     private static final String tool = "Selfbus Updater " + version;
     // private static final String sep = System.getProperty("line.separator");
     private final static Logger LOGGER = LoggerFactory.getLogger(Updater.class.getName());
@@ -155,7 +155,7 @@ public class Updater implements Runnable {
         if (canceled)
             LOGGER.info("reading device info canceled");
         if (thrown != null) {
-            LOGGER.error("completed", thrown);
+            LOGGER.error("Operation did not finish.", thrown);
         }
     }
 
@@ -859,48 +859,56 @@ public class Updater implements Runnable {
     }
 
     private void eraseFlashPages(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength)
-            throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
-        byte[] result;
-
+            throws KNXLinkClosedException, InterruptedException, UpdaterException {
         // Erasing flash on sector base (4k), one telegram per sector
-        int erasePages = (totalLength / FLASH_SECTOR_SIZE) + 1;
+        int pagesDone = (totalLength / FLASH_SECTOR_SIZE) + 1;
         long startPage = startAddress / FLASH_SECTOR_SIZE;
         byte[] sector = new byte[1];
-        for (int i = 0; i < erasePages; i++) {
-            sector[0] = (byte) (i + startPage);
+        int pagesErased = 0;
+
+        while (pagesErased < pagesDone) {
+            sector[0] = (byte) (pagesErased + startPage);
             LOGGER.info("Erase sector {}...", String.format("%2d", sector[0]));
-            result = mc.sendUpdateData(pd, UPDCommand.ERASE_SECTOR.id, sector);
-            if (checkResult(result) != 0) {
-                restartProgrammingDevice(mc, pd);
-                throw new UpdaterException("Selfbus update failed.");
+            try {
+                byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_SECTOR.id, sector);
+                if (checkResult(result) != 0) {
+                    restartProgrammingDevice(mc, pd);
+                    throw new UpdaterException("Selfbus update failed.");
+                }
+                pagesErased++;
+            }
+            catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
+                LOGGER.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
             }
         }
     }
     
     // Normal update routine, sending complete image #######################
     // This works on sector page right now, so the complete affected flash is erased first
-    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength, ByteArrayInputStream fis, int dataSendDelay)
-            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
+    private void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, int totalLength,
+                              ByteArrayInputStream fis, int dataSendDelay)
+            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
+            InterruptedException, UpdaterException, KNXRemoteException {
         byte[] result;
 
         eraseFlashPages(mc, pd, startAddress, totalLength);
 
         byte[] buf = new byte[FLASH_PAGE_SIZE];	// Read one flash page
-        int nRead;		                    // Bytes read from file into buffer
-        int payload = MAX_PAYLOAD;	            // maximum start payload size
+        int nRead;                              // Bytes read from file into buffer
+        int payload = MAX_PAYLOAD;              // maximum start payload size
         int total = 0;
         CRC32 crc32Block = new CRC32();
         int progSize = 0;	                   // Bytes send so far
         long progAddress = startAddress;
         boolean doProg = false;
-        boolean timeoutOccurred = false;
         int timeoutCount = 0;
-        
+        int connectionDrops = 0;
+
         LOGGER.info("\nStart sending application data ({} bytes) with telegram delay of {}ms", totalLength, dataSendDelay);
 
         // Get time when starting to transfer data
         long flash_time_start = System.currentTimeMillis();
-        
+
         // Read up to size of buffer, 1 Page of 256Bytes from file
         while ((nRead = fis.read(buf)) != -1) {
             LOGGER.info("Sending {} bytes: {}%", nRead, String.format("%3.1f", (float)100*(total+nRead)/totalLength));
@@ -909,19 +917,19 @@ public class Updater implements Runnable {
             // Bytes left to write
             while (nDone < nRead) {
 
-            	// Calculate payload size for next telegram
-            	// sufficient data left, use maximum payload size
+                // Calculate payload size for next telegram
+                // sufficient data left, use maximum payload size
                 ///\todo  	nDone 253, progSize 0, payLoad 3, nRead 256
                 LOGGER.debug("nDone {}, progSize {}, payLoad {}, nRead {}", nDone, progSize, payload, nRead);
-            	if (progSize + payload < nRead)
-				{
-					payload = MAX_PAYLOAD;	// maximum payload size
-				}
-				else
-				{
-					payload = nRead - progSize;	// remaining bytes
-					doProg = true;
-				}
+                if (progSize + payload < nRead)
+                {
+                    payload = MAX_PAYLOAD;	// maximum payload size
+                }
+                else
+                {
+                    payload = nRead - progSize;	// remaining bytes
+                    doProg = true;
+                }
                 ///\todo progSize 0, payLoad 11, nRead 256, doProg false
                 LOGGER.debug("progSize {}, payLoad {}, nRead {}, doProg {}", progSize, payload, nRead, doProg);
 
@@ -946,7 +954,7 @@ public class Updater implements Runnable {
 */
                 // Data left to send
                 if (payload > 0) {
-                	// Message length is payload +1 byte for position
+                    // Message length is payload +1 byte for position
                     byte[] txBuf = new byte[payload + 1];
 
                     //Shift payload into send buffer
@@ -964,8 +972,10 @@ public class Updater implements Runnable {
                     // First byte contains start address of following data
                     txBuf[0] = (byte)progSize;
 
-                    if (dataSendDelay > 0)
-                    	Thread.sleep(dataSendDelay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
+                    if (dataSendDelay > 0) {
+                        Thread.sleep(dataSendDelay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
+                    }
+
                     try{
                         result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA.id, txBuf);
 
@@ -973,45 +983,55 @@ public class Updater implements Runnable {
                             restartProgrammingDevice(mc, pd);
                             throw new UpdaterException("Selfbus update failed.");
                         }
-                    }
-                        // mc.sendUpdateData timed out, we need to resend the last sent data
-                        catch(KNXTimeoutException e){
-                            timeoutOccurred = true;
-                            timeoutCount++;
-                    }
-
-                    if(!timeoutOccurred) {
                         // Update CRC, skip byte 0 which is not part of payload
-                    	crc32Block.update(txBuf, 1, payload);
+                        crc32Block.update(txBuf, 1, payload);
                         nDone += payload;		// keep track of buffer bytes send (to determine end of while-loop)
                         progSize += payload;	// keep track of page/sector bytes send
                         total += payload;		// keep track of total bytes send from file
                     }
-                    else { // in case of a Timeout, reset the marker timeoutOccurred
-                        LOGGER.warn("{}Timeout{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                        // System.out.print(ConColors.BRIGHT_RED + "x" + ConColors.RESET);
-                        timeoutOccurred = false;
+
+                    catch (KNXTimeoutException e) { // timeout, we need to resend the last sent data
+                        LOGGER.warn("{}Timeout {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
+                        timeoutCount++;
+                        continue;
+                    }
+                    catch (KNXDisconnectException | KNXRemoteException e) {
+                        LOGGER.warn("{}failed {}{}", ConColors.BRIGHT_RED, e.getMessage(), ConColors.RESET);
+                        LOGGER.debug("nDone {}, progSize {}, payLoad {}, nRead {}", nDone, progSize, payload, nRead);
+                        // reset all back to beginning of page
+                        total -= nDone;
+                        progSize = 0;
+                        nDone = 0;
+                        crc32Block.reset();
+                        connectionDrops++;
+                        continue;
                     }
                 }
 
-                if (doProg) {
-                    doProg = false;
+                while (doProg) {
                     byte[] progPars = new byte[3 * 4];
                     long crc = crc32Block.getValue();
                     Utils.integerToStream(progPars, 0, progSize);
                     Utils.integerToStream(progPars, 4, progAddress);
                     Utils.integerToStream(progPars, 8, (int) crc);
                     System.out.println();
-                    LOGGER.info("Program device at flash address 0x{} with {} bytes and CRC32 0x{}...",
+                    LOGGER.info("Program device at flash address 0x{} with {} bytes and CRC32 0x{}",
                             String.format("%04X", progAddress), String.format("%3d", progSize), String.format("%08X", crc));
-                    result = mc.sendUpdateData(pd, UPDCommand.PROGRAM.id, progPars);
-                    if (checkResult(result) != 0) {
-                        restartProgrammingDevice(mc, pd);
-                        throw new UpdaterException("Selfbus update failed.");
+                    try {
+                        result = mc.sendUpdateData(pd, UPDCommand.PROGRAM.id, progPars);
+                        if (checkResult(result) != 0) {
+                            restartProgrammingDevice(mc, pd);
+                            throw new UpdaterException("Selfbus update failed.");
+                        }
+                        progAddress += progSize;
+                        progSize = 0;    // reset page/sector byte counter
+                        crc32Block.reset();
+                        doProg = false;
                     }
-                    progAddress += progSize;
-                    progSize = 0;	// reset page/sector byte counter
-                    crc32Block.reset();
+                    catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
+                        LOGGER.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
+                        connectionDrops++;
+                    }
                 }
             }
         }
@@ -1031,8 +1051,18 @@ public class Updater implements Runnable {
                 total, flash_time_duration, col, bytesPerSecond, ConColors.RESET);
 
         if (timeoutCount > 0) {
-            infoMsg += String.format(" %sTimeout(s): %d%s", ConColors.BG_RED, timeoutCount, ConColors.RESET);
+            infoMsg += String.format(" %sTimeout(s): %d%s", ConColors.BRIGHT_RED, timeoutCount, ConColors.RESET);
         }
+        else {
+            infoMsg += String.format(" %sTimeout: %d%s", ConColors.BRIGHT_GREEN, timeoutCount, ConColors.RESET);
+        }
+        if (connectionDrops > 0) {
+            infoMsg += String.format(" %sDrops(s): %d%s", ConColors.BRIGHT_RED, connectionDrops, ConColors.RESET);
+        }
+        else {
+            infoMsg += String.format(" %sDrop: %d%s", ConColors.BRIGHT_GREEN, connectionDrops, ConColors.RESET);
+        }
+
         LOGGER.info("{}", infoMsg);
     }
 }
