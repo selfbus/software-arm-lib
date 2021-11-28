@@ -34,6 +34,22 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 #   define dump2(x)
 #endif
 
+#ifdef DEBUG
+    int countToFail = 6;
+
+void checkCountToFail(unsigned char* ackResponse)
+{
+    // ok lets drop connection for debugging
+    countToFail--;
+    if (countToFail)
+    {
+        return;
+    }
+    // *ackResponse = T_NACK_PDU;
+    countToFail = 6;
+}
+#endif
+
 int getSequenceNumber(byte tpci)
 {
     return ((tpci & T_SEQUENCE_NUMBER_Msk) >> T_SEQUENCE_NUMBER_FIRST_BIT_Pos);
@@ -151,6 +167,14 @@ void BcuUpdate::processDirectTelegram(int apci)
         case APCI_MEMORY_READ_PDU:
         case APCI_MEMORY_WRITE_PDU:
             sendAckTpu = handleMemoryRequests(apciCommand, &sendTel, &bus.telegram[7]);
+#ifdef DEBUG
+            checkCountToFail(&sendAckTpu);
+            if (sendAckTpu == T_NACK_PDU)
+            {
+                sendConControlTelegram(T_DISCONNECT_PDU, senderSeqNo);
+                return;
+            }
+#endif
             break;
 
         case APCI_RESTART_PDU:
