@@ -1057,7 +1057,7 @@ public class Updater implements Runnable {
             infoMsg += String.format(" %sTimeout: %d%s", ConColors.BRIGHT_GREEN, timeoutCount, ConColors.RESET);
         }
         if (connectionDrops > 0) {
-            infoMsg += String.format(" %sDrops(s): %d%s", ConColors.BRIGHT_RED, connectionDrops, ConColors.RESET);
+            infoMsg += String.format(" %sDrop(s): %d%s", ConColors.BRIGHT_RED, connectionDrops, ConColors.RESET);
         }
         else {
             infoMsg += String.format(" %sDrop: %d%s", ConColors.BRIGHT_GREEN, connectionDrops, ConColors.RESET);
