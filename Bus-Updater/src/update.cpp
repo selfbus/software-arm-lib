@@ -687,14 +687,14 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel)
 {
     unsigned int bl_identity = BL_IDENTITY;
     unsigned int bl_features = BL_FEATURES;
-    unsigned int bl_lastAddress = bootLoaderLastAddress();
+    unsigned int bl_size = bootLoaderSize();
     *sendTel = prepareReturnTelegram(12, UPD_RESPONSE_BL_IDENTITY);
     uInt32ToStream(bcu.sendTelegram + 10, bl_identity);  // Bootloader identity
     uInt32ToStream(bcu.sendTelegram + 14, bl_features);  // Bootloader features
-    uInt32ToStream(bcu.sendTelegram + 18, bl_lastAddress); // Bootloader size
+    uInt32ToStream(bcu.sendTelegram + 18, bl_size); // Bootloader size
     d3(serial.print("BL ID 0x", bl_identity, HEX, 8));
     d3(serial.print("    BL feature 0x", bl_features, HEX, 8));
-    d3(serial.println("    BL size    0x", bl_lastAddress, HEX, 8));
+    d3(serial.println("    BL size    0x", bl_size, HEX, 8));
     return (T_ACK_PDU);
 }
 
