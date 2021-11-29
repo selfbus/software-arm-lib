@@ -257,8 +257,13 @@
 #ifdef DUMP_TELEGRAMS
     volatile unsigned char telBuffer[32];
     volatile unsigned int telLength = 0;
-    volatile unsigned int telRXtime = 0;
+    volatile unsigned int telRXtime = 0; // time of the timeout after the last bit of the received telegram
     volatile bool telcollision;
+    volatile unsigned int telRXStartTime = 0; // time when the reception  (startbit of first byte) of a telegram from bus started
+    volatile unsigned int telTXStartTime = 0; // time when the transmission (startbit of first byte)of a telegram to the bus started
+    volatile unsigned int telRXEndTime = 0; // time when the reception  (last stop bit) of a telegram from bus eneded
+    volatile unsigned int telTXEndTime = 0; // time when the transmission (last stop bi)of a telegram to the bus ended
+    volatile unsigned int telTXAck = 0; // ack send by L2
     //volatile unsigned int db_state= 2000;
 #endif
 
@@ -600,7 +605,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 #ifdef DUMP_TELEGRAMS
 	unsigned int t;
 	t = ttimer.value();
-	serial.print("QSD: (", t, DEC, 9);
+	serial.print("QSD: (", t, DEC, 8);
 	serial.print(") ");
 	for (int i = 0; i <= length; ++i)
 	{
@@ -761,6 +766,7 @@ void Bus::handleTelegram(bool valid)
 			{// compare telegrams
 				if ((rx_telegram[0] & ~SB_TEL_REPEAT_FLAG) == (telegram[0] & ~SB_TEL_REPEAT_FLAG))
 				{// same header- compare data
+
 					int i;
 					for (i =1; i <= nextByteIndex-1 && rx_telegram[i] == telegram[i]; i++);
 					if (i>=nextByteIndex) {
@@ -958,6 +964,10 @@ void Bus::timerInterruptHandler()
                 {
 				    rx_error |= RX_CHECKSUM_ERROR;
                 }
+#ifdef DUMP_TELEGRAMS
+		telRXEndTime= ttimer.value() - timer.value(); // end time of last stop bit
+#endif
+
 				handleTelegram(valid && !checksum);
 			}
 			break;
@@ -972,6 +982,9 @@ void Bus::timerInterruptHandler()
 		// any rx-bit start should be within n*104 -7us, n*104 + 33us -> max 1177us
 		// correct the timer start value by the process time (about 13us) we had since the capture event
 		//todo  restart timer by cap  in order to have a ref point for the frame timeout
+#ifdef DUMP_TELEGRAMS
+		telRXStartTime= ttimer.value();
+#endif
 		unsigned int dt, tv, cv;
 		tv=timer.value(); cv= timer.capture(captureChannel);
 		if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
@@ -1127,6 +1140,9 @@ void Bus::timerInterruptHandler()
 
 		// any pending tx?
 		if(sendAck) {
+#ifdef DUMP_TELEGRAMS
+			telTXAck = sendAck;
+#endif
 			time = PRE_SEND_TIME;
 			sendTelegramLen = 0;
 		}
@@ -1227,6 +1243,10 @@ void Bus::timerInterruptHandler()
 			}
 			tb_t( state+400, ttimer.value(), tb_in);
 			state = Bus::SEND_BIT_0; //  we received our start bit edge in time, prepare for to send bit 0
+#ifdef DUMP_TELEGRAMS
+			telTXStartTime = ttimer.value();
+#endif
+
 			break;
 
 		}  else if (timer.flag(timeChannel)){
@@ -1374,6 +1394,9 @@ void Bus::timerInterruptHandler()
 		tb_t( state, ttimer.value(), tb_in);
 		tb_h( SEND_END_OF_TX+700, repeatTelegram, tb_in);
 		D(digitalWrite(PIO2_9, 1));
+#ifdef DUMP_TELEGRAMS
+		telTXEndTime= ttimer.value();
+#endif
 
 		//wait_for_ack_from_remote = true; // default   for data layer: send ack back to remote
 		state= Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;

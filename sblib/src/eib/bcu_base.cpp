@@ -237,14 +237,111 @@ void BcuBase::loop()
 	extern unsigned char telBuffer[];
 	extern unsigned int telLength ; // db_state;
 	extern unsigned int telRXtime;
+	extern unsigned int telRXStartTime;
+	extern unsigned int telTXStartTime;
+	extern unsigned int telRXEndTime;
+	extern unsigned int telTXEndTime;
+	extern unsigned int telTXAck;
 	extern bool telcollision;
+	static unsigned int telLastRXEndTime =0;
+	static unsigned int telLastTXEndTime =0;
+
+	if (telTXAck)
+	{
+	    serial.print("TXAck: ");
+		serial.println(telTXAck, HEX, 2);
+		telTXAck = 0;
+	}
+
+	if (telTXStartTime)
+	{
+/*		serial.print(" LTXE:");
+		serial.print(telLastTXEndTime, DEC, 9);
+		serial.print(", LRXE:");
+		serial.print(telLastRXEndTime, DEC, 9);
+		serial.println(") ");
+*/
+		if (telTXEndTime)
+		{
+			serial.print("TX: (S");
+			serial.print(telTXStartTime, DEC, 9);
+			serial.print(", E");
+			serial.print(telTXEndTime, DEC, 9);
+		//	serial.println(") ");
+			//telTXStartTime = 0;
+			telLastTXEndTime = telTXEndTime;
+			telTXEndTime = 0;
+		}
+		else
+		{
+		serial.print("TX: (S:");
+		serial.print(telTXStartTime, DEC, 9);
+		//serial.println(") ");
+		//telTXStartTime = 0;
+		}
+
+		if (telLastRXEndTime)
+		{
+			// print time in between last rx-tel and current tx-tel
+			serial.print(", RX-TX: (");
+			serial.print(( telTXStartTime - telLastRXEndTime), DEC, 9);
+	//		serial.println(") ");
+			telLastRXEndTime = 0;
+		}
+		if(telLastTXEndTime)
+		{
+			// print time in between last tx-tel and current tx-tel
+			serial.print(", TX-TX: (");
+			serial.print(( telTXStartTime - telLastTXEndTime), DEC, 9);
+	//		serial.println(") ");
+			telLastTXEndTime = 0;
+		}
+		serial.println(") ");
+
+		telTXStartTime = 0;
+
+	}
+
+	if (telTXEndTime)
+	{
+		serial.print("TX: (E:");
+		serial.print(telTXEndTime, DEC, 9);
+		serial.println(") ");
+		telLastTXEndTime = telTXEndTime;
+		telTXEndTime = 0;
+	}
 
 	if (telLength > 0)
 	{
-	    serial.print("RCV: (");
+	    serial.print("RCV: (S:");
+		serial.print(telRXStartTime, DEC, 9 );
+		serial.print(", E:");
+		serial.print(telRXEndTime, DEC, 9);
+	//	serial.print(") ");
+	//	serial.print(", LRXE:");
+	//	serial.print(telLastRXEndTime, DEC, 9);
+	//	serial.print(", LTXE:");
+	//	serial.print(telLastTXEndTime, DEC,9);
+		//serial.print(") ");
 
-		serial.print(telRXtime, DEC, 8);
+		if (telLastTXEndTime)
+		{
+			// print time in between last tx-tel and current rx-tel
+			serial.print(", TX-RX:");
+			serial.print(( telRXStartTime - telLastTXEndTime), DEC, 9);
+			telLastTXEndTime = 0;
+		}
+		else if(telLastRXEndTime)
+		{
+			// print time in between last rx-tel and current rx-tel
+			serial.print(", RX-RX:");
+			serial.print(( telRXStartTime - telLastRXEndTime), DEC, 9);
+		//	serial.println(") ");
+			telLastRXEndTime = 0;
+		}
 		serial.print(") ");
+
+
 		if (telcollision)  serial.print("collision ");
 
 		for (unsigned int i = 0; i < telLength; ++i)
@@ -254,6 +351,8 @@ void BcuBase::loop()
 		}
 		serial.println();
 		telLength = 0;
+		telLastRXEndTime = telRXEndTime;
+		telRXEndTime = 0;
 	}
 #endif
 
