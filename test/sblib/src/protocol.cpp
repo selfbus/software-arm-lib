@@ -29,12 +29,6 @@ static void _handleRx(Test_Case * tc, Telegram * tel, unsigned int tn)
 	memcpy(bus.telegram, tel->bytes, tel->length);
 	bus.telegramLen = tel->length;
 	bcu.processTelegram();
-	/*
-    unsigned int s = 0;
-	if (bus.sendCurTelegram) s++;
-	if (bus.sendNextTel) s++;
-	REQUIRE(s == tel->variable);
-	*/
 	REQUIRE(bus.telegramLen == 0);
 }
 
@@ -76,9 +70,17 @@ static void _handleTx(Test_Case * tc, Telegram * tel, unsigned int tn)
     INFO(msg);
     REQUIRE(mismatches == 0);
 
-    bus.currentByte = SB_BUS_ACK;
-    bus.nextByteIndex = 1;
-    bus.handleTelegram(true);
+    bus.state = Bus::SEND_END_OF_TX;
+    bus.timerInterruptHandler();
+    if (bus.state == Bus::SEND_WAIT_FOR_RX_ACK_WINDOW) { // device request an ACK -> so inject one
+    	bus.telegram [0] = bus.currentByte = SB_BUS_ACK;
+    	bus.telegramLen  = tel->length;
+    	bus.state        = Bus::RECV_WAIT_FOR_STARTBIT_OR_TELEND;
+    	bus.nextByteIndex = 1;
+    	bus.parity        = 1;
+    	_LPC_TMR16B1.IR  = 0;
+        bus.timerInterruptHandler ();
+    }
     REQUIRE(bus.sendNextTel == NULL);
 }
 
@@ -139,6 +141,7 @@ void executeTest(Test_Case * tc)
     if(tc->eepromSetup) tc->eepromSetup();
     memcpy(FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE, userEepromData, USER_EEPROM_SIZE);
     bcu.begin(tc->manufacturer, tc->deviceType, tc->version);
+    bus.timerInterruptHandler(); // move the ISR aut of INIT state
     sndStartIdx = 0;
     systemTime  = 0;
     wfiSystemTimeInc = 1;
