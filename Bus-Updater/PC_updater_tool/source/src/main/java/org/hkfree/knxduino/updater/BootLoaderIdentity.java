@@ -1,5 +1,9 @@
 package org.hkfree.knxduino.updater;
 
+/**
+ *  Holds Bootloader identity information
+ *  see software-arm-lib/Bus-Updater/src/update.cpp (method updRequestBootloaderIdentity) for more information.
+ */
 public class BootLoaderIdentity {
     private long identity;
     private long features;
@@ -37,6 +41,6 @@ public class BootLoaderIdentity {
 
     public long size()
     {
-        return this.identity;
+        return this.size;
     }
 }
