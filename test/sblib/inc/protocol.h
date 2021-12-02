@@ -14,9 +14,11 @@
 
 #include "catch.hpp"
 
-#define private public
+#define private   public
+#define protected public
 #include "sblib/eib/bus.h"
 #undef private
+#undef protected
 #include "sblib/eib/bcu.h"
 #include "iap_emu.h"
 
