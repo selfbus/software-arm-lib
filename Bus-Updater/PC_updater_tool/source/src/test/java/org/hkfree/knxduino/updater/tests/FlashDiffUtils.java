@@ -1,6 +1,6 @@
 package org.hkfree.knxduino.updater.tests;
 
-import org.hkfree.knxduino.updater.tests.flashdiff.BinImage;
+import org.hkfree.knxduino.updater.BinImage;
 import org.junit.Assert;
 
 public class FlashDiffUtils {

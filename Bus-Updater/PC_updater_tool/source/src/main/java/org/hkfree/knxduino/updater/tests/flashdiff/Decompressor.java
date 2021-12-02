@@ -1,5 +1,6 @@
 package org.hkfree.knxduino.updater.tests.flashdiff;
 
+import org.hkfree.knxduino.updater.BinImage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

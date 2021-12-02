@@ -1,5 +1,8 @@
 package org.hkfree.knxduino.updater;
 
+/**
+ * Basic exception throwable by the application
+ */
 public class UpdaterException extends Exception {
     /**
      * Constructs a new <code>UpdaterException</code> without a detail message.

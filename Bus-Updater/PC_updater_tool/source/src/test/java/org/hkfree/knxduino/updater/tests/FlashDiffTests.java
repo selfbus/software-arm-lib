@@ -1,11 +1,12 @@
 package org.hkfree.knxduino.updater.tests;
 
+import org.hkfree.knxduino.updater.BinImage;
+import org.hkfree.knxduino.updater.UpdaterException;
 import org.hkfree.knxduino.updater.tests.flashdiff.*;
 import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FlashDiffTests {
@@ -50,7 +51,7 @@ public class FlashDiffTests {
     }
 
     @Test
-    public void testDiff2() throws URISyntaxException {
+    public void testDiff2() throws URISyntaxException, UpdaterException {
         // test of new firmware into empty MCU
         URI uri2 = Thread.currentThread().getContextClassLoader().getResource("knxduino.ino.slto.v2.hex").toURI();
         BinImage img2 = BinImage.readFromHex(uri2.getPath());

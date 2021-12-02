@@ -4,17 +4,26 @@ plugins {
 }
 
 group 'org.hkfree.knxduino'
-version '0.60' ///\todo also change in README.md and Updater.java (String version)
+version '0.61' ///\todo also change in README.md and ToolInfo.java (String version)
 
 sourceCompatibility = 11
-
+/*
 jar {
     manifest {
         attributes(
-                'Main-Class': 'org.hkfree.knxduino.updater.Updater',
+                // 'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
+                'Main-Class': 'org.hkfree.knxduino.updater.Updater'
         )
     }
+
+*/
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.hkfree.knxduino.updater.Updater'
+    }
 }
+
 
 task fatJar(type: Jar) {
     manifest.from jar.manifest
@@ -45,6 +54,21 @@ gradle.projectsEvaluated{
         options.compilerArgs << "-Xlint:deprecation"
     }
 }
+
+/*
+compileJava.options*.compilerArgs = [
+        '-Xlint:all',
+        '-Xlint:-options',
+//	'-Werror'
+        "--limit-modules", "java.base,java.xml"
+]
+
+compileTestJava.options*.compilerArgs = [
+        '-Xlint:all',
+        '-Xlint:-try',
+]
+*/
+
 
 dependencies {
     // calimero knx bus access library

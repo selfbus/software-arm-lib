@@ -68,7 +68,7 @@ inline unsigned int checkVectorTable(unsigned int start)
 unsigned int checkApplication(AppDescriptionBlock * block)
 {
     // if ((block->startAddress < APPLICATION_FIRST_SECTOR) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
-    if ((block->startAddress < bootLoaderLastAddress()) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
+    if ((block->startAddress < applicationFirstAddress()) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
     {
         return (0);
     }
@@ -81,7 +81,7 @@ unsigned int checkApplication(AppDescriptionBlock * block)
         return (0);
     }
 
-    unsigned int blockSize = block->endAddress - block->startAddress;
+    unsigned int blockSize = block->endAddress - block->startAddress + 1;
     unsigned int crc = crc32(0xFFFFFFFF, (unsigned char *) block->startAddress, blockSize);
 
     if (crc == block->crc)
@@ -95,7 +95,7 @@ unsigned int checkApplication(AppDescriptionBlock * block)
 
 unsigned char* getAppVersion(AppDescriptionBlock * block)
 {
-    if ((block->appVersionAddress > bootLoaderLastAddress()) &&
+    if ((block->appVersionAddress >= applicationFirstAddress()) &&
         (block->appVersionAddress < flashLastAddress() - sizeof(block->appVersionAddress)))
     {
         return ((unsigned char*) (block->appVersionAddress));
@@ -115,14 +115,13 @@ unsigned char* getAppVersion(AppDescriptionBlock * block)
  */
 unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block)
 {
-    unsigned int applicationFirstSector = APPLICATION_FIRST_SECTOR;
     if (checkApplication(block))
     {
     	return ((unsigned char *) (block->startAddress));
     }
     else
     {
-    	return ((unsigned char *) applicationFirstSector);
+    	return ((unsigned char *) applicationFirstAddress());
     }
 }
 
@@ -157,7 +156,33 @@ unsigned int flashLastAddress(void)
 unsigned int flashSize(void)
 {
     // add the -1 from flashLastAddress(void) back to size
-    return (flashLastAddress() - flashFirstAddress() + 1);
+    return ((flashLastAddress() - flashFirstAddress() + 1));
+}
+
+unsigned int applicationFirstAddress(void)
+{
+    // replacement for #define APPLICATION_FIRST_SECTOR //!< where the application starts (BL size) + (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT)
+    unsigned int appFirstAddress = bootLoaderFirstAddress() + bootLoaderSize();
+    // all boot descriptor block's are placed in front of the application,
+    // so we need for them space after bootloader and before the application
+    appFirstAddress += (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT);
+    // round up the the next flash page
+    appFirstAddress = ((appFirstAddress/FLASH_PAGE_SIZE) + 1) * FLASH_PAGE_SIZE;
+    return appFirstAddress;
+}
+
+unsigned int bootDescriptorBlockAddress(void)
+{
+    // replacement for #define BOOT_DSCR_ADDRESS  (APPLICATION_FIRST_SECTOR - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT))
+    // boot descriptor block is placed in front of the application
+    return (applicationFirstAddress() - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT));
+}
+
+unsigned int bootDescriptorBlockPage(void)
+{
+    // replacement for #define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1) //!< flash page number of the application description block
+    // every boot descriptor block is placed in front of the application, so subtract all of them
+    return ((applicationFirstAddress() / BOOT_BLOCK_DESC_SIZE) - BOOT_BLOCK_COUNT); //!< flash page number of the application description block
 }
 
 /** @}*/

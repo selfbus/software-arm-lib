@@ -1,5 +1,8 @@
 package org.hkfree.knxduino.updater;
 
+/**
+ * Provides constants for console color output (font color/style and background)
+ */
 public class ConColors {
     // Reset to default colors
     public static final String RESET  = "\033[0m";  	// Reset

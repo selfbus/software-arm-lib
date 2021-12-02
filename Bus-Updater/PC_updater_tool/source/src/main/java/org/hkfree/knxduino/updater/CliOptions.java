@@ -10,6 +10,7 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import org.hkfree.knxduino.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,29 +25,48 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Parses command line interface (cli) options for the application
+ * <p>
+ * Adding a new cli option name:
+ *         - declare a short and a long option
+ *           private static final String OPT_SHORT_XXX = "X";
+ *           private static final String OPT_LONG_XXX = "XXXXX";
+ *
+ *         - in constructor @ref CliOptions(.) create an instance of class Option
+ *           and add it with cliOptions.addOption(yourOptionInstance)
+ *
+ *         - check with cmdLine.hasOption(OPT_SHORT_XXX) in method parse(.) is it set or not
+ */
 public class CliOptions {
     private static final Logger logger = LoggerFactory.getLogger(CliOptions.class.getName());
 
     private static final String OPT_SHORT_FILENAME = "f";
     private static final String OPT_LONG_FILENAME = "fileName";
+
     private static final String OPT_SHORT_LOCALHOST = "H";
     private static final String OPT_LONG_LOCALHOST = "localhost";
     private static final String OPT_SHORT_LOCALPORT = "P";
     private static final String OPT_LONG_LOCALPORT = "localport";
     private static final String OPT_SHORT_PORT = "p";
     private static final String OPT_LONG_PORT = "port";
+
     private static final String OPT_SHORT_FT12 = "s";
     private static final String OPT_LONG_FT12 = "serial";
     private static final String OPT_SHORT_TPUART = "t";
     private static final String OPT_LONG_TPUART = "tpuart";
     private static final String OPT_SHORT_MEDIUM = "m";
     private static final String OPT_LONG_MEDIUM = "medium";
+
     private static final String OPT_SHORT_PROG_DEVICE = "D";
     private static final String OPT_LONG_PROG_DEVICE = "progDevice";
     private static final String OPT_SHORT_DEVICE = "d";
     private static final String OPT_LONG_DEVICE = "device";
+    private static final String OPT_SHORT_OWN_ADDRESS = "o";
+    private static final String OPT_LONG_OWN_ADDRESS = "own";
+
     private static final String OPT_SHORT_APP_VERSION_PTR = "a";
-    private static final String OPT_LONG_APP_VERSION_PTR = "appVersionPtr";
+    public static final String OPT_LONG_APP_VERSION_PTR = "appVersionPtr";
     private static final String OPT_SHORT_UID = "u";
     private static final String OPT_LONG_UID = "uid";
 
@@ -63,10 +83,8 @@ public class CliOptions {
     private static final String OPT_SHORT_HELP = "h";
     private static final String OPT_LONG_HELP = "help";
 
+    private static final String OPT_SHORT_VERSION = "v";
     private static final String OPT_LONG_VERSION = "version";
-
-    private static final String OPT_SHORT_VERBOSE = "v";
-    private static final String OPT_LONG_VERBOSE = "verbose";
 
     private static final String OPT_SHORT_NO_FLASH = "f0";
     private static final String OPT_LONG_NO_FLASH = "NO_FLASH";
@@ -88,7 +106,6 @@ public class CliOptions {
 
     private InetAddress knxInterface;
     private String fileName = "";
-    private boolean verbose = false;
     private InetAddress localhost;
     private int localport = 0;
     private int port = KNXnetIPConnection.DEFAULT_PORT;
@@ -97,8 +114,13 @@ public class CliOptions {
     private String tpuart = "";
     private boolean routing = false;
     private String medium = "tp1";
-    private IndividualAddress progDevice;
-    private IndividualAddress device = new IndividualAddress("0.0.0");
+    private IndividualAddress progDevice = new IndividualAddress(Updater.PHYS_ADDRESS_BOOTLOADER_AREA,
+                                                                 Updater.PHYS_ADDRESS_BOOTLOADER_LINE,
+                                                                 Updater.PHYS_ADDRESS_BOOTLOADER_DEVICE);
+    private IndividualAddress ownAddress = new IndividualAddress(Updater.PHYS_ADDRESS_BOOTLOADER_AREA,
+                                                                 Updater.PHYS_ADDRESS_BOOTLOADER_LINE,
+                                                                 Updater.PHYS_ADDRESS_OWN);
+    private IndividualAddress device = null;
     private int appVersionPtr = 0;
     private byte[] uid;
     private boolean full = false;
@@ -115,16 +137,11 @@ public class CliOptions {
         this.helpHeader = helpHeader;
         this.helpFooter = helpFooter;
 
-        this.progDevice = new IndividualAddress(Updater.PHYS_ADDRESS_BOOTLOADER_AREA,
-                                                Updater.PHYS_ADDRESS_BOOTLOADER_LINE,
-                                                Updater.PHYS_ADDRESS_BOOTLOADER_DEVICE);
-
         Option nat = new Option(OPT_SHORT_NAT, OPT_LONG_NAT, false, "enable Network Address Translation (NAT)");
         Option routing = new Option(OPT_SHORT_ROUTING, OPT_LONG_ROUTING, false, "use KNXnet/IP routing (not implemented)");
         Option full = new Option(OPT_SHORT_FULL, OPT_LONG_FULL, false, "force full upload mode (disables differential mode)");
         Option help = new Option(OPT_SHORT_HELP, OPT_LONG_HELP, false, "show this help message");
-        Option version = new Option(null, OPT_LONG_VERSION, false, "show tool/library version");
-        Option verbose = new Option(OPT_SHORT_VERBOSE, OPT_LONG_VERBOSE, false, "enable verbose status output (not used/implemented)");
+        Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
 
         Option fileName = Option.builder(OPT_SHORT_FILENAME).longOpt(OPT_LONG_FILENAME)
@@ -179,6 +196,12 @@ public class CliOptions {
                 .required(false)
                 .type(IndividualAddress.class)
                 .desc("KNX device address in normal operating mode (default none)").build();
+        Option ownPhysicalAddress = Option.builder(OPT_SHORT_OWN_ADDRESS).longOpt(OPT_LONG_OWN_ADDRESS)
+                .argName("x.x.x")
+                .hasArg()
+                .required(false)
+                .type(IndividualAddress.class)
+                .desc(String.format("own physical KNX address (default %s)", this.ownAddress.toString())).build();
         Option appVersionPtr = Option.builder(OPT_SHORT_APP_VERSION_PTR).longOpt(OPT_LONG_APP_VERSION_PTR)
                 .argName("address")
                 .hasArg()
@@ -189,7 +212,7 @@ public class CliOptions {
                 .argName("uid")
                 .hasArg()
                 .required(false)
-                .desc(String.format("send UID to unlock (default: request UID to unlock). Only the first %d bytes of UID are used", Updater.UID_LENGTH_USED)).build();
+                .desc(String.format("send UID to unlock (default: request UID to unlock). Only the first %d bytes of UID are used", UPDProtocol.UID_LENGTH_USED)).build();
         Option delay = Option.builder(null).longOpt(OPT_LONG_DELAY)
                 .argName("ms")
                 .hasArg()
@@ -216,6 +239,7 @@ public class CliOptions {
 
         cliOptions.addOption(device);
         cliOptions.addOption(progDevice);
+        cliOptions.addOption(ownPhysicalAddress);
 
         cliOptions.addOption(uid);
         cliOptions.addOption(full);
@@ -234,7 +258,6 @@ public class CliOptions {
 
         cliOptions.addOption(delay);
         cliOptions.addOption(logLevel);
-        cliOptions.addOption(verbose);
         cliOptions.addOption(NO_FLASH);
 
 
@@ -244,6 +267,7 @@ public class CliOptions {
     private void parse(final String[] args) {
         CommandLineParser parser = new DefaultParser();
         try {
+            logger.debug("cli: {}", String.join(" ",args));
             cmdLine = parser.parse(cliOptions, args);
             // get the log level for log file output
             ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -265,20 +289,14 @@ public class CliOptions {
                 return;
             }
 
-            if (cmdLine.hasOption(OPT_LONG_VERSION)) {
+            if (cmdLine.hasOption(OPT_SHORT_VERSION)) {
                 version = true;
                 logger.debug("version={}", version);
                 return;
             }
 
-            if (cmdLine.hasOption(OPT_SHORT_VERBOSE)) {
-                verbose = true;
-            }
-            logger.debug("verbose={}", verbose);
-
             if (cmdLine.hasOption(OPT_SHORT_NO_FLASH)) {
                 NO_FLASH = true;
-                logger.warn("--NO_FLASH => {}only boot description block will be written{}", ConColors.RED, ConColors.RESET);
             }
             logger.debug("NO_FLASH={}", NO_FLASH);
 
@@ -355,12 +373,14 @@ public class CliOptions {
 
             if (cmdLine.hasOption(OPT_SHORT_PROG_DEVICE)) {
                 progDevice = new IndividualAddress(cmdLine.getOptionValue(OPT_SHORT_PROG_DEVICE));
-            } else {
-                progDevice = new IndividualAddress(Updater.PHYS_ADDRESS_BOOTLOADER_AREA,
-                        Updater.PHYS_ADDRESS_BOOTLOADER_LINE,
-                        Updater.PHYS_ADDRESS_BOOTLOADER_DEVICE);
             }
+
             logger.debug("progDevice={}", progDevice);
+
+            if (cmdLine.hasOption(OPT_SHORT_OWN_ADDRESS)) {
+                ownAddress = new IndividualAddress(cmdLine.getOptionValue(OPT_SHORT_OWN_ADDRESS));
+            }
+            logger.debug("ownAddress={}", ownAddress);
 
             if (cmdLine.hasOption(OPT_SHORT_FT12)) {
                ft12 = cmdLine.getOptionValue(OPT_SHORT_FT12);
@@ -383,9 +403,9 @@ public class CliOptions {
             logger.debug("knxInterface={}", knxInterface);
 
         } catch (ParseException | KNXFormatException e) {
-            String cliParsed = "";
+            StringBuilder cliParsed = new StringBuilder();
             for (String arg : args) {
-                cliParsed += String.format("%s ", arg);
+                cliParsed.append(String.format("%s ", arg));
             }
             logger.error("Invalid command line parameters:");
             logger.error("{}", cliParsed);
@@ -411,8 +431,8 @@ public class CliOptions {
     ///\todo move to Utils.java
     private byte[] uidToByteArray(String str) {
         String[] tokens = str.split(":");
-        if (tokens.length != Updater.UID_LENGTH_USED) {
-            logger.warn("ignoring --uid {}, wrong size {}, expected {}", str, tokens.length, Updater.UID_LENGTH_USED);
+        if (tokens.length != UPDProtocol.UID_LENGTH_USED) {
+            logger.warn("ignoring --uid {}, wrong size {}, expected {}", str, tokens.length, UPDProtocol.UID_LENGTH_USED);
             return null;
         }
         byte[] uid = new byte[tokens.length];
@@ -432,10 +452,6 @@ public class CliOptions {
 
     public String fileName() {
         return fileName;
-    }
-
-    public boolean verbose() {
-        return verbose;
     }
 
     public InetAddress localhost() {
@@ -478,6 +494,10 @@ public class CliOptions {
         return device;
     }
 
+    public IndividualAddress ownAddress() {
+        return ownAddress;
+    }
+
     public int appVersionPtr() {
         return appVersionPtr;
     }
@@ -509,90 +529,4 @@ public class CliOptions {
     public Level logLevel() {
         return logLevel;
     }
-/* old options variant ///\todo remove before release
-    public CliOptions(final String[] args) {
-        Option help = new Option("h", "help", false, "show this help message");
-        Option fileName = Option.builder("filename").longOpt(null)
-                .argName("fileName")
-                .hasArg()
-                .required(true)
-                .desc("Filename of hex file to program").build();
-        Option version = new Option("version", null, false, "show tool/library version");
-        Option verbose = new Option("v", "verbose", false, "enable verbose status output");
-
-        Option localhost = Option.builder("localhost").longOpt(null)
-                .argName("localhost")
-                .hasArg()
-                .required(false)
-                .desc("local IP/host name").build();
-        Option localport = Option.builder("localport").longOpt(null)
-                .argName("localport")
-                .hasArg()
-                .required(false)
-                .desc("local UDP port (default system assigned)").build();
-        Option port = Option.builder("p").longOpt("port")
-                .argName("port")
-                .hasArg()
-                .required(false)
-                .desc("UDP port on <host> (default 3671)").build();
-        Option nat = new Option("n", "nat", false, "enable Network Address Translation");
-        Option ft12 = Option.builder("s").longOpt("serial")
-                .argName("serial")
-                .hasArg()
-                .required(false)
-                .desc("use FT1.2 serial communication").build();
-        Option routing = new Option("routing", null, false, "use KNXnet/IP routing");
-        Option medium = Option.builder("m").longOpt("medium")
-                .argName("medium")
-                .hasArg()
-                .required(false)
-                .desc("KNX medium [tp0|tp1|p110|p132|rf] (default tp1)").build();
-        Option progDevice = Option.builder("progDevice").longOpt(null)
-                .argName("progDevice")
-                .hasArg()
-                .required(false)
-                .desc(String.format("KNX device address of bootloader (default %s.%s.%s)", PHYS_ADDRESS_BOOTLOADER_AREA, PHYS_ADDRESS_BOOTLOADER_LINE, PHYS_ADDRESS_BOOTLOADER_DEVICE)).build();
-        Option device = Option.builder("device").longOpt(null)
-                .argName("device")
-                .hasArg()
-                .required(false)
-                .desc("KNX device address in normal operating mode (default none)").build();
-        Option appVersionPtr = Option.builder("appVersionPtr").longOpt(null)
-                .argName("appVersionPtr")
-                .hasArg()
-                .required(false)
-                .desc("pointer to APP_VERSION string in new firmware file").build();
-
-        Option uid = Option.builder("uid").longOpt(null)
-                .argName("uid")
-                .hasArg()
-                .required(false)
-                .desc("send UID to unlock (default: request UID to unlock)\nonly the first 12 bytes of UID are used").build();
-        Option full = new Option("full", null, false, "force full upload mode (disables differential mode)");
-        Option delay = Option.builder("delay").longOpt(null)
-                .argName("delay")
-                .hasArg()
-                .required(false)
-                .desc("delay telegrams during data transmission to reduce bus load (valid 0-500)").build();
-        Option NO_FLASH = new Option("NO_FLASH", null, false, "for debugging use only, disable flashing firmware!");
-        cliOptions.addOption(help);
-        cliOptions.addOption(fileName);
-        cliOptions.addOption(version);
-        cliOptions.addOption(verbose);
-        cliOptions.addOption(localhost);
-        cliOptions.addOption(localport);
-        cliOptions.addOption(port);
-        cliOptions.addOption(nat);
-        cliOptions.addOption(ft12);
-        cliOptions.addOption(routing);
-        cliOptions.addOption(medium);
-        cliOptions.addOption(progDevice);
-        cliOptions.addOption(device);
-        cliOptions.addOption(appVersionPtr);
-        cliOptions.addOption(uid);
-        cliOptions.addOption(full);
-        cliOptions.addOption(delay);
-        cliOptions.addOption(NO_FLASH);
-    }
-*/
 }

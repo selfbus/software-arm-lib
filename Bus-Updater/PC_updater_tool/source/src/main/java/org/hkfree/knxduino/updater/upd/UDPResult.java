@@ -1,8 +1,14 @@
-package org.hkfree.knxduino.updater;
+package org.hkfree.knxduino.updater.upd;
+
+import org.hkfree.knxduino.updater.Utils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
+/**
+ * Implementation of the UPD/UDP protocol result commands
+ */
 public enum UDPResult {
     OK(0x000, "OK", false),
     UNKNOWN_COMMAND(0x100, "Command unknown", true), //!< received command is not defined
@@ -21,30 +27,26 @@ public enum UDPResult {
     NOT_IMPLEMENTED(0xFFFF, "Command not implemented", true), //!< this command is not yet implemented
     INVALID(0xFFFFFFFF, "Unknown error", true);  //!< not a UPDResult
 
-    private static final Map<Integer, UDPResult> BY_INDEX = new HashMap<>();
+    private static final Map<Long, UDPResult> BY_INDEX = new HashMap<>();
     static {
         for (UDPResult e: values()) {
             BY_INDEX.put(e.id, e);
         }
     }
 
-    public final Integer id;
+    public final long id;
     private final String description;
     private final boolean isError;
 
-    private UDPResult(Integer id, String description, boolean isError) {
+    UDPResult(Integer id, String description, boolean isError) {
         this.id = id;
         this.description = description;
         this.isError = isError;
     }
 
-    public static UDPResult valueOfIndex(Integer index) {
+    public static UDPResult valueOfIndex(long index) {
         UDPResult res = BY_INDEX.get(index);
-        if (res != null) {
-            return res;
-        } else {
-            return INVALID;
-        }
+        return Objects.requireNonNullElse(res, INVALID);
     }
 
     @Override
@@ -54,6 +56,13 @@ public enum UDPResult {
 
     public boolean isError() {
         return this.isError;
+    }
+
+
+    public static UDPResult fromByteArray(byte[] toParse, int offset)
+    {
+        long resultCode = Utils.streamToLong(toParse, offset);
+        return UDPResult.valueOfIndex(resultCode);
     }
 }
 

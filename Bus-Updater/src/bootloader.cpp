@@ -182,24 +182,29 @@ static inline void run_updater(bool programmingMode)
         serial.begin(115200);
     }
     int physicalAddress = bus.ownAddress();
-    serial.println("=======================================================");
+    serial.println("=========================================================");
     serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
     serial.println(", DEBUG MODE :-)");
     serial.print("Build: ");
     serial.print(__DATE__);
     serial.print(" ");
-    serial.print(__TIME__);
-    serial.println(" Features: 0x", BL_FEATURES, HEX, 4);
-    serial.print("Flash (start,end,size)    : 0x", flashFirstAddress(), HEX, 6);
+    serial.println(__TIME__);
+    serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
+    serial.print("Flash      (start,end,size) : 0x", flashFirstAddress(), HEX, 6);
     serial.print(" 0x", flashLastAddress(), HEX, 6);
     serial.println(" 0x", flashSize(), HEX, 6);
-    serial.print("Firmware (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
+    serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
     serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
     serial.println(" 0x", bootLoaderSize(), HEX, 6);
-    serial.print("physical address          : ", (physicalAddress >> 12) & 0x0F, DEC);
+    serial.println("Firmware (start)            : 0x", applicationFirstAddress(), HEX, 6);
+    serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress(), HEX, 6);
+    serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
+    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
+    serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
+    serial.print("physical address            : ", (physicalAddress >> 12) & 0x0F, DEC);
     serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
     serial.println(".", physicalAddress & 0xFF, DEC);
-    serial.println("------------------------------------------------- by sh");
+    serial.println("--------------------------------------------------- by sh");
 #endif
 
     while (1)
@@ -235,7 +240,7 @@ int main()
     }
 
     // Start main application at address
-    AppDescriptionBlock * block = (AppDescriptionBlock *) APPLICATION_FIRST_SECTOR;
+    AppDescriptionBlock * block = (AppDescriptionBlock *) applicationFirstAddress();
     block--; // one block backwards
     for (int i = 0; i < BOOT_BLOCK_COUNT; i++, block--)
     {

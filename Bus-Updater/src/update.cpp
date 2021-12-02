@@ -28,7 +28,7 @@
 #include "bcu_updater.h"
 #include "crc.h"
 #include "update.h"
-#if defined(DEBUG)
+#if defined(DUMP_TELEGRAMS_LVL1) || defined(DEBUG)
 #   include "intelhex.h"
 #endif
 
@@ -36,7 +36,7 @@
 #   include "decompressor.h"
 #endif
 
-#if defined(DUMP_TELEGRAMS_LVL1) && defined(DEBUG)
+#if defined(DUMP_TELEGRAMS_LVL1) || defined(DEBUG)
 #   include <sblib/serial.h>
 
 #   define d1(x) {serial.print(x);} //!< \todo
@@ -51,7 +51,7 @@
 #endif
 
 #ifdef DECOMPRESSOR
-    static Decompressor decompressor((AppDescriptionBlock*) BOOT_DSCR_ADDRESS); //!< get application base address from boot descriptor
+    static Decompressor decompressor((AppDescriptionBlock*) bootDescriptorBlockAddress()); //!< get application base address from boot descriptor
 #endif
 
 
@@ -285,16 +285,13 @@ static bool addressAllowedToProgram(unsigned int start, unsigned int length, boo
         return (0);
     }
     unsigned int end = start + length - 1;
-    // check in range > bootloader and < flash end
-    //FIXME also secure the application boot blocks
     if (isBootDescriptor)
     {
-        return ((start > bootLoaderLastAddress()) && (end < APPLICATION_FIRST_SECTOR));
+        return ((start >= bootDescriptorBlockAddress()) && (end < applicationFirstAddress()));
     }
     else
     {
-        return (((start >= bootLoaderLastAddress()) && (end <= flashLastAddress())) &&
-               (start >= APPLICATION_FIRST_SECTOR));
+        return ((start >= applicationFirstAddress()) && (end <= flashLastAddress()));
     }
 }
 
@@ -532,7 +529,7 @@ static unsigned char updResetDevice(bool * sendTel)
 static unsigned char updAppVersionRequest(bool * sendTel, unsigned char * data)
 {
     unsigned char* appversion;
-    appversion = getAppVersion((AppDescriptionBlock *) (APPLICATION_FIRST_SECTOR - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
+    appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
     lastError = IAP_SUCCESS;
     *sendTel = prepareReturnTelegram(BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
     memcpy(bcu.sendTelegram + 10, appversion, BL_ID_STRING_LENGTH - 1);
@@ -677,7 +674,7 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
 
 /**
  * @brief Handles the @ref UPD_REQUEST_BL_IDENTITY command. Copies bootloader version (@ref BL_IDENTITY),
- *        bootloader features (@ref BL_FEATURES) and bootloader's last flash address (@ref bootLoaderLastAddress())
+ *        bootloader features (@ref BL_FEATURES) and applications first possible start address (@ref applicationFirstAddress())
  *        to the return telegram.
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
@@ -685,16 +682,16 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
  */
 static unsigned char updRequestBootloaderIdentity(bool * sendTel)
 {
-    unsigned int bl_identity = BL_IDENTITY;
-    unsigned int bl_features = BL_FEATURES;
-    unsigned int bl_size = bootLoaderSize();
+    unsigned int bootloaderIdentityy = BL_IDENTITY;
+    unsigned int bootloaderFeatures = BL_FEATURES;
+    unsigned int appFirstAddress = applicationFirstAddress();
     *sendTel = prepareReturnTelegram(12, UPD_RESPONSE_BL_IDENTITY);
-    uInt32ToStream(bcu.sendTelegram + 10, bl_identity);  // Bootloader identity
-    uInt32ToStream(bcu.sendTelegram + 14, bl_features);  // Bootloader features
-    uInt32ToStream(bcu.sendTelegram + 18, bl_size); // Bootloader size
-    d3(serial.print("BL ID 0x", bl_identity, HEX, 8));
-    d3(serial.print("    BL feature 0x", bl_features, HEX, 8));
-    d3(serial.println("    BL size    0x", bl_size, HEX, 8));
+    uInt32ToStream(bcu.sendTelegram + 10, bootloaderIdentityy);  // Bootloader identity
+    uInt32ToStream(bcu.sendTelegram + 14, bootloaderFeatures);  // Bootloader features
+    uInt32ToStream(bcu.sendTelegram + 18, appFirstAddress);     // application first possible start address
+    d3(serial.print("BL ID 0x", bootloaderIdentityy, HEX, 8));
+    d3(serial.print("    BL feature 0x", bootloaderFeatures, HEX, 8));
+    d3(serial.println("    FW start   0x", appFirstAddress, HEX, 8));
     return (T_ACK_PDU);
 }
 
@@ -708,7 +705,7 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel)
 static unsigned char udpRequestBootDescriptionBlock(bool * sendTel)
 {
     //TODO maybe check if the block is valid?
-    AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) BOOT_DSCR_ADDRESS; // Address of boot block descriptor
+    AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) bootDescriptorBlockAddress(); // Address of boot block descriptor
     *sendTel = prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
     memcpy(bcu.sendTelegram + 10, bootDescr, 12); // startAddress, endAddress, crc
 
@@ -833,9 +830,9 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
     d3(
         bytesReceived -= count; // subtract bytes received for boot descriptor
         serial.println();
-        serial.println("Bytes Rx    ", bytesReceived - count);
+        serial.println("Bytes Rx    ", bytesReceived);
         serial.println("Bytes Flash ", bytesFlashed); //
-        serial.println("Diff        ", (int)bytesReceived - (int)bytesFlashed); // difference here is normal, because flashing is always in multiple of FLASH_PAGE_SIZE
+        serial.println("Diff        ", (int)bytesFlashed - (int)bytesReceived); // difference here is normal, because flashing is always in multiple of FLASH_PAGE_SIZE
         serial.println();
         serial.println("FW start@ 0x", streamToUIn32(ramBuffer), HEX, 4);    // Firmware start address
         serial.println("FW end  @ 0x", streamToUIn32(ramBuffer+4), HEX, 4);  // Firmware end address
@@ -846,7 +843,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
 
 
     //address = FIRST_SECTOR - (1 + data[7]) * BOOT_BLOCK_SIZE; // start address of the descriptor block
-    address = BOOT_DSCR_ADDRESS;                // start address of boot block descriptor
+    address = bootDescriptorBlockAddress();                // start address of boot block descriptor
     crc = crc32(0xFFFFFFFF, ramBuffer, count);  // checksum on used length only
 
     d3(serial.println("Desc.      @ 0x", address, HEX, 4));
@@ -865,7 +862,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
     }
 
     d3(serial.println("CRC MATCH, comparing MCUs BootDescriptor: count: ", count));
-    //If send descriptor is not equal to current one, flash it
+    //If received descriptor is not equal to current one, flash it
     if(memcmp((byte *) address, ramBuffer, count) == 0)
     {
         d3(serial.println("is equal, skipping"));
@@ -875,7 +872,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
     else
     {
         d3(serial.print("it's different, Erase Page:"));
-        result = erasePage(BOOT_BLOCK_PAGE); // - data[7]);
+        result = erasePage(bootDescriptorBlockPage()); // - data[7]);
         if (result != ((UDP_State)IAP_SUCCESS))
         {
             setLastError(result, sendTel);

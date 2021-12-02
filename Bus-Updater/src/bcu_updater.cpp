@@ -5,6 +5,8 @@
  *
  * @{
  *
+ * @brief Implements the Bootloader's bus coupling unit (BCU 1)
+ *
  * @file   bcu_updater.cpp
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @author Stefan Haller Copyright (c) 2021
@@ -177,7 +179,12 @@ void BcuUpdate::processDirectTelegram(int apci)
 #endif
             break;
 
-        case APCI_RESTART_PDU:
+        case APCI_BASIC_RESTART_PDU:
+            dump2(serial.println("APCI_BASIC_RESTART_PDU"));
+            restartRequest(RESET_DELAY_MS); // Software Reset
+            break;
+        case APCI_MASTER_RESET_PDU:
+            ///\todo see sblib bcu.cpp for correct T_ACK and restart response
             // attention we check acpi not like before apciCommand!
             if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
             {
@@ -187,9 +194,9 @@ void BcuUpdate::processDirectTelegram(int apci)
                 unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
                 *magicWord = BOOTLOADER_MAGIC_WORD;
             }
-            dump2(serial.println("APCI_RESTART_PDU"));
+            dump2(serial.println("APCI_MASTER_RESET_PDU"));
             sendAckTpu = T_ACK_PDU;
-            sendRestartResponseControlTelegram(APCI_RESTART_RESPONSE_PDU, senderSeqNo, 0, 1); // we need 1s reset time
+            sendRestartResponseControlTelegram(APCI_MASTER_RESET_RESPONSE_PDU, senderSeqNo, 0, 1); // we need 1s reset time
             restartRequest(RESET_DELAY_MS); // Software Reset
             break;
 

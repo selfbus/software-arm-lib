@@ -24,26 +24,20 @@
 #define BOOT_DESCRIPTOR_BLOCK_H_
 
 #include <sblib/platform.h>
-/// \todo get rid of APPLICATION_FIRST_SECTOR, maybe somehow using bootLoaderLastAddress()
 #ifdef DEBUG
     #define BL_FEATURES      0x8100             //!< Feature list of bootloader in Debug version
-    #define APPLICATION_FIRST_SECTOR    0x7000  //!< where the application starts (BL size)  in Debug version
 #else
     #define BL_FEATURES      0x0100             //!< Feature list of bootloader in Release version
-    #define APPLICATION_FIRST_SECTOR    0x3000  //!< where the application starts (BL size) in Release version
 #endif
 
 ///\todo move BL_IDENTITY to bootloader.cpp or a new config.h file
-#define BL_IDENTITY			 0x1056		        //!< boot loader Version 0.56
+#define BL_IDENTITY			 0x1061		        //!< boot loader Version 0.61
 #define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
 
-
 #define BOOT_BLOCK_DESC_SIZE FLASH_PAGE_SIZE    //!< 1 flash page
 #define BOOT_BLOCK_COUNT 1                      //!< Number of applications supported (application description blocks)
-#define BOOT_DSCR_ADDRESS  (APPLICATION_FIRST_SECTOR - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT)) //!< Descriptor uses last page of bootloader
-#define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1) //!< flash page number of the application description block
-
+                                                //!<@warning @ref BOOT_BLOCK_COUNT other's than 1 are not tested!
 
 extern unsigned char bl_id_string[BL_ID_STRING_LENGTH]; //!< default bootloader identity "string" used in @ref getAppVersion()
 
@@ -129,6 +123,26 @@ unsigned int flashLastAddress(void);
  */
 unsigned int flashSize(void);
 
+/**
+ * @brief returns the first address of the application's firmware
+ *
+ * @return first address of the application's firmware
+ */
+unsigned int applicationFirstAddress(void);
+
+/**
+ * @brief returns the first address of the boot descriptor block
+ *
+ * @return first address of the boot descriptor block
+ */
+unsigned int bootDescriptorBlockAddress(void);
+
+/**
+ * @brief returns the page number of the boot descriptor block
+ *
+ * @return page number of the boot descriptor block
+ */
+unsigned int bootDescriptorBlockPage(void);
 
 #endif /* BOOT_DESCRIPTOR_BLOCK_H_ */
 

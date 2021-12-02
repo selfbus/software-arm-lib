@@ -1,8 +1,11 @@
-package org.hkfree.knxduino.updater;
+package org.hkfree.knxduino.updater.upd;
 
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Implementation of the UPD/UDP protocol control commands
+ */
 public enum UPDCommand {
     ERASE_SECTOR(0),
     SEND_DATA(1),
@@ -33,7 +36,7 @@ public enum UPDCommand {
     }
 
     public final Integer id;
-    private UPDCommand(Integer id) {
+    UPDCommand(Integer id) {
         this.id = id;
     }
 

@@ -1,4 +1,4 @@
-# Selfbus-updater 0.60
+# Selfbus-updater 0.61
 
 ## Requirements
 
@@ -19,11 +19,11 @@ windows: gradlew.bat fatJar
 ## Usage
 ```
 SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
-       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-u <uid>] [-f1] [-H <localhost>] [-P <localport>]
-       [-p <port>] [-n] [-r] [-a <address>] [-h | --version]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>]
-       [-v] [-f0]
+       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [-u <uid>] [-f1] [-H <localhost>] [-P
+       <localport>] [-p <port>] [-n] [-r] [-a <address>] [-h | -v]  [--delay <ms>] [-l
+       <TRACE|DEBUG|INFO>] [-f0]
 
-Selfbus KNX-Firmware update tool options::
+Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>           Filename of hex file to program
  -m,--medium <tp1|rf>               KNX medium [tp1|rf] (default tp1)
  -s,--serial <COM-port>             use FT1.2 serial communication
@@ -31,6 +31,7 @@ Selfbus KNX-Firmware update tool options::
                                     or rxtx library in java.library.path
  -d,--device <x.x.x>                KNX device address in normal operating mode (default none)
  -D,--progDevice <x.x.x>            KNX device address in bootloader mode (default 15.15.192)
+ -o,--own <x.x.x>                   own physical KNX address (default 15.15.193)
  -u,--uid <uid>                     send UID to unlock (default: request UID to unlock). Only the
                                     first 12 bytes of UID are used
  -f1,--full                         force full upload mode (disables differential mode)
@@ -41,11 +42,10 @@ Selfbus KNX-Firmware update tool options::
  -r,--routing                       use KNXnet/IP routing (not implemented)
  -a,--appVersionPtr <address>       pointer address to APP_VERSION string in new firmware file
  -h,--help                          show this help message
-    --version                       show tool/library version
+ -v,--version                       show tool/library version
     --delay <ms>                    delay telegrams during data transmission to reduce bus load,
                                     valid 0-500ms, default 0
  -l,--logLevel <TRACE|DEBUG|INFO>   Logfile logging level [TRACE|DEBUG|INFO] (default DEBUG)
- -v,--verbose                       enable verbose status output (not used/implemented)
  -f0,--NO_FLASH                     for debugging use only, disable flashing firmware!
 ```
 ## Common use cases:
