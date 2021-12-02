@@ -57,10 +57,14 @@ enum
     APCI_DEVICEDESCRIPTOR_READ_PDU              = 0x300, //!< A_DeviceDescriptor_Read-PDU, connection-oriented
     APCI_DEVICEDESCRIPTOR_RESPONSE_PDU          = 0x340, //!< A_DeviceDescriptor_Response-PDU, connection-oriented
 
-    APCI_RESTART_PDU                            = 0x380, //!< A_Restart-PDU, connection-oriented
-    APCI_RESTART_RESPONSE_PDU                   = 0x381, //!< A_Restart_Response-PDU , connection-oriented
+    APCI_BASIC_RESTART_PDU                      = 0x380, //!< A_Restart-PDU, Basic Restart, connection-oriented
+
+    APCI_MASTER_RESET_PDU                       = 0x381, //!< A_Restart-PDU, Master Reset, connection-oriented
                                                          //!< used by Selfbus bootloader to reset into flash mode
-                                                         //!< special meaning of eraseCode=0 and channelNumber=255 for update mode
+                                                         //!< special meaning of eraseCode=T_RESTART_PDU_MASTERRESET_FACTORY_WO_IA and
+                                                         //!< channelNumber=255 for bootloader mode
+    APCI_MASTER_RESET_RESPONSE_PDU              = 0x3A1, //!< A_Restart_Response-PDU , connection-oriented
+
 
     // 0x3C0 -> 0x3D0 coupler specific?
 
@@ -114,20 +118,47 @@ enum
     T_GROUP_PDU = 0x00
 };
 
+/**
+ * @brief    A_Restart-PDU Master Reset Erase Code
+ * @details  <br>see KNX spec 2.1 3/5/2 3.7.1.2.3.1 page 67</b>
+ */
+enum RestartPDUMasterReset
+{
+    T_MASTERRESET_CONFIRMED_RESTART = 0x01, //!< Confirmed restart
+    T_MASTERRESET_FACTORY_RESET     = 0x02, //!< Factory reset, channel=0 all resources, channel!=0 only specified resources
+    T_MASTERRESET_RESET_IA          = 0x03, //!< Reset physical address to its default (15.15.255)
+    T_MASTERRESET_RESET_AP          = 0x04, //!< Reset to default application program
+    T_MASTERRESET_RESET_PARAM       = 0x05, //!< Reset application parameter memory, channel=0 all channel, channel!=0 only specified channel
+    T_MASTERRESET_RESET_LINKS       = 0x06, //!< Reset link information for group objects (address table, association table), channel=0 all channel, channel!=0 only specified channel
+    T_MASTERRESET_FACTORY_WO_IA     = 0x07  //!< Factory Reset without physical address erase, channel=0 all channel, channel!=0 only specified channel
+};
+
+/**
+ * @brief    A_Restart_Response-PDU Code
+ * @details  <br>see KNX spec 2.1 3/5/2 3.7.1.2.3.1 page 68</b>
+ */
+enum RestartPDUErrorcode
+{
+    T_RESTART_NO_ERROR               = 0x00,
+    T_RESTART_ACCESS_DENIED          = 0x01,
+    T_RESTART_UNSUPPORTED_ERASE_CODE = 0x02,
+    T_RESTART_INVALID_CHANNEL_NUMBER = 0x03
+};
+
 #define BOOTLOADER_MAGIC_WORD (0x5E1FB055)      //!< magic word which will be checked on startup of the bootloader
-                                                //!< weather or not to go into flash mode
+                                                //!< weather or not to go into bootloader mode
 #define BOOTLOADER_MAGIC_ADDRESS ((unsigned int *) 0x10000000) //!< magic address for the magic word to be checked on startup of the bootloader
-                                                               //!< weather or not to go into flash mode
-#define BOOTLOADER_MAGIC_ERASE 0                //!< bootloader magic erase
-#define BOOTLOADER_MAGIC_CHANNEL 255            //!< bootloader magic channel
+                                                               //!< weather or not to go into bootloader mode
+#define BOOTLOADER_MAGIC_ERASE T_MASTERRESET_FACTORY_WO_IA     //!< bootloader magic erase = FactoryResetWithoutIndividualAddress in calimero-core
+#define BOOTLOADER_MAGIC_CHANNEL 255                           //!< bootloader magic channel
 
 /**
  * @brief Checks a APCI for the bus-updater Magic word
  *        This is a bus-updater/bootloader and BCU special function
- *        used for the flashing process to boot into updating mode
+ *        used for the flashing process to boot into bootloader mode
  * @param apci          APCI to check for the magic word
- * @param eraseCode     eraseCode from the APCI_RESTART_TYPE1_PDU telegram
- * @param channelNumber channelNumber from the APCI_RESTART_TYPE1_PDU telegram
+ * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
+ * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
  *
  * @return true if apci is a APCI_RESTART_TYPE1_PDU with magic word<br/>
  *         otherwise false

@@ -559,40 +559,17 @@ void BCU::processDirectTelegram(int apci)
     default:
         switch (apci)
         {
-        case APCI_RESTART_PDU:
-        case APCI_RESTART_RESPONSE_PDU:
-            if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
+        case APCI_BASIC_RESTART_PDU:
+            softSystemReset();
+            break; // we should never land on this break
+
+        case APCI_MASTER_RESET_PDU:
+            if (processApciMasterResetPDU(apci, senderSeqNo, bus.telegram[8], bus.telegram[9]))
             {
-                // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
-                // restart with parameters, we need to start in flashmode
-                // this is only allowed with programming mode on, otherwise it will result in a simple reset
-                unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
-                *magicWord = BOOTLOADER_MAGIC_WORD;
-                /* if (programmingMode())
-                {
-                    *magicWord = BOOTLOADER_MAGIC_WORD;
-                }
-                else
-                {
-                    *magicWord = 0;
-                }
-                */
+                softSystemReset(); // perform a basic restart;
             }
-
-            if (usrCallback)
-            {
-                usrCallback->Notify(USR_CALLBACK_RESET);
-            }
-
-            writeUserEeprom();   // Flush the EEPROM before resetting
-
-            if (memMapper)
-            {
-                memMapper->doFlash();
-            }
-            //FIXME 3/5/3 KNX spec 3.7 (page 63) says send an appropriate LM_Reset.ind message through the EMI interface
-
-            NVIC_SystemReset();  // Software Reset
+            // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
+            sendTel = true;
             break;
 
         case APCI_AUTHORIZE_REQUEST_PDU:
@@ -720,4 +697,80 @@ void BCU::processConControlTelegram(int tpci)
             }
         }
     }
+}
+
+bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber)
+{
+    ///\todo the following code has been hacked together quick and dirty.
+    ///      It needs a rework along with the redesign of processDirectTelegram(..)
+
+
+    // create the APCI_MASTER_RESET_RESPONSE_PDU
+    sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
+    // 1+2 contain the sender address, which is set by bus.sendTelegram()
+    sendTelegram[3] = connectedAddr >> 8;
+    sendTelegram[4] = connectedAddr;
+    sendTelegram[5] = 0x64; // length of the telegram is 4 bytes
+    sendTelegram[6] = 0x40 | (APCI_MASTER_RESET_RESPONSE_PDU >> 8); // set first byte of apci
+    sendTelegram[7] = APCI_MASTER_RESET_RESPONSE_PDU & 0xff; // set second byte of apci
+    sendTelegram[7] |= 1; // set restart type to 1
+
+    sendTelegram[8] = T_RESTART_UNSUPPORTED_ERASE_CODE; // set no error response
+    // restart process time 2 byte unsigned integer value expressed in seconds
+    // DPT_TimePeriodSec / DPT7.005
+    sendTelegram[9] = 0; ///\todo set proper restart process time
+    sendTelegram[10] = 6; ///\todo set proper restart process time
+
+    if (apci != APCI_MASTER_RESET_PDU)
+    {
+        return false;
+    }
+    ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+
+    if (checkApciForMagicWord(apci, eraseCode, channelNumber))
+    {
+        // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
+        // set magicWord to start after reset in bootloader mode
+        unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+        *magicWord = BOOTLOADER_MAGIC_WORD;
+
+        // Add the sequence number
+        sendTelegram[6] &= ~0x3c;
+        sendTelegram[6] |= connectedSeqNo;
+        incConnectedSeqNo = true;
+        // set no error
+        sendTelegram[8] = T_RESTART_NO_ERROR;
+
+        // send transport layer 4 ACK
+        sendConControlTelegram(T_ACK_PDU, senderSeqNo);
+        while (!bus.idle())
+            ;
+        // send APCI_MASTER_RESET_RESPONSE_PDU
+        bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
+        while (!bus.idle())
+                    ;
+        // send disconnect
+        sendConControlTelegram(T_DISCONNECT_PDU, 0);
+        while (!bus.idle())
+            ;
+        softSystemReset();
+    }
+
+    return false;
+}
+
+void BCU::softSystemReset()
+{
+    if (usrCallback)
+    {
+        usrCallback->Notify(USR_CALLBACK_RESET);
+    }
+
+    writeUserEeprom(); // Flush the EEPROM before resetting
+
+    if (memMapper)
+    {
+        memMapper->doFlash();
+    }
+    NVIC_SystemReset();
 }
