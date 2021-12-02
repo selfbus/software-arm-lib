@@ -513,7 +513,8 @@ bool sendNextGroupTelegram()
     {
     	return false;
     }
-	//  pending transmission status check
+	//  pending transmission status check, switch of innterrupts to avoid reading/storing changing data
+    noInterrupts();
 	if ( !(transmitting_object_no == INVALID_OBJECT_NUMBER) && bus.getBusTXStateValid() )
 	{
 		//check if state ok and update RAM Flag of object
@@ -536,6 +537,7 @@ bool sendNextGroupTelegram()
 		bus.setBusTXStateValid(false);
 
 	}
+	interrupts();
 
     // scan all objects, read config and Grp Addr of object
     for (objno = sndStartIdx; objno < numObjs; ++objno)

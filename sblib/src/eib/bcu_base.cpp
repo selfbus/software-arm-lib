@@ -248,7 +248,7 @@ void BcuBase::loop()
 
 	if (telTXAck)
 	{
-	    serial.print("TXAck: ");
+	    serial.print("TXAck:");
 		serial.println(telTXAck, HEX, 2);
 		telTXAck = 0;
 	}
@@ -263,19 +263,22 @@ void BcuBase::loop()
 */
 		if (telTXEndTime)
 		{
-			serial.print("TX: (S");
-			serial.print(telTXStartTime, DEC, 9);
-			serial.print(", E");
-			serial.print(telTXEndTime, DEC, 9);
-		//	serial.println(") ");
+			serial.print("TX: ");
+			serial.print(telTXStartTime, DEC, 6);
+			serial.print(" ");
+			serial.print(telTXEndTime, DEC, 6);
+
+			serial.print(" txerror");
+			serial.print((unsigned int)bus.sendTelegramState(), HEX, 4);
+
 			//telTXStartTime = 0;
 			telLastTXEndTime = telTXEndTime;
 			telTXEndTime = 0;
 		}
 		else
 		{
-		serial.print("TX: (S:");
-		serial.print(telTXStartTime, DEC, 9);
+		serial.print("TXS: ");
+		serial.print(telTXStartTime, DEC, 6);
 		//serial.println(") ");
 		//telTXStartTime = 0;
 		}
@@ -283,20 +286,20 @@ void BcuBase::loop()
 		if (telLastRXEndTime)
 		{
 			// print time in between last rx-tel and current tx-tel
-			serial.print(", RX-TX: (");
-			serial.print(( telTXStartTime - telLastRXEndTime), DEC, 9);
+			serial.print(" RX-TX:");
+			serial.print(( telTXStartTime - telLastRXEndTime), DEC, 6);
 	//		serial.println(") ");
 			telLastRXEndTime = 0;
 		}
 		if(telLastTXEndTime)
 		{
 			// print time in between last tx-tel and current tx-tel
-			serial.print(", TX-TX: (");
-			serial.print(( telTXStartTime - telLastTXEndTime), DEC, 9);
+			serial.print(" TX-TX:" );
+			serial.print(( telTXStartTime - telLastTXEndTime), DEC, 6);
 	//		serial.println(") ");
 			telLastTXEndTime = 0;
 		}
-		serial.println(") ");
+		serial.println();
 
 		telTXStartTime = 0;
 
@@ -304,19 +307,22 @@ void BcuBase::loop()
 
 	if (telTXEndTime)
 	{
-		serial.print("TX: (E:");
-		serial.print(telTXEndTime, DEC, 9);
+		serial.print("TXE:");
+		serial.print(telTXEndTime, DEC, 6);
+		serial.print(" tx-error:");
+		serial.print((unsigned int)bus.sendTelegramState(), HEX, 4);
 		serial.println(") ");
+
 		telLastTXEndTime = telTXEndTime;
 		telTXEndTime = 0;
 	}
 
 	if (telLength > 0)
 	{
-	    serial.print("RCV: (S:");
-		serial.print(telRXStartTime, DEC, 9 );
-		serial.print(", E:");
-		serial.print(telRXEndTime, DEC, 9);
+	    serial.print("RCV:(");
+		serial.print(telRXStartTime, DEC, 6 );
+		serial.print(" ");
+		serial.print(telRXEndTime, DEC, 6);
 	//	serial.print(") ");
 	//	serial.print(", LRXE:");
 	//	serial.print(telLastRXEndTime, DEC, 9);
@@ -327,22 +333,22 @@ void BcuBase::loop()
 		if (telLastTXEndTime)
 		{
 			// print time in between last tx-tel and current rx-tel
-			serial.print(", TX-RX:");
-			serial.print(( telRXStartTime - telLastTXEndTime), DEC, 9);
+			serial.print(" TX-RX:");
+			serial.print(( telRXStartTime - telLastTXEndTime), DEC, 6);
 			telLastTXEndTime = 0;
 		}
 		else if(telLastRXEndTime)
 		{
 			// print time in between last rx-tel and current rx-tel
-			serial.print(", RX-RX:");
-			serial.print(( telRXStartTime - telLastRXEndTime), DEC, 9);
+			serial.print(" RX-RX:");
+			serial.print(( telRXStartTime - telLastRXEndTime), DEC, 6);
 		//	serial.println(") ");
 			telLastRXEndTime = 0;
 		}
 		serial.print(") ");
 
 
-		if (telcollision)  serial.print("collision ");
+		if (telcollision)  serial.print("collision");
 
 		for (unsigned int i = 0; i < telLength; ++i)
 		{

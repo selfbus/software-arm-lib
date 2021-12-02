@@ -40,8 +40,8 @@
 
 // #define SERIAL_SPEED 115200 //!< baudrate e.g. 115200, 230400, 576000 serial port should run for debugging
 // #define INCLUDE_SERIAL      //!< library should open serial for us
-#   define SERIAL_SPEED 1500000
-
+// #define SERIAL_SPEED 1500000
+# define SERIAL_SPEED 576000
 
 // #define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
 
@@ -59,7 +59,7 @@
 
 //#define DEBUG_BUS           //!< enable dumping of state machine interrupt data e.g timer values, mapping of ports in serial.cpp
 //#define DEBUG_BUS_BITLEVEL  //!< extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow of the trace buffer
-
+//#define BUSMONITOR				//!< enables bus monitoring: dump of all bus traffic incl timing info, no sending, no processing of rx-telegrams
 //to avoid trace buffer overflow DUMP_TELEGRAMS should not be used in parallel with DEBUG_BUS or DEBUG_BUS_BITLEVEL"
 #define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack over serial interface
 //#define DUMP_COM_OBJ    //!< dump object handling information on app-server level over serial interface
@@ -95,6 +95,7 @@
 // remove any debugging and dumping stuff from release versions
 #ifndef DEBUG
 #   undef DEBUG_BUS
+#	undef BUSMONITOR
 #   undef DEBUG_BUS_BITLEVEL
 #   undef DUMP_TELEGRAMS
 #   undef DUMP_COM_OBJ
@@ -110,6 +111,12 @@
 #if defined(DEBUG_BUS_BITLEVEL) && !defined(DEBUG_BUS)
 #  define DEBUG_BUS
 #  warning "DEBUG_BUS_BITLEVEL, can only be used together with DEBUG_BUS"
+#endif
+
+// make sure if BUSMONITOR is defined also DUMP_TELEGRAMS is defined
+#if defined(BUSMONITOR) && !defined(DUMP_TELEGRAMS)
+#  define DUMP_TELEGRAMS
+#  warning "BUSMONITOR can only be used together with DUMP_TELEGRAMS"
 #endif
 
 //to avoid trace buffer overflow DUMP_TELEGRAMS should not be used in parallel with DEBUG_BUS or DEBUG_BUS_BITLEVEL

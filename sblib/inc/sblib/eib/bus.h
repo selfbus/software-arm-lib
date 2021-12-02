@@ -393,8 +393,8 @@ private:
     int parity;                  // Parity bit of the current byte
     int valid;                   // 1 if parity is valid for all bits of the telegram
     int checksum;                // Checksum of the telegram: 0 if valid at end of telegram
-    unsigned short rx_error;	// hold the rx error flags of the rx process of the state machine
-    unsigned short tx_error;	// hold the tx error flags of the tx process of the state machine
+    volatile unsigned short rx_error;	// hold the rx error flags of the rx process of the state machine
+    volatile unsigned short tx_error;	// hold the tx error flags of the tx process of the state machine
     bool wait_for_ack_from_remote; // sending process is requesting an ack from remote side
    // bool need_to_send_ack_to_remote; // receiving process need to send ack to remote sending side
     bool busy_wait_from_remote; // remote side is busy, re-send telegram after 150bit time wait
