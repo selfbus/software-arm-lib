@@ -91,37 +91,47 @@ inline void IAP_Call_InterruptSafe(unsigned int *cmd, unsigned int *stat)
     interrupts();
 }
 
-static IAP_Status _prepareSector(int sector)
+static IAP_Status _prepareSectorRange(int startSector, int endSector)
 {
     IAP_Parameter p;
 
     p.cmd = CMD_PREPARE;
-    p.par[0] = sector;
-    p.par[1] = sector;
+    p.par[0] = startSector;
+    p.par[1] = endSector;
     IAP_Call_InterruptSafe(&p.cmd, &p.stat);
 
     return (IAP_Status) p.stat;
 }
 
+static IAP_Status _prepareSector(int sector)
+{
+    return _prepareSectorRange(sector, sector);
+}
+
 IAP_Status iapEraseSector(int sector)
+{
+    return iapEraseSectorRange(sector, sector);
+}
+
+IAP_Status iapEraseSectorRange(int startSector, int endSector)
 {
     IAP_Parameter p;
 
-    p.stat = _prepareSector(sector);
+    p.stat = _prepareSectorRange(startSector, endSector);
 
     if (p.stat == IAP_SUCCESS)
     {
         p.cmd = CMD_ERASE;
-        p.par[0] = sector;
-        p.par[1] = sector;
+        p.par[0] = startSector;
+        p.par[1] = endSector;
         p.par[2] = SystemCoreClock / 1000;
         IAP_Call_InterruptSafe(&p.cmd, &p.stat);
 
         if (p.stat == IAP_SUCCESS)
         {
             p.cmd = CMD_BLANK_CHECK;
-            p.par[0] = sector;
-            p.par[1] = sector;
+            p.par[0] = startSector;
+            p.par[1] = endSector;
             IAP_Call_InterruptSafe(&p.cmd, &p.stat);
         }
     }
@@ -130,7 +140,12 @@ IAP_Status iapEraseSector(int sector)
 
 IAP_Status iapErasePage(int pageNumber)
 {
-    unsigned int sector = pageNumber / 16; // each sector has 16 pages
+    return iapErasePageRange(pageNumber, pageNumber);
+}
+
+IAP_Status iapErasePageRange(int startPageNumber, int endPageNumber)
+{
+    unsigned int sector = startPageNumber / 16; // each sector has 16 pages ///\todo replace magic number
     IAP_Parameter p;
 
     p.stat = _prepareSector(sector);
@@ -138,8 +153,8 @@ IAP_Status iapErasePage(int pageNumber)
     if (p.stat == IAP_SUCCESS)
     {
         p.cmd = CMD_ERASE_PAGE;
-        p.par[0] = pageNumber;
-        p.par[1] = pageNumber;
+        p.par[0] = startPageNumber;
+        p.par[1] = endPageNumber;
         p.par[2] = SystemCoreClock / 1000;
         IAP_Call_InterruptSafe(&p.cmd, &p.stat);
     }
