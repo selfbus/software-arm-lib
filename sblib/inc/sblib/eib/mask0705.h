@@ -31,7 +31,7 @@ class MASK0705 : public MASK0701
 public:
 	MASK0705();
 	MASK0705(UserRamMASK0705* userRam, UserEepromMASK0705* userEeprom, ComObjectsMASK0705* comObjects, AddrTablesMASK0705* addrTables, PropertiesMASK0705* properties);
-	virtual ~MASK0705() = default;
+	~MASK0705() = default;
 
     virtual const char* getBcuType() const { return "BIM112_75"; }
     virtual const unsigned short getMaskVersion() const { return  0x705; }

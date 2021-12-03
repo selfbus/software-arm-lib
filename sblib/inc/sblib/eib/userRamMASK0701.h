@@ -22,7 +22,7 @@ public:
 	UserRamMASK0701() : UserRamBCU2(0x5FC, 0x304, 3) {}
 
 protected:
-	UserRamMASK0701(int start, int size, int shadowSize) : UserRamBCU2(start, size, shadowSize) {}
+	UserRamMASK0701(unsigned int start, unsigned int size, unsigned int shadowSize) : UserRamBCU2(start, size, shadowSize) {}
 
 #if 0
 	union __attribute__ ((aligned (4)))

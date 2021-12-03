@@ -407,9 +407,9 @@ bool BcuBase::processApciMemoryWritePDU(int addressStart, byte *payLoad, int len
     return processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, false);
 }
 
-bool BcuBase::processApciMemoryOperation(int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem)
+bool BcuBase::processApciMemoryOperation(unsigned int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem)
 {
-    const int addressEnd = addressStart + lengthPayLoad - 1;
+    const unsigned int addressEnd = addressStart + lengthPayLoad - 1;
     bool startNotFound = false; // we need this as a exit condition, in case memory range is no where found
 
     if (lengthPayLoad == 0)
@@ -728,12 +728,12 @@ void BcuBase::cpyFromUserRam(unsigned int address, unsigned char * buffer, unsig
     }
 }
 
-byte* BcuBase::userMemoryPtr(int addr)
+byte* BcuBase::userMemoryPtr(unsigned int addr)
 {
     if (addr >= userEeprom->userEepromStart && addr < userEeprom->userEepromEnd)
-        return userEeprom->userEepromData + (addr - userEeprom->userEepromStart);
+        return &(*userEeprom)[addr];
     else if (addr >= userRam->userRamStart && addr < (userRam->userRamStart + userRam->userRamSize))
-        return userRam->userRamData + (addr - userRam->userRamStart);
+        return &(*userRam)[addr];
     return 0;
 }
 

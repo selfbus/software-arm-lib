@@ -31,7 +31,7 @@ class BCU2 : public BcuBase
 public:
 	BCU2();
 	BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties);
-	virtual ~BCU2() = default;
+	~BCU2() = default;
 
     /**
      * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
@@ -63,7 +63,7 @@ public:
      *
      * @param addr - the physical address
      */
-    virtual void setOwnAddress(int addr);
+    void setOwnAddress(int addr);
 
     //  BCU 2, mask version 2.0
     virtual const char* getBcuType() const { return "BCU2"; }

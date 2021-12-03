@@ -19,11 +19,11 @@ int ComObjectsBCU1::objectSize(int objno)
 byte* ComObjectsBCU1::objectValuePtr(int objno)
 {
     // The object configuration
-    const ComConfigBCU1& cfg = (ComConfigBCU1&)objectConfig(objno);
+    const ComConfigBCU1* cfg = objectConfigBCU1(objno);
 
-    if (cfg.config & COMCONF_VALUE_TYPE) // 0 if user RAM, >0 if user EEPROM
-        return bcu->userEeprom->userEepromData + cfg.dataPtr;
-    return bcu->userRam->userRamData + cfg.dataPtr;
+    if (cfg->baseConfig.config & COMCONF_VALUE_TYPE) // 0 if user RAM, >0 if user EEPROM
+        return bcu->userEeprom->userEepromData + cfg->dataPtr;
+    return bcu->userRam->userRamData + cfg->dataPtr;
 }
 
 /*
@@ -102,7 +102,9 @@ inline const byte* ComObjectsBCU1::getObjectTypeSizes()
 	return objectTypeSizes;
 }
 
-inline const ComConfig& ComObjectsBCU1::objectConfig(int objno)
+inline const ComConfig& ComObjectsBCU1::objectConfig(int objno) { return objectConfigBCU1(objno)->baseConfig; }
+
+inline const ComConfigBCU1* ComObjectsBCU1::objectConfigBCU1(int objno)
 {
-    return *(const ComConfigBCU1*) (objectConfigTable() + 2 + (objno -1) * sizeof(ComConfigBCU1) );
+	return (const ComConfigBCU1*) (objectConfigTable() + 1 + sizeof(ComConfigBCU1::DataPtrType) + objno * sizeof(ComConfigBCU1) );
 }

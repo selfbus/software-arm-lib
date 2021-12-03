@@ -452,7 +452,7 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 bool ComObjects::sendNextGroupTelegram()
 {
     int addr, flags, objno, config, numObjs = objectCount();
-	const ComConfig* configTab = &objectConfig(0);
+	//const ComConfig* configTab = &objectConfig(0);
     byte* flagsTab = objectFlagsTable();
     if(flagsTab == 0)
     {
@@ -484,7 +484,8 @@ bool ComObjects::sendNextGroupTelegram()
     // scan all objects, read config and Grp Addr of object
     for (objno = sndStartIdx; objno < numObjs; ++objno)
     {
-        config = configTab[objno].config;
+    	const ComConfig& configTab = objectConfig(objno);
+        config = configTab.config;
         addr = firstObjectAddr(objno);
 
         // we need to check if <transmit enable> and <communication enable>

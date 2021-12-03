@@ -40,7 +40,7 @@ class ComObjectsMASK0701 : public ComObjectsBCU2
 {
 public:
 	ComObjectsMASK0701(MASK0701* bcuInstance) : ComObjectsBCU2((BCU2*)bcuInstance), bcu(bcuInstance) {};
-	virtual ~ComObjectsMASK0701() = default;
+	~ComObjectsMASK0701() = default;
 	MASK0701* bcu;
 
 };

@@ -41,7 +41,7 @@ class ComObjectsBCU1 : public ComObjects
 {
 public:
 	ComObjectsBCU1(BCU1* bcuInstance) : ComObjects((BcuBase*)bcuInstance), bcu(bcuInstance) {}
-	virtual ~ComObjectsBCU1() = default;
+	~ComObjectsBCU1() = default;
 	BCU1* bcu;
 
 	virtual const ComConfig& objectConfig(int objno);
@@ -52,6 +52,7 @@ public:
 	virtual byte* objectFlagsTable();
 
 protected:
+	const ComConfigBCU1* objectConfigBCU1(int objno);
 	// The size of the object types BIT_7...VARDATA in bytes
 	const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 15 };
 

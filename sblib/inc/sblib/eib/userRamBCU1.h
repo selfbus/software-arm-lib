@@ -30,7 +30,7 @@ public:
 	virtual byte& peiType() const { return userRamData[peiTypeOffset]; }
 
 protected:
-	UserRamBCU1(int start, int size, int shadowSize) : UserRam(start, size, shadowSize) {}
+	UserRamBCU1(unsigned int start, unsigned int size, unsigned int shadowSize) : UserRam(start, size, shadowSize) {}
 
 #if 0
 	union __attribute__ ((aligned (4)))

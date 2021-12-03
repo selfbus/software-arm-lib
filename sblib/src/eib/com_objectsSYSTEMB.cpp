@@ -9,6 +9,7 @@
 #include <sblib/eib/apci.h>
 #include <sblib/eib/systemb.h>
 #include <sblib/bits.h>
+#include <sblib/eib/typesSYSTEMB.h>
 
 int ComObjectsSYSTEMB::objectSize(int objno)
 {
@@ -112,5 +113,5 @@ inline const byte* ComObjectsSYSTEMB::getObjectTypeSizes()
 
 inline const ComConfig& ComObjectsSYSTEMB::objectConfig(int objno)
 {
-    return *(const ComConfig*) (objectConfigTable() + 2 + (objno -1) * sizeof(ComConfig) );
+    return (*(const ComConfigSYSTEMB*) (objectConfigTable() + 2 + (objno -1) * sizeof(ComConfigSYSTEMB) )).baseConfig;
 }

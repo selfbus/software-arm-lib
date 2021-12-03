@@ -14,7 +14,7 @@ class UserEepromBCU2 : public UserEepromBCU1
 {
 public:
 	UserEepromBCU2(BcuBase* bcu) : UserEepromBCU1(bcu, 0x100, 1024, 1024) {};
-	virtual ~UserEepromBCU2() = default;
+	~UserEepromBCU2() = default;
 
 	static const int appTypeOffset = 21;
 	static const int loadStateOffset = 880;
@@ -52,7 +52,7 @@ public:
 	//virtual byte& peiType() const { return userEepromData[peiTypeOffset]; }
 
 protected:
-	UserEepromBCU2(BcuBase* bcu, int start, int size, int flashSize) : UserEepromBCU1(bcu, start, size, flashSize) {};
+	UserEepromBCU2(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromBCU1(bcu, start, size, flashSize) {};
 };
 
 #endif

@@ -34,7 +34,7 @@ class BcuBase
 {
 public:
     BcuBase(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables);
-    virtual ~BcuBase() = default;
+    ~BcuBase() = default;
 
     void setRxPin(int rxPin);
     void setTxPin(int txPin);
@@ -46,7 +46,7 @@ public:
     /**
      * End using the EIB bus coupling unit.
      */
-    virtual void end();
+    void end();
 
     /**
      * Set our own physical address. Normally the physical address is set by ETS when
@@ -89,7 +89,7 @@ public:
      * Process the received telegram from bus.telegram.
      * Called by main()
      */
-    virtual void processTelegram();
+    void processTelegram();
 
     /**
      * Get the mask version.
@@ -103,7 +103,7 @@ public:
      * The BCU's main processing loop. This is like the application's loop() function,
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
-    virtual void loop();
+    void loop();
 
     /**
      * Get the read-only CommObjectTable address, which can be set calling Begin(...)
@@ -165,7 +165,7 @@ public:
      *
      * @return true if successfully, otherwise false
      */
-    bool processApciMemoryOperation(int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem);
+    bool processApciMemoryOperation(unsigned int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem);
 
     UserEeprom* userEeprom;
     UserRam* userRam;
@@ -174,7 +174,7 @@ public:
 
     virtual int TelegramSize();
 
-    byte* userMemoryPtr(int addr);
+    byte* userMemoryPtr(unsigned int addr);
 
     /**
      * Returns a pointer to the instance of the MemMapper object of the BCU
@@ -191,7 +191,7 @@ protected:
     /*
      * Special initialization for the BCU
      */
-    virtual void _begin();
+    void _begin();
 
     /**
      * Creates a len_hash wide hash of the uid.
