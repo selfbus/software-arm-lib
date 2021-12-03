@@ -236,7 +236,7 @@ void BcuBase::loop()
 #ifdef DUMP_TELEGRAMS
 	extern unsigned char telBuffer[];
 	extern unsigned int telLength ; // db_state;
-	extern unsigned int telRXtime;
+	//extern unsigned int telRXtime;
 	extern unsigned int telRXStartTime;
 	extern unsigned int telTXStartTime;
 	extern unsigned int telRXEndTime;
@@ -345,6 +345,9 @@ void BcuBase::loop()
 		//	serial.println(") ");
 			telLastRXEndTime = 0;
 		}
+		serial.print(" rxerror");
+		serial.print((unsigned int)bus.receivedTelegramState(), HEX, 4);
+
 		serial.print(") ");
 
 

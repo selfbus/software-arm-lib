@@ -61,7 +61,7 @@
 //#define DEBUG_BUS_BITLEVEL  //!< extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow of the trace buffer
 //#define BUSMONITOR				//!< enables bus monitoring: dump of all bus traffic incl timing info, no sending, no processing of rx-telegrams
 //to avoid trace buffer overflow DUMP_TELEGRAMS should not be used in parallel with DEBUG_BUS or DEBUG_BUS_BITLEVEL"
-#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack over serial interface
+//#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack over serial interface
 //#define DUMP_COM_OBJ    //!< dump object handling information on app-server level over serial interface
 //#define DUMP_MEM_OPS    //!< dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
 //#define DUMP_PROPERTIES //!< dump interface object and property handling over serial interface

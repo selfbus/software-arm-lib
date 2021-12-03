@@ -449,7 +449,7 @@ Bus::Bus(Timer& aTimer, int aRxPin, int aTxPin, TimerCapture aCaptureChannel, Ti
  * activate capture interrupt, set bus pins to respective mode
  *
  * In case we are a normal device (ROUTER not defined for compilation) we check for 0.0.0 as phy addr
- * and change to default 15.15.252 if  zero is our addr
+ * and change to default 15.15.255 if  zero is our addr
  *	//todo get defined values from usereprom for busy-retry and nack-retry
  *
  */
@@ -708,7 +708,7 @@ void Bus::handleTelegram(bool valid)
 #endif
 
 #ifdef DUMP_TELEGRAMS
-	telRXtime= ttimer.value();
+	//telRXtime= ttimer.value();
 	if (nextByteIndex){
 		for (int i = 0; i < nextByteIndex; ++i)
 		{
