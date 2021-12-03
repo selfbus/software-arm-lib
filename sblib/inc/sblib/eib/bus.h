@@ -452,12 +452,6 @@ inline bool Bus::idle() const
     return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == 0);
 }
 
-inline int Bus::ownAddress() const
-{
-    return bus.ownAddr;
-}
-
-==== BASE ====
 inline void Bus::maxSendTries(int tries)
 {
     sendTriesMax = tries;
