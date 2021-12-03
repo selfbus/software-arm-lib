@@ -10,7 +10,22 @@ import java.util.Objects;
  * Implementation of the UPD/UDP protocol result commands
  */
 public enum UDPResult {
-    OK(0x000, "OK", false),
+    // IAP_ are in decimal (IAP ist in application programming of the MCU's flash
+    // these results are defined in iap.h Selfbus sblib
+    IAP_SUCCESS( 0, "OK", false),
+    IAP_INVALID_COMMAND( 1, "Flash (IAP) invalid command", true),
+    IAP_SRC_ADDR_ERROR( 2, "Flash (IAP) source address error", true),
+    IAP_DST_ADDR_ERROR( 3, "Flash (IAP) destination address error", true),
+    IAP_SRC_ADDR_NOT_MAPPED( 4, "Flash (IAP) source address not mapped", true),
+    IAP_DST_ADDR_NOT_MAPPED( 5, "Flash (IAP) destination address not mapped", true),
+    IAP_COUNT_ERROR( 6, "Flash (IAP) count error", true),
+    IAP_INVALID_SECTOR( 7, "Flash (IAP) invalid sector error", true),
+    IAP_SECTOR_NOT_BLANK( 8, "Flash (IAP) sector not blank", true),
+    IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION( 9, "Flash (IAP) sector not prepared for write operation", true),
+    IAP_COMPARE_ERROR( 10, "Flash (IAP) compare error", true),
+    IAP_BUSY( 11, "Flash (IAP) busy", true),
+
+    // following are in hexadecimal
     UNKNOWN_COMMAND(0x100, "Command unknown", true), //!< received command is not defined
     CRC_ERROR(0x101, "CRC error, try option -full for a clean and full flash", true), //!< CRC calculated on the device and by the updater don't match
     ADDRESS_NOT_ALLOWED_TO_FLASH(0x102, "Address not allowed to flash", true), //!< specified address cannot be programmed

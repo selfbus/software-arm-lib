@@ -145,10 +145,11 @@ IAP_Status iapErasePage(int pageNumber)
 
 IAP_Status iapErasePageRange(int startPageNumber, int endPageNumber)
 {
-    unsigned int sector = startPageNumber / 16; // each sector has 16 pages ///\todo replace magic number
+    unsigned int startSector = startPageNumber / (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE); // each sector has 16 pages
+    unsigned int endSector = endPageNumber / (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE); // each sector has 16 pages
     IAP_Parameter p;
 
-    p.stat = _prepareSector(sector);
+    p.stat = _prepareSectorRange(startSector, endSector);
 
     if (p.stat == IAP_SUCCESS)
     {

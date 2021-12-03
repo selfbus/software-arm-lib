@@ -18,7 +18,7 @@ windows: gradlew.bat fatJar
 
 ## Usage
 ```
-SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
+SB_updater-x.xx--all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
        <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [-u <uid>] [-f1] [-H <localhost>] [-P
        <localport>] [-p <port>] [-n] [-r] [-a <address>] [-h | -v]  [--delay <ms>] [-l
        <TRACE|DEBUG|INFO>] [-f0]
@@ -31,7 +31,7 @@ Selfbus KNX-Firmware update tool options:
                                     or rxtx library in java.library.path
  -d,--device <x.x.x>                KNX device address in normal operating mode (default none)
  -D,--progDevice <x.x.x>            KNX device address in bootloader mode (default 15.15.192)
- -o,--own <x.x.x>                   own physical KNX address (default 15.15.193)
+ -o,--own <x.x.x>                   own physical KNX address (default 0.0.0)
  -u,--uid <uid>                     send UID to unlock (default: request UID to unlock). Only the
                                     first 12 bytes of UID are used
  -f1,--full                         force full upload mode (disables differential mode)

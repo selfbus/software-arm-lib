@@ -76,6 +76,8 @@ enum UPD_Command
     UPD_SEND_DATA_TO_DECOMPRESS = 4,    //!< Copy bytes from telegram (data) to ramBuffer with differential method @note device must be unlocked
     UPD_PROGRAM_DECOMPRESSED_DATA = 5,  //!< Flash bytes from ramBuffer to flash with differential method @note device must be unlocked
 
+    UPD_ERASE_ADDRESSRANGE = 8,         //!< Erase flash based on given start address and end address (data[3]) @note device must be unlocked
+
     UPD_REQ_DATA = 10,                  //!< Return bytes from flash at given address?  @note device must be unlocked
                                         //!<@warning Not implemented
     UPD_GET_LAST_ERROR = 20,            //!< Return last error
@@ -101,6 +103,22 @@ enum UPD_Command
  */
 enum UDP_State
 {
+    // UDP_IAP_ are in decimal (IAP is "In Application Programming" of the MCU's flash
+    // these results are defined in iap.h Selfbus sblib
+    UDP_IAP_SUCCESS = 0,                                 //!< IAP OK
+    UDP_IAP_INVALID_COMMAND = 1,                         //!< IAP invalid command
+    UDP_IAP_SRC_ADDR_ERROR = 2,                          //!< IAP source address error
+    UDP_IAP_DST_ADDR_ERROR = 3,                          //!< IAP destination address error
+    UDP_IAP_SRC_ADDR_NOT_MAPPED = 4,                     //!< IAP source address not mapped
+    UDP_IAP_DST_ADDR_NOT_MAPPED = 5,                     //!< IAP destination address not mapped
+    UDP_IAP_COUNT_ERROR = 6,                             //!< IAP count error
+    UDP_IAP_INVALID_SECTOR = 7,                          //!< IAP invalid sector error
+    UDP_IAP_SECTOR_NOT_BLANK = 8,                        //!< IAP sector not blank"
+    UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION = 9, //!< IAP sector not prepared for write operation
+    UDP_IAP_COMPARE_ERROR = 10,                          //!< IAP compare error
+    UDP_IAP_BUSY = 11,                                   //!< IAP busy
+
+    // following are in hexadecimal
     UDP_UNKNOWN_COMMAND = 0x100,              //!< received command is not defined
     UDP_CRC_ERROR = 0x101,                    //!< CRC calculated on the device and by the PC Updater tool don't match
     UDP_ADDRESS_NOT_ALLOWED_TO_FLASH = 0x102, //!< specifed address cannot be programmed
@@ -115,6 +133,7 @@ enum UDP_State
     // counting in hex so here is space for 0x10A-0x10F
     UDP_FLASH_ERROR = 0x110,                  //!< page program (flash) failed
     UDP_PAGE_NOT_ALLOWED_TO_ERASE = 0x111,    //!< page not allowed to erase
+    UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE = 0x112, //!< address range not allowed to erase
     UDP_NOT_IMPLEMENTED = 0xFFFF              //!< this command is not yet implemented
 };
 
@@ -173,6 +192,7 @@ static void updCommand2Serial(byte cmd)
             case UPD_UPDATE_BOOT_DESC: d1("UPD_UPDATE_BOOT_DESC "); break;
             case UPD_SEND_DATA_TO_DECOMPRESS: d1("UPD_SEND_DATA_TO_DECOMPRESS "); break;
             case UPD_PROGRAM_DECOMPRESSED_DATA: d1("UPD_PROGRAM_DECOMPRESSED_DATA "); break;
+            case UPD_ERASE_ADDRESSRANGE: d1("UPD_ERASE_ADDRESSRANGE "); break;
             case UPD_REQ_DATA: d1("UPD_REQ_DATA "); break;
             case UPD_GET_LAST_ERROR: d1("UPD_GET_LAST_ERROR "); break;
             case UPD_SEND_LAST_ERROR: d1("UPD_SEND_LAST_ERROR "); break;
@@ -336,7 +356,7 @@ static void setDeviceLockState(unsigned int newDeviceLockState)
 /**
  * @brief Returns the state of the programming button
  *
- * @return true if programming mode ist active, otherwise false
+ * @return true if programming mode is active, otherwise false
  */
 static bool getProgButtonState()
 {
@@ -353,7 +373,7 @@ static bool getProgButtonState()
 /**
  * @brief Erases if allowed the requested sector.
  * @param sector  Sector number to be erased
- * @return        IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
+ * @return        @ref IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
  */
 static UDP_State eraseSector(unsigned int sector)
 {
@@ -370,6 +390,83 @@ static UDP_State eraseSector(unsigned int sector)
         if (result != (UDP_State)IAP_SUCCESS)
         {
             dline(" iapEraseSector failed!");
+        }
+        else
+        {
+            dline(" OK");
+        }
+    );
+    return (result);
+}
+
+/**
+ * @brief Erases if allowed the requested address range.
+ *
+ * @param startAddress  start address of flash range to erase
+ * @param endAddress    end address of flash range to erase
+ * @param pageBased     if true erase will be based on page size @ref FLASH_PAGE_SIZE otherwise on @ref FLASH_SECTOR_SIZE
+ * @return              @ref IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
+ * @warning             function work on a page or sector base, so the erased range could can be more then requested
+ */
+static UDP_State eraseAddressRange(unsigned int startAddress, unsigned int endAddress, bool pageBased)
+{
+    d3(
+        serial.print("0x", startAddress, HEX, 4);
+        serial.println("-0x", endAddress, HEX, 4);
+    );
+
+    if (!addressAllowedToProgram(startAddress, endAddress - startAddress + 1, false))
+    {
+        dline(" not allowed!");
+        return (UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE);
+    }
+
+    ///\todo change so the first and last sector will be erased not complete, but only the affected pages
+    unsigned int start;
+    unsigned int end;
+    unsigned int base;
+
+    if (pageBased)
+    {
+        base = FLASH_PAGE_SIZE;
+    }
+    else
+    {
+        base = FLASH_SECTOR_SIZE;
+    }
+    start = startAddress / base;
+    end = endAddress / base;
+
+    d3( //DEBUG loggging
+        unsigned int digits;
+        if (pageBased)
+        {
+            serial.print(" => pages ");
+            digits = 3;
+        }
+        else
+        {
+            serial.print(" => sectors ");
+            digits = 2;
+        }
+        serial.print("0x", start, HEX, digits);
+        serial.print("-0x", end, HEX, digits);
+    )
+
+    UDP_State result;
+    if (pageBased)
+    {
+        result = (UDP_State)iapErasePageRange(start, end); // this is way to slow...
+    }
+    else
+    {
+        result = (UDP_State)iapEraseSectorRange(start, end); // around 200ms for 8 sectors according to ETS5
+    }
+
+    d3( //DEBUG loggging
+        if (result != UDP_IAP_SUCCESS)
+        {
+            dline(" iap call failed!");
         }
         else
         {
@@ -564,6 +661,24 @@ static unsigned char updEraseSector(bool * sendTel, unsigned char * data)
 {
     resetProtocol();
     setLastError(eraseSector(data[3]), sendTel);
+    return (T_ACK_PDU);
+}
+
+/**
+ * @brief
+ *
+ * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
+ * @param data    data[3-6] contains startAddress, data[10] contains endAddress
+ * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
+ * @return        always T_ACK_PDU
+ * @note          device must be unlocked
+ */
+static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
+{
+    resetProtocol();
+    unsigned int startAddress = streamToUIn32(&data[3]);
+    unsigned int endAddress = streamToUIn32(&data[7]);
+    setLastError(eraseAddressRange(startAddress, endAddress, false), sendTel);
     return (T_ACK_PDU);
 }
 
@@ -1009,6 +1124,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     // only allowed for APCI_MEMORY_READ_PDU or APCI_MEMORY_WRITE_PDU
     if ((apciCmd != APCI_MEMORY_READ_PDU) && (apciCmd != APCI_MEMORY_WRITE_PDU))
     {
+        dline("no memory command!");
         return (updUnkownCommand(sendTel));
     }
 
@@ -1076,6 +1192,9 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 
         case UPD_PROGRAM_DECOMPRESSED_DATA:
             return (updProgramDecompressedDataToFlash(sendTel, data));
+
+        case UPD_ERASE_ADDRESSRANGE:
+            return (updEraseAddressRange(sendTel, data));
 
         case UPD_UPDATE_BOOT_DESC:
             return (updUpdateBootDescriptorBlock(sendTel, data));

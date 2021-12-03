@@ -1,6 +1,5 @@
 package org.hkfree.knxduino.updater;
 
-import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -244,7 +243,10 @@ public class Updater implements Runnable {
     public static final int PHYS_ADDRESS_BOOTLOADER_AREA = 15;    //!< area part of the physical address the bootloader is using
     public static final int PHYS_ADDRESS_BOOTLOADER_LINE = 15;    //!< line part of the physical address the bootloader is using
     public static final int PHYS_ADDRESS_BOOTLOADER_DEVICE = 192; //!< device part of the physical address the bootloader is using
-    public static final int PHYS_ADDRESS_OWN = PHYS_ADDRESS_BOOTLOADER_DEVICE + 1; //!< device part of the physical address the Selfbus Updater is using
+
+    public static final int PHYS_ADDRESS_OWN_AREA = 0;    //!< area part of the physical address the Selfbus Updater is using
+    public static final int PHYS_ADDRESS_OWN_LINE = 0;    //!< line part of the physical address the Selfbus Updater is using
+    public static final int PHYS_ADDRESS_OWN_DEVICE = 0; //!< device part of the physical address the Selfbus Updater is using
 
     public static final int RESPONSE_TIMEOUT_SEC = 2; //!< Time in seconds the Updater shall wait for a KNX Response
 
@@ -370,8 +372,13 @@ public class Updater implements Runnable {
             BootDescriptor bootDescriptor = DeviceManagement.requestBootDescriptor(mc, progDest);
 
             boolean diffMode = false;
-            if (!(cliOptions.full())) {
-                diffMode = FlashDiffMode.setupDifferentialMode(bootDescriptor);
+            if ((!(cliOptions.full()))) {
+                if (bootDescriptor.valid()) {
+                    diffMode = FlashDiffMode.setupDifferentialMode(bootDescriptor);
+                }
+                else {
+                    logger.error("{}  BootDescriptor is not valid -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                }
             }
 
             if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!
@@ -380,10 +387,10 @@ public class Updater implements Runnable {
                 if (diffMode && FlashDiffMode.isInitialized()) {
                     logger.error("{}Differential mode is currently disabled -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
                     // FlashDiffMode.doDifferentialFlash(mc, progDest, newFirmware.startAddress(), newFirmware.getBinData());
-                    FlashFullMode.doFullFlash(mc, progDest, newFirmware.startAddress(), newFirmware.length(), new ByteArrayInputStream(newFirmware.getBinData()), cliOptions.delay());
+                    FlashFullMode.doFullFlash(mc, progDest, newFirmware, cliOptions.delay());
                 }
                 else {
-                    FlashFullMode.doFullFlash(mc, progDest, newFirmware.startAddress(), newFirmware.length(), new ByteArrayInputStream(newFirmware.getBinData()), cliOptions.delay());
+                    FlashFullMode.doFullFlash(mc, progDest, newFirmware, cliOptions.delay());
                 }
             }
             else {

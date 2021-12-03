@@ -13,6 +13,7 @@ public class BootDescriptor {
     private long  endAddress;
     private int  crc32;
     private long appVersionAddress;
+    private boolean valid;
 
     private BootDescriptor() {}
 
@@ -24,6 +25,8 @@ public class BootDescriptor {
         this.endAddress = endAddress;
         this.crc32 = crc32;
         this.appVersionAddress = appVersionAddress;
+
+        valid = (this.startAddress <= this.endAddress)  && (this.startAddress != 0xFFFFFFFFL);
     }
 
 
@@ -55,6 +58,10 @@ public class BootDescriptor {
         return appVersionAddress;
     }
 
+    public boolean valid() {
+        return valid;
+    }
+
     public int crc32() {
         return this.crc32;
     }
@@ -64,8 +71,8 @@ public class BootDescriptor {
 
     public String toString() {
         String res;
-        res = String.format("start: 0x%04X, end: 0x%04X, size: 0x%04X, crc32: 0x%04X",
-                            startAddress, endAddress, length(), crc32);
+        res = String.format("valid: %b, start: 0x%04X, end: 0x%04X, size: 0x%04X, crc32: 0x%04X",
+                            valid, startAddress, endAddress, length(), crc32);
         if (appVersionAddress != INVALID_APP_VERSION_ADDRESS)
         {
             res += String.format(", APP_VERSION pointer: 0x%04X", appVersionAddress);

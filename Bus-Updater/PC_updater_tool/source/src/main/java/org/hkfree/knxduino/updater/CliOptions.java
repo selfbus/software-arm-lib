@@ -117,9 +117,9 @@ public class CliOptions {
     private IndividualAddress progDevice = new IndividualAddress(Updater.PHYS_ADDRESS_BOOTLOADER_AREA,
                                                                  Updater.PHYS_ADDRESS_BOOTLOADER_LINE,
                                                                  Updater.PHYS_ADDRESS_BOOTLOADER_DEVICE);
-    private IndividualAddress ownAddress = new IndividualAddress(Updater.PHYS_ADDRESS_BOOTLOADER_AREA,
-                                                                 Updater.PHYS_ADDRESS_BOOTLOADER_LINE,
-                                                                 Updater.PHYS_ADDRESS_OWN);
+    private IndividualAddress ownAddress = new IndividualAddress(Updater.PHYS_ADDRESS_OWN_AREA,
+                                                                 Updater.PHYS_ADDRESS_OWN_LINE,
+                                                                 Updater.PHYS_ADDRESS_OWN_DEVICE);
     private IndividualAddress device = null;
     private int appVersionPtr = 0;
     private byte[] uid;

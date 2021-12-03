@@ -19,7 +19,7 @@ import java.util.zip.CRC32;
  * Provides full flash mode for the bootloader (MCU)
  */
 public class FlashFullMode {
-
+    /*
     private static void eraseFlashPages(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long totalLength)
             throws KNXLinkClosedException, InterruptedException, UpdaterException {
         // Erasing flash on sector base (4k), one telegram per sector
@@ -44,6 +44,32 @@ public class FlashFullMode {
             }
         }
     }
+    */
+
+    private static void eraseAddressRange(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long totalLength)
+            throws KNXLinkClosedException, InterruptedException, UpdaterException {
+        //
+        long endAddress = startAddress + totalLength - 1;
+        boolean finished = false;
+        byte[] telegram = new byte[8];
+        Utils.longToStream(telegram, 0 , startAddress);
+        Utils.longToStream(telegram, 4 , endAddress);
+        logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
+        while (!finished) {
+
+            try {
+                byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_ADDRESS_RANGE.id, telegram);
+                if (UPDProtocol.checkResult(result) != 0) {
+                    DeviceManagement.restartProgrammingDevice(mc, pd);
+                    throw new UpdaterException("Erasing firmware address range failed.");
+                }
+                return;
+            }
+            catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
+                logger.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
+            }
+        }
+    }
 
     private final static Logger logger = LoggerFactory.getLogger(FlashFullMode.class.getName());
 
@@ -51,20 +77,23 @@ public class FlashFullMode {
      * Normal update routine, sending complete image
      * This works on sector page right now, so the complete affected flash is erased first
      */
-    public static void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long totalLength,
-                                   ByteArrayInputStream fis, int dataSendDelay)
+    public static void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, BinImage newFirmware, int dataSendDelay)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
             InterruptedException, UpdaterException, KNXRemoteException {
         byte[] result;
 
-        eraseFlashPages(mc, pd, startAddress, totalLength);
+        long startAddress = newFirmware.startAddress();
+        long totalLength = newFirmware.length();
+        ByteArrayInputStream fis = new ByteArrayInputStream(newFirmware.getBinData());
+        eraseAddressRange(mc, pd, startAddress, totalLength);
+        //eraseFlashPages(mc, pd, startAddress, totalLength);
 
-        byte[] buf = new byte[Flash.FLASH_PAGE_SIZE];	// Read one flash page
-        int nRead;                              // Bytes read from file into buffer
-        int payload = Flash.MAX_PAYLOAD;              // maximum start payload size
+        byte[] buf = new byte[Flash.FLASH_PAGE_SIZE];   // Read one flash page
+        int nRead;                                      // Bytes read from file into buffer
+        int payload = Flash.MAX_PAYLOAD;                // maximum start payload size
         int total = 0;
         CRC32 crc32Block = new CRC32();
-        int progSize = 0;	                   // Bytes send so far
+        int progSize = 0;	                   // Bytes sent so far
         long progAddress = startAddress;
         boolean doProg = false;
         int timeoutCount = 0;
