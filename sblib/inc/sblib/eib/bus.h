@@ -16,6 +16,9 @@
 #include <sblib/core.h>
 #include <sblib/eib/bcu_base.h>
 
+#include <sblib/timer.h>
+#include <sblib/eib/types.h>
+
 // dump all received and sent telegrams out on the serial interface
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>

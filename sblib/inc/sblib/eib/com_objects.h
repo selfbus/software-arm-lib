@@ -44,7 +44,7 @@ class ComObjects
 {
 public:
 	ComObjects(BcuBase* bcu);
-	virtual ~ComObjects();
+	~ComObjects();
 
 	void objectEndian(int val);
 

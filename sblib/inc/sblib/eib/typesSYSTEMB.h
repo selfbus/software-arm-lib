@@ -15,8 +15,9 @@
 /**
  * A communication object configuration.
  */
-struct ComConfigSYSTEMB: ComConfig
+struct ComConfigSYSTEMB
 {
+	ComConfig baseConfig;
 };
 
 #endif /*sblib_eib_types_h*/

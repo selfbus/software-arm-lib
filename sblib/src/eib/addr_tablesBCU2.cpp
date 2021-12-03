@@ -15,8 +15,8 @@ int AddrTablesBCU2::indexOfAddr(int addr)
     int num = 0;
 
     if (tab)
-        num = (tab[0] << 8) + tab[1];
-    tab += 2;
+        num = *tab;
+    tab += 3;
 
     int addrHigh = addr >> 8;
     int addrLow = addr & 255;
@@ -33,7 +33,9 @@ int AddrTablesBCU2::indexOfAddr(int addr)
 byte* AddrTablesBCU2::addrTable()
 {
     byte * addr = (byte* ) & bcu->userEeprom->addrTabAddr();
-    return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
+    unsigned short memAddr = makeWord (*(addr + 1), * addr);
+
+    return bcu->userMemoryPtr (memAddr);
 }
 
 byte* AddrTablesBCU2::assocTable()

@@ -31,7 +31,7 @@ class MASK0701 : public BCU2
 public:
 	MASK0701();
 	MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsMASK0701* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties);
-	virtual ~MASK0701() = default;
+	~MASK0701() = default;
 
     virtual const char* getBcuType() const { return "BIM112"; }
     virtual const unsigned short getMaskVersion() const { return 0x701; }

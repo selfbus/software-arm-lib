@@ -40,7 +40,7 @@ class ComObjectsSYSTEMB : public ComObjectsBCU2
 {
 public:
 	ComObjectsSYSTEMB(SYSTEMB* bcuInstance) : ComObjectsBCU2((BCU2*)bcuInstance), bcu(bcuInstance) {}
-	virtual ~ComObjectsSYSTEMB() = default;
+	~ComObjectsSYSTEMB() = default;
 
 	virtual inline const ComConfig& objectConfig(int objno);
 	SYSTEMB* bcu;

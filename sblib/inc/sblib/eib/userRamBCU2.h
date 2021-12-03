@@ -22,7 +22,7 @@ public:
 	UserRamBCU2() : UserRamBCU1(0, 0x100, 0) {};
 
 protected:
-	UserRamBCU2(int start, int size, int shadowSize) : UserRamBCU1(start, size, shadowSize) {}
+	UserRamBCU2(unsigned int start, unsigned int size, unsigned int shadowSize) : UserRamBCU1(start, size, shadowSize) {}
 };
 
 #endif /* SBLIB_EIB_USERRAM_H_ */

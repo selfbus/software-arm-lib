@@ -41,16 +41,17 @@ class ComObjectsBCU2 : public ComObjectsBCU1
 {
 public:
 	ComObjectsBCU2(BCU2* bcuInstance) : ComObjectsBCU1((BCU1*)bcuInstance), bcu(bcuInstance) {}
-	virtual ~ComObjectsBCU2() = default;
+	~ComObjectsBCU2() = default;
 	BCU2* bcu;
 
 protected:
 	virtual byte* objectValuePtr(int objno);
 	virtual byte* objectConfigTable();
 	virtual byte* objectFlagsTable();
+	const ComConfig& objectConfig(int objno) { return objectConfigBCU2(objno)->baseConfig; }
 
 private:
-	const ComConfigBCU2& objectConfigBCU2(int objno);
+	const ComConfigBCU2* objectConfigBCU2(int objno);
 };
 
 #endif /*sblib_com_objects_h*/

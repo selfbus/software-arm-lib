@@ -15,7 +15,7 @@
 /**
  * A communication object configuration.
  */
-struct ComConfigBCU2 : public ComConfig
+struct ComConfigBCU2
 {
 	/**
 	 * Depending on the BCU type define the size of the pointer to the RAM
@@ -27,6 +27,8 @@ struct ComConfigBCU2 : public ComConfig
      * config byte, this pointer points to userRam or userEeprom.
      */
     DataPtrType dataPtr;
+
+    ComConfig baseConfig;
 };
 
 #endif /*sblib_eib_types_h*/

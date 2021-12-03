@@ -14,7 +14,7 @@ class UserEepromSYSTEMB : public UserEepromBCU2
 {
 public:
 	UserEepromSYSTEMB(BcuBase* bcu) : UserEepromBCU2(bcu, 0x3300, 3072, 4096) {};
-	virtual ~UserEepromSYSTEMB() = default;
+	~UserEepromSYSTEMB() = default;
 
     virtual int userEepromFlashSize() const;
 
@@ -35,7 +35,7 @@ public:
 	virtual byte* eibObjMcb() const { return &userEepromData[eibObjMcbOffset]; }
 
 protected:
-	UserEepromSYSTEMB(BcuBase* bcu, int start, int size, int flashSize) : UserEepromBCU2(bcu, start, size, flashSize) {};
+	UserEepromSYSTEMB(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromBCU2(bcu, start, size, flashSize) {};
 };
 
 #endif

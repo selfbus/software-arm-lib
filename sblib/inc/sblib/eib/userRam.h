@@ -43,18 +43,27 @@ enum DeviceControl
 class UserRam
 {
 public:
-	UserRam(int start, int size, int shadowSize) : userRamData(new byte[size + shadowSize]), userRamStart(start), userRamSize(size), userRamEnd(start+size) {};
+	UserRam(unsigned int start, unsigned int size, unsigned int shadowSize) : userRamData(new byte[size + shadowSize]), userRamStart(start), userRamSize(size), userRamEnd(start+size) {};
 
     byte status; // real status 0x0100
     byte runState; // 0x0101
+
+    byte& operator[](unsigned int idx);
 
     byte* userRamData = 0;
 	virtual byte& deviceControl() const = 0;
 	virtual byte& peiType() const = 0;
 
-	const int userRamStart;
-    const int userRamSize;
-    const int userRamEnd;
+	const unsigned int userRamStart;
+    const unsigned int userRamSize;
+    const unsigned int userRamEnd;
 };
+
+inline byte& UserRam::operator[](unsigned int idx)
+{
+	idx -= userRamStart;
+    return userRamData[idx];
+}
+
 
 #endif /* SBLIB_EIB_USERRAM_H_ */

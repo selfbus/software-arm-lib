@@ -14,7 +14,7 @@ class UserEepromBCU1 : public UserEeprom
 {
 public:
 	UserEepromBCU1(BcuBase *bcu) : UserEeprom(bcu, 0x100, 156, 156) {};
-	virtual ~UserEepromBCU1() = default;
+	~UserEepromBCU1() = default;
 
 	static const int manufacturerHOffset = 3;
 	static const int manufacturerLOffset = 4;
@@ -43,7 +43,7 @@ public:
     virtual byte& commsTabPtr() const { return userEepromData[commsTabPtrOffset]; };
 
 protected:
-	UserEepromBCU1(BcuBase *bcu, int start, int size, int flashSize) : UserEeprom(bcu, start, size, flashSize) {};
+	UserEepromBCU1(BcuBase *bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEeprom(bcu, start, size, flashSize) {};
 };
 
 #endif

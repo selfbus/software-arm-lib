@@ -11,7 +11,7 @@
 #include <sblib/eib/bus.h>
 #include <cstring>
 
-inline int UserEeprom::numEepromPages() const
+inline unsigned int UserEeprom::numEepromPages() const
 {
 	return FLASH_SECTOR_SIZE / userEepromFlashSize;
 }
@@ -93,7 +93,7 @@ void UserEeprom::writeUserEeprom()
 
     IAP_Status rc;
 
-    for (int i = 0; i < userEepromSize; i += 1024)
+    for (unsigned int i = 0; i < userEepromSize; i += 1024)
     {
     	int chunk = userEepromSize - i;
     	if (chunk > 1024)
@@ -111,5 +111,5 @@ void UserEeprom::writeUserEeprom()
     userEepromModified = 0;
 }
 
-UserEeprom::UserEeprom(BcuBase* bcu, int start, int size, int flashSize) :
+UserEeprom::UserEeprom(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) :
 		userEepromData(new byte[size]), bcu(bcu), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size), userEepromFlashSize(flashSize) {};

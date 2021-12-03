@@ -22,7 +22,7 @@ public:
 	UserRamSYSTEMB() : UserRamMASK0701(0x5FC, 0x304, 3) {}
 
 protected:
-	UserRamSYSTEMB(int start, int size, int shadowSize) : UserRamMASK0701(start, size, shadowSize) {}
+	UserRamSYSTEMB(unsigned int start, unsigned int size, unsigned int shadowSize) : UserRamMASK0701(start, size, shadowSize) {}
 };
 
 #endif /* SBLIB_EIB_USERRAM_H_ */

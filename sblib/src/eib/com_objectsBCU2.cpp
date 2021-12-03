@@ -12,11 +12,11 @@
 byte* ComObjectsBCU2::objectValuePtr(int objno)
 {
     // The object configuration
-    const ComConfigBCU2& cfg = objectConfigBCU2(objno);
+    const ComConfigBCU2* cfg = objectConfigBCU2(objno);
 
     // TODO Should handle userRam.segment0addr and userRam.segment1addr here
     // if (cfg.config & COMCONF_VALUE_TYPE) // 0 if segment 0, !=0 if segment 1
-    const byte * addr = (const byte *) &cfg.dataPtr;
+    const byte * addr = (const byte *) &cfg->dataPtr;
     if (le_ptr == LITTLE_ENDIAN)
         return bcu->userMemoryPtr(makeWord(addr[1], addr[0]));
     else
@@ -38,7 +38,7 @@ byte* ComObjectsBCU2::objectFlagsTable()
     return bcu->userMemoryPtr(makeWord(configTable[1], configTable[2]));
 }
 
-inline const ComConfigBCU2& ComObjectsBCU2::objectConfigBCU2(int objno)
+inline const ComConfigBCU2* ComObjectsBCU2::objectConfigBCU2(int objno)
 {
-    return *(const ComConfigBCU2*) (objectConfigTable() + 2 + (objno -1) * sizeof(ComConfigBCU2) );
+	return (const ComConfigBCU2*) (objectConfigTable() + 1 + sizeof(ComConfigBCU2::DataPtrType) + objno * sizeof(ComConfigBCU2) );
 }

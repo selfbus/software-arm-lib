@@ -33,7 +33,7 @@ public:
 	 * @param addr - the address to find.
 	 * @return The number of the communication object, or -1 if not found.
 	 */
-	virtual int objectOfAddr(int addr);
+	int objectOfAddr(int addr);
 
 	/**
 	 * Get the address table. The address table contains the configured group addresses
@@ -58,7 +58,7 @@ public:
 	 */
 	virtual byte* assocTable() = 0;
 
-	virtual int addrForSendObject(int objno);
+	int addrForSendObject(int objno);
 };
 
 #endif /*sblib_addr_tables_h*/

@@ -53,9 +53,9 @@ public:
      *                                         in case HHHH != WWWW ,
      *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
      */
-    virtual void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress = 0);
+    void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress = 0);
 
-    virtual bool applicationRunning() const;
+    bool applicationRunning() const;
 
     /**
      * Set our own physical address. Normally the physical address is set by ETS when
@@ -63,13 +63,13 @@ public:
      *
      * @param addr - the physical address
      */
-    virtual void setOwnAddress(int addr);
+    void setOwnAddress(int addr);
 
-    virtual const char* getBcuType() const { return "SYSTEM_B"; }
-    virtual const unsigned short getMaskVersion() { return  0x7B0; }
+    const char* getBcuType() const { return "SYSTEM_B"; }
+    const unsigned short getMaskVersion() { return  0x7B0; }
 
-    virtual bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
-    virtual bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
+    bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
+    bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
 
     /** Start address of the user RAM when ETS talks with us. */
     const int userRamStartDefault = 0x5FC;
@@ -100,9 +100,9 @@ public:
 protected:
     // The method begin_BCU() is renamed during compilation to indicate the BCU type.
     // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-    virtual void begin_BCU(int manufacturer, int deviceType, int version);
+    void begin_BCU(int manufacturer, int deviceType, int version);
 
-    virtual void processDirectTelegram(int apci);
+    void processDirectTelegram(int apci);
 };
 
 #ifndef INSIDE_BCU_CPP

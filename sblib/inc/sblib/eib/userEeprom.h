@@ -20,8 +20,8 @@ class BcuBase;
 class UserEeprom
 {
 public:
-	UserEeprom(BcuBase* bcu, int start, int size, int flashSize);
-	virtual ~UserEeprom() = default;
+	UserEeprom(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize);
+	~UserEeprom() = default;
 
 	byte *userEepromData;
 	BcuBase* bcu;
@@ -46,8 +46,8 @@ public:
      * @param idx - the index of the data byte to access.
      * @return The data byte.
      */
-    byte& operator[](int idx);
-    unsigned char getUInt8(int idx);
+    byte& operator[](unsigned int idx);
+    unsigned char getUInt8(unsigned int idx);
 
     /**
      * Access the user EEPROM like an ordinary array. The start address is subtracted
@@ -56,7 +56,7 @@ public:
      * @param idx - the index of the 16 bit data to access.
      * @return The 16bit as unsigned int.
      */
-    unsigned short getUInt16(int idx);
+    unsigned short getUInt16(unsigned int idx);
 
     /**
      * Mark the user EEPROM as modified. The EEPROM will be written to flash when the
@@ -69,12 +69,12 @@ public:
      */
     bool isModified() const;
 
-    const int userEepromStart;
-    const int userEepromSize;
-    const int userEepromEnd;
-    const int userEepromFlashSize;
+    const unsigned int userEepromStart;
+    const unsigned int userEepromSize;
+    const unsigned int userEepromEnd;
+    const unsigned int userEepromFlashSize;
 
-    virtual int numEepromPages() const;
+    virtual unsigned int numEepromPages() const;
     virtual byte* lastEepromPage() const;
     virtual byte* flashSectorAddress() const;
 
@@ -87,18 +87,21 @@ protected:
     byte* findValidPage();
 };
 
-inline byte& UserEeprom::operator[](int idx)
+inline byte& UserEeprom::operator[](unsigned int idx)
 {
+	idx -= userEepromStart;
     return userEepromData[idx];
 }
 
-inline unsigned char UserEeprom::getUInt8(int idx)
+inline unsigned char UserEeprom::getUInt8(unsigned int idx)
 {
+	idx -= userEepromStart;
     return userEepromData[idx];
 }
 
-inline unsigned short UserEeprom::getUInt16(int idx)
+inline unsigned short UserEeprom::getUInt16(unsigned int idx)
 {
+	idx -= userEepromStart;
     return (userEepromData[idx] << 8) | userEepromData[idx+1];
 }
 
