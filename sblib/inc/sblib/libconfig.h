@@ -39,7 +39,7 @@
 #endif
 
 // #define SERIAL_SPEED 115200 //!< baudrate e.g. 115200, 230400, 576000 serial port should run for debugging
-//#define INCLUDE_SERIAL      //!< library should open serial for us
+// #define INCLUDE_SERIAL      //!< library should open serial for us
 
 // #define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
 
