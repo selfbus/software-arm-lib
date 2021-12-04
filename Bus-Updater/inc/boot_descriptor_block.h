@@ -93,7 +93,7 @@ unsigned int bootLoaderFirstAddress(void);
  *
  * @return last address of the bootloader image
  */
-const unsigned int bootLoaderLastAddress(void);
+unsigned int bootLoaderLastAddress(void);
 
 /**
  * @brief returns the size of the bootloader image in bytes (__image_end - _image_start - 1)
@@ -114,7 +114,7 @@ unsigned int flashFirstAddress(void);
  *
  * @return last address of the the default flash memory
  */
-const unsigned int flashLastAddress(void);
+unsigned int flashLastAddress(void);
 
 /**
  * @brief returns the size of the default flash memory in bytes (__top_Flash - __base_Flash - 1)

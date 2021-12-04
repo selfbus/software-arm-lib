@@ -130,7 +130,7 @@ unsigned int bootLoaderFirstAddress(void)
     return ((unsigned int) (unsigned int*)&_image_start);
 }
 
-const unsigned int bootLoaderLastAddress(void)
+unsigned int bootLoaderLastAddress(void)
 {
     //linker sets this not correctly, so we need the -1
     return ((unsigned int) (unsigned int*)&_image_end - 1);
@@ -147,7 +147,7 @@ unsigned int flashFirstAddress(void)
     return ((unsigned int) (unsigned int*)&__base_Flash);
 }
 
-const unsigned int flashLastAddress(void)
+unsigned int flashLastAddress(void)
 {
     //linker sets this not correctly, so we need the -1
     return ((unsigned int) ((unsigned int*)&__top_Flash) - 1);
