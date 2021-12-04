@@ -20,21 +20,12 @@
  published by the Free Software Foundation.
  -----------------------------------------------------------------------------*/
 
-#if defined(DUMP_TELEGRAMS_LVL2) && defined(DEBUG)
-    #include <sblib/serial.h>
-#endif
-
 #include "bcu_updater.h"
+#include "dump.h"
 
 
 // The EIB bus access object
 Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
-
-#if defined(DUMP_TELEGRAMS_LVL2) && defined(DEBUG)
-#   define dump2(code) code
-#else
-#   define dump2(x)
-#endif
 
 #ifdef DEBUG
     int countToFail = 6;

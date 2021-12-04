@@ -26,6 +26,7 @@
 #include <sblib/internal/iap.h> // for IAP_SUCCESS
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
+#include "dump.h"
 
 #ifdef DEBUG
 #   include "flash.h"
@@ -108,11 +109,11 @@ void loop()
         // Check if restart request is pending
         if (restartRequestExpired())
         {
-#ifdef DUMP_TELEGRAMS_LVL1
-            serial.print("Systime: ", systemTime, DEC);
-            serial.println(" reset");
-            serial.flush();  // give time to send serial data
-#endif
+            d3(
+                serial.print("Systime: ", systemTime, DEC);
+                serial.println(" reset");
+                serial.flush();  // give time to send serial data
+            );
             NVIC_SystemReset();
         }
         // Check if there is data to flash when bus is idle
@@ -142,9 +143,9 @@ static inline void jumpToApplication(unsigned int start)
     unsigned int i;
     // copy the first 200 bytes of the "application" (the vector table)
     // into the RAM and than remap the vector table inside the RAM
-#ifdef DUMP_TELEGRAMS_LVL1
-    serial.println("Vectortable Size: ", (unsigned int) (BL_DEFAULT_VECTOR_TABLE_SIZE * sizeof(start)), HEX, 4);
-#endif
+
+    d3(serial.println("Vectortable Size: ", (unsigned int) (BL_DEFAULT_VECTOR_TABLE_SIZE * sizeof(start)), HEX, 4););
+
     for (i = 0; i < BL_DEFAULT_VECTOR_TABLE_SIZE; i++, rom++, ram++)
     {
         *ram = *rom;
@@ -178,39 +179,38 @@ static inline void run_updater(bool programmingMode)
         ((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
     }
 
-#ifdef DUMP_TELEGRAMS_LVL1
-    //serial.setRxPin(PIO3_1);
-    //serial.setTxPin(PIO3_0);
-    if (!serial.enabled())
-    {
-        serial.begin(115200);
-    }
-    int physicalAddress = bus.ownAddress();
-    serial.println("=========================================================");
-    serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
-    serial.println(", DEBUG MODE :-)");
-    serial.print("Build: ");
-    serial.print(__DATE__);
-    serial.print(" ");
-    serial.println(__TIME__);
-    serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
-    serial.print("Flash      (start,end,size) : 0x", flashFirstAddress(), HEX, 6);
-    serial.print(" 0x", flashLastAddress(), HEX, 6);
-    serial.println(" 0x", flashSize(), HEX, 6);
-    serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
-    serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
-    serial.println(" 0x", bootLoaderSize(), HEX, 6);
-    serial.println("Firmware (start)            : 0x", applicationFirstAddress(), HEX, 6);
-    serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress(), HEX, 6);
-    serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
-    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
-    serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
-    serial.print("physical address            : ", (physicalAddress >> 12) & 0x0F, DEC);
-    serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
-    serial.println(".", physicalAddress & 0xFF, DEC);
-    serial.println("--------------------------------------------------- by sh");
-#endif
-
+    d3(
+        //serial.setRxPin(PIO3_1);
+        //serial.setTxPin(PIO3_0);
+        if (!serial.enabled())
+        {
+            serial.begin(115200);
+        }
+        int physicalAddress = bus.ownAddress();
+        serial.println("=========================================================");
+        serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
+        serial.println(", DEBUG MODE :-)");
+        serial.print("Build: ");
+        serial.print(__DATE__);
+        serial.print(" ");
+        serial.println(__TIME__);
+        serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
+        serial.print("Flash      (start,end,size) : 0x", flashFirstAddress(), HEX, 6);
+        serial.print(" 0x", flashLastAddress(), HEX, 6);
+        serial.println(" 0x", flashSize(), HEX, 6);
+        serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
+        serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
+        serial.println(" 0x", bootLoaderSize(), HEX, 6);
+        serial.println("Firmware (start)            : 0x", applicationFirstAddress(), HEX, 6);
+        serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress(), HEX, 6);
+        serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
+        serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
+        serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
+        serial.print("physical address            : ", (physicalAddress >> 12) & 0x0F, DEC);
+        serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
+        serial.println(".", physicalAddress & 0xFF, DEC);
+        serial.println("--------------------------------------------------- by sh");
+    );
 #ifdef DEBUG
     // eraseFullFlash();
 #endif

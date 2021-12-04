@@ -22,22 +22,7 @@
 #include <sblib/internal/iap.h>
 #include "flash.h"
 #include "boot_descriptor_block.h"
-
-#if defined(DUMP_TELEGRAMS_LVL1) || defined(DEBUG)
-#   include <sblib/serial.h>
-
-#   define d1(x) {serial.print(x);} //!< \todo
-#   define dline(x) {serial.println(x);} //!< \todo
-#   define d2(u,v,w) {serial.print(u,v,w);} //!< \todo
-#   define d3(x) {x;} //!< \todo
-#else
-#   define d1(x) //!< \todo
-#   define d2(u,v,w) //!< \todo
-#   define d3(x) //!< \todo
-#   define dline(x) //!< \todo
-#endif
-
-
+#include "dump.h"
 
 /**
  * @brief Erases if allowed the requested sector.

@@ -33,27 +33,14 @@
 #include "bcu_updater.h"
 #include "crc.h"
 #include "update.h"
+#include "dump.h"
 
-#if defined(DUMP_TELEGRAMS_LVL1) || defined(DEBUG)
+#if defined(DUMP_TELEGRAMS_LVL1)
 #   include "intelhex.h"
 #endif
 
 #ifdef DECOMPRESSOR
 #   include "decompressor.h"
-#endif
-
-#if defined(DUMP_TELEGRAMS_LVL1) || defined(DEBUG)
-#   include <sblib/serial.h>
-
-#   define d1(x) {serial.print(x);} //!< \todo
-#   define dline(x) {serial.println(x);} //!< \todo
-#   define d2(u,v,w) {serial.print(u,v,w);} //!< \todo
-#   define d3(x) {x;} //!< \todo
-#else
-#   define d1(x) //!< \todo
-#   define d2(u,v,w) //!< \todo
-#   define d3(x) //!< \todo
-#   define dline(x) //!< \todo
 #endif
 
 #ifdef DECOMPRESSOR
@@ -106,9 +93,9 @@ void dumpFlashContent(AppDescriptionBlock * buffer)
 
 void restartRequest (unsigned int msec)
 {
-#ifdef DUMP_TELEGRAMS_LVL1
-    serial.println("Systime: ", systemTime, DEC);
-#endif
+    d3(
+        serial.println("Systime: ", systemTime, DEC);
+    );
 	mcuRestartRequestTimeout.start(msec);
 }
 
@@ -165,12 +152,12 @@ static bool prepareReturnTelegram(unsigned int count, unsigned char cmd)
  */
 static bool getDeviceUnlocked()
 {
-#ifdef DUMP_TELEGRAMS_LVL1
-    if (deviceLocked != DEVICE_UNLOCKED)
-    {
-        d3(serial.print("-->DEVICE_LOCKED"));
-    }
-#endif
+    d3(
+        if (deviceLocked != DEVICE_UNLOCKED)
+        {
+            d3(serial.print("-->DEVICE_LOCKED"));
+        }
+    );
     return (deviceLocked == DEVICE_UNLOCKED);
 }
 
@@ -182,8 +169,7 @@ static bool getDeviceUnlocked()
 static void setDeviceLockState(unsigned int newDeviceLockState)
 {
     deviceLocked = newDeviceLockState;
-#ifdef DUMP_TELEGRAMS_LVL1
-    {
+    d3(
         if (deviceLocked == DEVICE_UNLOCKED)
         {
             d3(serial.print("-->DEVICE_UNLOCKED"));
@@ -192,8 +178,7 @@ static void setDeviceLockState(unsigned int newDeviceLockState)
         {
             d3(serial.print("-->DEVICE_LOCKED"));
         }
-    }
-#endif
+    );
 }
 
 /**
@@ -204,12 +189,16 @@ static void setDeviceLockState(unsigned int newDeviceLockState)
 static bool getProgButtonState()
 {
     bool state = (((BcuUpdate &) bcu).programmingMode());
-#ifdef DUMP_TELEGRAMS_LVL1
-    if (state)
-    {
-        d3(serial.print("-->progButton pressed"));
-    }
-#endif
+    d3(
+        if (state)
+        {
+            serial.print("-->progButton pressed");
+        }
+        else
+        {
+            serial.print("-->progButton NOT pressed");
+        }
+    );
     return (state);
 }
 
@@ -314,21 +303,21 @@ static unsigned char updAppVersionRequest(bool * sendTel, unsigned char * data)
     lastError = UDP_IAP_SUCCESS;
     *sendTel = prepareReturnTelegram(BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
     memcpy(bcu.sendTelegram + 10, appversion, BL_ID_STRING_LENGTH - 1);
-#ifdef DUMP_TELEGRAMS_LVL1
-    if (appversion != bl_id_string)
-    {
-        d3(serial.print("AppVersionRequest OK: "));
-    }
-    else
-    {
-        d3(serial.print("AppVersionRequest outside range (default): "));
-    }
-    for (int i = 0; i < BL_ID_STRING_LENGTH - 1; i++)
-    {
-        serial.print((char)appversion[i]);
-    }
-    d3(serial.println());
-#endif
+    d3(
+        if (appversion != bl_id_string)
+        {
+            serial.print("AppVersionRequest OK: ");
+        }
+        else
+        {
+            serial.print("AppVersionRequest outside range (default): ");
+        }
+        for (int i = 0; i < BL_ID_STRING_LENGTH - 1; i++)
+        {
+            serial.print((char)appversion[i]);
+        }
+        serial.println();
+    );
     return (T_ACK_PDU);
 }
 

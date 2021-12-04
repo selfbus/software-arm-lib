@@ -22,18 +22,7 @@
 #include "flash.h"
 #include "crc.h"
 #include "decompressor.h"
-
-#ifdef DUMP_TELEGRAMS_LVL1
-#    include <sblib/serial.h>
-#    define d1(x) {serial.print(x);}
-#    define dline(x) {serial.println(x);}
-#    define d2(u,v,w) {serial.print(u,v,w);}
-#else
-#    define d1(x)
-#    define d2(u,v,w)
-#    define dline(x)
-#endif
-
+#include "dump.h"
 
 #define CMD_RAW 0
 #define CMD_COPY 0b10000000
