@@ -91,7 +91,7 @@ inline void IAP_Call_InterruptSafe(unsigned int *cmd, unsigned int *stat)
     interrupts();
 }
 
-static IAP_Status _prepareSectorRange(int startSector, int endSector)
+static IAP_Status _prepareSectorRange(const unsigned int startSector, const unsigned int endSector)
 {
     IAP_Parameter p;
 
@@ -103,17 +103,17 @@ static IAP_Status _prepareSectorRange(int startSector, int endSector)
     return (IAP_Status) p.stat;
 }
 
-static IAP_Status _prepareSector(int sector)
+static IAP_Status _prepareSector(const unsigned int sector)
 {
     return _prepareSectorRange(sector, sector);
 }
 
-IAP_Status iapEraseSector(int sector)
+IAP_Status iapEraseSector(const unsigned int sector)
 {
     return iapEraseSectorRange(sector, sector);
 }
 
-IAP_Status iapEraseSectorRange(int startSector, int endSector)
+IAP_Status iapEraseSectorRange(const unsigned int startSector, const unsigned int endSector)
 {
     IAP_Parameter p;
 
@@ -138,7 +138,7 @@ IAP_Status iapEraseSectorRange(int startSector, int endSector)
     return (IAP_Status) p.stat;
 }
 
-IAP_Status iapErasePage(int pageNumber)
+IAP_Status iapErasePage(const unsigned int pageNumber)
 {
     return iapErasePageRange(pageNumber, pageNumber);
 }
@@ -165,7 +165,7 @@ IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned 
 IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
 {
     IAP_Parameter p;
-    int sector = iapSectorOfAddress(rom);
+    unsigned int sector = iapSectorOfAddress(rom);
 
     /* first we need to 'unlock' the sector */
     p.stat = _prepareSector(sector);
@@ -216,7 +216,7 @@ IAP_Status iapReadPartID(unsigned int* partId)
 
 unsigned int iapSectorOfAddress(const byte* address)
 {
-    return (address - FLASH_BASE_ADDRESS) / FLASH_SECTOR_SIZE;
+    return (unsigned int)((address - FLASH_BASE_ADDRESS) / FLASH_SECTOR_SIZE);
 }
 
 unsigned int iapSectorOfAddress(const unsigned int address)
@@ -226,7 +226,7 @@ unsigned int iapSectorOfAddress(const unsigned int address)
 
 unsigned int iapPageOfAddress(const byte* address)
 {
-    return (address - FLASH_BASE_ADDRESS) / FLASH_PAGE_SIZE;
+    return (unsigned int)((address - FLASH_BASE_ADDRESS) / FLASH_PAGE_SIZE);
 }
 
 unsigned int iapPageOfAddress(const unsigned int address)
@@ -253,7 +253,7 @@ unsigned int iapFlashSize()
     p.cmd = CMD_BLANK_CHECK;
 
     const int sectorInc = FLASH_SIZE_SEARCH_INC / FLASH_SECTOR_SIZE;
-    int sector = sectorInc;
+    unsigned int sector = sectorInc;
     const int maxSector = MAX_FLASH_SIZE / FLASH_SECTOR_SIZE;
 
     while (sector < maxSector)

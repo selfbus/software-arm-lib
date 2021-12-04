@@ -89,7 +89,7 @@ unsigned int iapAddressOfSector(const unsigned int sector);
  *  @return             @ref IAP_Status status code (0 == OK)
  *  @warning             The function calls no_interrupts().
  */
-IAP_Status iapEraseSector(int sector);
+IAP_Status iapEraseSector(const unsigned int sector);
 
 /**
  * @brief Erase the specified sector range.
@@ -99,7 +99,7 @@ IAP_Status iapEraseSector(int sector);
  * @return              @ref IAP_Status status code (0 == OK)
  * @warning             The function calls no_interrupts().
  */
-IAP_Status iapEraseSectorRange(int startSector, int endSector);
+IAP_Status iapEraseSectorRange(const unsigned int startSector, const unsigned int endSector);
 
 /**
  * Erase the specified page.
@@ -107,7 +107,7 @@ IAP_Status iapEraseSectorRange(int startSector, int endSector);
  *  @return             @ref IAP_Status status code (0 == OK)
  *  @warning            The function calls no_interrupts().
  */
-IAP_Status iapErasePage(int pageNumber);
+IAP_Status iapErasePage(const unsigned int pageNumber);
 
 /**
  * @brief Erase the specified page range.
