@@ -43,12 +43,28 @@ enum IAP_Status
 int iapSectorOfAddress(const byte* address);
 
 /**
+ * Get the index of the FLASH sector for the passed address.
+ *
+ * @param address - the address inside the FLASH
+ * @return The sector index of the address.
+ */
+int iapSectorOfAddress(const unsigned int address);
+
+/**
  * Get the index of the FLASH page for the passed address.
  *
  * @param address - the address inside the FLASH
  * @return The sector index of the address.
  */
 int iapPageOfAddress(const byte* address);
+
+/**
+ * Get the index of the FLASH page for the passed address.
+ *
+ * @param address - the address inside the FLASH
+ * @return The sector index of the address.
+ */
+int iapPageOfAddress(const unsigned int address);
 
 /**
  * Erase the specified sector.
@@ -84,7 +100,7 @@ IAP_Status iapErasePage(int pageNumber);
  * @return                @ref IAP_Status status code (0 == OK)
  * @warning               The function calls no_interrupts().
  */
-IAP_Status iapErasePageRange(int startPageNumber, int endPageNumber);
+IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned int endPageNumber);
 
 /**
  * Programs the specified number of bytes from the RAM to the specified location

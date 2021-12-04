@@ -143,13 +143,13 @@ IAP_Status iapErasePage(int pageNumber)
     return iapErasePageRange(pageNumber, pageNumber);
 }
 
-IAP_Status iapErasePageRange(int startPageNumber, int endPageNumber)
+IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned int endPageNumber)
 {
     unsigned int startSector = startPageNumber / (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE); // each sector has 16 pages
     unsigned int endSector = endPageNumber / (FLASH_SECTOR_SIZE / FLASH_PAGE_SIZE); // each sector has 16 pages
     IAP_Parameter p;
 
-    p.stat = _prepareSectorRange(startSector, endSector);
+    p.stat = _prepareSectorRange(startSector, endSector); // even not mentioned in manual, this prepare is needed
 
     if (p.stat == IAP_SUCCESS)
     {
@@ -219,9 +219,19 @@ int iapSectorOfAddress(const byte* address)
     return (address - FLASH_BASE_ADDRESS) / FLASH_SECTOR_SIZE;
 }
 
+int iapSectorOfAddress(const unsigned int address)
+{
+    return (iapSectorOfAddress((byte*)address));
+}
+
 int iapPageOfAddress(const byte* address)
 {
     return (address - FLASH_BASE_ADDRESS) / FLASH_PAGE_SIZE;
+}
+
+int iapPageOfAddress(const unsigned int address)
+{
+    return (iapPageOfAddress((byte*)address));
 }
 
 int iapFlashSize()
