@@ -48,7 +48,7 @@ struct IAP_Parameter
 };
 
 // The size of the flash in bytes. Use iapFlashSize() to get the flash size.
-int iapFlashBytes = 0;
+unsigned int iapFlashBytes = 0;
 
 
 /** 
@@ -214,27 +214,37 @@ IAP_Status iapReadPartID(unsigned int* partId)
     return (IAP_Status) p.stat;
 }
 
-int iapSectorOfAddress(const byte* address)
+unsigned int iapSectorOfAddress(const byte* address)
 {
     return (address - FLASH_BASE_ADDRESS) / FLASH_SECTOR_SIZE;
 }
 
-int iapSectorOfAddress(const unsigned int address)
+unsigned int iapSectorOfAddress(const unsigned int address)
 {
     return (iapSectorOfAddress((byte*)address));
 }
 
-int iapPageOfAddress(const byte* address)
+unsigned int iapPageOfAddress(const byte* address)
 {
     return (address - FLASH_BASE_ADDRESS) / FLASH_PAGE_SIZE;
 }
 
-int iapPageOfAddress(const unsigned int address)
+unsigned int iapPageOfAddress(const unsigned int address)
 {
     return (iapPageOfAddress((byte*)address));
 }
 
-int iapFlashSize()
+unsigned int iapAddressOfPage(const unsigned int page)
+{
+    return (page * FLASH_PAGE_SIZE) + LPC_FLASH_BASE;
+}
+
+unsigned int iapAddressOfSector(const unsigned int sector)
+{
+    return (sector * FLASH_SECTOR_SIZE) + LPC_FLASH_BASE;
+}
+
+unsigned int iapFlashSize()
 {
     if (iapFlashBytes)
         return iapFlashBytes;

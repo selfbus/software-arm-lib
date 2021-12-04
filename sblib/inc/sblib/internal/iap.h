@@ -12,7 +12,8 @@
 #include <sblib/platform.h>
 #include <sblib/types.h>
 
-#define IAP_UID_LENGTH (16) //!< number of bytes iapReadUID wants as buffer
+#define IAP_UID_LENGTH (16)                  //!< number of bytes iapReadUID wants as buffer
+#define PAGE_ALIGNMENT (FLASH_PAGE_SIZE - 1) //!< page alignment which is allowed to flash
 
 /**
  * Status code of IAP (In Application Programming (Flash)) commands
@@ -40,7 +41,7 @@ enum IAP_Status
  * @param address - the address inside the FLASH
  * @return The sector index of the address.
  */
-int iapSectorOfAddress(const byte* address);
+unsigned int iapSectorOfAddress(const byte* address);
 
 /**
  * Get the index of the FLASH sector for the passed address.
@@ -48,7 +49,7 @@ int iapSectorOfAddress(const byte* address);
  * @param address - the address inside the FLASH
  * @return The sector index of the address.
  */
-int iapSectorOfAddress(const unsigned int address);
+unsigned int iapSectorOfAddress(const unsigned int address);
 
 /**
  * Get the index of the FLASH page for the passed address.
@@ -56,7 +57,7 @@ int iapSectorOfAddress(const unsigned int address);
  * @param address - the address inside the FLASH
  * @return The sector index of the address.
  */
-int iapPageOfAddress(const byte* address);
+unsigned int iapPageOfAddress(const byte* address);
 
 /**
  * Get the index of the FLASH page for the passed address.
@@ -64,7 +65,23 @@ int iapPageOfAddress(const byte* address);
  * @param address - the address inside the FLASH
  * @return The sector index of the address.
  */
-int iapPageOfAddress(const unsigned int address);
+unsigned int iapPageOfAddress(const unsigned int address);
+
+/**
+ * Get the address of the given FLASH page index.
+ *
+ * @param page - the page index inside the FLASH
+ * @return The address of the given page index.
+ */
+unsigned int iapAddressOfPage(const unsigned int page);
+
+/**
+ * Get the address of the given FLASH sector index.
+ *
+ * @param sector - the sector index inside the FLASH
+ * @return The address of the given sector index.
+ */
+unsigned int iapAddressOfSector(const unsigned int sector);
 
 /**
  * Erase the specified sector.
@@ -138,7 +155,7 @@ IAP_Status iapReadPartID(unsigned int* partId);
  *
  * @return the size of the flash memory.
  */
-int iapFlashSize();
+unsigned int iapFlashSize();
 
 
 #endif /* sblib_iap_h */
