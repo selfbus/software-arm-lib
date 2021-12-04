@@ -37,10 +37,7 @@
 #   define dline(x) //!< \todo
 #endif
 
-#define ADDRESS_TO_SECTOR(a) ((a + FLASH_SECTOR_SIZE) / FLASH_SECTOR_SIZE) //!< address to sector conversion based on flash sector size
-#define ADDRESS_TO_PAGE(a) ((a + FLASH_PAGE_SIZE) / FLASH_PAGE_SIZE)       //!< address to page conversion based on flash page size
 
-#define PAGE_ALIGNMENT 0xff                      //!< page alignment which is allowed to flash
 
 /**
  * @brief Erases if allowed the requested sector.
@@ -77,10 +74,10 @@ bool addressAllowedToProgram(unsigned int start, unsigned int length, bool isBoo
  * @param  pageNumber Page number to check erase is allowed
  * @return            true if page is allowed to erase, otherwise false
  */
-static bool pageAllowedToErase(unsigned int pageNumber)
+static bool pageAllowedToErase(const unsigned int pageNumber)
 {
-    return ((pageNumber >= ADDRESS_TO_PAGE(bootLoaderLastAddress() + 1)) &&
-            ( pageNumber < ADDRESS_TO_PAGE(flashLastAddress())));
+    return ((pageNumber > iapPageOfAddress(bootLoaderLastAddress())) &&
+            ( pageNumber <= iapPageOfAddress(flashLastAddress())));
 }
 
 /**
@@ -89,10 +86,10 @@ static bool pageAllowedToErase(unsigned int pageNumber)
  * @param  sectorNumber Sector number to check erase is allowed
  * @return              true if sector is allowed to erase, otherwise false
  */
-static bool sectorAllowedToErase(unsigned int sectorNumber)
+static bool sectorAllowedToErase(const unsigned int sectorNumber)
 {
-    return ((sectorNumber >= ADDRESS_TO_SECTOR(bootLoaderLastAddress() + 1)) &&
-            ( sectorNumber < ADDRESS_TO_SECTOR(flashLastAddress())));
+    return ((sectorNumber > iapSectorOfAddress(bootLoaderLastAddress())) &&
+            ( sectorNumber <= iapSectorOfAddress(flashLastAddress())));
 }
 
 UDP_State erasePageRange(unsigned int startPage, unsigned int endPage)
@@ -166,14 +163,14 @@ UDP_State erasePage(unsigned int page)
     return (erasePageRange(page, page));
 }
 
-UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAddress)
+UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAddress, const bool rangeCheck)
 {
     d3(
         serial.print(" eraseAddressRange 0x", startAddress, HEX, 4);
         serial.println("-0x", endAddress, HEX, 4);
     );
 
-    if (!addressAllowedToProgram(startAddress, endAddress - startAddress + 1, false))
+    if (rangeCheck && (!addressAllowedToProgram(startAddress, endAddress - startAddress + 1, false)))
     {
         dline(" not allowed!");
         return (UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE);
@@ -254,6 +251,13 @@ unsigned int testEraseAddressRange() ///\todo remove on release
     return (UDP_IAP_SUCCESS);
 }
 #endif
+
+UDP_State eraseFullFlash()
+{
+    unsigned int page = iapPageOfAddress(bootLoaderLastAddress());
+    page++;
+    return eraseAddressRange(iapAddressOfPage(page), flashLastAddress(), false);
+}
 
 UDP_State executeProgramFlash(unsigned int address, const byte* ram, unsigned int size, bool isBootDescriptor)
 {

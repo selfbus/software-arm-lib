@@ -92,6 +92,8 @@ public class CliOptions {
     private static final String OPT_SHORT_LOGLEVEL = "l";
     private static final String OPT_LONG_LOGLEVEL = "logLevel";
 
+    private static final String OPT_LONG_ERASEFLASH = "ERASEFLASH";
+
     private static final int PRINT_WIDTH = 100;
     private final static List VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
 
@@ -127,6 +129,7 @@ public class CliOptions {
     private int delay = 0;
     private boolean NO_FLASH = false;
     private Level logLevel = Level.DEBUG;
+    private boolean eraseFlash = false;
 
     private boolean help = false;
     private boolean version = false;
@@ -143,6 +146,7 @@ public class CliOptions {
         Option help = new Option(OPT_SHORT_HELP, OPT_LONG_HELP, false, "show this help message");
         Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
+        Option eraseFlash = new Option(null, OPT_LONG_ERASEFLASH, false, "delete the entire flash except from the bootloader itself!");
 
         Option fileName = Option.builder(OPT_SHORT_FILENAME).longOpt(OPT_LONG_FILENAME)
                 .argName("filename")
@@ -258,6 +262,7 @@ public class CliOptions {
 
         cliOptions.addOption(delay);
         cliOptions.addOption(logLevel);
+        cliOptions.addOption(eraseFlash);
         cliOptions.addOption(NO_FLASH);
 
 
@@ -299,6 +304,11 @@ public class CliOptions {
                 NO_FLASH = true;
             }
             logger.debug("NO_FLASH={}", NO_FLASH);
+
+            if (cmdLine.hasOption(OPT_LONG_ERASEFLASH)) {
+                eraseFlash = true;
+            }
+            logger.debug("eraseFlash={}", eraseFlash);
 
             if (cmdLine.hasOption(OPT_SHORT_FULL)) {
                 full = true;
@@ -516,6 +526,10 @@ public class CliOptions {
 
     public boolean NO_FLASH() {
         return NO_FLASH;
+    }
+
+    public boolean eraseFlash() {
+        return eraseFlash;
     }
 
     public boolean help() {

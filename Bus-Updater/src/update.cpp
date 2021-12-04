@@ -351,7 +351,7 @@ static unsigned char updEraseSector(bool * sendTel, unsigned char * data)
 */
 
 /**
- * @brief
+ * @brief Handles the @ref UPD_ERASE_ADDRESSRANGE command and erases the requested flash address range
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3-6] contains startAddress, data[10] contains endAddress
@@ -365,6 +365,21 @@ static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
     unsigned int startAddress = streamToUIn32(&data[3]);
     unsigned int endAddress = streamToUIn32(&data[7]);
     setLastError(eraseAddressRange(startAddress, endAddress), sendTel);
+    return (T_ACK_PDU);
+}
+
+/**
+ * @brief Handles the @ref UPD_ERASE_COMPLETE_FLASH command and erases the entire flash except from the bootloader itself
+ *
+ * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
+ * @return        always T_ACK_PDU
+ * @note          device must be unlocked
+ */
+static unsigned char updEraseFullFlash(bool * sendTel)
+{
+    resetProtocol();
+    setLastError(eraseFullFlash(), sendTel);
     return (T_ACK_PDU);
 }
 
@@ -874,6 +889,9 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 
         case UPD_PROGRAM_DECOMPRESSED_DATA:
             return (updProgramDecompressedDataToFlash(sendTel, data));
+
+        case UPD_ERASE_COMPLETE_FLASH:
+            return (updEraseFullFlash(sendTel));
 
         case UPD_ERASE_ADDRESSRANGE:
             return (updEraseAddressRange(sendTel, data));

@@ -27,6 +27,10 @@
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 
+#ifdef DEBUG
+#   include "flash.h"
+#endif
+
 
 // bootloader specific settings
 #define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
@@ -205,6 +209,10 @@ static inline void run_updater(bool programmingMode)
     serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
     serial.println(".", physicalAddress & 0xFF, DEC);
     serial.println("--------------------------------------------------- by sh");
+#endif
+
+#ifdef DEBUG
+    // eraseFullFlash();
 #endif
 
     while (1)

@@ -33,16 +33,27 @@
  */
 UDP_State erasePageRange(unsigned int startPage, unsigned int endPage);
 
+
+/**
+ * @brief   Erases the entire flash area starting behind the bootloader itself
+ *
+ * @return  @ref UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State
+ * @warning Function can take up to ~2 seconds to return.
+ *          It works on a page and sector base. Page erases are very slow ~100ms for one page
+ */
+UDP_State eraseFullFlash();
+
 /**
  * @brief Erases if allowed the requested address range.
  *
  * @param startAddress  start address of flash range to erase
  * @param endAddress    end address of flash range to erase
+ * @param rangeCheck    set to true to check if the address range is allowed to be accessed
  * @return              @ref UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
  * @warning             Function can take up to ~3.5 seconds to return.
  *                      It works on a page and sector base. Page erases are very slow ~100ms for one page
  */
-UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAddress);
+UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAddress, const bool rangeCheck = true);
 
 /**
  * @brief Checks if the address range is allowed to be programmed

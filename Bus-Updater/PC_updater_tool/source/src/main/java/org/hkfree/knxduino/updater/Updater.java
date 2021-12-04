@@ -312,6 +312,12 @@ public class Updater implements Runnable {
             }
 
             DeviceManagement.unlockDeviceWithUID(mc, progDest, uid);
+
+            if (cliOptions.eraseFlash()) {
+                logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                DeviceManagement.eraseFlash(mc, progDest);
+            }
+
             BootLoaderIdentity bootLoaderIdentity = DeviceManagement.requestBootLoaderIdentity(mc, progDest);
             logger.info("\nRequesting App Version String...");
             String appVersion = DeviceManagement.requestAppVersionString(mc, progDest);

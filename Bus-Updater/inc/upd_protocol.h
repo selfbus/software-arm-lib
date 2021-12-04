@@ -86,15 +86,16 @@ enum UPD_Command
                                         //!< @note deprecated, use UPD_ERASE_ADDRESSRANGE instead
     UPD_SEND_DATA = 1,                  //!< Copy ((data[0] & 0x0f)-1) bytes to ramBuffer starting from address data[3] @note device must be unlocked
     UPD_PROGRAM = 2,                    //!< Copy count (data[3-6]) bytes from ramBuffer to address (data[7-10]) in flash buffer, crc in data[11-14] @note device must be unlocked
-    UPD_UPDATE_BOOT_DESC = 3,           //!< Flash a application boot descriptor block @note device must be unlocked
+    UPD_UPDATE_BOOT_DESC = 3,           //!< Flash an application boot descriptor block @note device must be unlocked
     UPD_SEND_DATA_TO_DECOMPRESS = 4,    //!< Copy bytes from telegram (data) to ramBuffer with differential method @note device must be unlocked
     UPD_PROGRAM_DECOMPRESSED_DATA = 5,  //!< Flash bytes from ramBuffer to flash with differential method @note device must be unlocked
 
+    UPD_ERASE_COMPLETE_FLASH = 7,       //!< Erase the entire flash area excluding the bootloader itself @note device must be unlocked
     UPD_ERASE_ADDRESSRANGE = 8,         //!< Erase flash from given start address to end address (start: data[3-6] end: data[7-10]) @note device must be unlocked
 
     UPD_REQ_DATA = 10,                  //!< Return bytes from flash at given address?  @note device must be unlocked
                                         //!<@warning Not implemented
-    UPD_GET_LAST_ERROR = 20,            //!< Return last error
+    UPD_GET_LAST_ERROR = 20,            //!< Returns last error
     UPD_SEND_LAST_ERROR = 21,           //!< Response for @ref UPD_GET_LAST_ERROR containing the last error
 
     UPD_UNLOCK_DEVICE = 30,             //!< Unlock the device for operations, which are only allowed on a unlocked device
@@ -106,7 +107,7 @@ enum UPD_Command
     UPD_REQUEST_BOOT_DESC = 36,         //!< Return the application boot descriptor block @note device must be unlocked
     UPD_RESPONSE_BOOT_DESC = 37,        //!< Response for @ref UPD_REQUEST_BOOT_DESC containing the application boot descriptor block
 
-    UPD_REQUEST_BL_IDENTITY = 40,       //!< Return the boot loader identity @note device must be unlocked
+    UPD_REQUEST_BL_IDENTITY = 40,       //!< Return the bootloader's identity @note device must be unlocked
     UPD_RESPONSE_BL_IDENTITY = 41,      //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the identity
     UPD_SET_EMULATION = 100             //!<@warning Not implemented
 };

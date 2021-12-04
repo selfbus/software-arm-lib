@@ -8,6 +8,7 @@ import java.util.Objects;
 
 /**
  * Implementation of the UPD/UDP protocol result commands
+ * see /Bus-Updater/inc/upd_protocol.h for details
  */
 public enum UDPResult {
     // IAP_ are in decimal (IAP ist in application programming of the MCU's flash

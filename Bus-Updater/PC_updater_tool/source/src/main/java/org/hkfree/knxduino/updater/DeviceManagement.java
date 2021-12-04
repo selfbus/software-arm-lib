@@ -27,6 +27,7 @@ public final class DeviceManagement {
 
     DeviceManagement (){}
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
+
     public static void restartProgrammingDevice(UpdatableManagementClientImpl m, Destination dest)
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException {
         logger.warn("restarting device {}", dest);
@@ -174,6 +175,24 @@ public final class DeviceManagement {
                 if (UPDProtocol.checkResult(result) != 0) {
                     DeviceManagement.restartProgrammingDevice(mc, pd);
                     throw new UpdaterException("Erasing firmware address range failed.");
+                }
+                finished = true;
+            }
+            catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
+                logger.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
+            }
+        }
+    }
+
+    public static void eraseFlash(UpdatableManagementClientImpl mc, Destination pd)
+            throws KNXLinkClosedException, InterruptedException, UpdaterException {
+        boolean finished = false;
+        while (!finished) {
+            try {
+                byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_COMPLETE_FLASH.id, new byte[] {0});
+                if (UPDProtocol.checkResult(result) != 0) {
+                    DeviceManagement.restartProgrammingDevice(mc, pd);
+                    throw new UpdaterException("Deleting the entire flash failed.");
                 }
                 finished = true;
             }
