@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'org.hkfree.knxduino'
-version '0.61' ///\todo also change in README.md and ToolInfo.java (String version)
+version '0.62' ///\todo also change in README.md and ToolInfo.java (String version)
 
 sourceCompatibility = 11
 /*

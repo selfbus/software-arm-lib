@@ -19,7 +19,7 @@
  -----------------------------------------------------------------------------*/
 
 #include <string.h>
-#include <sblib/internal/iap.h>
+#include "flash.h"
 #include "crc.h"
 #include "decompressor.h"
 
@@ -111,29 +111,15 @@ int Decompressor::pageCompletedDoFlash()
 		d1(" different, Erase Page");
 		//d2(getFlashPageNumberToBeFlashed(), DEC,2);
 
-		lastError = iapErasePage(getFlashPageNumberToBeFlashed());
-		//lastError = IAP_SUCCESS; // Dry RUN! for debug
-		if (lastError)
-		{
-		    dline(" Failed!")
-			return (lastError);
-		}
-		else
-		    dline(" OK");
+		lastError = erasePageRange(getFlashPageNumberToBeFlashed(), getFlashPageNumberToBeFlashed());
+		//lastError = UDP_IAP_SUCCESS; // Dry RUN! for debug
 
 		// proceed to flash the decompressed page stored in the scratchpad RAM
 		d1("Diff - Program Page at Address 0x");
 		d2((unsigned int)startAddrOfPageToBeFlashed, HEX,4);
-		lastError = iapProgram(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
-		//lastError = IAP_SUCCESS; // Dry RUN! for debug
-		if(lastError)
-		{
-		    dline(" Failed!");
-		}
-		else
-		{
-		    dline(" OK");
-		}
+		lastError = executeProgramFlash(*startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
+		//lastError = iapProgram(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
+		//lastError = UDP_IAP_SUCCESS; // Dry RUN! for debug
 	}
 	else
 	{

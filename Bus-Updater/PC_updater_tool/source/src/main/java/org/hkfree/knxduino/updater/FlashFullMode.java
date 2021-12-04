@@ -19,58 +19,6 @@ import java.util.zip.CRC32;
  * Provides full flash mode for the bootloader (MCU)
  */
 public class FlashFullMode {
-    /*
-    private static void eraseFlashPages(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long totalLength)
-            throws KNXLinkClosedException, InterruptedException, UpdaterException {
-        // Erasing flash on sector base (4k), one telegram per sector
-        long pagesDone = (totalLength / Flash.FLASH_SECTOR_SIZE) + 1;
-        long startPage = startAddress / Flash.FLASH_SECTOR_SIZE;
-        byte[] sector = new byte[1];
-        int pagesErased = 0;
-
-        while (pagesErased < pagesDone) {
-            sector[0] = (byte) (pagesErased + startPage);
-            logger.info("Erase sector {}...", String.format("%2d", sector[0]));
-            try {
-                byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_SECTOR.id, sector);
-                if (UPDProtocol.checkResult(result) != 0) {
-                    DeviceManagement.restartProgrammingDevice(mc, pd);
-                    throw new UpdaterException("Selfbus update failed.");
-                }
-                pagesErased++;
-            }
-            catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
-                logger.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
-            }
-        }
-    }
-    */
-
-    private static void eraseAddressRange(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long totalLength)
-            throws KNXLinkClosedException, InterruptedException, UpdaterException {
-        //
-        long endAddress = startAddress + totalLength - 1;
-        boolean finished = false;
-        byte[] telegram = new byte[8];
-        Utils.longToStream(telegram, 0 , startAddress);
-        Utils.longToStream(telegram, 4 , endAddress);
-        logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
-        while (!finished) {
-
-            try {
-                byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_ADDRESS_RANGE.id, telegram);
-                if (UPDProtocol.checkResult(result) != 0) {
-                    DeviceManagement.restartProgrammingDevice(mc, pd);
-                    throw new UpdaterException("Erasing firmware address range failed.");
-                }
-                return;
-            }
-            catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
-                logger.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
-            }
-        }
-    }
-
     private final static Logger logger = LoggerFactory.getLogger(FlashFullMode.class.getName());
 
     /**
@@ -85,8 +33,7 @@ public class FlashFullMode {
         long startAddress = newFirmware.startAddress();
         long totalLength = newFirmware.length();
         ByteArrayInputStream fis = new ByteArrayInputStream(newFirmware.getBinData());
-        eraseAddressRange(mc, pd, startAddress, totalLength);
-        //eraseFlashPages(mc, pd, startAddress, totalLength);
+        DeviceManagement.eraseAddressRange(mc, pd, startAddress, totalLength);
 
         byte[] buf = new byte[Flash.FLASH_PAGE_SIZE];   // Read one flash page
         int nRead;                                      // Bytes read from file into buffer

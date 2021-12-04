@@ -14,8 +14,6 @@ import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
-// import org.hkfree.knxduino.updater.tests.flashdiff.FlashDiff;
-
 import java.io.File;
 import java.util.Arrays;
 
@@ -78,10 +76,10 @@ public final class FlashDiffMode {
         return initialized && (bootDsc != null);
     }
 
-    // Differential update routine #######################
+    // Differential update routine
     public static boolean doDifferentialFlash(UpdatableManagementClientImpl mc, Destination pd, long startAddress, byte[] binData)
             throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
-        ///\todo add connection reset and again sending on failure, like in full flash mode
+        ///\todo add connection reset and sending again on failure, like in full flash mode
         if (!isInitialized()) {
             return false;
         }
@@ -110,6 +108,7 @@ public final class FlashDiffMode {
                 }
                 // transmit telegram
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
+                ///\todo harden against drops and timeouts
                 result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA_TO_DECOMPRESS.id, txBuf);
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
                 if (UPDProtocol.checkResult(result, false) != 0) {
@@ -125,6 +124,7 @@ public final class FlashDiffMode {
             Utils.longToStream(progPars, 8, (int) crc32);
             System.out.println();
             logger.info("Program device next page diff, CRC32 0x{}", String.format("%08X", crc32));
+            ///\todo harden against drops and timeouts
             result = mc.sendUpdateData(pd, UPDCommand.PROGRAM_DECOMPRESSED_DATA.id, progPars);
             if (UPDProtocol.checkResult(result) != 0) {
                 DeviceManagement.restartProgrammingDevice(mc, pd);

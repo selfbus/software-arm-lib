@@ -12,10 +12,10 @@ import tuwien.auto.calimero.Settings;
 public final class ToolInfo
 {
     private static final long versionMajor = 0; ///\todo also change in README.md and build.gradle
-    private static final long versionMinor = 61;
+    private static final long versionMinor = 62;
 
     private static final long minMajorVersionBootloader = 0x00; //needs to be specified in hex
-    private static final long minMinorVersionBootloader = 0x61; //needs to be specified in hex
+    private static final long minMinorVersionBootloader = 0x62; //needs to be specified in hex
 
     private static final Logger logger = LoggerFactory.getLogger(ToolInfo.class.getName());
     private static final String author = "Selfbus";

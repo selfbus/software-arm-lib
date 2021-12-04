@@ -69,7 +69,7 @@ public class Decompressor {
     }
 
     public void putByte(byte data) {
-        logger.trace("Decompressor processing new byte {}, state=", (data & 0xff), state);
+        logger.trace("Decompressor processing new byte {}, state={}", (data & 0xff), state);
         switch (state) {
             case EXPECT_COMMAND_BYTE:
                 cmdBuffer[0] = data;

@@ -93,7 +93,7 @@ public class Parser {
         int lineLength = record.length();
         byte[] hexRecord = new byte[lineLength / 2];
 
-        // sum of all bytes modulo 256 (including checksum) shuld be 0
+        // sum of all bytes modulo 256 (including checksum) should be 0
         int sum = 0;
         for (int i = 0; i < hexRecord.length; i++) {
             String num = record.substring(2 * i + 1, 2 * i + 3);

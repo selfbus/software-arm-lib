@@ -108,12 +108,12 @@ public final class DeviceManagement {
         logger.info("  Device Bootloader: {}{}{}", ConColors.BRIGHT_YELLOW, bl, ConColors.RESET);
         if (bl.versionMajor() < ToolInfo.minMajorVersionBootloader())
         {
-            logger.error("{}Bootloader version {} not compatible, please update Bootloader at least to {}{}",
+            logger.error("{}Bootloader version {} not compatible, please update Bootloader to version {} or higher{}",
                     ConColors.RED, bl.version(), ToolInfo.minVersionBootloader(), ConColors.RESET);
             throw new UpdaterException("Bootloader major version not compatible!");
         }
         else if (bl.versionMinor() < ToolInfo.minMinorVersionBootloader()) {
-            logger.error("{}Bootloader version {} not compatible, please update Bootloader at least to {}{}",
+            logger.error("{}Bootloader version {} not compatible, please update Bootloader to version {} or higher{}",
                     ConColors.RED, bl.version(), ToolInfo.minVersionBootloader(), ConColors.RESET);
             throw new UpdaterException("Bootloader minor version not compatible!");
         }
@@ -159,4 +159,27 @@ public final class DeviceManagement {
         }
     }
 
+    public static void eraseAddressRange(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long totalLength)
+            throws KNXLinkClosedException, InterruptedException, UpdaterException {
+        long endAddress = startAddress + totalLength - 1;
+        boolean finished = false;
+        byte[] telegram = new byte[8];
+        Utils.longToStream(telegram, 0 , startAddress);
+        Utils.longToStream(telegram, 4 , endAddress);
+        logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
+        while (!finished) {
+
+            try {
+                byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_ADDRESS_RANGE.id, telegram);
+                if (UPDProtocol.checkResult(result) != 0) {
+                    DeviceManagement.restartProgrammingDevice(mc, pd);
+                    throw new UpdaterException("Erasing firmware address range failed.");
+                }
+                finished = true;
+            }
+            catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
+                logger.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
+            }
+        }
+    }
 }

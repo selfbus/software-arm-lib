@@ -1,7 +1,9 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
- * @addtogroup SBLIB_UPD_UDP_PROTOCOL_1 UPD/UDP protocol
+ * @defgroup SBLIB_KNX_TELEGRAM_HANDLER_1 KNX-Telegramhandler
  * @ingroup SBLIB_BOOTLOADER
+ * @brief   Handles @ref APCI_MEMORY_READ_PDU and @ref APCI_MEMORY_WRITE_PDU for the update process
+ * @details
  *
  * @{
  *
@@ -25,9 +27,13 @@
 #include <sblib/timeout.h>
 #include <sblib/internal/iap.h>
 #include <sblib/io_pin_names.h>
+
+#include "upd_protocol.h"
+#include "flash.h"
 #include "bcu_updater.h"
 #include "crc.h"
 #include "update.h"
+
 #if defined(DUMP_TELEGRAMS_LVL1) || defined(DEBUG)
 #   include "intelhex.h"
 #endif
@@ -57,92 +63,16 @@
 
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)     //!< magic number for device is locked and can't be flashed
 #define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< magic number for device is unlocked and flashing is allowed
-#define ADDRESS_TO_SECTOR(a) ((a + FLASH_SECTOR_SIZE) / FLASH_SECTOR_SIZE) //!< address to sector conversion based on flash sector size
-#define ADDRESS_TO_PAGE(a) ((a + FLASH_PAGE_SIZE) / FLASH_PAGE_SIZE)       //!< address to page conversion based on flash page size
 
-#define PAGE_ALIGNMENT 0xff                      //!< page alignment which is allowed to flash
 static unsigned char ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
 
-/**
- * @brief Control commands for flash process with @ref APCI_MEMORY_READ_PDU and @ref APCI_MEMORY_WRITE_PDU
- *
- */
-enum UPD_Command
-{
-    UPD_ERASE_SECTOR = 0,               //!< Erase flash sector number (data[3]) @note device must be unlocked
-    UPD_SEND_DATA = 1,                  //!< Copy ((data[0] & 0x0f)-1) bytes to ramBuffer starting from address data[3] @note device must be unlocked
-    UPD_PROGRAM = 2,                    //!< Copy count (data[3-6]) bytes from ramBuffer to address (data[7-10]) in flash buffer, crc in data[11-14] @note device must be unlocked
-    UPD_UPDATE_BOOT_DESC = 3,           //!< Flash a application boot descriptor block @note device must be unlocked
-    UPD_SEND_DATA_TO_DECOMPRESS = 4,    //!< Copy bytes from telegram (data) to ramBuffer with differential method @note device must be unlocked
-    UPD_PROGRAM_DECOMPRESSED_DATA = 5,  //!< Flash bytes from ramBuffer to flash with differential method @note device must be unlocked
-
-    UPD_ERASE_ADDRESSRANGE = 8,         //!< Erase flash based on given start address and end address (data[3]) @note device must be unlocked
-
-    UPD_REQ_DATA = 10,                  //!< Return bytes from flash at given address?  @note device must be unlocked
-                                        //!<@warning Not implemented
-    UPD_GET_LAST_ERROR = 20,            //!< Return last error
-    UPD_SEND_LAST_ERROR = 21,           //!< Response for @ref UPD_GET_LAST_ERROR containing the last error
-
-    UPD_UNLOCK_DEVICE = 30,             //!< Unlock the device for operations, which are only allowed on a unlocked device
-    UPD_REQUEST_UID = 31,               //!< Return the 12 byte shorten UID (GUID) of the mcu @note device must be unlocked
-    UPD_RESPONSE_UID = 32,              //!< Response for @ref UPD_REQUEST_UID containing the first 12 bytes of the UID
-    UPD_APP_VERSION_REQUEST = 33,       //!< Return address of AppVersion string
-    UPD_APP_VERSION_RESPONSE = 34,      //!< Response for @ref UPD_APP_VERSION_REQUEST containing the application version string
-    UPD_RESET = 35,                     //!< Reset the device @note device must be unlocked
-    UPD_REQUEST_BOOT_DESC = 36,         //!< Return the application boot descriptor block @note device must be unlocked
-    UPD_RESPONSE_BOOT_DESC = 37,        //!< Response for @ref UPD_REQUEST_BOOT_DESC containing the application boot descriptor block
-
-    UPD_REQUEST_BL_IDENTITY = 40,       //!< Return the boot loader identity @note device must be unlocked
-    UPD_RESPONSE_BL_IDENTITY = 41,      //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the identity
-    UPD_SET_EMULATION = 100             //!<@warning Not implemented
-};
-
-/**
- * @brief Control responses to @ref UPD_Command for flash process with @ref APCI_MEMORY_READ_PDU and @ref APCI_MEMORY_WRITE_PDU
- *
- */
-enum UDP_State
-{
-    // UDP_IAP_ are in decimal (IAP is "In Application Programming" of the MCU's flash
-    // these results are defined in iap.h Selfbus sblib
-    UDP_IAP_SUCCESS = 0,                                 //!< IAP OK
-    UDP_IAP_INVALID_COMMAND = 1,                         //!< IAP invalid command
-    UDP_IAP_SRC_ADDR_ERROR = 2,                          //!< IAP source address error
-    UDP_IAP_DST_ADDR_ERROR = 3,                          //!< IAP destination address error
-    UDP_IAP_SRC_ADDR_NOT_MAPPED = 4,                     //!< IAP source address not mapped
-    UDP_IAP_DST_ADDR_NOT_MAPPED = 5,                     //!< IAP destination address not mapped
-    UDP_IAP_COUNT_ERROR = 6,                             //!< IAP count error
-    UDP_IAP_INVALID_SECTOR = 7,                          //!< IAP invalid sector error
-    UDP_IAP_SECTOR_NOT_BLANK = 8,                        //!< IAP sector not blank"
-    UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION = 9, //!< IAP sector not prepared for write operation
-    UDP_IAP_COMPARE_ERROR = 10,                          //!< IAP compare error
-    UDP_IAP_BUSY = 11,                                   //!< IAP busy
-
-    // following are in hexadecimal
-    UDP_UNKNOWN_COMMAND = 0x100,              //!< received command is not defined
-    UDP_CRC_ERROR = 0x101,                    //!< CRC calculated on the device and by the PC Updater tool don't match
-    UDP_ADDRESS_NOT_ALLOWED_TO_FLASH = 0x102, //!< specifed address cannot be programmed
-    UDP_SECTOR_NOT_ALLOWED_TO_ERASE = 0x103,  //!< the specified sector cannot be erased
-    UDP_RAM_BUFFER_OVERFLOW = 0x104,          //!< internal buffer for storing the data would overflow
-    UDP_WRONG_DESCRIPTOR_BLOCK = 0x105,       //!< the boot descriptor block does not exist
-    UDP_APPLICATION_NOT_STARTABLE = 0x106,    //!< the programmed application is not startable
-    UDP_DEVICE_LOCKED = 0x107,                //!< the device is still locked
-    UDP_UID_MISMATCH = 0x108,                 //!< UID sent to unlock the device is invalid
-    UDP_ERASE_FAILED = 0x109,                 //!< page erase failed
-
-    // counting in hex so here is space for 0x10A-0x10F
-    UDP_FLASH_ERROR = 0x110,                  //!< page program (flash) failed
-    UDP_PAGE_NOT_ALLOWED_TO_ERASE = 0x111,    //!< page not allowed to erase
-    UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE = 0x112, //!< address range not allowed to erase
-    UDP_NOT_IMPLEMENTED = 0xFFFF              //!< this command is not yet implemented
-};
 
 Timeout mcuRestartRequestTimeout; //!< Timeout used to trigger a MCU Reset by NVIC_SystemReset()
 
 // Try to avoid direct access to these global variables.
 // It's better to use their get, set and reset functions
 static unsigned int deviceLocked = DEVICE_LOCKED;   //!< current device locking state @note Better use GetDeviceUnlocked() & setDeviceLockState()
-static unsigned int lastError = 0;                  //!< last error while processing a UDP command
+static UDP_State lastError = UDP_IAP_SUCCESS;       //!< last error while processing a UDP command
 static unsigned int ramLocation = 0;                //!< current location of the ramBuffer processed
 static unsigned int bytesReceived = 0;              //!< number of bytes received by UPD_SEND_DATA since last reset()
 static unsigned int bytesFlashed = 0;               //!< number of bytes flashed by UPD_PROGRAM since last reset()
@@ -158,6 +88,7 @@ static unsigned int bytesFlashed = 0;               //!< number of bytes flashed
  */
 ALWAYS_INLINE void uInt32ToStream(unsigned char * buffer, unsigned int val);
 
+
 /**
  * @brief Send the flash content from buffer->startAddress to buffer->endAddress
  *        in Intel(R) hex file format over serial port
@@ -170,45 +101,6 @@ void dumpFlashContent(AppDescriptionBlock * buffer)
         serial.println();
         dumpToSerialinIntelHex(&serial, (unsigned char *) buffer->startAddress, buffer->endAddress - buffer->startAddress);
         serial.println();
-    );
-}
-
-/**
- * @brief Converts the name of a UPD_Command to "string" and
- *        sends it over the serial port
- *
- * @note Needs preprocessor macro DUMP_TELEGRAMS_LVL1
- * @warning This function is only for debugging purposes.
- * @param cmd Command to send to the serial port.
- */
-static void updCommand2Serial(byte cmd)
-{
-    d3(
-        switch (cmd)
-        {
-            case UPD_ERASE_SECTOR: d1("UPD_ERASE_SECTOR "); break;
-            case UPD_SEND_DATA: d1("UPD_SEND_DATA "); break;
-            case UPD_PROGRAM: d1("UPD_PROGRAM "); break;
-            case UPD_UPDATE_BOOT_DESC: d1("UPD_UPDATE_BOOT_DESC "); break;
-            case UPD_SEND_DATA_TO_DECOMPRESS: d1("UPD_SEND_DATA_TO_DECOMPRESS "); break;
-            case UPD_PROGRAM_DECOMPRESSED_DATA: d1("UPD_PROGRAM_DECOMPRESSED_DATA "); break;
-            case UPD_ERASE_ADDRESSRANGE: d1("UPD_ERASE_ADDRESSRANGE "); break;
-            case UPD_REQ_DATA: d1("UPD_REQ_DATA "); break;
-            case UPD_GET_LAST_ERROR: d1("UPD_GET_LAST_ERROR "); break;
-            case UPD_SEND_LAST_ERROR: d1("UPD_SEND_LAST_ERROR "); break;
-            case UPD_UNLOCK_DEVICE: d1("UPD_UNLOCK_DEVICE "); break;
-            case UPD_REQUEST_UID: d1("UPD_REQUEST_UID "); break;
-            case UPD_RESPONSE_UID: d1("UPD_RESPONSE_UID "); break;
-            case UPD_APP_VERSION_REQUEST: d1("UPD_APP_VERSION_REQUEST "); break;
-            case UPD_APP_VERSION_RESPONSE: d1("UPD_APP_VERSION_RESPONSE "); break;
-            case UPD_RESET: d1("UPD_RESET "); break;
-            case UPD_REQUEST_BOOT_DESC: d1("UPD_REQUEST_BOOT_DESC "); break;
-            case UPD_RESPONSE_BOOT_DESC: d1("UPD_RESPONSE_BOOT_DESC "); break;
-            case UPD_REQUEST_BL_IDENTITY: d1("UPD_REQUEST_BL_IDENTITY "); break;
-            case UPD_RESPONSE_BL_IDENTITY: d1("UPD_RESPONSE_BL_IDENTITY "); break;
-            case UPD_SET_EMULATION: d1("UPD_SET_EMULATION "); break;
-            default:  d3(serial.print("UPD_unkown command ", cmd)); break;
-        }
     );
 }
 
@@ -265,55 +157,6 @@ static bool prepareReturnTelegram(unsigned int count, unsigned char cmd)
     return (true);
 }
 
-/**
- * @brief Checks if the requested page is allowed to be erased.
- *
- * @param  pageNumber Page number to check erase is allowed
- * @return            true if page is allowed to erase, otherwise false
- */
-static bool pageAllowedToErase(unsigned int pageNumber)
-{
-    return ((pageNumber >= ADDRESS_TO_PAGE(bootLoaderLastAddress() + 1)) &&
-            ( pageNumber < ADDRESS_TO_PAGE(flashLastAddress())));
-}
-
-/**
- * @brief Checks if the requested sector is allowed to be erased.
- *
- * @param  sectorNumber Sector number to check erase is allowed
- * @return              true if sector is allowed to erase, otherwise false
- */
-static bool sectorAllowedToErase(unsigned int sectorNumber)
-{
-    return ((sectorNumber >= ADDRESS_TO_SECTOR(bootLoaderLastAddress() + 1)) &&
-            ( sectorNumber < ADDRESS_TO_SECTOR(flashLastAddress())));
-}
-
-/**
- * @brief Checks if the address range is allowed to be programmed
- *
- * @param start            start of the address range to check
- * @param length           length of the address range
- * @param isBootDescriptor set true to check range of the application boot descriptor
- *                         or false to check range of the application itself
- * @return                 true if programming is allowed, otherwise false
- */
-static bool addressAllowedToProgram(unsigned int start, unsigned int length, bool isBootDescriptor = false)
-{
-    if ((start & 0xff) || !length) // not aligned to page or 0 length
-    {
-        return (0);
-    }
-    unsigned int end = start + length - 1;
-    if (isBootDescriptor)
-    {
-        return ((start >= bootDescriptorBlockAddress()) && (end < applicationFirstAddress()));
-    }
-    else
-    {
-        return ((start >= applicationFirstAddress()) && (end <= flashLastAddress()));
-    }
-}
 
 /**
  * @brief Returns the unlocked status of the device
@@ -371,165 +214,6 @@ static bool getProgButtonState()
 }
 
 /**
- * @brief Erases if allowed the requested sector.
- * @param sector  Sector number to be erased
- * @return        @ref IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
- */
-static UDP_State eraseSector(unsigned int sector)
-{
-    UDP_State result = UDP_SECTOR_NOT_ALLOWED_TO_ERASE;
-    d3(serial.print("Sector ", sector, DEC, 1));
-    if (!sectorAllowedToErase(sector))
-    {
-        dline(" not allowed!");
-        return (UDP_SECTOR_NOT_ALLOWED_TO_ERASE);
-    }
-
-    result = (UDP_State)iapEraseSector(sector);
-    d3(
-        if (result != (UDP_State)IAP_SUCCESS)
-        {
-            dline(" iapEraseSector failed!");
-        }
-        else
-        {
-            dline(" OK");
-        }
-    );
-    return (result);
-}
-
-/**
- * @brief Erases if allowed the requested address range.
- *
- * @param startAddress  start address of flash range to erase
- * @param endAddress    end address of flash range to erase
- * @param pageBased     if true erase will be based on page size @ref FLASH_PAGE_SIZE otherwise on @ref FLASH_SECTOR_SIZE
- * @return              @ref IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
- * @warning             function work on a page or sector base, so the erased range could can be more then requested
- */
-static UDP_State eraseAddressRange(unsigned int startAddress, unsigned int endAddress, bool pageBased)
-{
-    d3(
-        serial.print("0x", startAddress, HEX, 4);
-        serial.println("-0x", endAddress, HEX, 4);
-    );
-
-    if (!addressAllowedToProgram(startAddress, endAddress - startAddress + 1, false))
-    {
-        dline(" not allowed!");
-        return (UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE);
-    }
-
-    ///\todo change so the first and last sector will be erased not complete, but only the affected pages
-    unsigned int start;
-    unsigned int end;
-    unsigned int base;
-
-    if (pageBased)
-    {
-        base = FLASH_PAGE_SIZE;
-    }
-    else
-    {
-        base = FLASH_SECTOR_SIZE;
-    }
-    start = startAddress / base;
-    end = endAddress / base;
-
-    d3( //DEBUG loggging
-        unsigned int digits;
-        if (pageBased)
-        {
-            serial.print(" => pages ");
-            digits = 3;
-        }
-        else
-        {
-            serial.print(" => sectors ");
-            digits = 2;
-        }
-        serial.print("0x", start, HEX, digits);
-        serial.print("-0x", end, HEX, digits);
-    )
-
-    UDP_State result;
-    if (pageBased)
-    {
-        result = (UDP_State)iapErasePageRange(start, end); // this is way to slow...
-    }
-    else
-    {
-        result = (UDP_State)iapEraseSectorRange(start, end); // around 200ms for 8 sectors according to ETS5
-    }
-
-    d3( //DEBUG loggging
-        if (result != UDP_IAP_SUCCESS)
-        {
-            dline(" iap call failed!");
-        }
-        else
-        {
-            dline(" OK");
-        }
-    );
-    return (result);
-}
-
-/**
- * @brief Erases if allowed the requested page.
- * @param page  Page number to be erased
- * @return      IAP_SUCCESS if successful, otherwise @ref UDP_PAGE_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
- */
-static UDP_State erasePage(unsigned int page)
-{
-    UDP_State result = UDP_PAGE_NOT_ALLOWED_TO_ERASE;
-    d3(serial.print("Page ", page, DEC, 1));
-    if (!pageAllowedToErase(page))
-    {
-        dline(" not allowed!");
-        return (UDP_PAGE_NOT_ALLOWED_TO_ERASE);
-    }
-
-    result = (UDP_State)iapErasePage(page);
-    d3(
-        if (result != (UDP_State)IAP_SUCCESS)
-        {
-            dline(" iapErasePage failed!");
-        }
-        else
-        {
-            dline(" OK");
-        }
-    );
-    return (result);
-}
-
-/**
- * @brief Programs the specified number of bytes from the RAM to the specified location
- *        inside the FLASH.
- * @param address start address of inside the FLASH
- * @param ram     start address of the buffer containing the data
- * @param size    number of bytes to program
- * @param isBootDescriptor  Set true to program an @ref AppDescriptionBlock, default false
- *
- * @return        IAP_SUCCESS if successful, otherwise UDP_ADDRESS_NOT_ALLOWED_TO_FLASH
- *                or a @ref IAP_Status
- * @warning       The function calls iap_Program which by itself calls no_interrupts().
- */
-static UDP_State executeProgramFlash(unsigned int address, const byte* ram, unsigned int size, bool isBootDescriptor = false)
-{
-    UDP_State result = UDP_ADDRESS_NOT_ALLOWED_TO_FLASH;
-    if (!addressAllowedToProgram(address, size, isBootDescriptor))
-    {
-        return (UDP_ADDRESS_NOT_ALLOWED_TO_FLASH);
-    }
-
-    result = (UDP_State)iapProgram((byte *) address, ram, size);
-    return (result);
-}
-
-/**
  * @brief Sets lastError and prepares the @ref UPD_SEND_LAST_ERROR response telegram
  *
  * @param errorToSet The error to set
@@ -544,7 +228,7 @@ static void setLastError(UDP_State errorToSet, bool * sendTel)
 
 void resetProtocol(void)
 {
-    lastError = 0;
+    lastError = UDP_IAP_SUCCESS;
     ramLocation = 0;
     bytesReceived = 0;
     bytesFlashed = 0;
@@ -556,7 +240,7 @@ void resetProtocol(void)
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    Buffer for the UID
- * @post          calls setLastErrror with IAP_SUCCESS if device is unlocked, otherwise @ref UDP_UID_MISMATCH or a @ref IAP_Status.
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if device is unlocked, otherwise @ref UDP_UID_MISMATCH or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  */
 static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
@@ -564,7 +248,7 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
     if (getProgButtonState())
     { // the operator has physical access to the device -> we unlock it
         setDeviceLockState(DEVICE_UNLOCKED);
-        setLastError((UDP_State)IAP_SUCCESS, sendTel);
+        setLastError(UDP_IAP_SUCCESS, sendTel);
         dline(" by Button");
     }
     else
@@ -573,8 +257,8 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
         // as a simple method we use the unique ID of the CPU itself
         // only if this UID (GUID) is known, the device will be unlocked
         byte uid[IAP_UID_LENGTH];
-        lastError = iapReadUID(uid);
-        if (lastError != IAP_SUCCESS)
+        lastError = (UDP_State)iapReadUID(uid);
+        if (lastError != UDP_IAP_SUCCESS)
         {
             // could not read UID of mcu
             setLastError((UDP_State)lastError, sendTel);
@@ -593,7 +277,7 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
 
         // we can now unlock the device
         setDeviceLockState(DEVICE_UNLOCKED);
-        setLastError((UDP_State)IAP_SUCCESS, sendTel);
+        setLastError(UDP_IAP_SUCCESS, sendTel);
         dline(" by UID");
         resetProtocol();
     }
@@ -604,13 +288,13 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
  * @brief Handles the @ref UPD_RESET command and calls @ref restartRequest to prepare a reset of the device.
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
- * @post          calls setLastErrror always with IAP_SUCCESS
+ * @post          calls setLastErrror always with UDP_IAP_SUCCESS
  * @return        always T_ACK_PDU
  */
 static unsigned char updResetDevice(bool * sendTel)
 {
     restartRequest(RESET_DELAY_MS); // request restart in RESET_DELAY_MS ms to allow transmission of ACK before
-    setLastError((UDP_State)IAP_SUCCESS, sendTel);
+    setLastError(UDP_IAP_SUCCESS, sendTel);
     return (T_ACK_PDU);
 }
 
@@ -620,14 +304,14 @@ static unsigned char updResetDevice(bool * sendTel)
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    Buffer to store the AppVersion string address
- * @post          sets lastError always to IAP_SUCCESS
+ * @post          sets lastError always to UDP_IAP_SUCCESS
  * @return        always T_ACK_PDU
  */
 static unsigned char updAppVersionRequest(bool * sendTel, unsigned char * data)
 {
     unsigned char* appversion;
     appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
-    lastError = IAP_SUCCESS;
+    lastError = UDP_IAP_SUCCESS;
     *sendTel = prepareReturnTelegram(BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
     memcpy(bcu.sendTelegram + 10, appversion, BL_ID_STRING_LENGTH - 1);
 #ifdef DUMP_TELEGRAMS_LVL1
@@ -653,23 +337,25 @@ static unsigned char updAppVersionRequest(bool * sendTel, unsigned char * data)
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3] should contain the sector number to be erased
- * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
+/*
 static unsigned char updEraseSector(bool * sendTel, unsigned char * data)
 {
     resetProtocol();
     setLastError(eraseSector(data[3]), sendTel);
     return (T_ACK_PDU);
 }
+*/
 
 /**
  * @brief
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3-6] contains startAddress, data[10] contains endAddress
- * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
@@ -678,7 +364,7 @@ static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
     resetProtocol();
     unsigned int startAddress = streamToUIn32(&data[3]);
     unsigned int endAddress = streamToUIn32(&data[7]);
-    setLastError(eraseAddressRange(startAddress, endAddress, false), sendTel);
+    setLastError(eraseAddressRange(startAddress, endAddress), sendTel);
     return (T_ACK_PDU);
 }
 
@@ -688,7 +374,7 @@ static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3] must contain the ramBuffer location and data[4...] the bytes to copy to the ramBuffer
  * @param nCount  Number of bytes to copy
- * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise @ref UDP_RAM_BUFFER_OVERFLOW or a @ref IAP_Status
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_RAM_BUFFER_OVERFLOW or a @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
@@ -707,7 +393,7 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
     bytesReceived += nCount;
 
     memcpy((void *) &ramBuffer[ramLocation], data + 4, nCount); //ab dem 4. Byte sind die Daten verfügbar
-    setLastError((UDP_State)IAP_SUCCESS, sendTel);
+    setLastError(UDP_IAP_SUCCESS, sendTel);
     for(unsigned int i=0; i<nCount; i++)
     {
         d2(data[i+4],HEX,2);
@@ -724,7 +410,7 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    the number of bytes to flash is in data[3-6] the flash address to program in data[7-10]
- * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise a @ref UDP_State or a @ref IAP_Status
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State or a @ref IAP_Status
  * @return        T_ACK_PDU
  * @note          device must be unlocked
  * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
@@ -771,18 +457,14 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
     d3(serial.print(" bytes @ 0x", address, HEX, 8));
     d3(serial.println(" crc 0x", crcRamBuffer, HEX, 8));
 
-    // Everything is setup, wait for a free bus, so no interrupt will kill us
-    /*
-    while (!bus.idle())
-            ;
-            */
     bytesFlashed += flash_count;
     UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
-    if (error != (UDP_State)IAP_SUCCESS)
+    /*
+    if (error != UDP_IAP_SUCCESS)
     {
         error = UDP_CRC_ERROR;
     }
-
+     */
     setLastError(error, sendTel);
     return (T_ACK_PDU);
 }
@@ -860,7 +542,7 @@ static unsigned char updRequestData(bool * sendTel)
  *        to the return telegram.
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
- * @post          calls setLastErrror with IAP_SUCCESS if successful, if device is locked @ref UDP_DEVICE_LOCKED
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, if device is locked @ref UDP_DEVICE_LOCKED
  *                otherwise a @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
@@ -876,7 +558,7 @@ static unsigned char updRequestUID(bool * sendTel)
     // the operator has physical access to the device -> we unlock it
     byte uid[4 * 4];
     UDP_State result = (UDP_State)iapReadUID(uid);
-    if (result != (UDP_State)IAP_SUCCESS)
+    if (result != UDP_IAP_SUCCESS)
     {
         dline("iapReadUID error");
         setLastError(result, sendTel);
@@ -923,7 +605,7 @@ static unsigned char updUnkownCommand(bool * sendTel)
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    - data[7..4] contains the length of the application boot descriptor block received
  *                - data[11..8] contains the crc32 of the received bytes
- * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise a @ref UDP_State or @ref IAP_Status
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State or @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
@@ -981,14 +663,14 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
     if(memcmp((byte *) address, ramBuffer, count) == 0)
     {
         d3(serial.println("is equal, skipping"));
-        result = (UDP_State)IAP_SUCCESS;
+        result = UDP_IAP_SUCCESS;
         // dont return here, let's also check the AppDescriptionBlock
     }
     else
     {
         d3(serial.print("it's different, Erase Page:"));
-        result = erasePage(bootDescriptorBlockPage()); // - data[7]);
-        if (result != ((UDP_State)IAP_SUCCESS))
+        result = erasePageRange(bootDescriptorBlockPage(), bootDescriptorBlockPage()); // - data[7]);
+        if (result != UDP_IAP_SUCCESS)
         {
             setLastError(result, sendTel);
             return (T_ACK_PDU);
@@ -997,7 +679,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
         d3(serial.print(" OK, Flash Page:"));
 
         result = executeProgramFlash(address, ramBuffer, FLASH_PAGE_SIZE, true); // no less than 256byte can be flashed
-        if (result == ((UDP_State)IAP_SUCCESS))
+        if (result == UDP_IAP_SUCCESS)
         {
             d3(serial.println(" OK"));
         }
@@ -1035,7 +717,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3..3+nCount] buffer containing the bytes to "copy" to the @ref Decompressor
  * @param nCount  Number of bytes to read from data
- * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise @ref UDP_RAM_BUFFER_OVERFLOW or @ref UDP_NOT_IMPLEMENTED
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_RAM_BUFFER_OVERFLOW or @ref UDP_NOT_IMPLEMENTED
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  * @warning       The function calls @ref Decompressor.pageCompletedDoFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
@@ -1056,7 +738,7 @@ static unsigned char updSendDataToDecompress(bool * sendTel, unsigned char * dat
     {
         decompressor.putByte(data[i + 3]);
     }
-    setLastError((UDP_State)IAP_SUCCESS, sendTel);
+    setLastError(UDP_IAP_SUCCESS, sendTel);
 #endif
     return (T_ACK_PDU);
 }
@@ -1069,7 +751,7 @@ static unsigned char updSendDataToDecompress(bool * sendTel, unsigned char * dat
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[11-14] contains the crc32 for the \todo check that this is correct
- * @post          calls setLastErrror with IAP_SUCCESS if successful, otherwise a @ref UDP_State or a @ref IAP_Status
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State or a @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  * @warning       The function calls @ref Decompressor.pageCompletedDoFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
@@ -1111,7 +793,7 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
     }
     else
     {
-        setLastError((UDP_State)IAP_SUCCESS, sendTel);
+        setLastError(UDP_IAP_SUCCESS, sendTel);
     }
 
     resetProtocol(); //DONE we need this, otherwise updSendDataToDecompress will run into a buffer overflow
@@ -1179,7 +861,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
             return (updResetDevice(sendTel));
 
         case UPD_ERASE_SECTOR:
-            return (updEraseSector(sendTel, data));
+            return (updUnkownCommand(sendTel)); // return (updEraseSector(sendTel, data));
 
         case UPD_SEND_DATA:
             return (updSendData(sendTel, data, count));

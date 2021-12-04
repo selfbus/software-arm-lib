@@ -1,9 +1,11 @@
 package org.hkfree.knxduino.updater.tests.flashdiff;
 
+import org.hkfree.knxduino.updater.Flash;
+
 import java.util.Arrays;
 
 public class FlashPage {
-    public static final int PAGE_SIZE = 256;
+    public static final int PAGE_SIZE = Flash.FLASH_PAGE_SIZE;
     private byte[] old; // old content before patching
 
     public FlashPage(byte[] fromByteArray, int begin) {
