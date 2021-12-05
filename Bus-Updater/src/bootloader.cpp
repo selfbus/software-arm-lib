@@ -248,8 +248,7 @@ int main()
     }
 
     // Start main application at address
-    AppDescriptionBlock * block = (AppDescriptionBlock *) applicationFirstAddress();
-    block--; // one block backwards
+    AppDescriptionBlock * block = (AppDescriptionBlock *) bootDescriptorBlockAddress();
     for (int i = 0; i < BOOT_BLOCK_COUNT; i++, block--)
     {
         if (checkApplication(block))
