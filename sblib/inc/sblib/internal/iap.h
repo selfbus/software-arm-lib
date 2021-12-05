@@ -20,18 +20,18 @@
  */
 enum IAP_Status
 {
-    IAP_SUCCESS,                                //!< successful
-    IAP_INVALID_COMMAND,                        //!< invalid command
-    IAP_SRC_ADDR_ERROR,                         //!< source address error
-    IAP_DST_ADDR_ERROR,                         //!< destination address error
-    IAP_SRC_ADDR_NOT_MAPPED,                    //!< source address not mapped
-    IAP_DST_ADDR_NOT_MAPPED,                    //!< destination address not mapped
-    IAP_COUNT_ERROR,                            //!< count error
-    IAP_INVALID_SECTOR,                         //!< invalid sector error
-    IAP_SECTOR_NOT_BLANK,                       //!< sector not blank
-    IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION,//!< sector not prepared for write operation
-    IAP_COMPARE_ERROR,                          //!< compare error
-    IAP_BUSY                                    //!< busy
+    IAP_SUCCESS = 0,                                 //!< Command is executed successfully.
+    IAP_INVALID_COMMAND = 1,                         //!< Invalid command.
+    IAP_SRC_ADDR_ERROR = 2,                          //!< Source address is not on a word boundary.
+    IAP_DST_ADDR_ERROR = 3,                          //!< Destination address is not on a correct boundary.
+    IAP_SRC_ADDR_NOT_MAPPED = 4,                     //!< Source address is not mapped in the memory map. Count value is taken in to consideration where applicable.
+    IAP_DST_ADDR_NOT_MAPPED = 5,                     //!< Destination address is not mapped in the memory map. Count value is taken in to consideration where applicable.
+    IAP_COUNT_ERROR = 6,                             //!< Byte count is not multiple of 4 or 256 | 512 | 1024 | 4096
+    IAP_INVALID_SECTOR = 7,                          //!< Sector number is invalid.
+    IAP_SECTOR_NOT_BLANK = 8,                        //!< Sector is not blank.
+    IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION = 9, //!< Command to prepare sector for write operation was not executed.
+    IAP_COMPARE_ERROR = 10,                          //!< Source and destination data is not same.
+    IAP_BUSY = 11                                    //!< Flash programming hardware interface is busy.
 };
 
 
@@ -123,9 +123,11 @@ IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned 
  * Programs the specified number of bytes from the RAM to the specified location
  * inside the FLASH.
  * @param rom           start address of inside the FLASH
- * @param ram           start address of the buffer
+ * @param ram           start address of the buffer (must be word aligned, use __attribute__ ((aligned (4))) to force it)
  * @param size          number of bytes to program
  * @return              @ref IAP_Status status code
+ * @note                Address of ram must be word aligned. Otherwise you'll run into a @ref IAP_SRC_ADDR_ERROR
+ *                      Use '__attribute__ ((aligned (4)))' to force correct alignment even with compiler optimization -Ox
  * @warning             The function calls no_interrupts().
  */
 IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size);

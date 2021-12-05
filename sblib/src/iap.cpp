@@ -24,16 +24,16 @@
  */
 enum IAP_Command
 {
-    CMD_PREPARE = 50,    //!< Prepare sector(s) for write
-    CMD_COPY_RAM2FLASH,  //!< Copy RAM to Flash
-    CMD_ERASE,           //!< Erase sector(s)
-    CMD_BLANK_CHECK,     //!< Blank check sector(s)
-    CMD_READ_PART_ID,    //!< Read chip part ID
-    CMD_READ_BOOT_VER,   //!< Read chip boot code version
-    CMD_COMPARE,         //!< Compare memory areas
-    CMD_REINVOKE_ISP,    //!< Reinvoke ISP
-    CMD_READ_UID,        //!< Read unique ID
-    CMD_ERASE_PAGE       //!< Erase page(s)
+    CMD_PREPARE = 50,           //!< Prepare sector(s) for write
+    CMD_COPY_RAM2FLASH = 51,    //!< Copy RAM to Flash
+    CMD_ERASE = 52,             //!< Erase sector(s)
+    CMD_BLANK_CHECK = 53,       //!< Blank check sector(s)
+    CMD_READ_PART_ID = 54,      //!< Read chip part ID
+    CMD_READ_BOOT_VER = 55,     //!< Read chip boot code version
+    CMD_COMPARE = 56,           //!< Compare memory areas
+    CMD_REINVOKE_ISP = 57,      //!< Reinvoke ISP
+    CMD_READ_UID = 58,          //!< Read unique ID
+    CMD_ERASE_PAGE = 59         //!< Erase page(s)
 };
 
 /**
@@ -41,10 +41,10 @@ enum IAP_Command
  */
 struct IAP_Parameter
 {
-    unsigned int cmd;         //!< Command
-    unsigned int par[4];      //!< Parameters
-    unsigned int stat;        //!< Status
-    unsigned int res[4];      //!< Result
+    uint32_t cmd;         //!< Command
+    uint32_t par[4];      //!< Parameters
+    uint32_t stat;        //!< Status
+    uint32_t res[4];      //!< Result
 };
 
 // The size of the flash in bytes. Use iapFlashSize() to get the flash size.
@@ -55,7 +55,7 @@ unsigned int iapFlashBytes = 0;
  * IAP call function (DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING!)
  * use instead: IAP_Call_InterruptSafe()
  */
-typedef void (*IAP_Func)(unsigned int * cmd, unsigned int * stat);
+typedef void (*IAP_Func)(unsigned long * cmd, unsigned long * stat);
 
 #ifndef IAP_EMULATION
 #  if defined(__LPC11XX__) || defined(__LPC11UXX__) || defined(__LPC13XX__) || defined(__LPC17XX__)
@@ -81,31 +81,33 @@ typedef void (*IAP_Func)(unsigned int * cmd, unsigned int * stat);
  *         Vector Table is located in the Flash this will fail and raise a
  *         non-handled HardFault condition.
  */
-inline void IAP_Call_InterruptSafe(unsigned int *cmd, unsigned int *stat)
+inline void IAP_Call_InterruptSafe(unsigned long *cmd, unsigned long *stat, const bool getLock = true)
 {
-    noInterrupts();
+    if (getLock)
+    {
+        noInterrupts();
+    }
     ///\todo check, if this data barriers are rly needed as mentioned here: https://dzone.com/articles/nvic-disabling-interrupts-on-arm-cortex-m-and-the
     // __DSB();
     // __ISB();
     IAP_Call(cmd, stat);
-    interrupts();
+
+    if (getLock)
+    {
+        interrupts();
+    }
 }
 
-static IAP_Status _prepareSectorRange(const unsigned int startSector, const unsigned int endSector)
+static IAP_Status _prepareSectorRange(const unsigned int startSector, const unsigned int endSector, const bool getLock = true)
 {
     IAP_Parameter p;
 
     p.cmd = CMD_PREPARE;
     p.par[0] = startSector;
     p.par[1] = endSector;
-    IAP_Call_InterruptSafe(&p.cmd, &p.stat);
+    IAP_Call_InterruptSafe(&p.cmd, &p.stat, getLock);
 
     return (IAP_Status) p.stat;
-}
-
-static IAP_Status _prepareSector(const unsigned int sector)
-{
-    return _prepareSectorRange(sector, sector);
 }
 
 IAP_Status iapEraseSector(const unsigned int sector)
@@ -164,31 +166,44 @@ IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned 
 
 IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
 {
+    // IMPORTANT: Address of ram must be word aligned. Otherwise you'll run into a IAP_SRC_ADDR_ERROR
+    // Use '__attribute__ ((aligned (4)))' to force correct alignment even with compiler optimization -Ox
+
     IAP_Parameter p;
     unsigned int sector = iapSectorOfAddress(rom);
 
-    /* first we need to 'unlock' the sector */
-    p.stat = _prepareSector(sector);
+    // in order to access flash we need to disable all interrupts
+    noInterrupts();
+    // first we need to unlock the sector
+    p.stat = _prepareSectorRange(sector, sector, false);
 
-    if (p.stat == IAP_SUCCESS)
+    if (p.stat != IAP_SUCCESS)
     {
-        /* then we can `copy` the RAM content to the FLASH */
-        p.cmd = CMD_COPY_RAM2FLASH;
-        p.par[0] = (unsigned int) (unsigned long) rom;
-        p.par[1] = (unsigned int) (unsigned long) ram;
-        p.par[2] = size;
-        p.par[3] = SystemCoreClock / 1000;
-        IAP_Call_InterruptSafe(&p.cmd, &p.stat);
-
-        if (p.stat == IAP_SUCCESS)
-        {
-            p.cmd = CMD_COMPARE;
-            p.par[0] = (unsigned int) (unsigned long) rom;
-            p.par[1] = (unsigned int) (unsigned long) ram;
-            p.par[2] = size;
-            IAP_Call_InterruptSafe(&p.cmd, &p.stat);
-        }
+        interrupts();
+        return (IAP_Status) p.stat;
     }
+
+    // then we can copy the RAM content to the FLASH
+    p.cmd = CMD_COPY_RAM2FLASH;
+    p.par[0] = (unsigned long) rom;
+    p.par[1] = (unsigned long) ram;
+    p.par[2] = size;
+    p.par[3] = SystemCoreClock / 1000;
+    IAP_Call_InterruptSafe(&p.cmd, &p.stat, false);
+
+    if (p.stat != IAP_SUCCESS)
+    {
+        interrupts();
+        return (IAP_Status) p.stat;
+    }
+
+    // now we check that RAM and FLASH have the same content
+    p.cmd = CMD_COMPARE;
+    p.par[0] = (unsigned long) rom;
+    p.par[1] = (unsigned long) ram;
+    p.par[2] = size;
+    IAP_Call_InterruptSafe(&p.cmd, &p.stat, false);
+    interrupts();
     return (IAP_Status) p.stat;
 }
 
