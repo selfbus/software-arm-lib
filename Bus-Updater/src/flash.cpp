@@ -150,6 +150,7 @@ UDP_State erasePage(unsigned int page)
 
 UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAddress, const bool rangeCheck)
 {
+    UDP_State result = UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE;
     d3(
         serial.print(" eraseAddressRange 0x", startAddress, HEX, 4);
         serial.println("-0x", endAddress, HEX, 4);
@@ -161,7 +162,6 @@ UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAdd
         return (UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE);
     }
 
-    UDP_State result;
     unsigned int start;
     unsigned int end;
     unsigned int startSector;

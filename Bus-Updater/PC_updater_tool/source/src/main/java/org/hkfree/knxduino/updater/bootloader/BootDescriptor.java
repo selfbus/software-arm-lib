@@ -26,7 +26,7 @@ public class BootDescriptor {
         this.crc32 = crc32;
         this.appVersionAddress = appVersionAddress;
 
-        valid = (this.startAddress <= this.endAddress)  && (this.startAddress != 0xFFFFFFFFL);
+        valid = (this.startAddress != 0xFFFFFFFFL);
     }
 
 

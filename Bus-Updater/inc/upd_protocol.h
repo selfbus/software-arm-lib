@@ -120,18 +120,18 @@ enum UDP_State
 {
     // UDP_IAP_ are in decimal (IAP is "In Application Programming" of the MCU's flash
     // these results are defined in iap.h Selfbus sblib
-    UDP_IAP_SUCCESS = 0,                                 //!< IAP OK
-    UDP_IAP_INVALID_COMMAND = 1,                         //!< IAP invalid command
-    UDP_IAP_SRC_ADDR_ERROR = 2,                          //!< IAP source address error
-    UDP_IAP_DST_ADDR_ERROR = 3,                          //!< IAP destination address error
-    UDP_IAP_SRC_ADDR_NOT_MAPPED = 4,                     //!< IAP source address not mapped
-    UDP_IAP_DST_ADDR_NOT_MAPPED = 5,                     //!< IAP destination address not mapped
-    UDP_IAP_COUNT_ERROR = 6,                             //!< IAP count error
-    UDP_IAP_INVALID_SECTOR = 7,                          //!< IAP invalid sector error
-    UDP_IAP_SECTOR_NOT_BLANK = 8,                        //!< IAP sector not blank"
-    UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION = 9, //!< IAP sector not prepared for write operation
-    UDP_IAP_COMPARE_ERROR = 10,                          //!< IAP compare error
-    UDP_IAP_BUSY = 11,                                   //!< IAP busy
+    UDP_IAP_SUCCESS = 0,                                 //!< IAP Command is executed successfully.
+    UDP_IAP_INVALID_COMMAND = 1,                         //!< IAP Invalid command.
+    UDP_IAP_SRC_ADDR_ERROR = 2,                          //!< IAP Source address is not on a word boundary.
+    UDP_IAP_DST_ADDR_ERROR = 3,                          //!< IAP Destination address is not on a correct boundary.
+    UDP_IAP_SRC_ADDR_NOT_MAPPED = 4,                     //!< IAP Source address is not mapped in the memory map. Count value is taken in to consideration where applicable.
+    UDP_IAP_DST_ADDR_NOT_MAPPED = 5,                     //!< IAP Destination address is not mapped in the memory map. Count value is taken in to consideration where applicable.
+    UDP_IAP_COUNT_ERROR = 6,                             //!< IAP Byte count is not multiple of 4 or 256 | 512 | 1024 | 4096
+    UDP_IAP_INVALID_SECTOR = 7,                          //!< IAP Sector number is invalid.
+    UDP_IAP_SECTOR_NOT_BLANK = 8,                        //!< IAP Sector is not blank.
+    UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION = 9, //!< IAP Command to prepare sector for write operation was not executed.
+    UDP_IAP_COMPARE_ERROR = 10,                          //!< IAP Source and destination data is not same.
+    UDP_IAP_BUSY = 11,                                   //!< IAP Flash programming hardware interface is busy.
 
     // following are in hexadecimal
     UDP_UNKNOWN_COMMAND = 0x100,              //!< received command is not defined

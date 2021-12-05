@@ -51,7 +51,7 @@
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)     //!< magic number for device is locked and can't be flashed
 #define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< magic number for device is unlocked and flashing is allowed
 
-static unsigned char ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
+static unsigned char __attribute__ ((aligned (4))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
 
 
 Timeout mcuRestartRequestTimeout; //!< Timeout used to trigger a MCU Reset by NVIC_SystemReset()
@@ -115,7 +115,7 @@ bool restartRequestExpired(void)
  */
 ALWAYS_INLINE unsigned int streamToUIn32(unsigned char * buffer)
 {
-    return (buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0]);
+    return ((unsigned int)(buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0]));
 }
 
 ALWAYS_INLINE void uInt32ToStream(unsigned char * buffer, unsigned int val)
@@ -463,12 +463,6 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
 
     bytesFlashed += flash_count;
     UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
-    /*
-    if (error != UDP_IAP_SUCCESS)
-    {
-        error = UDP_CRC_ERROR;
-    }
-     */
     setLastError(error, sendTel);
     return (T_ACK_PDU);
 }
@@ -505,8 +499,24 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel)
  */
 static unsigned char udpRequestBootDescriptionBlock(bool * sendTel)
 {
-    //TODO maybe check if the block is valid?
     AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) bootDescriptorBlockAddress(); // Address of boot block descriptor
+
+    bool valid;
+    // check that the start address is not beyond end address
+    valid = bootDescr->startAddress <= bootDescr->endAddress;
+    // addresses not outside the flash
+    valid &= (bootDescr->startAddress <= flashLastAddress()) && (bootDescr->endAddress <= flashLastAddress());
+    // addresses not smaller then allowed applications first address
+    valid &= (bootDescr->startAddress >= applicationFirstAddress()) && (bootDescr->endAddress >= applicationFirstAddress());
+
+    if (!valid)
+    {
+        bootDescr->startAddress = 0xFFFFFFFF;
+        bootDescr->endAddress = bootDescr->startAddress;
+        bootDescr->appVersionAddress = bootDescr->startAddress;
+        bootDescr->crc = bootDescr->startAddress;
+    }
+
     *sendTel = prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
     memcpy(bcu.sendTelegram + 10, bootDescr, 12); // startAddress, endAddress, crc
 
@@ -695,7 +705,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
         }
         else
         {
-            d3(serial.println(" -->executeProgramFlash: ", result, DEC, 2));
+            d3(serial.println(" -->executeProgramFlash: ", (unsigned int)result, DEC, 2));
             setLastError((UDP_State)result, sendTel);
         }
     }

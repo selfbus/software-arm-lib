@@ -51,7 +51,7 @@ void updCommand2Serial(byte cmd)
             case UPD_REQUEST_BL_IDENTITY: d1("REQUEST_BL_IDENTITY"); break;
             case UPD_RESPONSE_BL_IDENTITY: d1("RESPONSE_BL_IDENTITY"); break;
             case UPD_SET_EMULATION: d1("SET_EMULATION"); break;
-            default:  d3(serial.print("Command unknown", cmd)); break;
+            default: serial.print("Command unknown", (unsigned int)cmd); break;
         }
         d1(" ");
     );
@@ -60,35 +60,36 @@ void updCommand2Serial(byte cmd)
 void updResult2Serial(UDP_State result)
 {
     d3(
+        d1("UPD_");
         switch (result)
         {
             case UDP_IAP_SUCCESS: d1("IAP OK"); break;
-            case UDP_IAP_INVALID_COMMAND: d1("IAP invalid command"); break;
-            case UDP_IAP_SRC_ADDR_ERROR: d1("IAP source address error"); break;
-            case UDP_IAP_DST_ADDR_ERROR: d1("IAP destination address error"); break;
-            case UDP_IAP_SRC_ADDR_NOT_MAPPED: d1("IAP source address not mapped"); break;
-            case UDP_IAP_DST_ADDR_NOT_MAPPED: d1("IAP destination address not mapped"); break;
-            case UDP_IAP_COUNT_ERROR: d1("IAP count error"); break;
-            case UDP_IAP_INVALID_SECTOR: d1("IAP invalid sector error"); break;
-            case UDP_IAP_SECTOR_NOT_BLANK: d1("IAP sector not blank"); break;
-            case UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION: d1("IAP sector not prepared for write operation"); break;
-            case UDP_IAP_COMPARE_ERROR: d1("IAP compare error"); break;
-            case UDP_IAP_BUSY: d1("IAP busy"); break;
-            case UDP_UNKNOWN_COMMAND: d1("received command is not defined"); break;
-            case UDP_CRC_ERROR: d1("CRC calculated on the device and by the PC Updater tool don't match"); break;
-            case UDP_ADDRESS_NOT_ALLOWED_TO_FLASH: d1("specifed address cannot be programmed"); break;
-            case UDP_SECTOR_NOT_ALLOWED_TO_ERASE: d1("the specified sector cannot be erased"); break;
-            case UDP_RAM_BUFFER_OVERFLOW: d1("internal buffer for storing the data would overflow"); break;
-            case UDP_WRONG_DESCRIPTOR_BLOCK: d1("the boot descriptor block does not exist"); break;
-            case UDP_APPLICATION_NOT_STARTABLE: d1("the programmed application is not startable"); break;
-            case UDP_DEVICE_LOCKED: d1("the device is locked"); break;
-            case UDP_UID_MISMATCH: d1("UID sent to unlock the device is invalid"); break;
-            case UDP_ERASE_FAILED: d1("page erase failed"); break;
-            case UDP_FLASH_ERROR: d1("page program (flash) failed"); break;
-            case UDP_PAGE_NOT_ALLOWED_TO_ERASE: d1("page not allowed to erase"); break;
-            case UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE: d1("address range not allowed to erase"); break;
-            case UDP_NOT_IMPLEMENTED: d1("command is not yet implemented"); break;
-            default:  serial.print("UDP_State unknown ", result); break;
+            case UDP_IAP_INVALID_COMMAND: d1("IAP_INVALID_COMMAND."); break;
+            case UDP_IAP_SRC_ADDR_ERROR: d1("IAP_SRC_ADDR_ERROR"); break;
+            case UDP_IAP_DST_ADDR_ERROR: d1("IAP_DST_ADDR_ERROR"); break;
+            case UDP_IAP_SRC_ADDR_NOT_MAPPED: d1("IAP_SRC_ADDR_NOT_MAPPED"); break;
+            case UDP_IAP_DST_ADDR_NOT_MAPPED: d1("IAP_DST_ADDR_NOT_MAPPED"); break;
+            case UDP_IAP_COUNT_ERROR: d1("IAP_COUNT_ERROR"); break;
+            case UDP_IAP_INVALID_SECTOR: d1("IAP_INVALID_SECTOR"); break;
+            case UDP_IAP_SECTOR_NOT_BLANK: d1("IAP_SECTOR_NOT_BLANK"); break;
+            case UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION: d1("IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION"); break;
+            case UDP_IAP_COMPARE_ERROR: d1("IAP_COMPARE_ERRO"); break;
+            case UDP_IAP_BUSY: d1("IAP_BUSY"); break;
+            case UDP_UNKNOWN_COMMAND: d1("UNKNOWN_COMMAND"); break;
+            case UDP_CRC_ERROR: d1("CRC_ERROR"); break;
+            case UDP_ADDRESS_NOT_ALLOWED_TO_FLASH: d1("ADDRESS_NOT_ALLOWED_TO_FLASH"); break;
+            case UDP_SECTOR_NOT_ALLOWED_TO_ERASE: d1("SECTOR_NOT_ALLOWED_TO_ERASE"); break;
+            case UDP_RAM_BUFFER_OVERFLOW: d1("RAM_BUFFER_OVERFLOW"); break;
+            case UDP_WRONG_DESCRIPTOR_BLOCK: d1("WRONG_DESCRIPTOR_BLOCK"); break;
+            case UDP_APPLICATION_NOT_STARTABLE: d1("APPLICATION_NOT_STARTABLE"); break;
+            case UDP_DEVICE_LOCKED: d1("DEVICE_LOCKED"); break;
+            case UDP_UID_MISMATCH: d1("UID_MISMATCH"); break;
+            case UDP_ERASE_FAILED: d1("ERASE_FAILED"); break;
+            case UDP_FLASH_ERROR: d1("FLASH_ERROR"); break;
+            case UDP_PAGE_NOT_ALLOWED_TO_ERASE: d1("PAGE_NOT_ALLOWED_TO_ERASE"); break;
+            case UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE: d1("ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE"); break;
+            case UDP_NOT_IMPLEMENTED: d1("NOT_IMPLEMENTED"); break;
+            default: serial.print("State unknown ", (unsigned int)result); break;
         }
     );
 }

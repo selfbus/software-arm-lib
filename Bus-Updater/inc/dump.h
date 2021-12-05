@@ -22,11 +22,8 @@
 #ifndef DUMP_H_
 #define DUMP_H_
 
-#if defined(DEBUG) && (defined(DUMP_TELEGRAMS_LVL1) || defined(DUMP_TELEGRAMS_LVL2))
+#if (defined(DUMP_TELEGRAMS_LVL1) || defined(DUMP_TELEGRAMS_LVL2))
 #   include <sblib/serial.h>
-#else
-#   undef DUMP_TELEGRAMS_LVL1
-#   undef DUMP_TELEGRAMS_LVL2
 #endif
 
 // for update.cpp, upd_protocol.cpp, flash.cpp and partly decompressor.cpp

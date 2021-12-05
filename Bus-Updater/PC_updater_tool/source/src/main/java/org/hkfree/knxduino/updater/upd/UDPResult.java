@@ -13,18 +13,18 @@ import java.util.Objects;
 public enum UDPResult {
     // IAP_ are in decimal (IAP ist in application programming of the MCU's flash
     // these results are defined in iap.h Selfbus sblib
-    IAP_SUCCESS( 0, "OK", false),
-    IAP_INVALID_COMMAND( 1, "Flash (IAP) invalid command", true),
-    IAP_SRC_ADDR_ERROR( 2, "Flash (IAP) source address error", true),
-    IAP_DST_ADDR_ERROR( 3, "Flash (IAP) destination address error", true),
-    IAP_SRC_ADDR_NOT_MAPPED( 4, "Flash (IAP) source address not mapped", true),
-    IAP_DST_ADDR_NOT_MAPPED( 5, "Flash (IAP) destination address not mapped", true),
-    IAP_COUNT_ERROR( 6, "Flash (IAP) count error", true),
-    IAP_INVALID_SECTOR( 7, "Flash (IAP) invalid sector error", true),
-    IAP_SECTOR_NOT_BLANK( 8, "Flash (IAP) sector not blank", true),
-    IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION( 9, "Flash (IAP) sector not prepared for write operation", true),
-    IAP_COMPARE_ERROR( 10, "Flash (IAP) compare error", true),
-    IAP_BUSY( 11, "Flash (IAP) busy", true),
+    IAP_SUCCESS(0, "Flash (IAP) Command is executed successfully.", false),
+    IAP_INVALID_COMMAND(1, "Flash (IAP) Invalid command.", true),
+    IAP_SRC_ADDR_ERROR(2, "Flash (IAP) Source address is not on a word boundary.", true),
+    IAP_DST_ADDR_ERROR(3, "Flash (IAP) Destination address is not on a correct boundary.", true),
+    IAP_SRC_ADDR_NOT_MAPPED(4, "Flash (IAP) Source address is not mapped in the memory map. Count value is taken in to consideration where applicable.", true),
+    IAP_DST_ADDR_NOT_MAPPED(5, "Flash (IAP) Destination address is not mapped in the memory map. Count value is taken in to consideration where applicable.", true),
+    IAP_COUNT_ERROR(6, "Flash (IAP) Byte count is not multiple of 4 or 256 | 512 | 1024 | 4096", true),
+    IAP_INVALID_SECTOR(7, "Flash (IAP) Sector number is invalid.", true),
+    IAP_SECTOR_NOT_BLANK(8, "Flash (IAP) Sector is not blank.", true),
+    IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION(9, "Flash (IAP) Command to prepare sector for write operation was not executed.", true),
+    IAP_COMPARE_ERROR(10, "Flash (IAP) Source and destination data is not same.", true),
+    IAP_BUSY(11, "Flash (IAP) Flash programming hardware interface is busy.", true),
 
     // following are in hexadecimal
     UNKNOWN_COMMAND(0x100, "Command unknown", true), //!< received command is not defined
