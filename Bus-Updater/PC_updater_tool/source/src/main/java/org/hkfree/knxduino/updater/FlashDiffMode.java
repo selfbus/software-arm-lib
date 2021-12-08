@@ -13,6 +13,7 @@ import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
+import tuwien.auto.calimero.secure.Keyring;
 
 import java.io.File;
 import java.util.Arrays;
@@ -108,8 +109,7 @@ public final class FlashDiffMode {
                 }
                 // transmit telegram
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
-                ///\todo harden against drops and timeouts
-                result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA_TO_DECOMPRESS.id, txBuf);
+                result = DeviceManagement.sendWithRetry(mc, pd, UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, -1);
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
                 if (UPDProtocol.checkResult(result, false) != 0) {
                     DeviceManagement.restartProgrammingDevice(mc, pd);

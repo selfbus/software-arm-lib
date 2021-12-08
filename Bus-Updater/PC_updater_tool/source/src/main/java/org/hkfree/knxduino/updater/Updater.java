@@ -28,7 +28,6 @@ import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import tuwien.auto.calimero.mgmt.Destination;
 import com.google.common.primitives.Bytes;  	// For search in byte array
-import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
 /**
@@ -263,7 +262,6 @@ public class Updater implements Runnable {
         Exception thrown = null;
         boolean canceled = false;
         KNXNetworkLink link = null;
-
         try {
             if (cliOptions.help()) {
                 logger.info(cliOptions.helpToString());
@@ -316,6 +314,13 @@ public class Updater implements Runnable {
             if (cliOptions.eraseFlash()) {
                 logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
                 DeviceManagement.eraseFlash(mc, progDest);
+            }
+
+            if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
+                logger.warn("{}Dumping flash content range 0x{}-0x{} to bootloader's serial port.{}",
+                        ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()),  ConColors.RESET);
+                DeviceManagement.dumpFlashRange(mc, progDest, cliOptions.dumpFlashStartAddress(), cliOptions.dumpFlashEndAddress());
+                return;
             }
 
             BootLoaderIdentity bootLoaderIdentity = DeviceManagement.requestBootLoaderIdentity(mc, progDest);
@@ -403,7 +408,6 @@ public class Updater implements Runnable {
                 logger.warn("--NO_FLASH => {}only boot description block will be written{}", ConColors.RED, ConColors.RESET);
             }
 
-
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
                     newFirmware.endAddress(),
                     (int)newFirmware.crc32(),
@@ -412,79 +416,33 @@ public class Updater implements Runnable {
             byte[] streamBootDescriptor = newBootDescriptor.toStream();
 
             ///\todo separate FlashFullMode.doFullFlash(..) into erasePages and doFlash. Use doFlash for programming newBootDescriptor
-            int nDone = 0;
-            while (nDone < streamBootDescriptor.length) {
-                int txSize = Flash.MAX_PAYLOAD;
-                int remainBytes = streamBootDescriptor.length - nDone;
-                if (remainBytes < Flash.MAX_PAYLOAD) {
-                    txSize = remainBytes;
-                }
-                byte[] txBuf = new byte[txSize + 1];
-                if (txSize >= 0) {
-                    System.arraycopy(streamBootDescriptor, nDone, txBuf, 1, txSize);
-                }
-
-                // First Byte contains message number
-                txBuf[0] = (byte)nDone;
-
-                try {
-                    result = mc.sendUpdateData(progDest, UPDCommand.SEND_DATA.id, txBuf);
-                    if (UPDProtocol.checkResult(result, false) != 0) {
-                        DeviceManagement.restartProgrammingDevice(mc, progDest);
-                        throw new UpdaterException("Selfbus update failed.");
-                    }
-                    nDone += txSize;
-                }
-
-                catch (KNXTimeoutException e) { // timeout, we need to resend the last sent data
-                    logger.warn("{}Timeout {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
-                    // continue;
-                }
-                catch (KNXDisconnectException | KNXRemoteException e) {
-                    logger.warn("{}failed {}{}", ConColors.BRIGHT_RED, e.getMessage(), ConColors.RESET);
-                    // continue;
-                }
-                // in case of adding some code here uncomment above two continue
+            int nDone = DeviceManagement.doFlash(mc, progDest, streamBootDescriptor, -1);
+            if (cliOptions.delay() > 0) {
+                Thread.sleep(cliOptions.delay()); //Reduce bus load during data upload
             }
 
             ///todo this UPDATE_BOOT_DESC part, also needs a complete rework
             CRC32 crc32Block = new CRC32();
             crc32Block.update(streamBootDescriptor);
             int newCrc32 = (int)crc32Block.getValue();
-
             byte[] programBootDescriptor = new byte[9];
             Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
             Utils.longToStream(programBootDescriptor, 4, newCrc32);
             System.out.println();
             logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
                     Integer.toHexString(newCrc32), Long.toString(streamBootDescriptor.length));
+            result = DeviceManagement.sendWithRetry(mc, progDest, UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
+            if (UPDProtocol.checkResult(result) != 0) {
+                DeviceManagement.restartProgrammingDevice(mc, progDest);
+                throw new UpdaterException("Selfbus update failed.");
+            }
 
-            boolean success = false;
-            while (!success) {
-                try {
-
-                    result = mc.sendUpdateData(progDest, UPDCommand.UPDATE_BOOT_DESC.id, programBootDescriptor);
-                    if (UPDProtocol.checkResult(result) != 0) {
-                        DeviceManagement.restartProgrammingDevice(mc, progDest);
-                        throw new UpdaterException("Selfbus update failed.");
-                    }
-                    success = true;
-                    Thread.sleep(500); ///\todo check if this delay is really needed
-                    logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
-                    result = mc.sendUpdateData(progDest, UPDCommand.RESET.id, new byte[]{0});  // Clean restart by application rather than lib
-                    if (UPDProtocol.checkResult(result) != 0) {
-                        DeviceManagement.restartProgrammingDevice(mc, progDest);
-                        throw new UpdaterException("Selfbus update failed.");
-                    }
-
-                } catch (KNXTimeoutException e) {
-                    logger.warn("{}Timeout {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
-                    // continue;
-                } catch (KNXDisconnectException | KNXRemoteException e) {
-                    logger.warn("{}failed {}{}", ConColors.BRIGHT_RED, e.getMessage(), ConColors.RESET);
-                    // continue;
-                }
-                // in case of adding some code here uncomment above two continue
+            Thread.sleep(500); ///\todo check if this delay is really needed
+            logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
+            result = DeviceManagement.sendWithRetry(mc, progDest, UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
+            if (UPDProtocol.checkResult(result) != 0) {
+                DeviceManagement.restartProgrammingDevice(mc, progDest);
+                throw new UpdaterException("Selfbus update failed.");
             }
 
         } catch (final KNXException | UpdaterException | RuntimeException e) {

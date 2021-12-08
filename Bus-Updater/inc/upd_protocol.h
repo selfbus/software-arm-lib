@@ -93,8 +93,11 @@ enum UPD_Command
     UPD_ERASE_COMPLETE_FLASH = 7,       //!< Erase the entire flash area excluding the bootloader itself @note device must be unlocked
     UPD_ERASE_ADDRESSRANGE = 8,         //!< Erase flash from given start address to end address (start: data[3-6] end: data[7-10]) @note device must be unlocked
 
-    UPD_REQ_DATA = 10,                  //!< Return bytes from flash at given address?  @note device must be unlocked
+    UPD_REQ_DATA = 10,                  //!< Return bytes from flash at given address? @note device must be unlocked
                                         //!<@warning Not implemented
+    UPD_DUMP_FLASH = 11,                //!< DUMP the flash of a given address range (data[0-3] - data[4-7]) to serial port of the mcu,
+                                        //!< works only with DEBUG version of bootloader @note device must be unlocked
+
     UPD_GET_LAST_ERROR = 20,            //!< Returns last error
     UPD_SEND_LAST_ERROR = 21,           //!< Response for @ref UPD_GET_LAST_ERROR containing the last error
 

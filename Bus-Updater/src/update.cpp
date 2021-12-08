@@ -35,7 +35,8 @@
 #include "update.h"
 #include "dump.h"
 
-#if defined(DUMP_TELEGRAMS_LVL1)
+#if defined(DEBUG)
+#   include <sblib/serial.h>
 #   include "intelhex.h"
 #endif
 
@@ -75,21 +76,36 @@ static unsigned int bytesFlashed = 0;               //!< number of bytes flashed
  */
 ALWAYS_INLINE void uInt32ToStream(unsigned char * buffer, unsigned int val);
 
-
 /**
- * @brief Send the flash content from buffer->startAddress to buffer->endAddress
+ * @brief Send the flash content from startAddress to endAddress
  *        in Intel(R) hex file format over serial port
  *
- * @param buffer @ref AppDescriptionBlock to send in Intel(R) hex file format over serial port
+ * @param startAddress
+ * @param endAddress
  */
-void dumpFlashContent(AppDescriptionBlock * buffer)
+#if defined(DEBUG)
+void dumpFlashContent(unsigned int startAddress, unsigned int endAddress)
 {
-    d3(
-        serial.println();
-        dumpToSerialinIntelHex(&serial, (unsigned char *) buffer->startAddress, buffer->endAddress - buffer->startAddress);
-        serial.println();
-    );
+    if (startAddress > endAddress)
+    {
+        unsigned int temp = startAddress;
+        startAddress = endAddress;
+        endAddress = temp;
+    }
+
+    if (startAddress < flashFirstAddress())
+    {
+        startAddress = flashFirstAddress();
+    }
+
+    if (endAddress > flashLastAddress())
+    {
+        endAddress = flashLastAddress();
+    }
+
+    dumpToSerialinIntelHex(&serial, (unsigned char *) startAddress, endAddress - startAddress + 1);
 }
+#endif
 
 void restartRequest (unsigned int msec)
 {
@@ -340,10 +356,34 @@ static unsigned char updEraseSector(bool * sendTel, unsigned char * data)
 */
 
 /**
+ * @brief Handles the @ref UPD_DUMP_FLASH command and dumps the given flash address range to the serial port in intel(R) hex
+ *
+ * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
+ * @param data    data[3-6] contains startAddress, data[7-10] contains endAddress
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
+ * @return        always T_ACK_PDU
+ * @note          device must be unlocked
+ */
+static unsigned char updDumpFlashRange(bool * sendTel, unsigned char * data)
+{
+#ifdef DEBUG
+    unsigned int startAddress = streamToUIn32(&data[3]);
+    unsigned int endAddress = streamToUIn32(&data[7]);
+    setLastError(UDP_IAP_SUCCESS, sendTel);
+    *sendTel = true;
+    dumpFlashContent(startAddress, endAddress);
+#else
+    setLastError(UDP_NOT_IMPLEMENTED, sendTel);
+#endif
+    return (T_ACK_PDU);
+}
+
+
+/**
  * @brief Handles the @ref UPD_ERASE_ADDRESSRANGE command and erases the requested flash address range
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
- * @param data    data[3-6] contains startAddress, data[10] contains endAddress
+ * @param data    data[3-6] contains startAddress, data[7-10] contains endAddress
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
@@ -709,13 +749,13 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
             setLastError((UDP_State)result, sendTel);
         }
     }
-    // dumpFlashContent((AppDescriptionBlock *) ramBuffer);
+    // dumpFlashContent(((AppDescriptionBlock *) ramBuffer)->startAddress, ((AppDescriptionBlock *) ramBuffer)->endAddress); // untested
     if (!checkApplication((AppDescriptionBlock *) ramBuffer))
     {
         d3(
             serial.println("-->UDP_APPLICATION_NOT_STARTABLE");
             //DONE turn back on and remove above
-            //dumpFlashContent((AppDescriptionBlock *) ramBuffer);
+            // dumpFlashContent(((AppDescriptionBlock *) ramBuffer)->startAddress, ((AppDescriptionBlock *) ramBuffer)->endAddress); // untested
         );
         setLastError(UDP_APPLICATION_NOT_STARTABLE, sendTel);
         return (T_ACK_PDU);
@@ -894,6 +934,8 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 
         case UPD_ERASE_ADDRESSRANGE:
             return (updEraseAddressRange(sendTel, data));
+        case UPD_DUMP_FLASH:
+            return (updDumpFlashRange(sendTel, data));
 
         case UPD_UPDATE_BOOT_DESC:
             return (updUpdateBootDescriptorBlock(sendTel, data));

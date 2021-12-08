@@ -38,6 +38,7 @@ void updCommand2Serial(byte cmd)
             case UPD_ERASE_COMPLETE_FLASH: d1("ERASE_COMPLETE_FLASH"); break;
             case UPD_ERASE_ADDRESSRANGE: d1("ERASE_ADDRESSRANGE"); break;
             case UPD_REQ_DATA: d1("REQ_DATA"); break;
+            case UPD_DUMP_FLASH: d1("DUMP_FLASH"); break;
             case UPD_GET_LAST_ERROR: d1("GET_LAST_ERROR"); break;
             case UPD_SEND_LAST_ERROR: d1("SEND_LAST_ERROR"); break;
             case UPD_UNLOCK_DEVICE: d1("UNLOCK_DEVICE"); break;

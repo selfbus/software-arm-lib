@@ -179,40 +179,37 @@ static inline void run_updater(bool programmingMode)
         ((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
     }
 
-    d3(
-        //serial.setRxPin(PIO3_1);
-        //serial.setTxPin(PIO3_0);
-        if (!serial.enabled())
-        {
-            serial.begin(115200);
-        }
-        int physicalAddress = bus.ownAddress();
-        serial.println("=========================================================");
-        serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
-        serial.println(", DEBUG MODE :-)");
-        serial.print("Build: ");
-        serial.print(__DATE__);
-        serial.print(" ");
-        serial.println(__TIME__);
-        serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
-        serial.print("Flash      (start,end,size) : 0x", flashFirstAddress(), HEX, 6);
-        serial.print(" 0x", flashLastAddress(), HEX, 6);
-        serial.println(" 0x", flashSize(), HEX, 6);
-        serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
-        serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
-        serial.println(" 0x", bootLoaderSize(), HEX, 6);
-        serial.println("Firmware (start)            : 0x", applicationFirstAddress(), HEX, 6);
-        serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress(), HEX, 6);
-        serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
-        serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
-        serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
-        serial.print("physical address            : ", (physicalAddress >> 12) & 0x0F, DEC);
-        serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
-        serial.println(".", physicalAddress & 0xFF, DEC);
-        serial.println("--------------------------------------------------- by sh");
-    );
 #ifdef DEBUG
-    // eraseFullFlash();
+    //serial.setRxPin(PIO3_1);
+    //serial.setTxPin(PIO3_0);
+    if (!serial.enabled())
+    {
+        serial.begin(115200);
+    }
+    int physicalAddress = bus.ownAddress();
+    serial.println("=========================================================");
+    serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
+    serial.println(", DEBUG MODE :-)");
+    serial.print("Build: ");
+    serial.print(__DATE__);
+    serial.print(" ");
+    serial.println(__TIME__);
+    serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
+    serial.print("Flash      (start,end,size) : 0x", flashFirstAddress(), HEX, 6);
+    serial.print(" 0x", flashLastAddress(), HEX, 6);
+    serial.println(" 0x", flashSize(), HEX, 6);
+    serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
+    serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
+    serial.println(" 0x", bootLoaderSize(), HEX, 6);
+    serial.println("Firmware (start)            : 0x", applicationFirstAddress(), HEX, 6);
+    serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress(), HEX, 6);
+    serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
+    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
+    serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
+    serial.print("physical address            : ", (physicalAddress >> 12) & 0x0F, DEC);
+    serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
+    serial.println(".", physicalAddress & 0xFF, DEC);
+    serial.println("--------------------------------------------------- by sh");
 #endif
 
     while (1)

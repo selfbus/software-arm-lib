@@ -94,6 +94,8 @@ public class CliOptions {
 
     private static final String OPT_LONG_ERASEFLASH = "ERASEFLASH";
 
+    private static final String OPT_LONG_DUMPFLASH = "DUMPFLASH";
+
     private static final int PRINT_WIDTH = 100;
     private final static List VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
 
@@ -130,6 +132,8 @@ public class CliOptions {
     private boolean NO_FLASH = false;
     private Level logLevel = Level.DEBUG;
     private boolean eraseFlash = false;
+    private long dumpFlashStartAddress = -1;
+    private long dumpFlashEndAddress = -1;
 
     private boolean help = false;
     private boolean version = false;
@@ -147,6 +151,14 @@ public class CliOptions {
         Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
         Option eraseFlash = new Option(null, OPT_LONG_ERASEFLASH, false, "delete the entire flash except from the bootloader itself!");
+
+        Option dumpFlash = Option.builder(null).longOpt(OPT_LONG_DUMPFLASH)
+                .argName("start> <end")
+                .valueSeparator(' ')
+                .numberOfArgs(2)
+                .required(false)
+                .type(Number.class)
+                .desc("dump a flash range in intel(R) hex to the serial port of the MCU. Works only with DEBUG version of the bootloader.").build();
 
         Option fileName = Option.builder(OPT_SHORT_FILENAME).longOpt(OPT_LONG_FILENAME)
                 .argName("filename")
@@ -263,6 +275,7 @@ public class CliOptions {
         cliOptions.addOption(delay);
         cliOptions.addOption(logLevel);
         cliOptions.addOption(eraseFlash);
+        cliOptions.addOption(dumpFlash);
         cliOptions.addOption(NO_FLASH);
 
 
@@ -309,6 +322,14 @@ public class CliOptions {
                 eraseFlash = true;
             }
             logger.debug("eraseFlash={}", eraseFlash);
+
+            if (cmdLine.hasOption(OPT_LONG_DUMPFLASH)) {
+                String[] optArgs = cmdLine.getOptionValues(OPT_LONG_DUMPFLASH);
+                dumpFlashStartAddress = Long.decode(optArgs[0]);
+                dumpFlashEndAddress = Long.decode(optArgs[1]);
+            }
+            logger.debug("dumpFlashStartAddress={}", dumpFlashStartAddress);
+            logger.debug("dumpFlashEndAddress={}", dumpFlashEndAddress);
 
             if (cmdLine.hasOption(OPT_SHORT_FULL)) {
                 full = true;
@@ -530,6 +551,14 @@ public class CliOptions {
 
     public boolean eraseFlash() {
         return eraseFlash;
+    }
+
+    public long dumpFlashStartAddress() {
+        return dumpFlashStartAddress;
+    }
+
+    public long dumpFlashEndAddress() {
+        return dumpFlashEndAddress;
     }
 
     public boolean help() {

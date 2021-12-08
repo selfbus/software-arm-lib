@@ -22,7 +22,7 @@ windows: gradlew.bat fatJar
 SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
        <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [-u <uid>] [-f1] [-H <localhost>] [-P
        <localport>] [-p <port>] [-n] [-r] [-a <address>] [-h | -v]  [--delay <ms>] [-l
-       <TRACE|DEBUG|INFO>] [--ERASEFLASH] [-f0]
+       <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>           Filename of hex file to program
@@ -48,6 +48,8 @@ Selfbus KNX-Firmware update tool options:
                                     valid 0-500ms, default 0
  -l,--logLevel <TRACE|DEBUG|INFO>   Logfile logging level [TRACE|DEBUG|INFO] (default DEBUG)
     --ERASEFLASH                    delete the entire flash except from the bootloader itself!
+    --DUMPFLASH <start> <end>       dump a flash range in intel(R) hex to the serial port of the
+                                    MCU. Works only with DEBUG version of the bootloader.
  -f0,--NO_FLASH                     for debugging use only, disable flashing firmware!
 ```
 ## Common use cases:

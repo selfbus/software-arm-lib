@@ -28,7 +28,6 @@
 // :10 7000 00 001F001049710000CD710000A5C20000 F2
 // :04 000003 0000 7149 3F
 // :00000001FF
-
 void dumpToSerialinIntelHex(Serial* serialPort, unsigned char* data, unsigned int count, unsigned int bytesPerLine)
 {
     unsigned char x;
