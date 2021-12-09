@@ -96,16 +96,19 @@ protected:
      */
     bool sendDirectTelegram(int senderSequenceNumber);
 
-    /**
-     * @brief Sends a A_Restart_Response-PDU
-     * @details response to A_Restart-PDU KNX Spec. 3/5/2
-     *
-     * @param cmd         Transport command, usually APCI_RESTART_RESPONSEU
-     * @param senderSeqNo The sequence number of the sender, 0 if not required
-     * @param errorCode   if no error 0 otherwise error code
-     * @param processTime Time in seconds the restart process will take
-     */
-     void sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byte errorCode, unsigned int processTime);
+     /**
+      * Process a APCI_MASTER_RESET_PDU
+      * see KNX Spec. 3/5/2 §3.7.1.2 p.64 A_Restart
+      *
+      * @param apci          APCI to process
+      * @param senderSeqNo   The TL layer 4 sequence number of the sender
+      * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
+      * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
+      * @note sendTelegram is accessed and changed inside the function to prepare a @ref APCI_MASTER_RESET_RESPONSE_PDU
+      *
+      * @return true if a restart shall happen, otherwise false
+      */
+     bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
 
      /**
       * @brief Process a TP Layer 4 @ref T_CONNECT_PDU

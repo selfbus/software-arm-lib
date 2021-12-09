@@ -50,11 +50,13 @@ public final class DeviceManagement {
         try {
             logger.info("\nRestarting device {} to bootloader mode using {}", device, link);
             int restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
+            mcDevice.detach();
             logger.info("Device {} reported {}{} seconds{} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
             while (restartProcessTime > 0) {
                 Thread.sleep(1000);
                 System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET);
                 restartProcessTime--;
+
             }
             System.out.println();
             logger.info("Device {} should now have started into bootloader mode.", device);
@@ -64,6 +66,8 @@ public final class DeviceManagement {
             logger.debug("KNXException ", e);
         } catch (final InterruptedException e) {
             logger.error("InterruptedException ", e);
+        } finally {
+            mcDevice.detach();
         }
         return false;
     }

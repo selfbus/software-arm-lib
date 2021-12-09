@@ -153,7 +153,6 @@ void BcuUpdate::processDirectTelegram(int apci)
 
     connectedTime = systemTime;
     sendTelegram[6] = 0;
-
     int apciCommand = apci & APCI_GROUP_MASK;
     switch(apciCommand)
     {
@@ -170,30 +169,30 @@ void BcuUpdate::processDirectTelegram(int apci)
 #endif
             break;
 
-        case APCI_BASIC_RESTART_PDU:
-            dump2(serial.println("APCI_BASIC_RESTART_PDU"));
-            restartRequest(RESET_DELAY_MS); // Software Reset
-            break;
-        case APCI_MASTER_RESET_PDU:
-            ///\todo see sblib bcu.cpp for correct T_ACK and restart response
-            // attention we check acpi not like before apciCommand!
-            if (checkApciForMagicWord(apci, bus.telegram[8], bus.telegram[9]))
-            {
-                // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
-                // restart with parameters, we need to start in flashmode
-                dump2(serial.print("MAGIC "));
-                unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
-                *magicWord = BOOTLOADER_MAGIC_WORD;
-            }
-            dump2(serial.println("APCI_MASTER_RESET_PDU"));
-            sendAckTpu = T_ACK_PDU;
-            sendRestartResponseControlTelegram(APCI_MASTER_RESET_RESPONSE_PDU, senderSeqNo, 0, 1); // we need 1s reset time
-            restartRequest(RESET_DELAY_MS); // Software Reset
-            break;
-
         default:
-            dump2(serial.println("APCI_UNKNOWN 0x", apciCommand, HEX, 4));
-            sendAckTpu = T_NACK_PDU;  // Command not supported
+            // attention we check acpi not like before apciCommand!
+            switch (apci)
+            {
+                case APCI_BASIC_RESTART_PDU:
+                    dump2(serial.println("APCI_BASIC_RESTART_PDU"));
+                    restartRequest(RESET_DELAY_MS); // Software Reset
+                    break;
+
+                case APCI_MASTER_RESET_PDU:
+                    dump2(serial.println("APCI_MASTER_RESET_PDU"));
+                    if (processApciMasterResetPDU(apci, senderSeqNo, bus.telegram[8], bus.telegram[9]))
+                    {
+                        restartRequest(RESET_DELAY_MS); // Software Reset
+                    }
+                    // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
+                    sendTel = true;
+                    break;
+                    sendAckTpu = T_ACK_PDU;
+
+                default:
+                    dump2(serial.println("APCI_UNKNOWN 0x", apciCommand, HEX, 4));
+                    sendAckTpu = T_NACK_PDU;  // Command not supported
+            }
     }
 
     // T_ACK / T_NACK
@@ -426,24 +425,66 @@ void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
     bus.sendTelegram(sendCtrlTelegram, 7);
 }
 
-void BcuUpdate::sendRestartResponseControlTelegram(int senderSeqNo, int cmd, byte errorCode, unsigned int processTime)
+bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber)
 {
-    byte restartResponseTelegram[10]; // we need a longer buffer for connection control telegrams
-    if (cmd & 0x40)  // Add the sequence number if the command shall contain it
-        cmd |= senderSeqNo & T_SEQUENCE_NUMBER_Msk;
+    ///\todo the following code has been hacked together quick and dirty.
+    ///      It needs a rework along with the redesign of processDirectTelegram(..)
 
-    restartResponseTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
+
+    // create the APCI_MASTER_RESET_RESPONSE_PDU
+    sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    restartResponseTelegram[3] = (byte)(connectedAddr >> 8);
-    restartResponseTelegram[4] = (byte)connectedAddr;
-    restartResponseTelegram[5] = (byte)(cmd >> 8);
-    restartResponseTelegram[6] = (byte)(cmd & 0xff);
-    restartResponseTelegram[7] = errorCode;
-    restartResponseTelegram[8] = (byte)(processTime >> 8);
-    restartResponseTelegram[9] = processTime & 0xff;
-    telegramCount++;
-    bus.sendTelegram(restartResponseTelegram, sizeof(restartResponseTelegram)/sizeof(restartResponseTelegram[0]));
+    sendTelegram[3] = connectedAddr >> 8;
+    sendTelegram[4] = connectedAddr;
+    sendTelegram[5] = 0x64; // length of the telegram is 4 bytes
+    sendTelegram[6] = 0x40 | (APCI_MASTER_RESET_RESPONSE_PDU >> 8); // set first byte of apci
+    sendTelegram[7] = APCI_MASTER_RESET_RESPONSE_PDU & 0xff; // set second byte of apci
+    sendTelegram[7] |= 1; // set restart type to 1
+
+    sendTelegram[8] = T_RESTART_UNSUPPORTED_ERASE_CODE; // set no error response
+    // restart process time 2 byte unsigned integer value expressed in seconds
+    // DPT_TimePeriodSec / DPT7.005
+    sendTelegram[9] = 0; ///\todo set proper restart process time
+    sendTelegram[10] = 6; ///\todo set proper restart process time
+
+    if (apci != APCI_MASTER_RESET_PDU)
+    {
+        return false;
+    }
+    ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+
+    if (checkApciForMagicWord(apci, eraseCode, channelNumber))
+    {
+        // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
+        // set magicWord to start after reset in bootloader mode
+        unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+        *magicWord = BOOTLOADER_MAGIC_WORD;
+
+        // Add the sequence number
+        sendTelegram[6] &= ~0x3c;
+        sendTelegram[6] |= connectedSeqNo;
+        incConnectedSeqNo = true;
+        // set no error
+        sendTelegram[8] = T_RESTART_NO_ERROR;
+
+        // send transport layer 4 ACK
+        sendConControlTelegram(T_ACK_PDU, senderSeqNo);
+        while (!bus.idle())
+            ;
+        // send APCI_MASTER_RESET_RESPONSE_PDU
+        bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
+        while (!bus.idle())
+                    ;
+        // send disconnect
+        sendConControlTelegram(T_DISCONNECT_PDU, 0);
+        while (!bus.idle())
+            ;
+        NVIC_SystemReset();// Software Reset
+    }
+
+    return false;
 }
+
 
 void BcuUpdate::loop()
 {
@@ -458,5 +499,7 @@ void BcuUpdate::loop()
     }
     BcuBase::loop();
 }
+
+
 
 /** @}*/
