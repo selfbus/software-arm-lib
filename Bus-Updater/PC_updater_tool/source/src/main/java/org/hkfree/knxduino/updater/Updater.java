@@ -285,9 +285,6 @@ public class Updater implements Runnable {
             int appVersionAddress = cliOptions.appVersionPtr();
             byte[] uid = cliOptions.uid();
             byte[] result;
-            ///\todo needs deeper investigation, looks like we create two connections
-            // connection established (data endpoint 192.168.0.90:3671, channel 22, tunneling address 1.1.252)
-            // connection established (data endpoint 192.168.0.90:3671, channel 23)
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
             ///\todo check this as an alternative implementation of UpdatableManagementClient
@@ -299,7 +296,6 @@ public class Updater implements Runnable {
 
             //for option -device restart the device in bootloader mode
             if (cliOptions.device() != null) { //!< phys. knx address of the device in normal operation
-                ///\todo this still leads to a T_DISCONNECT at requestUIDFromDevice below, not sure why
                 DeviceManagement.restartDeviceToBootloader(link, cliOptions.device());
             }
 
