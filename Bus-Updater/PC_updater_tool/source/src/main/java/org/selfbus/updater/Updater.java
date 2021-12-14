@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.time.Duration;
 
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
@@ -26,7 +25,6 @@ import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
-import tuwien.auto.calimero.mgmt.Destination;
 import com.google.common.primitives.Bytes;  	// For search in byte array
 import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
@@ -278,50 +276,42 @@ public class Updater implements Runnable {
                 throw new UpdaterException("Selfbus update failed.");
             }
 
-            UpdatableManagementClientImpl mc; //!< calimero device management client
-            Destination progDest;
-            IndividualAddress progDevice = cliOptions.progDevice(); //!< phys. knx address of the device in bootloader mode
-
             int appVersionAddress = cliOptions.appVersionPtr();
             byte[] uid = cliOptions.uid();
             byte[] result;
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
-            ///\todo check this as an alternative implementation of UpdatableManagementClient
-            // link.sendRequestWait();
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC);
+
             logger.info("KNX connection: {}\n", link);
             logger.debug("Creating UpdatableManagementClient");
-            mc = new UpdatableManagementClientImpl(link);
-            mc.responseTimeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SEC));
 
             //for option -device restart the device in bootloader mode
             if (cliOptions.device() != null) { //!< phys. knx address of the device in normal operation
-                DeviceManagement.restartDeviceToBootloader(link, cliOptions.device());
+                dm.restartDeviceToBootloader(link, cliOptions.device());
             }
-
-            progDest = mc.createDestination(progDevice, true, false, false);
 
             if (uid == null) {
-                uid = DeviceManagement.requestUIDFromDevice(mc, progDest);
+                uid = dm.requestUIDFromDevice();
             }
 
-            DeviceManagement.unlockDeviceWithUID(mc, progDest, uid);
+            dm.unlockDeviceWithUID(uid);
 
             if (cliOptions.eraseFlash()) {
                 logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                DeviceManagement.eraseFlash(mc, progDest);
+                dm.eraseFlash();
             }
 
             if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
                 logger.warn("{}Dumping flash content range 0x{}-0x{} to bootloader's serial port.{}",
                         ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()),  ConColors.RESET);
-                DeviceManagement.dumpFlashRange(mc, progDest, cliOptions.dumpFlashStartAddress(), cliOptions.dumpFlashEndAddress());
+                dm.dumpFlashRange(cliOptions.dumpFlashStartAddress(), cliOptions.dumpFlashEndAddress());
                 return;
             }
 
-            BootLoaderIdentity bootLoaderIdentity = DeviceManagement.requestBootLoaderIdentity(mc, progDest);
+            BootLoaderIdentity bootLoaderIdentity = dm.requestBootLoaderIdentity();
             logger.info("\nRequesting App Version String...");
-            String appVersion = DeviceManagement.requestAppVersionString(mc, progDest);
+            String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
                 logger.info("  Current App Version String is: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
             }
@@ -376,7 +366,7 @@ public class Updater implements Runnable {
             }
 
             // Request current main firmware boot descriptor from device
-            BootDescriptor bootDescriptor = DeviceManagement.requestBootDescriptor(mc, progDest);
+            BootDescriptor bootDescriptor = dm.requestBootDescriptor();
 
             boolean diffMode = false;
             if ((!(cliOptions.full()))) {
@@ -393,11 +383,11 @@ public class Updater implements Runnable {
                 logger.info("\n{}{}Starting to send new firmware now:{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
                 if (diffMode && FlashDiffMode.isInitialized()) {
                     logger.error("{}Differential mode is currently disabled -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                    // FlashDiffMode.doDifferentialFlash(mc, progDest, newFirmware.startAddress(), newFirmware.getBinData());
-                    FlashFullMode.doFullFlash(mc, progDest, newFirmware, cliOptions.delay());
+                    // FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
+                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay());
                 }
                 else {
-                    FlashFullMode.doFullFlash(mc, progDest, newFirmware, cliOptions.delay());
+                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay());
                 }
             }
             else {
@@ -412,7 +402,7 @@ public class Updater implements Runnable {
             byte[] streamBootDescriptor = newBootDescriptor.toStream();
 
             ///\todo separate FlashFullMode.doFullFlash(..) into erasePages and doFlash. Use doFlash for programming newBootDescriptor
-            int nDone = DeviceManagement.doFlash(mc, progDest, streamBootDescriptor, -1);
+            int nDone = dm.doFlash(streamBootDescriptor, -1);
             if (cliOptions.delay() > 0) {
                 Thread.sleep(cliOptions.delay()); //Reduce bus load during data upload
             }
@@ -427,17 +417,17 @@ public class Updater implements Runnable {
             System.out.println();
             logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
                     Integer.toHexString(newCrc32), Long.toString(streamBootDescriptor.length));
-            result = DeviceManagement.sendWithRetry(mc, progDest, UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
+            result = dm.sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
             if (UPDProtocol.checkResult(result) != 0) {
-                DeviceManagement.restartProgrammingDevice(mc, progDest);
+                dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
 
             Thread.sleep(500); ///\todo check if this delay is really needed
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
-            result = DeviceManagement.sendWithRetry(mc, progDest, UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
+            result = dm.sendWithRetry(UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
             if (UPDProtocol.checkResult(result) != 0) {
-                DeviceManagement.restartProgrammingDevice(mc, progDest);
+                dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
 

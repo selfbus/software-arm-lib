@@ -7,9 +7,7 @@ import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
-import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -25,7 +23,7 @@ public class FlashFullMode {
      * Normal update routine, sending complete image
      * This works on sector page right now, so the complete affected flash is erased first
      */
-    public static void doFullFlash(UpdatableManagementClientImpl mc, Destination pd, BinImage newFirmware, int dataSendDelay)
+    public static void doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
             InterruptedException, UpdaterException, KNXRemoteException {
         byte[] result;
@@ -33,7 +31,7 @@ public class FlashFullMode {
         long startAddress = newFirmware.startAddress();
         long totalLength = newFirmware.length();
         ByteArrayInputStream fis = new ByteArrayInputStream(newFirmware.getBinData());
-        DeviceManagement.eraseAddressRange(mc, pd, startAddress, totalLength);
+        dm.eraseAddressRange(startAddress, totalLength);
 
         byte[] buf = new byte[Flash.FLASH_PAGE_SIZE];   // Read one flash page
         int nRead;                                      // Bytes read from file into buffer
@@ -119,10 +117,10 @@ public class FlashFullMode {
                     }
 
                     try{
-                        result = mc.sendUpdateData(pd, UPDCommand.SEND_DATA.id, txBuf);
+                        result = dm.sendUpdateData(UPDCommand.SEND_DATA, txBuf);
 
                         if (UPDProtocol.checkResult(result, false) != 0) {
-                            DeviceManagement.restartProgrammingDevice(mc, pd);
+                            dm.restartProgrammingDevice();
                             throw new UpdaterException("Selfbus update failed.");
                         }
                         // Update CRC, skip byte 0 which is not part of payload
@@ -160,9 +158,9 @@ public class FlashFullMode {
                     logger.info("Program device at flash address 0x{} with {} bytes and CRC32 0x{}",
                             String.format("%04X", progAddress), String.format("%3d", progSize), String.format("%08X", crc));
                     try {
-                        result = mc.sendUpdateData(pd, UPDCommand.PROGRAM.id, progPars);
+                        result = dm.sendUpdateData(UPDCommand.PROGRAM, progPars);
                         if (UPDProtocol.checkResult(result) != 0) {
-                            DeviceManagement.restartProgrammingDevice(mc, pd);
+                            dm.restartProgrammingDevice();
                             throw new UpdaterException("Selfbus update failed.");
                         }
                         progAddress += progSize;

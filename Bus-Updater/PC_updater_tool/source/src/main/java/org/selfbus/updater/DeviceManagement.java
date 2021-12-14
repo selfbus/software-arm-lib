@@ -16,6 +16,7 @@ import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
+import java.time.Duration;
 import java.util.Arrays;
 
 /**
@@ -26,13 +27,26 @@ public final class DeviceManagement {
     private static final int RESTART_CHANNEL = 255;  //!< Channelnumber for the APCI_MASTER_RESET_PDU
     public static final int MAX_UPD_COMMAND_RETRY = 3; //!< default maximum retries a UPD command is sent to the client
 
-    DeviceManagement (){}
-    private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
+    private DeviceManagement (){}
 
-    public static void restartProgrammingDevice(UpdatableManagementClientImpl m, Destination dest)
+    private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
+    ///\todo check this as an alternative implementation of UpdatableManagementClient
+    // link.sendRequestWait();
+    private UpdatableManagementClientImpl mc; //!< calimero device management client
+    private Destination progDestination;
+    private KNXNetworkLink link;
+
+    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec) throws KNXLinkClosedException {
+        this.link = link;
+        this.mc = new UpdatableManagementClientImpl(this.link);
+        this.mc.responseTimeout(Duration.ofSeconds(responseTimeoutSec));
+        this.progDestination = this.mc.createDestination(progDevice, true, false, false);
+    }
+
+    public void restartProgrammingDevice()
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException {
-        logger.warn("restarting device {}", dest);
-        m.restart(dest);
+        logger.warn("restarting device {}", progDestination);
+        mc.restart(progDestination);
     }
 
     /**
@@ -43,7 +57,7 @@ public final class DeviceManagement {
      *          the IndividualAddress of the device to restart
      * @return true if successful, otherwise false
      */
-    public static boolean restartDeviceToBootloader(KNXNetworkLink link, IndividualAddress device) throws KNXLinkClosedException {
+    public boolean restartDeviceToBootloader(KNXNetworkLink link, IndividualAddress device) throws KNXLinkClosedException {
         UpdatableManagementClientImpl mcDevice = new UpdatableManagementClientImpl(link);
         Destination dest;
         dest = mcDevice.createDestination(device, true);
@@ -72,14 +86,14 @@ public final class DeviceManagement {
         return false;
     }
 
-    public static  byte[] requestUIDFromDevice(UpdatableManagementClientImpl m, Destination dest)
+    public byte[] requestUIDFromDevice()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nRequesting UID from {}...", dest.getAddress());
+        logger.info("\nRequesting UID from {}...", progDestination.getAddress());
         //byte[] result = m.sendUpdateData(dest, UPDCommand.REQUEST_UID.id, new byte[0]);
-        byte[] result = sendWithRetry(m, dest, UPDCommand.REQUEST_UID, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
         if (result[3] != UPDCommand.RESPONSE_UID.id) {
             UPDProtocol.checkResult(result, true);
-            DeviceManagement.restartProgrammingDevice(m, dest);
+            restartProgrammingDevice();
             throw new UpdaterException("Requesting UID failed!");
         }
 
@@ -92,21 +106,21 @@ public final class DeviceManagement {
             uid = Arrays.copyOfRange(result, 4, result.length - 4);
             logger.error("Request UID failed {} result.length={}, UID_LENGTH_USED={}, UID_LENGTH_MAX={}",
                     Utils.byteArrayToHex(uid),uid.length, UPDProtocol.UID_LENGTH_USED, UPDProtocol.UID_LENGTH_MAX);
-            DeviceManagement.restartProgrammingDevice(m, dest);
+            restartProgrammingDevice();
             throw new UpdaterException("Selfbus update failed.");
         }
     }
 
-    public static BootLoaderIdentity requestBootLoaderIdentity(UpdatableManagementClientImpl m, Destination dest)
+    public BootLoaderIdentity requestBootLoaderIdentity()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting Bootloader Identity...");
 
         // byte[] result = m.sendUpdateData(dest, UPDCommand.REQUEST_BL_IDENTITY.id, new byte[] {0});
-        byte[] result = sendWithRetry(m, dest, UPDCommand.REQUEST_BL_IDENTITY, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_BL_IDENTITY, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
         if (result[3] != UPDCommand.RESPONSE_BL_IDENTITY.id)
         {
             UPDProtocol.checkResult(result);
-            DeviceManagement.restartProgrammingDevice(m, dest);
+            restartProgrammingDevice();
             throw new UpdaterException("Requesting Bootloader Identity failed!");
         }
 
@@ -126,14 +140,14 @@ public final class DeviceManagement {
         return bl;
     }
 
-    public static BootDescriptor requestBootDescriptor(UpdatableManagementClientImpl m, Destination dest)
+    public BootDescriptor requestBootDescriptor()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting Boot Descriptor...");
         //byte[] result = m.sendUpdateData(dest, UPDCommand.REQUEST_BOOT_DESC.id, new byte[] {0});
-        byte[] result = sendWithRetry(m, dest, UPDCommand.REQUEST_BOOT_DESC, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
         if (result[3] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
-            DeviceManagement.restartProgrammingDevice(m, dest);
+            restartProgrammingDevice();
             throw new UpdaterException("Boot descriptor request failed.");
         }
         BootDescriptor bootDescriptor = BootDescriptor.fromArray(Arrays.copyOfRange(result, 4, result.length));
@@ -141,10 +155,10 @@ public final class DeviceManagement {
         return bootDescriptor;
     }
 
-    public static  String requestAppVersionString(UpdatableManagementClientImpl m, Destination dest)
+    public String requestAppVersionString()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         // byte[] result = m.sendUpdateData(dest, UPDCommand.APP_VERSION_REQUEST.id, new byte[] {0});
-        byte[] result = sendWithRetry(m, dest, UPDCommand.APP_VERSION_REQUEST, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
+        byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
         if (result[3] != UPDCommand.APP_VERSION_RESPONSE.id){
             UPDProtocol.checkResult(result);
             //restartProgrammingDevice(mc, progDest);
@@ -153,19 +167,19 @@ public final class DeviceManagement {
         return new String(result,4,result.length - 4);	// Convert 12 bytes to string starting from result[4];
     }
 
-    public static  void unlockDeviceWithUID(UpdatableManagementClientImpl m, Destination dest, byte[] uid)
+    public void unlockDeviceWithUID(byte[] uid)
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nUnlocking device {} with UID {}...", dest.getAddress(), Utils.byteArrayToHex(uid));
+        logger.info("\nUnlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
 
         //byte[] result = m.sendUpdateData(dest, UPDCommand.UNLOCK_DEVICE.id, uid);
-        byte[] result = sendWithRetry(m, dest, UPDCommand.UNLOCK_DEVICE, uid, MAX_UPD_COMMAND_RETRY);
+        byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, MAX_UPD_COMMAND_RETRY);
         if (UPDProtocol.checkResult(result) != 0) {
-            DeviceManagement.restartProgrammingDevice(m, dest);
+            restartProgrammingDevice();
             throw new UpdaterException("Selfbus update failed.");
         }
     }
 
-    public static void eraseAddressRange(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long totalLength)
+    public void eraseAddressRange(long startAddress, long totalLength)
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
         long endAddress = startAddress + totalLength - 1;
         byte[] telegram = new byte[8];
@@ -173,33 +187,33 @@ public final class DeviceManagement {
         Utils.longToStream(telegram, 4 , endAddress);
         logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
         // byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_ADDRESS_RANGE.id, telegram);
-        byte[] result = sendWithRetry(mc, pd, UPDCommand.ERASE_ADDRESS_RANGE, telegram, MAX_UPD_COMMAND_RETRY);
+        byte[] result = sendWithRetry(UPDCommand.ERASE_ADDRESS_RANGE, telegram, MAX_UPD_COMMAND_RETRY);
         if (UPDProtocol.checkResult(result) != 0) {
-            DeviceManagement.restartProgrammingDevice(mc, pd);
+            restartProgrammingDevice();
             throw new UpdaterException("Erasing firmware address range failed.");
         }
     }
 
-    public static void eraseFlash(UpdatableManagementClientImpl mc, Destination pd)
+    public void eraseFlash()
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
         // byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_COMPLETE_FLASH.id, new byte[] {0});
-        byte[] result = sendWithRetry(mc, pd, UPDCommand.ERASE_COMPLETE_FLASH, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
+        byte[] result = sendWithRetry(UPDCommand.ERASE_COMPLETE_FLASH, new byte[] {0}, MAX_UPD_COMMAND_RETRY);
         if (UPDProtocol.checkResult(result) != 0) {
-            DeviceManagement.restartProgrammingDevice(mc, pd);
+            restartProgrammingDevice();
             throw new UpdaterException("Deleting the entire flash failed.");
         }
     }
 
-    public static void dumpFlashRange(UpdatableManagementClientImpl mc, Destination pd, long startAddress, long endAddress)
+    public void dumpFlashRange(long startAddress, long endAddress)
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
         byte[] telegram = new byte[8];
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
         // this send will always time out, because the mcu is busy dumping the flash
-        sendWithRetry(mc, pd, UPDCommand.DUMP_FLASH, telegram, 0);
+        sendWithRetry(UPDCommand.DUMP_FLASH, telegram, 0);
     }
 
-    public static int doFlash(UpdatableManagementClientImpl mc, Destination pd, byte[] data, int maxRetry)
+    public int doFlash(byte[] data, int maxRetry)
             throws UpdaterException, KNXLinkClosedException, InterruptedException, KNXTimeoutException {
         int nIndex = 0;
         while (nIndex < data.length)
@@ -215,9 +229,9 @@ public final class DeviceManagement {
             txBuffer[0] = (byte)nIndex;
             System.arraycopy(data, nIndex, txBuffer, 1, txBuffer.length - 1);
 
-            byte [] result = sendWithRetry(mc, pd, UPDCommand.SEND_DATA, txBuffer, maxRetry);
+            byte [] result = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
             if (UPDProtocol.checkResult(result, false) != 0) {
-                DeviceManagement.restartProgrammingDevice(mc, pd);
+                restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
 
@@ -226,11 +240,11 @@ public final class DeviceManagement {
         return nIndex;
     }
 
-    public static byte[] sendWithRetry(UpdatableManagementClientImpl mc, Destination pd, UPDCommand command, byte[] data, int maxRetry)
+    public byte[] sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
             throws KNXLinkClosedException, InterruptedException, UpdaterException {
         while (true) {
             try {
-                return mc.sendUpdateData(pd, command.id, data);
+                return mc.sendUpdateData(progDestination, command.id, data);
             }
             catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
                 logger.warn("{}{} failed {}{}", ConColors.RED, command, e.getMessage(), ConColors.RESET);
@@ -244,5 +258,11 @@ public final class DeviceManagement {
                 }
             }
         }
+    }
+
+    public byte[] sendUpdateData(UPDCommand command, final byte[] data)
+            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException {
+        // public byte[] sendUpdateData(final Destination dst, final int cmd, final byte[] data)
+        return mc.sendUpdateData(progDestination, command.id, data);
     }
 }
