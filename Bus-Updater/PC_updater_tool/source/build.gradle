@@ -3,32 +3,21 @@ plugins {
     id 'application'
 }
 
-group 'org.hkfree.knxduino'
+group 'org.selfbus'
 version '0.62' ///\todo also change in README.md and ToolInfo.java (String version)
 
 sourceCompatibility = 11
-/*
-jar {
-    manifest {
-        attributes(
-                // 'Class-Path': configurations.compile.collect { it.getName() }.join(' '),
-                'Main-Class': 'org.hkfree.knxduino.updater.Updater'
-        )
-    }
-
-*/
 
 jar {
     manifest {
-        attributes 'Main-Class': 'org.hkfree.knxduino.updater.Updater'
+        attributes 'Main-Class': 'org.selfbus.updater.Updater'
     }
 }
 
-
 task fatJar(type: Jar) {
     manifest.from jar.manifest
+    archiveClassifier.set('all')
     duplicatesStrategy = DuplicatesStrategy.WARN
-    archiveClassifier = 'all'
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } {
         exclude "META-INF/*.SF"
