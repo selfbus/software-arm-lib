@@ -51,8 +51,18 @@ enum
     APCI_FUNCTIONPROPERTY_STATE_READ_PDU        = 0x2C8, //!< A_FunctionPropertyState_Read-PDU, connectionless and connection-oriented
     APCI_FUNCTIONPROPERTY_STATE_RESPONSE_PDU    = 0x2C9, //!< A_FunctionPropertyState_Response-PDU, connectionless and connection-oriented
 
-    // 0x2CA -> 0x2F7 reserved usermsg
+    APCI_USERMSG_RESERVED_0                     = 0x2CA,
+    // ... 0x2CA -> 0x2F7 reserved usermsg
+    APCI_USERMSG_RESERVED_45                    = 0x2F7,
+
     // 0x2F8 -> 0x2FE manufacturer specific area for usermsg
+    APCI_USERMSG_MANUFACTURER_0                 = 0x2F8,
+    APCI_USERMSG_MANUFACTURER_1                 = 0x2F9,
+    APCI_USERMSG_MANUFACTURER_2                 = 0x2FA,
+    APCI_USERMSG_MANUFACTURER_3                 = 0x2FB,
+    APCI_USERMSG_MANUFACTURER_4                 = 0x2FC,
+    APCI_USERMSG_MANUFACTURER_5                 = 0x2FD,
+    APCI_USERMSG_MANUFACTURER_6                 = 0x2FE,
 
     APCI_DEVICEDESCRIPTOR_READ_PDU              = 0x300, //!< A_DeviceDescriptor_Read-PDU, connection-oriented
     APCI_DEVICEDESCRIPTOR_RESPONSE_PDU          = 0x340, //!< A_DeviceDescriptor_Response-PDU, connection-oriented
