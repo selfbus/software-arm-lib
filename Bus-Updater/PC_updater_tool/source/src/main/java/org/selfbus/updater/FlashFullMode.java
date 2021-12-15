@@ -26,7 +26,7 @@ public class FlashFullMode {
     public static void doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
             InterruptedException, UpdaterException, KNXRemoteException {
-        byte[] result;
+        ResponseResult result;
 
         long startAddress = newFirmware.startAddress();
         long totalLength = newFirmware.length();
@@ -116,40 +116,36 @@ public class FlashFullMode {
                         Thread.sleep(dataSendDelay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
                     }
 
-                    try{
-                        result = dm.sendUpdateData(UPDCommand.SEND_DATA, txBuf);
-
-                        if (UPDProtocol.checkResult(result, false) != 0) {
-                            dm.restartProgrammingDevice();
-                            throw new UpdaterException("Selfbus update failed.");
-                        }
-                        // Update CRC, skip byte 0 which is not part of payload
-                        crc32Block.update(txBuf, 1, payload);
-                        nDone += payload;		// keep track of buffer bytes send (to determine end of while-loop)
-                        progSize += payload;	// keep track of page/sector bytes send
-                        total += payload;		// keep track of total bytes send from file
-                    }
-
-                    catch (KNXTimeoutException e) { // timeout, we need to resend the last sent data
-                        logger.warn("{}Timeout {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
-                        timeoutCount++;
-                        continue;
-                    }
-                    catch (KNXDisconnectException | KNXRemoteException e) {
-                        logger.warn("{}failed {}{}", ConColors.BRIGHT_RED, e.getMessage(), ConColors.RESET);
+                    result = dm.sendWithRetry(UPDCommand.SEND_DATA, txBuf, -1);
+                    timeoutCount += result.timeoutCount();
+                    connectionDrops += result.dropCount();
+                    if (result.dropCount() > 0) {
                         logger.debug("nDone {}, progSize {}, payLoad {}, nRead {}", nDone, progSize, payload, nRead);
                         // reset all back to beginning of page
                         total -= nDone;
                         progSize = 0;
                         nDone = 0;
                         crc32Block.reset();
-                        connectionDrops++;
                         continue;
                     }
+                    else if (result.timeoutCount() > 0) {
+                        continue;
+                    }
+                    else if (UPDProtocol.checkResult(result.data(), false) != 0) {
+                        dm.restartProgrammingDevice();
+                        throw new UpdaterException("Selfbus update failed.");
+                    }
+                    // Update CRC, skip byte 0 which is not part of payload
+                    crc32Block.update(txBuf, 1, payload);
+                    nDone += payload;		// keep track of buffer bytes send (to determine end of while-loop)
+                    progSize += payload;	// keep track of page/sector bytes send
+                    total += payload;		// keep track of total bytes send from file
+
                 }
 
-                while (doProg) {
-                    byte[] progPars = new byte[3 * 4];
+                byte[] progPars = null;
+                if (doProg) {
+                    progPars = new byte[3 * 4];
                     long crc = crc32Block.getValue();
                     Utils.longToStream(progPars, 0, progSize);
                     Utils.longToStream(progPars, 4, progAddress);
@@ -157,21 +153,20 @@ public class FlashFullMode {
                     System.out.println();
                     logger.info("Program device at flash address 0x{} with {} bytes and CRC32 0x{}",
                             String.format("%04X", progAddress), String.format("%3d", progSize), String.format("%08X", crc));
-                    try {
-                        result = dm.sendUpdateData(UPDCommand.PROGRAM, progPars);
-                        if (UPDProtocol.checkResult(result) != 0) {
-                            dm.restartProgrammingDevice();
-                            throw new UpdaterException("Selfbus update failed.");
-                        }
-                        progAddress += progSize;
-                        progSize = 0;    // reset page/sector byte counter
-                        crc32Block.reset();
-                        doProg = false;
+                }
+
+                while (doProg) {
+                    result = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, -1);
+                    timeoutCount += result.timeoutCount();
+                    connectionDrops += result.dropCount();
+                    if (UPDProtocol.checkResult(result.data()) != 0) {
+                        dm.restartProgrammingDevice();
+                        throw new UpdaterException("Selfbus update failed.");
                     }
-                    catch (KNXTimeoutException | KNXDisconnectException | KNXRemoteException e) {
-                        logger.warn("{}failed {}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
-                        connectionDrops++;
-                    }
+                    progAddress += progSize;
+                    progSize = 0;    // reset page/sector byte counter
+                    crc32Block.reset();
+                    doProg = false;
                 }
             }
         }

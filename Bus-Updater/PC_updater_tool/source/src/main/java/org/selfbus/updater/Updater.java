@@ -278,7 +278,7 @@ public class Updater implements Runnable {
 
             int appVersionAddress = cliOptions.appVersionPtr();
             byte[] uid = cliOptions.uid();
-            byte[] result;
+            ResponseResult result;
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC);
@@ -418,7 +418,7 @@ public class Updater implements Runnable {
             logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
                     Integer.toHexString(newCrc32), Long.toString(streamBootDescriptor.length));
             result = dm.sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
-            if (UPDProtocol.checkResult(result) != 0) {
+            if (UPDProtocol.checkResult(result.data()) != 0) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
@@ -426,7 +426,7 @@ public class Updater implements Runnable {
             Thread.sleep(500); ///\todo check if this delay is really needed
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
             result = dm.sendWithRetry(UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
-            if (UPDProtocol.checkResult(result) != 0) {
+            if (UPDProtocol.checkResult(result.data()) != 0) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }

@@ -92,7 +92,7 @@ public final class FlashDiffMode {
         BinImage img2 = BinImage.copyFromArray(binData, startAddress);
         BinImage img1 = BinImage.readFromBin(oldImageCacheFile.getAbsolutePath(), bootDsc.startAddress());
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
-            byte[] result;
+            ResponseResult result;
             // process compressed page
             //TODO check why 5 bytes are added to size in FlashDiff.java / generateDiff(...)
             logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size() - 5));
@@ -108,7 +108,7 @@ public final class FlashDiffMode {
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
                 result = dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, -1);
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
-                if (UPDProtocol.checkResult(result, false) != 0) {
+                if (UPDProtocol.checkResult(result.data(), false) != 0) {
                     dm.restartProgrammingDevice();
                     throw new UpdaterException("Selfbus update failed.");
                 }
@@ -121,9 +121,8 @@ public final class FlashDiffMode {
             Utils.longToStream(progPars, 8, (int) crc32);
             System.out.println();
             logger.info("Program device next page diff, CRC32 0x{}", String.format("%08X", crc32));
-            ///\todo harden against drops and timeouts
-            result = dm.sendUpdateData(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars);
-            if (UPDProtocol.checkResult(result) != 0) {
+            result = dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, -1);
+            if (UPDProtocol.checkResult(result.data()) != 0) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
