@@ -28,18 +28,20 @@
 Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 
 #ifdef DEBUG
-    int countToFail = 6;
+#define DEFAULT_COUNT_TO_FAIL (30)
+    int countToFail = DEFAULT_COUNT_TO_FAIL;
 
-void checkCountToFail(unsigned char* ackResponse)
+bool checkCountToFail()
 {
+    return false;
     // ok lets drop connection for debugging
     countToFail--;
     if (countToFail)
     {
-        return;
+        return false;
     }
-    // *ackResponse = T_NACK_PDU;
-    countToFail = 6;
+    countToFail = DEFAULT_COUNT_TO_FAIL;
+    return true;
 }
 #endif
 
@@ -160,8 +162,7 @@ void BcuUpdate::processDirectTelegram(int apci)
         case APCI_MEMORY_WRITE_PDU:
             sendAckTpu = handleMemoryRequests(apciCommand, &sendTel, &bus.telegram[7]);
 #ifdef DEBUG
-            checkCountToFail(&sendAckTpu);
-            if (sendAckTpu == T_NACK_PDU)
+            if (checkCountToFail())
             {
                 sendConControlTelegram(T_DISCONNECT_PDU, senderSeqNo);
                 return;
