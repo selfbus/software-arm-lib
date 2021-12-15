@@ -14,7 +14,6 @@ import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
-import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -32,13 +31,14 @@ public final class DeviceManagement {
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
     ///\todo check this as an alternative implementation of UpdatableManagementClient
     // link.sendRequestWait();
-    private UpdatableManagementClientImpl mc; //!< calimero device management client
+    private SBManagementClientImpl mc; //!< calimero device management client
     private Destination progDestination;
     private KNXNetworkLink link;
 
-    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec) throws KNXLinkClosedException {
+    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec)
+            throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
         this.link = link;
-        this.mc = new UpdatableManagementClientImpl(this.link);
+        this.mc = new SBManagementClientImpl(this.link);
         this.mc.responseTimeout(Duration.ofSeconds(responseTimeoutSec));
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
     }
@@ -57,8 +57,9 @@ public final class DeviceManagement {
      *          the IndividualAddress of the device to restart
      * @return true if successful, otherwise false
      */
-    public boolean restartDeviceToBootloader(KNXNetworkLink link, IndividualAddress device) throws KNXLinkClosedException {
-        UpdatableManagementClientImpl mcDevice = new UpdatableManagementClientImpl(link);
+    public boolean restartDeviceToBootloader(KNXNetworkLink link, IndividualAddress device)
+            throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
+        SBManagementClientImpl mcDevice = new SBManagementClientImpl(link);
         Destination dest;
         dest = mcDevice.createDestination(device, true);
         try {

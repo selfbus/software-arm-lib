@@ -26,7 +26,6 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import com.google.common.primitives.Bytes;  	// For search in byte array
-import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
 
 /**
  * A Tool for updating firmware of a Selfbus device in a KNX network.
@@ -35,7 +34,7 @@ import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
  * KNXduino devices.<br>
  * <br>
  * This tool supports KNX network access using a KNXnet/IP connection FT1.2 or TPUART
- * connection. It uses the {@link UpdatableManagementClientImpl} functionality of the library
+ * connection. It uses the {@link SBManagementClientImpl} functionality of the library
  * to read KNX device description, properties, and memory locations. It collects
  * and shows device information similar to the ETS.
  * <p>
@@ -46,15 +45,8 @@ import tuwien.auto.calimero.mgmt.UpdatableManagementClientImpl;
  * during its execution are written to logback <code>LOGGER</code>.
  * <p>
  * CAUTION:
- * To avoid disconnect problems caused by groupwrite telegrams and thereby send
- * multiple Acknowledge telegrams there is a change in
- * tuwien.auto.calimero.mgmt.TransportListenerImpl.java at line 512
- * disconnectIndicate(p, true); is commented out
- *<p>
- * Because I had to change the calimero lib, I had to import the files into the project
- * Due to other changes it was necessary to move the UpdatableManagementClientImpl into
- * tuwien.auto.calimero.mgmt folder
- * Maybe in future someone finds a better way to do this....
+ * {@link SBManagementClientImpl} uses java reflections to get access to private field's/method's
+ * of calimero-core's ManagementClientImpl
  *
  * @author Deti Fliegl
  * @author Pavel Kriz
