@@ -251,12 +251,14 @@ public final class DeviceManagement {
                 return result;
             }
             catch (KNXTimeoutException | KNXRemoteException e) {
-                logger.warn("{}{} Timeout {}{}", ConColors.RED, command, e.getMessage(), ConColors.RESET);
+                logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incTimeoutCount();
             }
             catch (KNXDisconnectException e) {
-                logger.warn("{}{} Drop {}{}", ConColors.RED, command, e.getMessage(), ConColors.RESET);
+                logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incDropCount();
+            } catch (Throwable e) {
+                logger.error("{}{} Exception {}{}", ConColors.RED, command, e, ConColors.RESET);
             }
 
             if (maxRetry > 0) {
@@ -269,12 +271,4 @@ public final class DeviceManagement {
             }
         }
     }
-/*
-    public byte[] sendUpdateData(UPDCommand command, final byte[] data)
-            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException {
-        // public byte[] sendUpdateData(final Destination dst, final int cmd, final byte[] data)
-        return mc.sendUpdateData(progDestination, command.id, data);
-    }
-
- */
 }

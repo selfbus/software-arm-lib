@@ -60,6 +60,7 @@ public class FlashFullMode {
                 // Calculate payload size for next telegram
                 // sufficient data left, use maximum payload size
                 ///\todo  	nDone 253, progSize 0, payLoad 3, nRead 256
+                ///\todo  	nDone 253, progSize 242, payLoad 11, nRead 256
                 logger.debug("nDone {}, progSize {}, payLoad {}, nRead {}", nDone, progSize, payload, nRead);
                 if (progSize + payload < nRead)
                 {
@@ -71,6 +72,7 @@ public class FlashFullMode {
                     doProg = true;
                 }
                 ///\todo progSize 0, payLoad 11, nRead 256, doProg false
+                ///\todo progSize 242, payLoad 11, nRead 256, doProg false
                 logger.debug("progSize {}, payLoad {}, nRead {}, doProg {}", progSize, payload, nRead, doProg);
 
                 if (payload > Flash.MAX_PAYLOAD)
@@ -101,6 +103,8 @@ public class FlashFullMode {
                     ///\todo happened while a Selfbus Firmware's Update and a parallel ETS programming device MDT BE-GT2Tx.01 Glastaster II Smart mit Temperatursensor
                     ///\todo java.lang.ArrayIndexOutOfBoundsException: arraycopy: last source index 264 out of bounds for byte[256]
                     ///\todo nDone 253, progSize 0, payLoad 3, nRead 256
+                    ///\todo java.lang.ArrayIndexOutOfBoundsException: arraycopy: last source index 264 out of bounds for byte[256]
+                    ///\todo nDone 253, progSize 242, payLoad 11, nRead 256
                     logger.debug("nDone {}, progSize{}, payLoad {}, nRead {}, doProg {}", nDone, progSize, payload, nRead, doProg);
                     System.arraycopy(buf, nDone, txBuf, 1, payload);
                     /* old version

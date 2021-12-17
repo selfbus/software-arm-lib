@@ -6,13 +6,13 @@ import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.mgmt.Destination;
-import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementClientImpl;
 import tuwien.auto.calimero.mgmt.TransportLayer;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 /**
  * Extends the calimero-core class {@link ManagementClientImpl}
@@ -31,9 +31,9 @@ public class SBManagementClientImpl extends ManagementClientImpl {
     private static final int MEMORY_WRITE = 0x0280;
 
     private final Logger logger;
-    private TransportLayer refTl = null;
-    private Method refSendWait = null;
-    private Method refSend = null;
+    private final TransportLayer refTl;
+    private final Method refSendWait;
+    private final Method refSend;
 
     public SBManagementClientImpl(KNXNetworkLink link)
             throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
@@ -56,8 +56,7 @@ public class SBManagementClientImpl extends ManagementClientImpl {
 
     // for Selfbus updater
     public byte[] sendUpdateData(final Destination dst, final int cmd, final byte[] data)
-            throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException,
-            KNXLinkClosedException {
+            throws Throwable {
 
         final byte[] asdu = new byte[data.length + 3];
         asdu[0] = (byte) data.length;
@@ -65,22 +64,32 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         asdu[2] = (byte) cmd;
         for (int i = 0; i < data.length; ++i)
             asdu[3 + i] = data[i];
-        if (dst.isConnectionOriented()) {
-            // tl.connect(dst);
-            refTl.connect(dst);
-        }
-        else {
-            logger.error("send update data in connectionless mode, " + dst.toString());
-        }
-        final byte[] send = DataUnitBuilder.createLengthOptimizedAPDU(MEMORY_WRITE, asdu);
-        byte[] apdu = null;
+
+        byte[] apdu;
         try {
+            if (dst.isConnectionOriented()) {
+                // tl.connect(dst);
+                refTl.connect(dst);
+            }
+            else {
+                logger.error("send update data in connectionless mode, " + dst);
+            }
+            final byte[] send = DataUnitBuilder.createLengthOptimizedAPDU(MEMORY_WRITE, asdu);
+
             // final byte[] apdu = sendWait(dst, getPriority(), send, MEMORY_RESPONSE, 0, 65);
             apdu = (byte[]) refSendWait.invoke(this, dst, getPriority(), send, MEMORY_RESPONSE, 0, 65);
-            logger.trace("test");
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            e.printStackTrace();
+        } catch (IllegalAccessException | InvocationTargetException | KNXException e) {
+            throw findCause(e);
         }
         return apdu;
+    }
+    
+    private static Throwable findCause(Throwable throwable) {
+        Objects.requireNonNull(throwable);
+        Throwable rootCause = throwable;
+        while (rootCause.getCause() != null && rootCause.getCause() != rootCause) {
+            rootCause = rootCause.getCause();
+        }
+        return rootCause;
     }
 }
