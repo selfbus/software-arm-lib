@@ -276,7 +276,6 @@ public class Updater implements Runnable {
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC);
 
             logger.info("KNX connection: {}\n", link);
-            logger.debug("Creating UpdatableManagementClient");
 
             //for option -device restart the device in bootloader mode
             if (cliOptions.device() != null) { //!< phys. knx address of the device in normal operation

@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
@@ -38,6 +39,7 @@ public final class DeviceManagement {
     public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec)
             throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
         this.link = link;
+        logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
         this.mc.responseTimeout(Duration.ofSeconds(responseTimeoutSec));
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
@@ -61,7 +63,7 @@ public final class DeviceManagement {
             throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
         SBManagementClientImpl mcDevice = new SBManagementClientImpl(link);
         Destination dest;
-        dest = mcDevice.createDestination(device, true);
+        dest = mcDevice.createDestination(device, true, false, false);
         try {
             logger.info("\nRestarting device {} to bootloader mode using {}", device, link);
             int restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
@@ -257,8 +259,13 @@ public final class DeviceManagement {
             catch (KNXDisconnectException e) {
                 logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incDropCount();
-            } catch (Throwable e) {
-                logger.error("{}{} Exception {}{}", ConColors.RED, command, e, ConColors.RESET);
+            }
+            catch (KNXIllegalArgumentException e) {
+                throw new UpdaterException(String.format("%s failed.", command), e);
+            }
+            catch (Throwable e) {
+                throw new UpdaterException(String.format("%s failed.", command), e);
+                // logger.error("{}{} Exception {}{}", ConColors.RED, command, e, ConColors.RESET);
             }
 
             if (maxRetry > 0) {
