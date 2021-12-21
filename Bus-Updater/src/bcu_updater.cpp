@@ -69,18 +69,17 @@ void BcuUpdate::dumpTicks()
 void BcuUpdate::processTelegram()
 {
     telegramCount++;
-    /*
+
     dump2(
         serial.print("RX: ");
         for (volatile int i = 0; i < bus.telegramLen; i++)
         {
-            serial.print(bus.telegram[i],HEX,2);
+            serial.print(bus.telegram[i], HEX, 2);
             serial.print(" ");
         }
         serial.print(" LEN: ");
-        serial.println(bus.telegramLen,DEC,4);
+        serial.println(bus.telegramLen, DEC);
     );
-    */
 
     unsigned short destAddr = (unsigned short)((bus.telegram[3] << 8) | bus.telegram[4]);
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
@@ -250,6 +249,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
     if (!result)
     {
         dump2(
+            bool isRepeated = (bool)((bus.telegram[0] & (1 << 5)) == 0);
             serial.println("ERROR");
             serial.println("tpci            0x", tpci, HEX, 2);
             serial.println("connectedAddr   0x", connectedAddr, HEX, 4);
@@ -264,6 +264,10 @@ void BcuUpdate::processConControlTelegram(int tpci)
                 serial.println("incConnectedSeqNo TRUE");
             else
                 serial.println("incConnectedSeqNo FALSE");
+            if (isRepeated)
+                serial.println("isRepeated        TRUE");
+            else
+                serial.println("isRepeated        FALSE");
         );
     }
 }
@@ -278,7 +282,7 @@ bool BcuUpdate::sendDirectTelegram(int senderSequenceNumber)
             serial.print("#", getSequenceNumber(senderSequenceNumber), DEC, 2);
             serial.print(" ");
         }
-        serial.println("TX-sendTel");
+        serial.print("TX-sendTel ");
     );
     sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
@@ -291,6 +295,18 @@ bool BcuUpdate::sendDirectTelegram(int senderSequenceNumber)
         sendTelegram[6] &= static_cast<byte>(~T_SEQUENCE_NUMBER_Msk);
         sendTelegram[6] |= static_cast<byte>(senderSequenceNumber);
     }
+
+    dump2(
+        serial.print(" TX: ");
+        for (volatile int i = 0; i < telegramSize(sendTelegram); i++)
+        {
+            serial.print(sendTelegram[i], HEX, 2);
+            serial.print(" ");
+        }
+        serial.print(" LEN: ");
+        serial.println(telegramSize(sendTelegram), DEC);
+    );
+
     bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
     return incConnectedSeqNo;
 }
@@ -397,19 +413,19 @@ void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
         switch (cmd)
         {
            case T_ACK_PDU:
-               serial.println("TX-ACK");
+               serial.print("TX-ACK");
                break;
            case T_NACK_PDU:
-               serial.println("TX-NACK");
+               serial.print("TX-NACK");
                break;
            case T_CONNECT_PDU:
-               serial.println("TX-CONNECT");
+               serial.print("TX-CONNECT");
                break;
            case T_DISCONNECT_PDU:
-               serial.println("TX-DISCONNECT");
+               serial.print("TX-DISCONNECT");
                break;
            default:
-               serial.println("TX-unknown");
+               serial.print("TX-unknown");
         }
     );
 
@@ -422,6 +438,18 @@ void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
     sendCtrlTelegram[4] = (byte)connectedAddr;
     sendCtrlTelegram[5] = (byte)0x60;
     sendCtrlTelegram[6] = (byte)cmd;
+
+    dump2(
+        unsigned int lengthCtrlTelegram = sizeof(sendCtrlTelegram) / sizeof(sendCtrlTelegram[0]);
+        serial.print(" TX: ");
+        for (volatile unsigned int i = 0; i < lengthCtrlTelegram; i++)
+        {
+            serial.print(sendCtrlTelegram[i], HEX, 2);
+            serial.print(" ");
+        }
+        serial.print(" LEN: ");
+        serial.println(lengthCtrlTelegram, DEC);
+    );
 
     bus.sendTelegram(sendCtrlTelegram, 7);
 }
