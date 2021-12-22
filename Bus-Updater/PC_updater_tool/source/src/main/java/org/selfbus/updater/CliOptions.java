@@ -87,7 +87,7 @@ public class CliOptions {
     private static final String OPT_LONG_VERSION = "version";
 
     private static final String OPT_SHORT_NO_FLASH = "f0";
-    private static final String OPT_LONG_NO_FLASH = "NO_FLASH";
+    public static final String OPT_LONG_NO_FLASH = "NO_FLASH";
 
     private static final String OPT_SHORT_LOGLEVEL = "l";
     private static final String OPT_LONG_LOGLEVEL = "logLevel";

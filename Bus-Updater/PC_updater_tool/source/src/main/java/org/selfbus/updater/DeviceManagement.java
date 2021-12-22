@@ -73,7 +73,6 @@ public final class DeviceManagement {
                 Thread.sleep(1000);
                 System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET);
                 restartProcessTime--;
-
             }
             System.out.println();
             logger.info("Device {} should now have started into bootloader mode.", device);
@@ -216,9 +215,10 @@ public final class DeviceManagement {
         sendWithRetry(UPDCommand.DUMP_FLASH, telegram, 0);
     }
 
-    public int doFlash(byte[] data, int maxRetry)
+    public ResponseResult doFlash(byte[] data, int maxRetry, int delay)
             throws UpdaterException, KNXLinkClosedException, InterruptedException, KNXTimeoutException {
         int nIndex = 0;
+        ResponseResult result = new ResponseResult();
         while (nIndex < data.length)
         {
             byte[] txBuffer;
@@ -232,15 +232,21 @@ public final class DeviceManagement {
             txBuffer[0] = (byte)nIndex;
             System.arraycopy(data, nIndex, txBuffer, 1, txBuffer.length - 1);
 
-            byte [] result = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry).data();
-            if (UPDProtocol.checkResult(result, false) != 0) {
+            ResponseResult tmp = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
+            result.addCounters(tmp);
+
+            if (UPDProtocol.checkResult(tmp.data(), false) != 0) {
                 restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
-
             nIndex += txBuffer.length - 1;
+
+            if (delay > 0) {
+                Thread.sleep(delay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
+            }
         }
-        return nIndex;
+        result.addWritten(nIndex);
+        return result;
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)

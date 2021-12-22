@@ -382,7 +382,7 @@ public class Updater implements Runnable {
                 }
             }
             else {
-                logger.warn("--NO_FLASH => {}only boot description block will be written{}", ConColors.RED, ConColors.RESET);
+                logger.warn("--{} => {}only boot description block will be written{}", cliOptions.OPT_LONG_NO_FLASH , ConColors.RED, ConColors.RESET);
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
@@ -392,10 +392,10 @@ public class Updater implements Runnable {
             logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
             byte[] streamBootDescriptor = newBootDescriptor.toStream();
 
-            ///\todo separate FlashFullMode.doFullFlash(..) into erasePages and doFlash. Use doFlash for programming newBootDescriptor
-            int nDone = dm.doFlash(streamBootDescriptor, -1);
-            if (cliOptions.delay() > 0) {
-                Thread.sleep(cliOptions.delay()); //Reduce bus load during data upload
+            // send new boot descriptor
+            ResponseResult responseResult = dm.doFlash(streamBootDescriptor, -1, cliOptions.delay());
+            if (responseResult.written() != streamBootDescriptor.length) {
+                throw new UpdaterException(String.format("Sending Boot descriptor (length %d) failed. Wrote %d", streamBootDescriptor.length, responseResult.written()));
             }
 
             ///todo this UPDATE_BOOT_DESC part, also needs a complete rework
@@ -407,11 +407,11 @@ public class Updater implements Runnable {
             Utils.longToStream(programBootDescriptor, 4, newCrc32);
             System.out.println();
             logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
-                    Integer.toHexString(newCrc32), Long.toString(streamBootDescriptor.length));
+                    Integer.toHexString(newCrc32), responseResult.written());
             result = dm.sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
             if (UPDProtocol.checkResult(result.data()) != 0) {
                 dm.restartProgrammingDevice();
-                throw new UpdaterException("Selfbus update failed.");
+                throw new UpdaterException("Updating boot descriptor failed.");
             }
 
             Thread.sleep(500); ///\todo check if this delay is really needed
@@ -419,7 +419,7 @@ public class Updater implements Runnable {
             result = dm.sendWithRetry(UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
             if (UPDProtocol.checkResult(result.data()) != 0) {
                 dm.restartProgrammingDevice();
-                throw new UpdaterException("Selfbus update failed.");
+                throw new UpdaterException("Restarting device failed.");
             }
 
         } catch (final KNXException | UpdaterException | RuntimeException e) {
