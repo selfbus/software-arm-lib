@@ -66,6 +66,7 @@ public final class FlashDiffMode {
         return  initialized;
     }
 
+    @SuppressWarnings("unused")
     public static String hexCacheDirectory() {
         return hexCacheDirectory;
     }
@@ -75,6 +76,7 @@ public final class FlashDiffMode {
     }
 
     // Differential update routine
+    @SuppressWarnings("unused")
     public static boolean doDifferentialFlash(DeviceManagement dm, long startAddress, byte[] binData)
             throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
         ///\todo add connection reset and sending again on failure, like in full flash mode

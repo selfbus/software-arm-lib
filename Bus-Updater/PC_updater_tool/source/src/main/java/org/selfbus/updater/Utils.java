@@ -7,6 +7,7 @@ import tuwien.auto.calimero.KNXIllegalArgumentException;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.zip.CRC32;
 
 /**
  * Basic utilities usable for the application
@@ -74,6 +75,7 @@ public class Utils {
             * @param path the path to the file (relative or absolute)
      * @return shortened path
      */
+    @SuppressWarnings("unused")
     public static String shortenPath(final String path) {
         return shortenPath(path, DEFAULT_SHORTENER_THRESHOLD);
     }
@@ -131,5 +133,11 @@ public class Utils {
         }
 
         return sb.toString();
+    }
+
+    public static int crc32Value(byte[] buffer) {
+        CRC32 crc32Block = new CRC32();
+        crc32Block.update(buffer, 0, buffer.length);
+        return (int) crc32Block.getValue();
     }
 }

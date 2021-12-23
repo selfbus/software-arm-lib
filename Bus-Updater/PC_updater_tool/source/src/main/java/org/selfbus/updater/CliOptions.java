@@ -118,12 +118,8 @@ public class CliOptions {
     private String tpuart = "";
     private boolean routing = false;
     private String medium = "tp1";
-    private IndividualAddress progDevice = new IndividualAddress(Updater.PHYS_ADDRESS_BOOTLOADER_AREA,
-                                                                 Updater.PHYS_ADDRESS_BOOTLOADER_LINE,
-                                                                 Updater.PHYS_ADDRESS_BOOTLOADER_DEVICE);
-    private IndividualAddress ownAddress = new IndividualAddress(Updater.PHYS_ADDRESS_OWN_AREA,
-                                                                 Updater.PHYS_ADDRESS_OWN_LINE,
-                                                                 Updater.PHYS_ADDRESS_OWN_DEVICE);
+    private IndividualAddress progDevice;
+    private IndividualAddress ownAddress;
     private IndividualAddress device = null;
     private int appVersionPtr = 0;
     private byte[] uid;
@@ -139,10 +135,14 @@ public class CliOptions {
     private boolean version = false;
 
 
-    public CliOptions(final String[] args, String helpApplicationName, String helpHeader, String helpFooter) throws ParseException, KNXFormatException {
+    public CliOptions(final String[] args, String helpApplicationName, String helpHeader, String helpFooter,
+                      IndividualAddress progDevice, IndividualAddress ownAddress)
+            throws ParseException, KNXFormatException {
         this.helpApplicationName = helpApplicationName;
         this.helpHeader = helpHeader;
         this.helpFooter = helpFooter;
+        this.progDevice = progDevice;
+        this.ownAddress = ownAddress;
 
         Option nat = new Option(OPT_SHORT_NAT, OPT_LONG_NAT, false, "enable Network Address Translation (NAT)");
         Option routing = new Option(OPT_SHORT_ROUTING, OPT_LONG_ROUTING, false, "use KNXnet/IP routing (not implemented)");
@@ -200,7 +200,7 @@ public class CliOptions {
                 .required(false)
                 .type(TPSettings.class)
                 .desc(String.format("KNX medium [tp1|rf] (default %s)", this.medium)).build(); ///\todo not all implemented missing [tp0|p110|p132]
-        Option progDevice = Option.builder(OPT_SHORT_PROG_DEVICE).longOpt(OPT_LONG_PROG_DEVICE)
+        Option optProgDevice = Option.builder(OPT_SHORT_PROG_DEVICE).longOpt(OPT_LONG_PROG_DEVICE)
                 .argName("x.x.x")
                 .hasArg()
                 .required(false)
@@ -254,7 +254,7 @@ public class CliOptions {
         cliOptions.addOptionGroup(grpBusAccess);
 
         cliOptions.addOption(device);
-        cliOptions.addOption(progDevice);
+        cliOptions.addOption(optProgDevice);
         cliOptions.addOption(ownPhysicalAddress);
 
         cliOptions.addOption(uid);
@@ -303,13 +303,13 @@ public class CliOptions {
 
             if (cmdLine.hasOption(OPT_SHORT_HELP)) {
                 help = true;
-                logger.debug("help={}", help);
+                logger.debug("help={}", true);
                 return;
             }
 
             if (cmdLine.hasOption(OPT_SHORT_VERSION)) {
                 version = true;
-                logger.debug("version={}", version);
+                logger.debug("version={}", true);
                 return;
             }
 
@@ -432,6 +432,14 @@ public class CliOptions {
                 }
             }
             logger.debug("knxInterface={}", knxInterface);
+
+            // some logical checks for options which exclude each other
+            // differential mode and eraseflash makes no sense
+            if (eraseFlash() && (!full())) {
+                full = true;
+                logger.info("{}--{} is set. --> switching to full flash mode{}", ConColors.RED, OPT_LONG_ERASEFLASH, ConColors.RESET);
+            }
+
 
         } catch (ParseException | KNXFormatException e) {
             StringBuilder cliParsed = new StringBuilder();

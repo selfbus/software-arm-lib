@@ -52,5 +52,6 @@ public class ResponseResult {
     {
         timeoutCount += toAdd.timeoutCount();
         dropCount += toAdd.dropCount();
+        written += toAdd.written();
     }
 }

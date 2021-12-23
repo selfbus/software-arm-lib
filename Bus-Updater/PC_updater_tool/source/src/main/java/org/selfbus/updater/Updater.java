@@ -9,13 +9,10 @@ import java.net.UnknownHostException;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootLoaderIdentity;
-import org.selfbus.updater.upd.UPDCommand;
-import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.zip.CRC32;
 
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.link.KNXNetworkLink;
@@ -86,7 +83,8 @@ public class Updater implements Runnable {
                 ConColors.RESET);
         try {
             // read in user-supplied command line options
-            this.cliOptions = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) , "Selfbus KNX-Firmware update tool options", "");
+            this.cliOptions = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) ,
+                    "Selfbus KNX-Firmware update tool options", "", PHYS_ADDRESS_BOOTLOADER, PHYS_ADDRESS_OWN);
         } catch (final KNXIllegalArgumentException | KNXFormatException | ParseException e) {
             throw e;
         } catch (final RuntimeException e) {
@@ -224,18 +222,11 @@ public class Updater implements Runnable {
         }
     }
 
-
-
     public static final int DELAY_MIN = 0;            //!< minimum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
     public static final int DELAY_MAX = 500;          //!< maximum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
     public static final int DELAY_DEFAULT = 100;      //!< default delay between two UPDCommand.SEND_DATA telegrams in milliseconds
-    public static final int PHYS_ADDRESS_BOOTLOADER_AREA = 15;    //!< area part of the physical address the bootloader is using
-    public static final int PHYS_ADDRESS_BOOTLOADER_LINE = 15;    //!< line part of the physical address the bootloader is using
-    public static final int PHYS_ADDRESS_BOOTLOADER_DEVICE = 192; //!< device part of the physical address the bootloader is using
-
-    public static final int PHYS_ADDRESS_OWN_AREA = 0;    //!< area part of the physical address the Selfbus Updater is using
-    public static final int PHYS_ADDRESS_OWN_LINE = 0;    //!< line part of the physical address the Selfbus Updater is using
-    public static final int PHYS_ADDRESS_OWN_DEVICE = 0; //!< device part of the physical address the Selfbus Updater is using
+    public static final IndividualAddress PHYS_ADDRESS_BOOTLOADER = new IndividualAddress(15, 15,192); //!< physical address the bootloader is using
+    public static final IndividualAddress PHYS_ADDRESS_OWN = new IndividualAddress(0, 0,0); //!< physical address the Selfbus Updater is using
 
     public static final int RESPONSE_TIMEOUT_SEC = 2; //!< Time in seconds the Updater shall wait for a KNX Response
 
@@ -270,7 +261,6 @@ public class Updater implements Runnable {
 
             int appVersionAddress = cliOptions.appVersionPtr();
             byte[] uid = cliOptions.uid();
-            ResponseResult result;
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC);
@@ -382,7 +372,7 @@ public class Updater implements Runnable {
                 }
             }
             else {
-                logger.warn("--{} => {}only boot description block will be written{}", cliOptions.OPT_LONG_NO_FLASH , ConColors.RED, ConColors.RESET);
+                logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH , ConColors.RED, ConColors.RESET);
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
@@ -390,37 +380,10 @@ public class Updater implements Runnable {
                     (int)newFirmware.crc32(),
                     newFirmware.startAddress() + appVersionAddress);
             logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
-            byte[] streamBootDescriptor = newBootDescriptor.toStream();
+            dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
 
-            // send new boot descriptor
-            ResponseResult responseResult = dm.doFlash(streamBootDescriptor, -1, cliOptions.delay());
-            if (responseResult.written() != streamBootDescriptor.length) {
-                throw new UpdaterException(String.format("Sending Boot descriptor (length %d) failed. Wrote %d", streamBootDescriptor.length, responseResult.written()));
-            }
-
-            ///todo this UPDATE_BOOT_DESC part, also needs a complete rework
-            CRC32 crc32Block = new CRC32();
-            crc32Block.update(streamBootDescriptor);
-            int newCrc32 = (int)crc32Block.getValue();
-            byte[] programBootDescriptor = new byte[9];
-            Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
-            Utils.longToStream(programBootDescriptor, 4, newCrc32);
-            System.out.println();
-            logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
-                    Integer.toHexString(newCrc32), responseResult.written());
-            result = dm.sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
-            if (UPDProtocol.checkResult(result.data()) != 0) {
-                dm.restartProgrammingDevice();
-                throw new UpdaterException("Updating boot descriptor failed.");
-            }
-
-            Thread.sleep(500); ///\todo check if this delay is really needed
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
-            result = dm.sendWithRetry(UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
-            if (UPDProtocol.checkResult(result.data()) != 0) {
-                dm.restartProgrammingDevice();
-                throw new UpdaterException("Restarting device failed.");
-            }
+            dm.customRestartProgrammingDevice();
 
         } catch (final KNXException | UpdaterException | RuntimeException e) {
             thrown = e;

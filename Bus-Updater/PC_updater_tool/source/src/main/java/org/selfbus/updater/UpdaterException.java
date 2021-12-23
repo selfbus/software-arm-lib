@@ -7,6 +7,7 @@ public class UpdaterException extends Exception {
     /**
      * Constructs a new <code>UpdaterException</code> without a detail message.
      */
+    @SuppressWarnings("unused")
     public UpdaterException()
     {}
 

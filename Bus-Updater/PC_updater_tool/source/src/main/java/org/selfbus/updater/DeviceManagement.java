@@ -27,6 +27,7 @@ public final class DeviceManagement {
     private static final int RESTART_CHANNEL = 255;  //!< Channelnumber for the APCI_MASTER_RESET_PDU
     public static final int MAX_UPD_COMMAND_RETRY = 3; //!< default maximum retries a UPD command is sent to the client
 
+    @SuppressWarnings("unused")
     private DeviceManagement (){}
 
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
@@ -49,6 +50,16 @@ public final class DeviceManagement {
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException {
         logger.warn("restarting device {}", progDestination);
         mc.restart(progDestination);
+    }
+
+    public void customRestartProgrammingDevice()
+            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
+        logger.warn("restarting device {}", progDestination);
+        ResponseResult result = sendWithRetry(UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
+        if (UPDProtocol.checkResult(result.data()) != 0) {
+            restartProgrammingDevice();
+            throw new UpdaterException("Restarting device failed.");
+        }
     }
 
     /**
@@ -211,7 +222,7 @@ public final class DeviceManagement {
         byte[] telegram = new byte[8];
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
-        // this send will always time out, because the mcu is busy dumping the flash
+        // sendWithRetry will always time out, because the mcu is busy dumping the flash
         sendWithRetry(UPDCommand.DUMP_FLASH, telegram, 0);
     }
 
@@ -234,23 +245,61 @@ public final class DeviceManagement {
 
             ResponseResult tmp = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
             result.addCounters(tmp);
+            // drop's/T_DISCONNECT's affect's ramBuffer of the MCU, so we need to send whole txBuffer again.
+            if (tmp.dropCount() > 0) {
+                nIndex = 0;
+                logger.warn("{}Sending data again{}", ConColors.RED, ConColors.RESET);
+                continue;
+            }
 
             if (UPDProtocol.checkResult(tmp.data(), false) != 0) {
                 restartProgrammingDevice();
-                throw new UpdaterException("Selfbus update failed.");
+                throw new UpdaterException("doFlash failed.");
             }
-            nIndex += txBuffer.length - 1;
 
             if (delay > 0) {
                 Thread.sleep(delay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
             }
+
+            nIndex += txBuffer.length - 1;
         }
         result.addWritten(nIndex);
         return result;
     }
 
+    public ResponseResult programBootDescriptor(BootDescriptor bootDescriptor, int delay)
+            throws UpdaterException, KNXLinkClosedException, InterruptedException, KNXTimeoutException {
+
+        byte[] streamBootDescriptor = bootDescriptor.toStream();
+        // send new boot descriptor
+        ResponseResult flashResult = doFlash(streamBootDescriptor, -1, delay);
+        if (flashResult.written() != streamBootDescriptor.length) {
+            throw new UpdaterException(String.format("Sending Boot descriptor (length %d) failed. Wrote %d", streamBootDescriptor.length, flashResult.written()));
+        }
+        if (delay > 0) {
+            Thread.sleep(delay);
+        }
+        int crc32Value = Utils.crc32Value(streamBootDescriptor);
+        byte[] programBootDescriptor = new byte[9];
+        Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
+        Utils.longToStream(programBootDescriptor, 4, crc32Value);
+        System.out.println();
+        logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
+                Integer.toHexString(crc32Value), streamBootDescriptor.length);
+        ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
+        if (UPDProtocol.checkResult(programResult.data()) != 0) {
+            restartProgrammingDevice();
+            throw new UpdaterException("Updating boot descriptor failed.");
+        }
+        programResult.addCounters(flashResult);
+        if (delay > 0) {
+            Thread.sleep(delay);
+        }
+        return programResult;
+    }
+
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
-            throws KNXLinkClosedException, InterruptedException, UpdaterException {
+            throws UpdaterException {
         ResponseResult result = new ResponseResult();
         while (true) {
             try {

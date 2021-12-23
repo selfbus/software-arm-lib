@@ -62,8 +62,7 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         asdu[0] = (byte) data.length;
         asdu[1] = 0;
         asdu[2] = (byte) cmd;
-        for (int i = 0; i < data.length; ++i)
-            asdu[3 + i] = data[i];
+        System.arraycopy(data, 0, asdu, 3, data.length);
 
         byte[] apdu;
         try {
