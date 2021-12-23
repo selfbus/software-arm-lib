@@ -29,18 +29,20 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 
 #ifdef DEBUG
 #define DEFAULT_COUNT_TO_FAIL (30)
-    int countToFail = DEFAULT_COUNT_TO_FAIL;
+    int defaultCountToFail = DEFAULT_COUNT_TO_FAIL;
+    int countToFail = defaultCountToFail;
 
 bool checkCountToFail()
 {
-    return false;
+    // return false; ///\todo uncomment on release
     // ok lets drop connection for debugging
     countToFail--;
     if (countToFail)
     {
         return false;
     }
-    countToFail = DEFAULT_COUNT_TO_FAIL;
+    defaultCountToFail++;
+    countToFail = defaultCountToFail;
     return true;
 }
 #endif

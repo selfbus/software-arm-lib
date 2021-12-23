@@ -722,7 +722,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
     }
     else
     {
-        d3(serial.print("it's different, Erase Page:"));
+        d3(serial.print("it's different, Erase Page: "));
         result = erasePageRange(bootDescriptorBlockPage(), bootDescriptorBlockPage()); // - data[7]);
         if (result != UDP_IAP_SUCCESS)
         {
@@ -730,23 +730,21 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
             return (T_ACK_PDU);
         }
 
-        d3(serial.print(" OK, Flash Page:"));
+        d3(serial.print("Flash Page:"));
 
         result = executeProgramFlash(address, ramBuffer, FLASH_PAGE_SIZE, true); // no less than 256byte can be flashed
-        if (result == UDP_IAP_SUCCESS)
+        d3(
+           updResult2Serial(result);
+           serial.println();
+        );
+
+        if (result != UDP_IAP_SUCCESS)
         {
-            d3(serial.println(" OK"));
-        }
-        else if (result == UDP_ADDRESS_NOT_ALLOWED_TO_FLASH)
-        {
-            d3(serial.println(" -->executeProgramFlash: UDP_ADDRESS_NOT_ALLOWED_TO_FLASH"));
-            setLastError(UDP_ADDRESS_NOT_ALLOWED_TO_FLASH, sendTel);
-            return (T_ACK_PDU);
-        }
-        else
-        {
-            d3(serial.println(" -->executeProgramFlash: ", (unsigned int)result, DEC, 2));
-            setLastError((UDP_State)result, sendTel);
+            setLastError(result, sendTel);
+            if (result == UDP_ADDRESS_NOT_ALLOWED_TO_FLASH)
+            {
+                return (T_ACK_PDU);
+            }
         }
     }
     // dumpFlashContent(((AppDescriptionBlock *) ramBuffer)->startAddress, ((AppDescriptionBlock *) ramBuffer)->endAddress); // untested

@@ -96,7 +96,9 @@ void loop()
         }
         else
         {
+#ifdef DEBUG
             digitalWrite(PIN_INFO, false);  // Turn Off info LED
+#endif
             runModeTimeout.start(RUN_MODE_BLINK_IDLE);
         }
         digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
