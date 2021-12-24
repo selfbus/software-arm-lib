@@ -2,7 +2,9 @@ package org.selfbus.updater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.*;
+import tuwien.auto.calimero.DataUnitBuilder;
+import tuwien.auto.calimero.KNXException;
+import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.mgmt.Destination;
