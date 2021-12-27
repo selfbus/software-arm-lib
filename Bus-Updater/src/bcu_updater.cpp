@@ -34,7 +34,7 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 
 bool checkCountToFail()
 {
-    // return false; ///\todo uncomment on release
+    return false; ///\todo uncomment on release
     // ok lets drop connection for debugging
     countToFail--;
     if (countToFail)
@@ -50,6 +50,20 @@ bool checkCountToFail()
 int getSequenceNumber(byte tpci)
 {
     return ((tpci & T_SEQUENCE_NUMBER_Msk) >> T_SEQUENCE_NUMBER_FIRST_BIT_Pos);
+}
+
+void dumpBusTelegram()
+{
+    dump2(
+        serial.print("RX: ");
+        for (volatile int i = 0; i < bus.telegramLen; i++)
+        {
+            serial.print(bus.telegram[i], HEX, 2);
+            serial.print(" ");
+        }
+        serial.print(" LEN: ");
+        serial.println(bus.telegramLen, DEC);
+    );
 }
 
 void BcuUpdate::dumpTicks()
@@ -71,17 +85,6 @@ void BcuUpdate::dumpTicks()
 void BcuUpdate::processTelegram()
 {
     telegramCount++;
-
-    dump2(
-        serial.print("RX: ");
-        for (volatile int i = 0; i < bus.telegramLen; i++)
-        {
-            serial.print(bus.telegram[i], HEX, 2);
-            serial.print(" ");
-        }
-        serial.print(" LEN: ");
-        serial.println(bus.telegramLen, DEC);
-    );
 
     unsigned short destAddr = (unsigned short)((bus.telegram[3] << 8) | bus.telegram[4]);
     unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
@@ -251,6 +254,7 @@ void BcuUpdate::processConControlTelegram(int tpci)
     if (!result)
     {
         dump2(
+            dumpBusTelegram();
             bool isRepeated = (bool)((bus.telegram[0] & (1 << 5)) == 0);
             serial.println("ERROR");
             serial.println("tpci            0x", tpci, HEX, 2);
@@ -284,7 +288,7 @@ bool BcuUpdate::sendDirectTelegram(int senderSequenceNumber)
             serial.print("#", getSequenceNumber(senderSequenceNumber), DEC, 2);
             serial.print(" ");
         }
-        serial.print("TX-sendTel ");
+        serial.println("TX-sendTel ");
     );
     sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
@@ -297,7 +301,7 @@ bool BcuUpdate::sendDirectTelegram(int senderSequenceNumber)
         sendTelegram[6] &= static_cast<byte>(~T_SEQUENCE_NUMBER_Msk);
         sendTelegram[6] |= static_cast<byte>(senderSequenceNumber);
     }
-
+/*
     dump2(
         serial.print(" TX: ");
         for (volatile int i = 0; i < telegramSize(sendTelegram); i++)
@@ -308,7 +312,7 @@ bool BcuUpdate::sendDirectTelegram(int senderSequenceNumber)
         serial.print(" LEN: ");
         serial.println(telegramSize(sendTelegram), DEC);
     );
-
+*/
     bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
     return incConnectedSeqNo;
 }
