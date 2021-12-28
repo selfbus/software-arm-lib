@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Parses command line interface (cli) options for the application
@@ -57,6 +58,10 @@ public class CliOptions {
     private static final String OPT_LONG_TPUART = "tpuart";
     private static final String OPT_SHORT_MEDIUM = "m";
     private static final String OPT_LONG_MEDIUM = "medium";
+
+    private static final String OPT_LONG_USER_ID = "user";
+    private static final String OPT_LONG_USER_PASSWORD = "user-pwd";
+    private static final String OPT_LONG_DEVICE_PASSWORD = "device-pwd";
 
     private static final String OPT_SHORT_PROG_DEVICE = "D";
     private static final String OPT_LONG_PROG_DEVICE = "progDevice";
@@ -118,6 +123,12 @@ public class CliOptions {
     private String tpuart = "";
     private boolean routing = false;
     private String medium = "tp1";
+
+    private int userId = 1;
+    private String userPassword = "";
+    private String devicePassword = "";
+
+
     private IndividualAddress progDevice;
     private IndividualAddress ownAddress;
     private IndividualAddress device = null;
@@ -242,6 +253,25 @@ public class CliOptions {
                 .type(String.class)
                 .desc(String.format("Logfile logging level [TRACE|DEBUG|INFO] (default %s)", this.logLevel.toString())).build();
 
+        Option userId = Option.builder(null).longOpt(OPT_LONG_USER_ID)
+                .argName("id")
+                .hasArg()
+                .required(false)
+                .type(Number.class)
+                .desc(String.format("KNX IP Secure tunneling user identifier (1..127) (default %d)", this.userId)).build();
+        Option userPasswd = Option.builder(null).longOpt(OPT_LONG_USER_PASSWORD)
+                .argName("password")
+                .hasArg()
+                .required(false)
+                .type(Number.class)
+                .desc("KNX IP Secure tunneling user password (Commissioning password/Inbetriebnahmepasswort), \" in password may not work").build();
+        Option devicePasswd = Option.builder(null).longOpt(OPT_LONG_DEVICE_PASSWORD)
+                .argName("password")
+                .hasArg()
+                .required(false)
+                .type(Number.class)
+                .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) \" in password may not work").build();
+
         // options will be shown in order as they are added to cliOptions
         cliOptions.addOption(fileName);
 
@@ -256,6 +286,10 @@ public class CliOptions {
         cliOptions.addOption(device);
         cliOptions.addOption(optProgDevice);
         cliOptions.addOption(ownPhysicalAddress);
+
+        cliOptions.addOption(userId);
+        cliOptions.addOption(userPasswd);
+        cliOptions.addOption(devicePasswd);
 
         cliOptions.addOption(uid);
         cliOptions.addOption(full);
@@ -285,7 +319,23 @@ public class CliOptions {
     private void parse(final String[] args) {
         CommandLineParser parser = new DefaultParser();
         try {
-            logger.debug("cli: {}", String.join(" ",args));
+            int i = 0;
+            String cliCensored = "";
+            while (i < args.length) {
+                String testCli = args[i].toLowerCase(Locale.ROOT);
+                if ((testCli.contains(OPT_LONG_USER_ID.toLowerCase(Locale.ROOT))) ||
+                    (testCli.contains(OPT_LONG_USER_PASSWORD.toLowerCase(Locale.ROOT))) ||
+                    (testCli.contains(OPT_LONG_DEVICE_PASSWORD.toLowerCase(Locale.ROOT)))) {
+                    cliCensored += " " + args[i] + " (censored)";
+                    i++;
+                }
+                else {
+                    cliCensored += " " + args[i];
+                }
+                i++;
+            }
+            logger.debug("cli: {}", cliCensored.trim());
+
             cmdLine = parser.parse(cliOptions, args);
             // get the log level for log file output
             ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -433,6 +483,21 @@ public class CliOptions {
             }
             logger.debug("knxInterface={}", knxInterface);
 
+            if (cmdLine.hasOption(OPT_LONG_USER_ID)) {
+                logger.debug("KNX IP Secure userId is set"); // don't log knx secure ip specific options
+                userId = ((Number)cmdLine.getParsedOptionValue(OPT_LONG_USER_ID)).intValue();
+            }
+
+            if (cmdLine.hasOption(OPT_LONG_USER_PASSWORD)) {
+                logger.debug("KNX IP Secure userPassword is set"); // don't log knx secure ip specific options
+                userPassword = cmdLine.getOptionValue(OPT_LONG_USER_PASSWORD);
+            }
+
+            if (cmdLine.hasOption(OPT_LONG_DEVICE_PASSWORD)) {
+                logger.debug("KNX IP Secure devicePassword is set"); // don't log knx secure ip specific options
+                devicePassword = cmdLine.getOptionValue(OPT_LONG_DEVICE_PASSWORD);
+            }
+
             // some logical checks for options which exclude each other
             // differential mode and eraseflash makes no sense
             if (eraseFlash() && (!full())) {
@@ -579,5 +644,17 @@ public class CliOptions {
 
     public Level logLevel() {
         return logLevel;
+    }
+
+    public int userId() {
+        return userId;
+    }
+
+    public String userPassword() {
+        return userPassword;
+    }
+
+    public String devicePassword() {
+        return devicePassword;
     }
 }

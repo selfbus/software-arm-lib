@@ -2,11 +2,16 @@ package org.selfbus.updater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.knxnetip.TcpConnection;
 
 import java.io.File;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.CRC32;
 
 /**
@@ -139,5 +144,30 @@ public class Utils {
         CRC32 crc32Block = new CRC32();
         crc32Block.update(buffer, 0, buffer.length);
         return (int) crc32Block.getValue();
+    }
+
+    private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
+    private static boolean registeredTcpShutdownHook;
+
+    static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
+            throws KNXException {
+        if (!registeredTcpShutdownHook) {
+            Runtime.getRuntime().addShutdownHook(new Thread(Utils::closeTcpConnections));
+            registeredTcpShutdownHook = true;
+        }
+
+        var connection = tcpConnectionPool.get(server);
+        if (connection == null || !connection.isConnected()) {
+            connection = TcpConnection.newTcpConnection(local, server);
+            tcpConnectionPool.put(server, connection);
+        }
+        return connection;
+    }
+
+    private static void closeTcpConnections() {
+        final var connections = tcpConnectionPool.values().toArray(TcpConnection[]::new);
+        for (final var c : connections) {
+            c.close();
+        }
     }
 }

@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 
 import tuwien.auto.calimero.*;
+import tuwien.auto.calimero.knxnetip.SecureConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
@@ -23,6 +24,8 @@ import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 import com.google.common.primitives.Bytes;  	// For search in byte array
+
+import static org.selfbus.updater.Utils.tcpConnection;
 
 /**
  * A Tool for updating firmware of a Selfbus device in a KNX network.
@@ -159,33 +162,32 @@ public class Updater implements Runnable {
             local = new InetSocketAddress(0);
         }
 
-        final InetSocketAddress host;
-        host = new InetSocketAddress(cliOptions.knxInterface(), cliOptions.port());
+        final InetSocketAddress remote = new InetSocketAddress(cliOptions.knxInterface(), cliOptions.port());
         if (cliOptions.routing()) {
             //KNXNetworkLinkIP.ROUTING
-            //return KNXNetworkLinkIP.newRoutingLink(local, host,	cliOptions.nat(), medium);
+            //return KNXNetworkLinkIP.newRoutingLink(local, remote,	cliOptions.nat(), medium);
             logger.error("{}Routing not implemented.{}", ConColors.RED, ConColors.RESET);
             throw new UpdaterException("Routing not implemented.");
-            //return KNXNetworkLinkIP.newRoutingLink(local, host, medium);
-        } else {
-            //KNXNetworkLinkIP.TUNNELING;
-            return KNXNetworkLinkIP.newTunnelingLink(local, host, cliOptions.nat(), medium);
+            //return KNXNetworkLinkIP.newRoutingLink(local, remote, medium);
         }
-        ///\todo for secure connections try
-        // KNXNetworkLinkIP.newSecureTunnelingLink(local, host, cliOptions.nat(), byte[] deviceAuthCode, int userID, byte[] userKey);
+        else {
+            if ((cliOptions.devicePassword().length() == 0) && (cliOptions.userPassword().length() == 0)) {
+                // default UDP unsecure tunneling connection
+                return KNXNetworkLinkIP.newTunnelingLink(local, remote, cliOptions.nat(), medium);
+            }
+            else {
+                // KNX IP Secure TCP tunneling connection
+                byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.devicePassword().toCharArray());
+                byte[] userKey = SecureConnection.hashUserPassword(cliOptions.userPassword().toCharArray());
+                final var session = tcpConnection(local, remote).newSecureSession(cliOptions.userId(), userKey, deviceAuthCode);
+                return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
+            }
+        }
     }
-
-    private static InetSocketAddress createLocalSocket(final InetAddress host,
-                                                       final Integer port) {
-        final int p = port != null ? port : 0;
-        try {
-            return host != null ? new InetSocketAddress(host, p)
-                    : p != 0 ? new InetSocketAddress(
-                    InetAddress.getLocalHost(), p) : null;
-        } catch (final UnknownHostException e) {
-            throw new KNXIllegalArgumentException("failed to get local host "
-                    + e.getMessage(), e);
-        }
+    static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
+    {
+        final int p = port != null ? port.intValue() : 0;
+        return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(p);
     }
 
     private static KNXMediumSettings getMedium(final String id, IndividualAddress ownAddress) {
@@ -350,7 +352,7 @@ public class Updater implements Runnable {
             BootDescriptor bootDescriptor = dm.requestBootDescriptor();
 
             boolean diffMode = false;
-            if ((!(cliOptions.full()))) {
+            if (!(cliOptions.full())) {
                 if (bootDescriptor.valid()) {
                     diffMode = FlashDiffMode.setupDifferentialMode(bootDescriptor);
                 }

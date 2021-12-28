@@ -19,10 +19,11 @@ windows: gradlew.bat fatJar
 
 ## Usage
 ```
-SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
-       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [-u <uid>] [-f1] [-H <localhost>] [-P
-       <localport>] [-p <port>] [-n] [-r] [-a <address>] [-h | -v]  [--delay <ms>] [-l
-       <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
+java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
+       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--user <id>] [--user-pwd <password>]
+       [--device-pwd <password>] [-u <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-n]
+       [-r] [-a <address>] [-h | -v]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH]
+       [--DUMPFLASH <start> <end>] [-f0]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>           Filename of hex file to program
@@ -33,6 +34,11 @@ Selfbus KNX-Firmware update tool options:
  -d,--device <x.x.x>                KNX device address in normal operating mode (default none)
  -D,--progDevice <x.x.x>            KNX device address in bootloader mode (default 15.15.192)
  -o,--own <x.x.x>                   own physical KNX address (default 0.0.0)
+    --user <id>                     KNX IP Secure tunneling user identifier (1..127) (default 1)
+    --user-pwd <password>           KNX IP Secure tunneling user password (Commissioning
+                                    password/Inbetriebnahmepasswort), " in password may not work
+    --device-pwd <password>         KNX IP Secure device authentication code (Authentication
+                                    Code/Authentifizierungscode) " in password may not work
  -u,--uid <uid>                     send UID to unlock (default: request UID to unlock). Only the
                                     first 12 bytes of UID are used
  -f1,--full                         force full upload mode (disables differential mode)
