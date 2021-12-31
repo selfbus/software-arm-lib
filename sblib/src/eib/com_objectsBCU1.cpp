@@ -47,7 +47,6 @@ void ComObjectsBCU1::processGroupTelegram(int addr, int apci, byte* tel, int trg
 /**
  * Spec: Resources 4.11.2 Group Object Association Table - Realisation Type 1
  */
-    const ComConfig* configTab = &objectConfig(0);
     const byte* assocTab = bcu->addrTables->assocTable();
     const int endAssoc = 1 + (*assocTab) * 2;
     int objno, objConf;
@@ -68,7 +67,7 @@ void ComObjectsBCU1::processGroupTelegram(int addr, int apci, byte* tel, int trg
             if (objno == trg_objno)
             	continue; // no update of the object triggered by the app
 
-            objConf = configTab[objno].config;
+            objConf = objectConfig(objno).config;
 
             if (apci == APCI_GROUP_VALUE_WRITE_PDU || apci == APCI_GROUP_VALUE_RESPONSE_PDU)
             {

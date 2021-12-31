@@ -35,14 +35,13 @@
 #include <sblib/eib/com_objects.h>
 #include <sblib/eib/typesBCU1.h>
 
-class BCU1;
+class BcuBase;
 
 class ComObjectsBCU1 : public ComObjects
 {
 public:
-	ComObjectsBCU1(BCU1* bcuInstance) : ComObjects((BcuBase*)bcuInstance), bcu(bcuInstance) {}
+	ComObjectsBCU1(BcuBase* bcuInstance) : ComObjects(bcuInstance) {}
 	~ComObjectsBCU1() = default;
-	BCU1* bcu;
 
 	virtual const ComConfig& objectConfig(int objno);
 	virtual int objectSize(int objno);

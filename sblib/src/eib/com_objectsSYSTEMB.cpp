@@ -93,7 +93,7 @@ void ComObjectsSYSTEMB::processGroupTelegram(int addr, int apci, byte* tel, int 
 
 byte* ComObjectsSYSTEMB::objectConfigTable()
 {
-    byte * addr = (byte* ) & bcu->userEeprom->commsTabAddr();
+    byte * addr = (byte* ) & ((SYSTEMB*)bcu)->userEeprom->commsTabAddr();
     return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
 }
 

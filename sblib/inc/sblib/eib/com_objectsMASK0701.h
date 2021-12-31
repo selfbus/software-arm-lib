@@ -34,15 +34,13 @@
 
 #include <sblib/eib/com_objectsBCU2.h>
 
-class MASK0701;
+class BcuBase;
 
 class ComObjectsMASK0701 : public ComObjectsBCU2
 {
 public:
-	ComObjectsMASK0701(MASK0701* bcuInstance) : ComObjectsBCU2((BCU2*)bcuInstance), bcu(bcuInstance) {};
+	ComObjectsMASK0701(BcuBase* bcuInstance) : ComObjectsBCU2(bcuInstance) {};
 	~ComObjectsMASK0701() = default;
-	MASK0701* bcu;
-
 };
 
 #endif /*sblib_com_objects_h*/

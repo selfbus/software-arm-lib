@@ -765,16 +765,6 @@ void BcuBase::processTelegram()
     bus->discardReceivedTelegram();
 }
 
-void BcuBase::_begin()
-{
-    userEeprom->readUserEeprom();
-    sendGrpTelEnabled = true;
-    groupTelSent = millis();
-
-    // set limit to max of 28 telegrams per second (wait 35ms) -  to avoid risk of thermal destruction of the sending circuit
-    groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
-}
-
 void BcuBase::end()
 {
     if (usrCallback)
@@ -846,7 +836,12 @@ byte* BcuBase::userMemoryPtr(unsigned int addr)
 // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
 void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
-    _begin();
+    sendGrpTelEnabled = true;
+    groupTelSent = millis();
+
+    // set limit to max of 28 telegrams per second (wait 35ms) -  to avoid risk of thermal destruction of the sending circuit
+    groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
+
 #if defined(INCLUDE_SERIAL)
     IF_DEBUG(serial.begin(SERIAL_SPEED));
 #endif

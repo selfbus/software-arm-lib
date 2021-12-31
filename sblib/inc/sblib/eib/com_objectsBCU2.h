@@ -35,14 +35,13 @@
 #include <sblib/eib/com_objectsBCU1.h>
 #include <sblib/eib/typesBCU2.h>
 
-class BCU2;
+class BcuBase;
 
 class ComObjectsBCU2 : public ComObjectsBCU1
 {
 public:
-	ComObjectsBCU2(BCU2* bcuInstance) : ComObjectsBCU1((BCU1*)bcuInstance), bcu(bcuInstance) {}
+	ComObjectsBCU2(BcuBase* bcuInstance) : ComObjectsBCU1(bcuInstance) {}
 	~ComObjectsBCU2() = default;
-	BCU2* bcu;
 
 protected:
 	virtual byte* objectValuePtr(int objno);

@@ -34,16 +34,15 @@
 
 #include <sblib/eib/com_objectsBCU2.h>
 
-class SYSTEMB;
+class BcuBase;
 
 class ComObjectsSYSTEMB : public ComObjectsBCU2
 {
 public:
-	ComObjectsSYSTEMB(SYSTEMB* bcuInstance) : ComObjectsBCU2((BCU2*)bcuInstance), bcu(bcuInstance) {}
+	ComObjectsSYSTEMB(BcuBase* bcuInstance) : ComObjectsBCU2(bcuInstance) {}
 	~ComObjectsSYSTEMB() = default;
 
 	virtual inline const ComConfig& objectConfig(int objno);
-	SYSTEMB* bcu;
 
 protected:
 	// The size of the object types BIT_7...VARDATA in bytes

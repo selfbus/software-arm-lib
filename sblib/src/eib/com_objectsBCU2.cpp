@@ -25,7 +25,7 @@ byte* ComObjectsBCU2::objectValuePtr(int objno)
 
 byte* ComObjectsBCU2::objectConfigTable()
 {
-    byte * addr = (byte* ) & bcu->userEeprom->commsTabAddr();
+    byte * addr = (byte* ) & ((BCU2*)bcu)->userEeprom->commsTabAddr();
     return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
 }
 

@@ -112,4 +112,7 @@ void UserEeprom::writeUserEeprom()
 }
 
 UserEeprom::UserEeprom(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) :
-		userEepromData(new byte[size]), bcu(bcu), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size), userEepromFlashSize(flashSize) {};
+		userEepromData(new byte[size]), bcu(bcu), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size), userEepromFlashSize(flashSize)
+{
+    readUserEeprom();
+};
