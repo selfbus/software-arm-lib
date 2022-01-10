@@ -22,13 +22,13 @@
 
 #include <sblib/main.h>
 #include <sblib/digital_pin.h>
-#include <sblib/serial.h>
 #include <sblib/internal/iap.h> // for IAP_SUCCESS
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 #include "dump.h"
 
 #ifdef DEBUG
+#   include <sblib/serial.h>
 #   include "flash.h"
 #endif
 
