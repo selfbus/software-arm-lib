@@ -135,10 +135,11 @@ void BcuUpdate::processDirectTelegram(int apci)
     if (connectedAddr != senderAddr) // ensure that the sender is correct
     {
         dump2(
-                serial.print("connectedAddr 0x");
-                serial.print(connectedAddr, HEX, 4);
-                serial.print(" != 0x");
-                serial.print(senderAddr, HEX, 4);
+                serial.print("ERROR");
+                serial.print(" connectedAddr ");
+                dumpKNXAddress(connectedAddr);
+                serial.print(" != ");
+                dumpKNXAddress(senderAddr);
                 serial.println(" senderAddr");
              );
         return;
@@ -257,9 +258,11 @@ void BcuUpdate::processConControlTelegram(int tpci)
             dumpBusTelegram();
             bool isRepeated = (bool)((bus.telegram[0] & (1 << 5)) == 0);
             serial.println("ERROR");
-            serial.println("tpci            0x", tpci, HEX, 2);
-            serial.println("connectedAddr   0x", connectedAddr, HEX, 4);
-            serial.println("senderAddr      0x", senderAddr, HEX, 4);
+            serial.println("tpci              0x", tpci, HEX, 2);
+            serial.print("connectedAddr     ");
+            dumpKNXAddress(connectedAddr);
+            serial.print("senderAddr        ");
+            dumpKNXAddress(senderAddr);
             serial.println("lastAckSeqNo      ", lastAckSeqNo, DEC, 2);
             if ((tpci != T_CONNECT_PDU) && (tpci !=T_DISCONNECT_PDU))
             {
@@ -324,14 +327,18 @@ bool BcuUpdate::processConControlConnectPDU(int senderAddr)
         return false;
     }
 
+    dump2(
+            serial.print("from ");
+            dumpKNXAddress(senderAddr);
+            serial.print(" ");
+         );
+
     resetConnection();
     connectedSeqNo = 0;
     connectedTime = systemTime;
     lastTick = connectedTime;
     connectedAddr = senderAddr;
     telegramCount++;
-    dump2(serial.println("RX-CON"));
-    // bus.setSendAck(SB_BUS_ACK); // this is set by the Bus class itself
     return true;
 }
 

@@ -208,9 +208,9 @@ static inline void run_updater(bool programmingMode)
     serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
     serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
     serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
-    serial.print("physical address            : ", (physicalAddress >> 12) & 0x0F, DEC);
-    serial.print(".", (physicalAddress >> 8) & 0x0F, DEC);
-    serial.println(".", physicalAddress & 0xFF, DEC);
+    serial.print("physical address            : ");
+    dumpKNXAddress(physicalAddress);
+    serial.println();
     serial.println("--------------------------------------------------- by sh");
 #endif
 
