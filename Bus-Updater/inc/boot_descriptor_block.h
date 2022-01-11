@@ -31,7 +31,7 @@
 #endif
 
 ///\todo move BL_IDENTITY to bootloader.cpp or a new config.h file
-#define BL_IDENTITY			 0x1062		        //!< boot loader Version 0.62
+#define BL_IDENTITY			 0x1063		        //!< boot loader Version 0.63
 #define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
 

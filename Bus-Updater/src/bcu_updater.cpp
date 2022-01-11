@@ -147,14 +147,17 @@ void BcuUpdate::processDirectTelegram(int apci)
 
     if (senderSeqNo == lastSenderSequenceNumber)
     {
+        if (is_repeated(bus.telegram[0]))
+        {
         dump2(
-                serial.print("DROPPING DUPLICATE ");
-                serial.print("old/new ");
-                serial.print(lastSenderSequenceNumber, DEC, 2);
-                serial.print(" ");
+                serial.print("REPEATED ");
+                serial.print("old/new #");
+                serial.print(getSequenceNumber(lastSenderSequenceNumber), DEC, 2);
+                serial.print("/#");
                 serial.print(getSequenceNumber(senderSeqNo), DEC, 2);
                 serial.print(" ");
              );
+        }
         //return;
     }
 
@@ -256,24 +259,24 @@ void BcuUpdate::processConControlTelegram(int tpci)
     {
         dump2(
             dumpBusTelegram();
-            bool isRepeated = (bool)((bus.telegram[0] & (1 << 5)) == 0);
             serial.println("ERROR");
             serial.println("tpci              0x", tpci, HEX, 2);
             serial.print("connectedAddr     ");
             dumpKNXAddress(connectedAddr);
+            serial.println();
             serial.print("senderAddr        ");
             dumpKNXAddress(senderAddr);
-            serial.println("lastAckSeqNo      ", lastAckSeqNo, DEC, 2);
+            serial.println();
+            serial.println("lastAckSeqNo     #", getSequenceNumber(lastAckSeqNo), DEC, 2);
             if ((tpci != T_CONNECT_PDU) && (tpci !=T_DISCONNECT_PDU))
             {
-                int curSeqNo = bus.telegram[6] & T_SEQUENCE_NUMBER_Msk;
-                serial.println("curSeqNo          ", curSeqNo, DEC, 2);
+                serial.println("curSeqNo         #", getSequenceNumber(bus.telegram[6]), DEC, 2);
             }
             if (incConnectedSeqNo)
                 serial.println("incConnectedSeqNo TRUE");
             else
                 serial.println("incConnectedSeqNo FALSE");
-            if (isRepeated)
+            if (is_repeated(bus.telegram[0]))
                 serial.println("isRepeated        TRUE");
             else
                 serial.println("isRepeated        FALSE");
@@ -375,9 +378,20 @@ bool BcuUpdate::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
     // get sequence number
     int curSeqNo = bus.telegram[6] & T_SEQUENCE_NUMBER_Msk;
 
-    if (!(incConnectedSeqNo && lastAckSeqNo !=  curSeqNo))
+    ///\todo this if else bla stuff needs a refactoring
+    if (is_repeated(bus.telegram[0]))
+    {
+        dump2(serial.print("REPEATED "));
+        if (lastAckSeqNo == curSeqNo)
+        {
+            incConnectedSeqNo = false;
+        }
+    }
+    else if (!(incConnectedSeqNo && lastAckSeqNo != curSeqNo))
     {
         dump2(serial.println("not in sequence"));
+        sendConControlTelegram(T_DISCONNECT_PDU, 0);
+        resetConnection();
         return false;
     }
 
@@ -392,8 +406,11 @@ bool BcuUpdate::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
     {
         // A positive acknowledgment
         dump2(serial.println("T_ACK"));
-        connectedSeqNo += 1 << T_SEQUENCE_NUMBER_FIRST_BIT_Pos; // add one to sequence number
-        connectedSeqNo &= T_SEQUENCE_NUMBER_Msk; // catch a possible overflow
+        if (incConnectedSeqNo)
+        {
+            connectedSeqNo += 1 << T_SEQUENCE_NUMBER_FIRST_BIT_Pos; // add one to sequence number
+            connectedSeqNo &= T_SEQUENCE_NUMBER_Msk; // catch a possible overflow
+        }
         lastAckSeqNo = curSeqNo;
         incConnectedSeqNo = true;
     }
@@ -445,7 +462,9 @@ void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
     if (cmd & 0x40)  // Add the sequence number if the command shall contain it
         cmd |= senderSeqNo & T_SEQUENCE_NUMBER_Msk;
 
-    sendCtrlTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
+    sendCtrlTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte, same priority as received telegram
+    // sendCtrlTelegram[0] = 0xb0; // always system priority for TL4 control commands
+
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
     sendCtrlTelegram[3] = (byte)(connectedAddr >> 8);
     sendCtrlTelegram[4] = (byte)connectedAddr;

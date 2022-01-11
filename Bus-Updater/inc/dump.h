@@ -30,6 +30,8 @@
 #define knx_line(addr) ((addr >> 8) & 0x0F)
 #define knx_device(addr) (addr & 0xFF)
 
+#define is_repeated(controlByte) ((bool)((controlByte & (1 << 5)) == 0))
+
 // for update.cpp, upd_protocol.cpp, flash.cpp and partly decompressor.cpp
 #if defined(DUMP_TELEGRAMS_LVL1)
 #   define d1(x) {serial.print(x);}
