@@ -1,6 +1,7 @@
 #include <sblib/internal/iap.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/digital_pin.h>
+#include <sblib/version.h>
 #include <cstring>
 
 #ifdef DEBUG
@@ -20,22 +21,7 @@ extern const unsigned int _image_start;
 #define BOOTLOADER_FLASH_STARTADDRESS ((unsigned int) 0x0) //!< Flash start address of the bootloader
 #define LOADERLOADER_VERSION          (0x0001)             //!< boot loader loader Version 0.01
 
-volatile const char __attribute__((used)) APP_VERSION[20] = "!AVP!@:SBloader0.10"; //!< bus updater magic string starting !AVP!@:
-
-/**
- * @brief   Helper function to always include @ref APP_VERSION in the resulting binary
- * @details Disabling optimization seems to be the only way to ensure that this is not being removed by the linker
- *          to keep the variable, we need to declare a function that uses it.
- *          Alternatively the link script may be modified by adding KEEP to the section
- *
- * @return @ref APP_VERSION
- */
-volatile const char * __attribute__((optimize("O0"))) getAppVersion()
-{
-    return APP_VERSION;
-}
-__attribute__((used))volatile const char * v = getAppVersion(); //!< just to ensure that APP_VERSION is not removed by the linker
-
+APP_VERSION("SBloader", "0", "01");
 
 void setup()
 {
