@@ -129,7 +129,7 @@ extern void _vStackTop(void);
 //
 //*****************************************************************************
 extern void (* const g_pfnVectors[])(void);
-__attribute__ ((section(".isr_vector")))
+__attribute__ ((section(".isr_vector"), used))
 void (* const g_pfnVectors[])(void) = {
     &_vStackTop,                            // The initial stack pointer
     ResetISR,                               // The reset handler

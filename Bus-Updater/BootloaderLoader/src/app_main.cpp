@@ -82,8 +82,9 @@ int main()
 		{
 	        // NXP bootloader uses an Int-Vect as a checksum to see if the application is valid.
 	        // If the value is not correct then it does not start the application
+		    // Vector table start always at base address, each entry is 4 byte
 		    uint32_t checksum = 0;
-			for (int j = 0; j < 7; j++)
+			for (int j = 0; j < 7; j++) // Checksum is 2's complement of entries 0 through 6
 			{
 				checksum += *(int*)&buf[j*4];
 			}
