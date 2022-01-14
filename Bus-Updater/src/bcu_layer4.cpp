@@ -427,10 +427,18 @@ void BcuLayer4::processDirectTelegram(int apci)
     {
         // event E07 or state CLOSED -> always action A10
         dump2(
-                serial.print("ERROR");
+                serial.print("ERROR ");
+                dumpState(state);
                 serial.print(" connectedAddr ");
                 dumpKNXAddress(connectedAddr);
-                serial.print(" != ");
+                if (connectedAddr != senderAddr)
+                {
+                    serial.print(" != ");
+                }
+                else
+                {
+                    serial.print(" == ");
+                }
                 dumpKNXAddress(senderAddr);
                 serial.print(" senderAddr");
                 dumpTelegram(false, &bus.telegram[0], bus.telegramLen);
