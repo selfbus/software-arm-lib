@@ -56,7 +56,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 /**
  * @brief Resets the UPD/UDP protocol ramBuffer and global variables to default
  */
-void resetProtocol(void);
+void resetUPDProtocol(void);
 
 #endif /* UPDATE_H_ */
 /** @}*/

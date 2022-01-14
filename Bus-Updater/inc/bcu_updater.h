@@ -10,7 +10,7 @@
  * @file   bcu_updater.h
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @author Stefan Haller Copyright (c) 2021
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -23,8 +23,7 @@
 #ifndef BCU_UPDATER_H_
 #define BCU_UPDATER_H_
 
-#include <sblib/eib/bcu_base.h>
-#include <sblib/eib/apci.h>
+#include "bcu_layer4.h"
 #include <sblib/internal/variables.h>
 #include <sblib/timeout.h>
 #include <sblib/io_pin_names.h>
@@ -34,67 +33,20 @@
 // link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
 #define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
 
-#define BCU_DIRECT_CONNECTION_TIMEOUT_MS (6000) //!< BCU direct connection timeout in milliseconds
-
-class BcuUpdate: public BcuBase
+class BcuUpdate: public BcuLayer4
 {
 public:
-    /**
-     * @brief pre-processes the received telegram from bus.telegram.
-     *        Only telegrams matching @ref destAddr == @ref bus.ownAddress()
-     *        are processed.
-     */
-    virtual void processTelegram();
+    using BcuLayer4::setProgrammingMode; // make it public so we can use it in bootloader.cpp
 
-    /**
-     * The BCU's main processing loop. This is like the application's loop() function,
-     * and is called automatically by main() when the BCU is activated with bcu.begin().
-     */
-    virtual void loop();
-
-    /**
-     * @brief Set or unset the programming mode of the bootloader BCU
-     *
-     * @param  new programming button state
-     * @return true if successful, otherwise false
-     */
-    using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
 protected:
     /**
-     * Process a unicast telegram with our physical address as destination address.
-     * The telegram is stored in sbRecvTelegram[].
+     * @brief Reset the TP Layer 4 connection to CLOSED
      *
-     * When this function is called, the sender address is != 0 (not a broadcast).
-     *
-     * @param apci - the application control field
      */
-    void processDirectTelegram(int apci);
+    virtual void resetConnection();
 
-    /**
-     * Process a unicast connection control telegram with our physical address as
-     * destination address. The telegram is stored in sbRecvTelegram[].
-     *
-     * When this function is called, the sender address is != 0 (not a broadcast).
-     *
-     * @param tpci - the transport control field
-     */
-    void processConControlTelegram(int tpci);
+    virtual unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data);
 
-    /**
-     * Send a connection control telegram.
-     *
-     * @param cmd - the transport command, see SB_T_xx defines
-     * @param senderSeqNo - the sequence number of the sender, 0 if not required
-     */
-    void sendConControlTelegram(int cmd, int senderSeqNo);
-
-    /**
-     * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
-     * @param senderSeqNo Senders sequence number
-     *
-     * @return true if sequence number was added, otherwise false
-     */
-    bool sendDirectTelegram(int senderSequenceNumber);
 
      /**
       * Process a APCI_MASTER_RESET_PDU
@@ -109,48 +61,6 @@ protected:
       * @return true if a restart shall happen, otherwise false
       */
      bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
-
-     /**
-      * @brief Process a TP Layer 4 @ref T_CONNECT_PDU
-      * @details T_Connect.req see KNX Spec. 2.1 3/3/4 page 13
-      *
-      * @param senderAddr physical KNX address of the sender
-      * @return true if successful, otherwise false
-      */
-     bool processConControlConnectPDU(int senderAddr);
-
-     /**
-      * @brief Process a TP Layer 4 @ref T_DISCONNECT_PDU
-      * @details T_Disconnect.req see KNX Spec. 2.1 3/3/4 page 14
-      *
-      * @param senderAddr physical KNX address of the sender
-      * @return true if successful, otherwise false
-      */
-     bool processConControlDisconnectPDU(int senderAddr);
-
-     /**
-      * @brief Process a TP Layer 4 @ref T_ACK_PDU and @ref T_NACK_PDU
-      * @details T_ACK-PDU & T_NAK-PDU see KNX Spec. 2.1 3/3/4 page 6
-      *
-      * @param senderAddr physical KNX address of the sender
-      * @param tpci the TPCI to process
-      * @return true if successful, otherwise false
-      */
-     bool processConControlAcknowledgmentPDU(int senderAddr, int tpci);
-
-     /**
-      * @brief Reset the TP Layer 4 connection to idle
-      *
-      */
-     void resetConnection();
-
-     int lastSenderSequenceNumber = -1; //!< The last sequence number we received from the sender
-
-private:
-     unsigned int lastTick = 0; //!< last systemtick a telegram was received or sent
-     unsigned int telegramCount = 0; //!< number of telegrams received in one "connect" session
-     void dumpTicks();
-
 };
 
 #ifndef INSIDE_BCU_CPP

@@ -23,6 +23,7 @@
 #include <sblib/main.h>
 #include <sblib/digital_pin.h>
 #include <sblib/internal/iap.h> // for IAP_SUCCESS
+#include <sblib/eib/apci.h> ///\todo BOOTLOADER_MAGIC_ADDRESS & BOOTLOADER_MAGIC_WORD outside of apci.h to a separate header
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 #include "dump.h"
@@ -90,7 +91,7 @@ void loop()
 {
     if (runModeTimeout.expired())
     {
-        if (bcu.directConnection())
+        if (_bcu.directConnection()) // _bcu is of class BcuUpdate
         {
             runModeTimeout.start(RUN_MODE_BLINK_CONNECTED);
         }

@@ -231,12 +231,13 @@ static void setLastError(UDP_State errorToSet, bool * sendTel)
     uInt32ToStream(bcu.sendTelegram + 10, lastError);
 }
 
-void resetProtocol(void)
+void resetUPDProtocol(void)
 {
     lastError = UDP_IAP_SUCCESS;
     ramLocation = 0;
     bytesReceived = 0;
     bytesFlashed = 0;
+    dump2(serial.println("resetUPDProtocol"));
 }
 
 /**
@@ -284,7 +285,7 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
         setDeviceLockState(DEVICE_UNLOCKED);
         setLastError(UDP_IAP_SUCCESS, sendTel);
         dline(" by UID");
-        resetProtocol();
+        resetUPDProtocol();
     }
     return (T_ACK_PDU);
 }
@@ -390,10 +391,10 @@ static unsigned char updDumpFlashRange(bool * sendTel, unsigned char * data)
  */
 static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
 {
-    resetProtocol();
     unsigned int startAddress = streamToUIn32(&data[3]);
     unsigned int endAddress = streamToUIn32(&data[7]);
     setLastError(eraseAddressRange(startAddress, endAddress), sendTel);
+    resetUPDProtocol();
     return (T_ACK_PDU);
 }
 
@@ -407,8 +408,8 @@ static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
  */
 static unsigned char updEraseFullFlash(bool * sendTel)
 {
-    resetProtocol();
     setLastError(eraseFullFlash(), sendTel);
+    resetUPDProtocol();
     return (T_ACK_PDU);
 }
 
@@ -848,7 +849,7 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
         setLastError(UDP_IAP_SUCCESS, sendTel);
     }
 
-    resetProtocol(); //DONE we need this, otherwise updSendDataToDecompress will run into a buffer overflow
+    resetUPDProtocol(); //DONE we need this, otherwise updSendDataToDecompress will run into a buffer overflow
 #endif
      return (T_ACK_PDU);
 }
@@ -953,38 +954,5 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     return (T_NACK_PDU); //we should never land here
 }
 
-//DEBUG delete and use code in other file if done here
-//unsigned int checkVectorTableDBG(unsigned int start)
-//{
-//    unsigned int i;
-//    unsigned int * address;
-//    unsigned int cs = 0;
-//    address = (unsigned int *) start; // Vector table start always at base address, each entry is 4 byte
-//
-//    for (i = 0; i < 7; i++)               // Checksum is 2's complement of entries 0 through 6
-//        cs += address[i];
-//    //if (address[7])
-//
-//    d1("\n\rVT Check 0 ");
-//    d2(address[0],HEX,8);
-//    d1("VT Check 1 ");
-//  d2(address[1],HEX,8);
-//  d1("VT Check 2 ");
-//  d2(address[2],HEX,8);
-//  d1("VT Check 3 ");
-//  d2(address[3],HEX,8);
-//  d1("VT Check 4 ");
-//  d2(address[4],HEX,8);
-//  d1("VT Check 5 ");
-//  d2(address[5],HEX,8);
-//  d1("VT Check 6 ");
-//  d2(address[6],HEX,8);
-//  d1("VT Check Res ");
-//  d2(address[7],HEX,8);
-//  d1("Should be == ");
-//  d2(~cs+1,HEX,8);
-//
-//    return (~cs+1);
-//}
 
 /** @}*/

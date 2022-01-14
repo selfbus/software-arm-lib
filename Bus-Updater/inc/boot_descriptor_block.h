@@ -31,13 +31,13 @@
 #endif
 
 ///\todo move BL_IDENTITY to bootloader.cpp or a new config.h file
-#define BL_IDENTITY			 0x1063		        //!< boot loader Version 0.63
+#define BL_IDENTITY			 0x1064		        //!< boot loader Version 0.64
 #define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
 
 #define BOOT_BLOCK_DESC_SIZE FLASH_PAGE_SIZE    //!< 1 flash page
 #define BOOT_BLOCK_COUNT 1                      //!< Number of applications supported (application description blocks)
-                                                //!<@warning @ref BOOT_BLOCK_COUNT other's than 1 are not tested!
+                                                //!< @warning @ref BOOT_BLOCK_COUNT other's than 1 are not tested!
 
 extern unsigned char bl_id_string[BL_ID_STRING_LENGTH]; //!< default bootloader identity "string" used in @ref getAppVersion()
 
