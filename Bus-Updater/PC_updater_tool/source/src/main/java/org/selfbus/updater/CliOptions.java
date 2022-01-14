@@ -138,7 +138,7 @@ public class CliOptions {
     private int delay = 0;
     private boolean NO_FLASH = false;
     private Level logLevel = Level.DEBUG;
-    private boolean eraseFlash = false;
+    private boolean eraseFullFlash = false;
     private long dumpFlashStartAddress = -1;
     private long dumpFlashEndAddress = -1;
 
@@ -369,9 +369,9 @@ public class CliOptions {
             logger.debug("NO_FLASH={}", NO_FLASH);
 
             if (cmdLine.hasOption(OPT_LONG_ERASEFLASH)) {
-                eraseFlash = true;
+                eraseFullFlash = true;
             }
-            logger.debug("eraseFlash={}", eraseFlash);
+            logger.debug("eraseFlash={}", eraseFullFlash);
 
             if (cmdLine.hasOption(OPT_LONG_DUMPFLASH)) {
                 String[] optArgs = cmdLine.getOptionValues(OPT_LONG_DUMPFLASH);
@@ -500,7 +500,7 @@ public class CliOptions {
 
             // some logical checks for options which exclude each other
             // differential mode and eraseflash makes no sense
-            if (eraseFlash() && (!full())) {
+            if (eraseFullFlash() && (!full())) {
                 full = true;
                 logger.info("{}--{} is set. --> switching to full flash mode{}", ConColors.RED, OPT_LONG_ERASEFLASH, ConColors.RESET);
             }
@@ -622,8 +622,8 @@ public class CliOptions {
         return NO_FLASH;
     }
 
-    public boolean eraseFlash() {
-        return eraseFlash;
+    public boolean eraseFullFlash() {
+        return eraseFullFlash;
     }
 
     public long dumpFlashStartAddress() {

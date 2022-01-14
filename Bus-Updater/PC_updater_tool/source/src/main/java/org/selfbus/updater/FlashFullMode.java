@@ -21,7 +21,7 @@ public class FlashFullMode {
     /**
      * Normal update routine, sending complete image
      */
-    public static void doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay, boolean eraseFlash)
+    public static void doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay, boolean eraseFirmwareRange)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
             InterruptedException, UpdaterException, KNXRemoteException {
         ResponseResult resultSendData, resultProgramData;
@@ -30,7 +30,7 @@ public class FlashFullMode {
         long totalLength = newFirmware.length();
         ByteArrayInputStream fis = new ByteArrayInputStream(newFirmware.getBinData());
 
-        if (eraseFlash) {
+        if (eraseFirmwareRange) {
             dm.eraseAddressRange(newFirmware.startAddress(), totalLength); // erase affected flash range
         }
 
