@@ -428,7 +428,7 @@ public class CliOptions {
             if (cmdLine.hasOption(OPT_LONG_DELAY)) {
                 delay = ((Number)cmdLine.getParsedOptionValue(OPT_LONG_DELAY)).intValue();
                 if ((delay < Updater.DELAY_MIN) || (delay > Updater.DELAY_MAX)) {
-                    logger.warn("option --delay {} is invalid (min:{}, max:{}) => setting --delay {}", delay, Updater.DELAY_MIN, Updater.DELAY_MAX, Updater.DELAY_DEFAULT);
+                    logger.warn("{}option --delay {} is invalid (min:{}, max:{}) => setting --delay {}{}", ConColors.RED, delay, Updater.DELAY_MIN, Updater.DELAY_MAX, Updater.DELAY_DEFAULT, ConColors.RESET);
                     delay = Updater.DELAY_DEFAULT;    // set to DELAY_DEFAULT in case of invalid waiting time
                 }
             }
