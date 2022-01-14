@@ -62,9 +62,11 @@ compileTestJava.options*.compilerArgs = [
 dependencies {
     // calimero knx bus access library
     implementation 'com.github.calimero:calimero-core:2.5'
+    // implementation 'com.github.calimero:calimero-core' // uncomment git repo in settings.gradle for this
 
     // calimero serial tx/rx lib for ft1.2 and tpuart support
     implementation 'com.github.calimero:calimero-rxtx:2.5'
+    // implementation 'com.github.calimero:calimero-rxtx' // uncomment git repo in settings.gradle for this
 
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.2.1'
