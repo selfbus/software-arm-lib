@@ -365,9 +365,9 @@ public class Updater implements Runnable {
                 // Start to flash the new firmware
                 logger.info("\n{}{}Starting to send new firmware now:{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
                 if (diffMode && FlashDiffMode.isInitialized()) {
-                    logger.error("{}Differential mode is currently disabled -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                    // FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
-                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), cliOptions.eraseFlash());
+                    // logger.error("{}Differential mode is currently disabled -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                    FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
+                    // FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), cliOptions.eraseFlash());
                 }
                 else {
                     FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), cliOptions.eraseFlash());
