@@ -367,10 +367,10 @@ public class Updater implements Runnable {
                 if (diffMode && FlashDiffMode.isInitialized()) {
                     logger.error("{}Differential mode is currently disabled -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
                     // FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
-                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay());
+                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), cliOptions.eraseFlash());
                 }
                 else {
-                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay());
+                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), cliOptions.eraseFlash());
                 }
             }
             else {
