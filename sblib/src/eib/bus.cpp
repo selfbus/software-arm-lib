@@ -661,7 +661,7 @@ void Bus::idleState()
  * If we had a collision,  no action
  *  **  End of telegram is indicated by a timeout. As the timer is still running we have the accurate time since the last stop bit.
  * *
- *  copy local rx-data to 2nd rx buffer for paralell processing on higher layer and SM
+ *  copy local rx-data to 2nd rx buffer for parallel processing on higher layer and SM
 
  * Provide some Data-layer functions:
  *  check telegram type
