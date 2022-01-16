@@ -134,10 +134,18 @@ ALWAYS_INLINE unsigned int streamToUIn32(unsigned char * buffer)
     return ((unsigned int)(buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0]));
 }
 
+///\todo implement universal numberToStream by providing the size as parameter
+///      and delete uInt32ToStream + uShort16ToStream
 ALWAYS_INLINE void uInt32ToStream(unsigned char * buffer, unsigned int val)
 {
     buffer[3] = (byte)(val >> 24);
     buffer[2] = (byte)(val >> 16);
+    buffer[1] = (byte)(val >> 8);
+    buffer[0] = (byte)(val & 0xff);
+}
+
+ALWAYS_INLINE void uShort16ToStream(unsigned char * buffer, unsigned int val)
+{
     buffer[1] = (byte)(val >> 8);
     buffer[0] = (byte)(val & 0xff);
 }
@@ -532,6 +540,37 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel)
 }
 
 /**
+ * @brief Handles the @ref UPD_REQUEST_STATISTIC command.
+ *
+ * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
+ * @return always T_ACK_PDU
+ */
+static unsigned char updRequestStatistic(bool * sendTel)
+{
+    byte *startPos = bcu.sendTelegram + 10;
+    byte sizeA = sizeof(telegramCount);
+    byte sizeB = sizeof(disconnectCount);
+    byte sizeC = sizeof(hotfix_1_RepeatedControlTelegramCount);
+    byte sizeD = sizeof(hotfix_2_RepeatedDataTelegramCount);
+    unsigned int sizeTotal = sizeA + sizeB + sizeC + sizeD;
+
+    *sendTel = prepareReturnTelegram(sizeTotal, UPD_RESPONSE_STATISTIC);
+    uShort16ToStream(startPos, telegramCount);
+    startPos += sizeA;
+    uShort16ToStream(startPos, disconnectCount);
+    startPos += sizeB;
+    uShort16ToStream(startPos, hotfix_1_RepeatedControlTelegramCount);
+    startPos += sizeC;
+    uShort16ToStream(startPos, hotfix_2_RepeatedDataTelegramCount);
+
+    d3(serial.print("telegramCount ", telegramCount));
+    d3(serial.print(" disconnectCount ", disconnectCount));
+    d3(serial.print(" hotfix_1_RepeatedControlTelegramCount ", hotfix_1_RepeatedControlTelegramCount));
+    d3(serial.println(" hotfix_2_RepeatedDataTelegramCount ", hotfix_2_RepeatedDataTelegramCount));
+    return (T_ACK_PDU);
+}
+
+/**
  * @brief Handles the @ref UPD_REQUEST_BOOT_DESC command. Copies the application description block
  *        (@ref AppDescriptionBlock) to the return telegram.
  *
@@ -849,7 +888,7 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
         setLastError(UDP_IAP_SUCCESS, sendTel);
     }
 
-    resetUPDProtocol(); //DONE we need this, otherwise updSendDataToDecompress will run into a buffer overflow
+    resetUPDProtocol(); // we need this, otherwise updSendDataToDecompress will run into a buffer overflow
 #endif
      return (T_ACK_PDU);
 }
@@ -933,8 +972,12 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
 
         case UPD_ERASE_ADDRESSRANGE:
             return (updEraseAddressRange(sendTel, data));
+
         case UPD_DUMP_FLASH:
             return (updDumpFlashRange(sendTel, data));
+
+        case UPD_REQUEST_STATISTIC:
+            return (updRequestStatistic(sendTel));
 
         case UPD_UPDATE_BOOT_DESC:
             return (updUpdateBootDescriptorBlock(sendTel, data));

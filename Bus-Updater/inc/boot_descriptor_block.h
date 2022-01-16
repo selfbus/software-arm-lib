@@ -10,7 +10,7 @@
  * @file   boot_descriptor_block.h
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @author Stefan Haller Copyright (c) 2021
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -24,14 +24,14 @@
 #define BOOT_DESCRIPTOR_BLOCK_H_
 
 #include <sblib/platform.h>
+#include <version.h>
+
 #ifdef DEBUG
     #define BL_FEATURES      0x8100             //!< Feature list of bootloader in Debug version
 #else
     #define BL_FEATURES      0x0100             //!< Feature list of bootloader in Release version
 #endif
 
-///\todo move BL_IDENTITY to bootloader.cpp or a new config.h file
-#define BL_IDENTITY			 0x1064		        //!< boot loader Version 0.64
 #define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
 

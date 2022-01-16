@@ -21,7 +21,7 @@ public class FlashFullMode {
     /**
      * Normal update routine, sending complete image
      */
-    public static void doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay, boolean eraseFirmwareRange)
+    public static ResponseResult doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay, boolean eraseFirmwareRange)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
             InterruptedException, UpdaterException, KNXRemoteException {
         ResponseResult resultSendData, resultProgramData;
@@ -34,8 +34,7 @@ public class FlashFullMode {
             dm.eraseAddressRange(newFirmware.startAddress(), totalLength); // erase affected flash range
         }
 
-        long flashTimeStart = System.currentTimeMillis(); // time flash process started
-        byte[] buffer = new byte[Flash.FLASH_PAGE_SIZE]; // buffer to hold one flash page
+        byte[] buffer = new byte[Mcu.FLASH_PAGE_SIZE]; // buffer to hold one flash page
         long progAddress = newFirmware.startAddress();
 
         logger.info("\nStart sending application data ({} bytes) with telegram delay of {}ms", totalLength, dataSendDelay);
@@ -68,35 +67,9 @@ public class FlashFullMode {
             }
             resultTotal.addCounters(resultProgramData); // keep track of static data
             progAddress += txBuffer.length;
+            dm.requestBootLoaderStatistic(); ///\todo remove on release
         }
         fis.close();
-
-        // logging of some static data
-        long flashTimeDuration = System.currentTimeMillis() - flashTimeStart;
-        float bytesPerSecond = (float)resultTotal.written() / (flashTimeDuration / 1000f);
-        String col;
-        if (bytesPerSecond >= 50.0) {
-            col = ConColors.BRIGHT_GREEN;
-        }
-        else {
-            col = ConColors.BRIGHT_RED;
-        }
-        ///\todo find a better way to build the infoMsg, check possible logback functions
-        String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
-                resultTotal.written(), flashTimeDuration, col, bytesPerSecond, ConColors.RESET);
-
-        if (resultTotal.timeoutCount() > 0) {
-            infoMsg += String.format(" %sTimeout(s): %d%s", ConColors.BRIGHT_RED, resultTotal.timeoutCount(), ConColors.RESET);
-        }
-        else {
-            infoMsg += String.format(" %sTimeout: %d%s", ConColors.BRIGHT_GREEN, resultTotal.timeoutCount(), ConColors.RESET);
-        }
-        if (resultTotal.dropCount() > 0) {
-            infoMsg += String.format(" %sDrop(s): %d%s", ConColors.BRIGHT_RED, resultTotal.dropCount(), ConColors.RESET);
-        }
-        else {
-            infoMsg += String.format(" %sDrop: %d%s", ConColors.BRIGHT_GREEN, resultTotal.dropCount(), ConColors.RESET);
-        }
-        logger.info("{}", infoMsg);
+        return resultTotal;
     }
 }

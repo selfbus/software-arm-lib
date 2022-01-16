@@ -20,6 +20,8 @@ public enum UPDCommand {
     REQ_DATA(10, "REQ_DATA"),                                   //!< Return bytes from flash at given address?  @note device must be unlocked
                                                                 //!<@warning Not implemented
     DUMP_FLASH(11, "DUMP_FLASH"),                               //!< DUMP the flash of a given address range (data[0-3] - data[4-7]) to serial port of the mcu, works only with DEBUG version of bootloader
+    REQUEST_STATISTIC(12, "STATISTIC_REQUEST"),                 //!< Return some statistic data for the active connection
+    RESPONSE_STATISTIC(13, "STATISTIC_RESPONSE"),               //!< Response for @ref UPD_STATISTIC_RESPONSE containing the statistic data
     GET_LAST_ERROR(20, "GET_LAST_ERROR"),                       //!< Returns last error
     SEND_LAST_ERROR(21, "SEND_LAST_ERROR"),                     //!< Response for @ref GET_LAST_ERROR containing the last error
     UNLOCK_DEVICE(30, "UNLOCK_DEVICE"),                         //!< Unlock the device for operations, which are only allowed on a unlocked device

@@ -26,11 +26,11 @@
 #   include <sblib/serial.h>
 #endif
 
+#define LOG_SEP '\t'
 #define knx_area(addr) ((addr >> 12) & 0x0F)
 #define knx_line(addr) ((addr >> 8) & 0x0F)
 #define knx_device(addr) (addr & 0xFF)
-
-#define is_repeated(controlByte) ((bool)((controlByte & (1 << 5)) == 0))
+#define is_repeated(controlByte) (((bool)((controlByte & (1 << 5)) == 0)))
 
 // for update.cpp, upd_protocol.cpp, flash.cpp and partly decompressor.cpp
 #if defined(DUMP_TELEGRAMS_LVL1)
@@ -48,7 +48,12 @@
 // for bcu_updater.h
 #if defined(DUMP_TELEGRAMS_LVL2)
 #   define dump2(code) code
-#   define dumpKNXAddress(addr) {serial.print(knx_area(addr)); serial.print(".", knx_line(addr)); serial.print(".", knx_device(addr));}
+#   define dumpKNXAddress(addr) \
+            {\
+                serial.print(knx_area(addr)); \
+                serial.print(".", knx_line(addr)); \
+                serial.print(".", knx_device(addr)); \
+            }
 #else
 #   define dump2(x)
 #   define dumpKNXAddress(addr)

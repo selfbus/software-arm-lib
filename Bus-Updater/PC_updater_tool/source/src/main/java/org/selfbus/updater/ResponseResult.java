@@ -35,6 +35,11 @@ public class ResponseResult {
         return written;
     }
 
+    public void setWritten(long written) {
+        this.written = written;
+    }
+
+
     public void incTimeoutCount() {
         timeoutCount++;
     }

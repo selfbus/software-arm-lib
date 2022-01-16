@@ -7,7 +7,7 @@ import java.net.InetSocketAddress;
 
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
-import org.selfbus.updater.bootloader.BootLoaderIdentity;
+import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -223,6 +223,33 @@ public class Updater implements Runnable {
         }
     }
 
+    private static void printStatisticData(long flashTimeStart, ResponseResult result) {
+        // logging of some static data
+        long flashTimeDuration = System.currentTimeMillis() - flashTimeStart;
+        float bytesPerSecond = (float) result.written() / (flashTimeDuration / 1000f);
+        String col;
+        if (bytesPerSecond >= 50.0) {
+            col = ConColors.BRIGHT_GREEN;
+        } else {
+            col = ConColors.BRIGHT_RED;
+        }
+        ///\todo find a better way to build the infoMsg, check possible logback functions
+        String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
+                result.written(), flashTimeDuration, col, bytesPerSecond, ConColors.RESET);
+
+        if (result.timeoutCount() > 0) {
+            infoMsg += String.format(" %sTimeout(s): %d%s", ConColors.BRIGHT_RED, result.timeoutCount(), ConColors.RESET);
+        } else {
+            infoMsg += String.format(" %sTimeout: %d%s", ConColors.BRIGHT_GREEN, result.timeoutCount(), ConColors.RESET);
+        }
+        if (result.dropCount() > 0) {
+            infoMsg += String.format(" %sDrop(s): %d%s", ConColors.BRIGHT_RED, result.dropCount(), ConColors.RESET);
+        } else {
+            infoMsg += String.format(" %sDrop: %d%s", ConColors.BRIGHT_GREEN, result.dropCount(), ConColors.RESET);
+        }
+        logger.info("{}", infoMsg);
+    }
+
     public static final int DELAY_MIN = 0;            //!< minimum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
     public static final int DELAY_MAX = 500;          //!< maximum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
     public static final int DELAY_DEFAULT = 100;      //!< default delay between two UPDCommand.SEND_DATA telegrams in milliseconds
@@ -230,10 +257,6 @@ public class Updater implements Runnable {
     public static final IndividualAddress PHYS_ADDRESS_OWN = new IndividualAddress(0, 0,0); //!< physical address the Selfbus Updater is using
 
     public static final int RESPONSE_TIMEOUT_SEC = 2; //!< Time in seconds the Updater shall wait for a KNX Response
-
-    private static final int VECTOR_TABLE_END = 0xD0;  //!> vector table end of the mcu
-    private static final int BL_ID_STRING_LENGTH = 12; //!> length of bootloader identity string
-    private static final byte[] APP_VER_PTR_MAGIC = {'!','A','V','P','!','@',':'};	//!> App Pointer follows this MAGIC word
 
     /*
      * (non-Javadoc)
@@ -291,7 +314,7 @@ public class Updater implements Runnable {
                 return;
             }
 
-            BootLoaderIdentity bootLoaderIdentity = dm.requestBootLoaderIdentity();
+            BootloaderIdentity bootLoaderIdentity = dm.requestBootloaderIdentity();
             logger.info("\nRequesting App Version String...");
             String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
@@ -312,22 +335,22 @@ public class Updater implements Runnable {
             imageCache.writeToBinFile(cacheFileName);
 
             // Handle App Version Pointer
-            if (appVersionAddress > VECTOR_TABLE_END && appVersionAddress < newFirmware.length()) {  // manually provided and not in vector or outside file length
+            if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < newFirmware.length()) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
-                String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, BL_ID_STRING_LENGTH);	// Get app version pointers content
+                String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Get app version pointers content
                 logger.info("  File App Version String is : {}{}{} manually specified at address 0x{}",
                         ConColors.BRIGHT_RED, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
             }
             else {
                 // Search for AppVersion pointer in flash file if not set manually, Search magic bytes in image file
-                appVersionAddress = Bytes.indexOf(newFirmware.getBinData(), APP_VER_PTR_MAGIC) + APP_VER_PTR_MAGIC.length;
-                if (appVersionAddress <= VECTOR_TABLE_END || appVersionAddress >= newFirmware.length()) {
+                appVersionAddress = Bytes.indexOf(newFirmware.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
+                if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= newFirmware.length()) {
                     appVersionAddress = 0;		// missing, or not valid set to 0
                     logger.warn("  {}Could not find the App Version string, setting to 0. Please specify manually with {}{}",
                             ConColors.BRIGHT_RED, CliOptions.OPT_LONG_APP_VERSION_PTR, ConColors.RESET);
                 }
                 else {
-                    String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, BL_ID_STRING_LENGTH);	// Convert app version pointers content to string
+                    String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Convert app version pointers content to string
                     logger.info("  File App Version String is : {}{}{} found at address 0x{}",
                             ConColors.BRIGHT_GREEN, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
                 }
@@ -362,15 +385,19 @@ public class Updater implements Runnable {
 
             if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!
                 // Start to flash the new firmware
+                long flashTimeStart = System.currentTimeMillis(); // time flash process started
+                ResponseResult resultTotal;
                 logger.info("\n{}{}Starting to send new firmware now:{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
                 if (diffMode && FlashDiffMode.isInitialized()) {
-                    // logger.error("{}Differential mode is currently disabled -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                    FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
-                    // FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash());
+                    logger.error("{}Differential mode is EXPERIMENTAL -> Use with caution.{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                    resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
                 }
                 else {
-                    FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash());
+                    resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash());
                 }
+                printStatisticData(flashTimeStart, resultTotal);
+                logger.info("\nRequesting Bootloader statistic...");
+                dm.requestBootLoaderStatistic();
             }
             else {
                 logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH , ConColors.RED, ConColors.RESET);
@@ -382,7 +409,6 @@ public class Updater implements Runnable {
                     newFirmware.startAddress() + appVersionAddress);
             logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
-
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
             dm.customRestartProgrammingDevice();
 

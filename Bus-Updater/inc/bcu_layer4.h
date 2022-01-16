@@ -30,6 +30,14 @@
 #   define LONG_PAUSE_THRESHOLD_MS (500)
 #endif
 
+extern unsigned short telegramCount;   //!< number of telegrams since system reset
+extern unsigned short disconnectCount; //!< number of disconnects since system reset
+
+///\todo remove after bugfix and on release
+extern unsigned short hotfix_1_RepeatedControlTelegramCount;
+extern unsigned short hotfix_2_RepeatedDataTelegramCount;
+///\todo end of remove after bugfix and on release
+
 class BcuLayer4: public BcuBase
 {
 public:
@@ -43,6 +51,8 @@ public:
 
     BcuLayer4();
     virtual ~BcuLayer4() = default;
+
+    virtual void _begin();
 
     /**
      * @brief pre-processes the received telegram from bus.telegram.

@@ -1,5 +1,6 @@
 package org.selfbus.updater.upd;
 
+import ch.qos.logback.classic.Level;
 import org.selfbus.updater.ConColors;
 import org.selfbus.updater.Utils;
 import org.slf4j.Logger;
@@ -34,7 +35,15 @@ public final class UPDProtocol {
             logger.error("{}{} resultCode=0x{}{}", ConColors.BRIGHT_RED, udpResult, String.format("%04X", udpResult.id), ConColors.RESET);
         } else {
             if (verbose) {
-                logger.info("{}done ({}){}", ConColors.BRIGHT_GREEN, udpResult.id, ConColors.RESET);
+                ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+                if (root.getLevel() == Level.TRACE) {
+                    // only to display the message on the console
+                    logger.debug("{}done ({}){}", ConColors.BRIGHT_GREEN, udpResult.id, ConColors.RESET);
+                }
+                else {
+                    logger.trace("{}done ({}){}", ConColors.BRIGHT_GREEN, udpResult.id, ConColors.RESET);
+                }
+
             } else {
                 System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET); // Success in green
                 logger.debug(Utils.PROGRESS_MARKER);

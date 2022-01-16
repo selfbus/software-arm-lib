@@ -14,6 +14,7 @@ import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 
 import java.io.File;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * experimental (WIP) Provides differential flash mode for the bootloader (MCU)
@@ -77,24 +78,25 @@ public final class FlashDiffMode {
 
     // Differential update routine
     @SuppressWarnings("unused")
-    public static boolean doDifferentialFlash(DeviceManagement dm, long startAddress, byte[] binData)
+    public static ResponseResult doDifferentialFlash(DeviceManagement dm, long startAddress, byte[] binData)
             throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
         ///\todo add connection reset and sending again on failure, like in full flash mode
         if (!isInitialized()) {
-            return false;
+            throw new UpdaterException("Differential mode not initialized!");
         }
         if (!Utils.fileExists(oldFileName)) {
-            return false;
+            throw new UpdaterException(String.format("Firmware file %s not found!", Utils.shortenPath(oldFileName)));
         }
 
         File oldImageCacheFile = new File(oldFileName);
 
-        long flash_time_start = System.currentTimeMillis();
         FlashDiff differ = new FlashDiff();
         BinImage img2 = BinImage.copyFromArray(binData, startAddress);
         BinImage img1 = BinImage.readFromBin(oldImageCacheFile.getAbsolutePath(), bootDsc.startAddress());
+
+        AtomicReference<ResponseResult> result = new AtomicReference<>();
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
-            ResponseResult result;
+
             // process compressed page
             //TODO check why 5 bytes are added to size in FlashDiff.java / generateDiff(...)
             logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size() - 5));
@@ -108,9 +110,9 @@ public final class FlashDiffMode {
                 }
                 // transmit telegram
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
-                result = dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, -1);
+                result.set(dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, -1));
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
-                if (UPDProtocol.checkResult(result.data(), false) != 0) {
+                if (UPDProtocol.checkResult(result.get().data(), false) != 0) {
                     dm.restartProgrammingDevice();
                     throw new UpdaterException("Selfbus update failed.");
                 }
@@ -123,31 +125,13 @@ public final class FlashDiffMode {
             Utils.longToStream(progPars, 8, (int) crc32);
             System.out.println();
             logger.info("Program device next page diff, CRC32 0x{}", String.format("%08X", crc32));
-            result = dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, -1);
-            if (UPDProtocol.checkResult(result.data()) != 0) {
+            result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, -1));
+            if (UPDProtocol.checkResult(result.get().data()) != 0) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
         });
-
-        long flash_time_duration = System.currentTimeMillis() - flash_time_start;
-        long total = differ.getTotalBytesTransferred();
-        float bytesPerSecond = (float)total/(flash_time_duration/1000f);
-        String col;
-        if (bytesPerSecond >= 50.0) {
-            col = ConColors.BRIGHT_GREEN;
-        }
-        else {
-            col = ConColors.BRIGHT_RED;
-        }
-        String infoMsg = String.format("Diff-Update: Wrote %s%d%s bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
-                ConColors.BRIGHT_GREEN, total, ConColors.RESET, flash_time_duration, col, bytesPerSecond, ConColors.RESET);
-/*
-        if (timeoutCount > 0) {
-            infoMsg += String.format(" Timeout(s): %d%s", ConColors.BG_RED, timeoutCount, ConColors.RESET);
-        }
-*/
-        logger.info("{}", infoMsg);
-        return true; ///\todo implement a correct return value
+        result.get().setWritten(differ.getTotalBytesTransferred());
+        return result.get();
     }
 }

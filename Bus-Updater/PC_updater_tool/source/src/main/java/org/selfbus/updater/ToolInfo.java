@@ -1,7 +1,7 @@
 package org.selfbus.updater;
 
 
-import org.selfbus.updater.bootloader.BootLoaderIdentity;
+import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.Settings;
@@ -11,11 +11,11 @@ import tuwien.auto.calimero.Settings;
  */
 public final class ToolInfo
 {
-    private static final long versionMajor = 0; ///\todo also change in README.md and build.gradle
-    private static final long versionMinor = 62;
+    private static final long versionMajor = 0; ///\todo change also in README.md and build.gradle
+    private static final long versionMinor = 65;
 
-    private static final long minMajorVersionBootloader = 0x00; //needs to be specified in hex
-    private static final long minMinorVersionBootloader = 0x62; //needs to be specified in hex
+    private static final long minMajorVersionBootloader = 0x00; //needs to be specified in hex, change also in README.md
+    private static final long minMinorVersionBootloader = 0x65; //needs to be specified in hex, change also in README.md
 
     private static final Logger logger = LoggerFactory.getLogger(ToolInfo.class.getName());
     private static final String author = "Selfbus";
@@ -73,7 +73,7 @@ public final class ToolInfo
     public static long minMinorVersionBootloader() {return minMinorVersionBootloader;}
 
     public static String minVersionBootloader() {
-        return new BootLoaderIdentity(minMajorVersionBootloader(),
+        return new BootloaderIdentity(minMajorVersionBootloader(),
                                       minMinorVersionBootloader(),
                                       0,0,0).version();
     }

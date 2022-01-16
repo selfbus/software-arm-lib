@@ -1,16 +1,13 @@
 package org.selfbus.updater;
 
 import org.selfbus.updater.bootloader.BootDescriptor;
-import org.selfbus.updater.bootloader.BootLoaderIdentity;
+import org.selfbus.updater.bootloader.BootloaderIdentity;
+import org.selfbus.updater.bootloader.BootloaderStatistic;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXRemoteException;
-import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.mgmt.Destination;
@@ -43,6 +40,7 @@ public final class DeviceManagement {
         logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
         this.mc.responseTimeout(Duration.ofSeconds(responseTimeoutSec));
+        this.mc.setPriority(Priority.SYSTEM);
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
     }
 
@@ -62,6 +60,19 @@ public final class DeviceManagement {
         }
     }
 
+    private void waitRestartTime(int restartTimeMs) {
+        try {
+            while (restartTimeMs > 0) {
+                Thread.sleep(1000);
+                System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET);
+                restartTimeMs--;
+            }
+        }
+        catch (final InterruptedException e) {
+            logger.error("InterruptedException ", e);
+        }
+    }
+
     /**
      * Restarts the <code>device</code> in normal or Bootloader mode
      * @param link
@@ -75,24 +86,21 @@ public final class DeviceManagement {
         SBManagementClientImpl mcDevice = new SBManagementClientImpl(link);
         Destination dest;
         dest = mcDevice.createDestination(device, true, false, false);
+        int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try {
             logger.info("\nRestarting device {} to bootloader mode using {}", device, link);
-            int restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
+            restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             mcDevice.detach();
             logger.info("Device {} reported {}{} seconds{} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
-            while (restartProcessTime > 0) {
-                Thread.sleep(1000);
-                System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET);
-                restartProcessTime--;
-            }
+            waitRestartTime(restartProcessTime);
             System.out.println();
             logger.info("Device {} should now have started into bootloader mode.", device);
             return true;
-        } catch (final KNXException e) {
+        } catch (final KNXException | InterruptedException e) {
             logger.info("{}Restart status of device {} unknown. {}{}", ConColors.BRIGHT_RED, device, e.getMessage(), ConColors.RESET);
             logger.debug("KNXException ", e);
-        } catch (final InterruptedException e) {
-            logger.error("InterruptedException ", e);
+            logger.info("Waiting {}{} seconds{} for device {} to restart", ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET, device);
+            waitRestartTime(restartProcessTime);
         } finally {
             mcDevice.detach();
         }
@@ -107,7 +115,7 @@ public final class DeviceManagement {
         if (result[3] != UPDCommand.RESPONSE_UID.id) {
             UPDProtocol.checkResult(result, true);
             restartProgrammingDevice();
-            throw new UpdaterException("Requesting UID failed!");
+            throw new UpdaterException(String.format("Requesting UID failed! result[3]=0x%02X", result[3]));
         }
 
         byte[] uid;
@@ -124,7 +132,7 @@ public final class DeviceManagement {
         }
     }
 
-    public BootLoaderIdentity requestBootLoaderIdentity()
+    public BootloaderIdentity requestBootloaderIdentity()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting Bootloader Identity...");
 
@@ -134,10 +142,10 @@ public final class DeviceManagement {
         {
             UPDProtocol.checkResult(result);
             restartProgrammingDevice();
-            throw new UpdaterException("Requesting Bootloader Identity failed!");
+            throw new UpdaterException(String.format("Requesting Bootloader Identity failed! result[3]=0x%02X", result[3]));
         }
 
-        BootLoaderIdentity bl = BootLoaderIdentity.fromArray(Arrays.copyOfRange(result, 4, result.length));
+        BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, 4, result.length));
         logger.info("  Device Bootloader: {}{}{}", ConColors.BRIGHT_YELLOW, bl, ConColors.RESET);
         if (bl.versionMajor() < ToolInfo.minMajorVersionBootloader())
         {
@@ -161,7 +169,7 @@ public final class DeviceManagement {
         if (result[3] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
             restartProgrammingDevice();
-            throw new UpdaterException("Boot descriptor request failed.");
+            throw new UpdaterException(String.format("Boot descriptor request failed! result[3]=0x%02X", result[3]));
         }
         BootDescriptor bootDescriptor = BootDescriptor.fromArray(Arrays.copyOfRange(result, 4, result.length));
         logger.info("  Current firmware: {}", bootDescriptor);
@@ -170,11 +178,9 @@ public final class DeviceManagement {
 
     public String requestAppVersionString()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        // byte[] result = m.sendUpdateData(dest, UPDCommand.APP_VERSION_REQUEST.id, new byte[] {0});
         byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
         if (result[3] != UPDCommand.APP_VERSION_RESPONSE.id){
             UPDProtocol.checkResult(result);
-            //restartProgrammingDevice(mc, progDest);
             return null;
         }
         return new String(result,4,result.length - 4);	// Convert 12 bytes to string starting from result[4];
@@ -233,8 +239,8 @@ public final class DeviceManagement {
         while (nIndex < data.length)
         {
             byte[] txBuffer;
-            if ((data.length - nIndex) >= Flash.MAX_PAYLOAD){
-                txBuffer = new byte[Flash.MAX_PAYLOAD + 1];
+            if ((data.length - nIndex) >= Mcu.MAX_PAYLOAD){
+                txBuffer = new byte[Mcu.MAX_PAYLOAD + 1];
             }
             else {
                 txBuffer = new byte[data.length - nIndex + 1];
@@ -245,10 +251,9 @@ public final class DeviceManagement {
 
             ResponseResult tmp = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
             result.addCounters(tmp);
-            // drop's/T_DISCONNECT's affect's ramBuffer of the MCU, so we need to send whole txBuffer again.
-            if (tmp.dropCount() > 0) {
-                nIndex = 0;
-                logger.warn("{}Sending data again{}", ConColors.RED, ConColors.RESET);
+
+            if ((tmp.dropCount() > 0) || (tmp.timeoutCount() > 0)) {
+                logger.warn("{}x{}", ConColors.RED, ConColors.RESET);
                 continue;
             }
 
@@ -296,6 +301,21 @@ public final class DeviceManagement {
             Thread.sleep(delay);
         }
         return programResult;
+    }
+
+    public void requestBootLoaderStatistic()
+            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
+        if (result[3] != UPDCommand.RESPONSE_STATISTIC.id)
+        {
+            UPDProtocol.checkResult(result);
+            restartProgrammingDevice();
+            throw new UpdaterException(String.format("Requesting Bootloader statistic failed! result[3]=0x%02X", result[3]));
+        }
+
+        BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, 4, result.length));
+        logger.info("  {}{}{}", ConColors.BRIGHT_YELLOW, blStatistic, ConColors.RESET);
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)

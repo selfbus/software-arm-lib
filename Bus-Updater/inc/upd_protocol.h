@@ -97,7 +97,8 @@ enum UPD_Command
                                         //!<@warning Not implemented
     UPD_DUMP_FLASH = 11,                //!< DUMP the flash of a given address range (data[0-3] - data[4-7]) to serial port of the mcu,
                                         //!< works only with DEBUG version of bootloader @note device must be unlocked
-
+    UPD_REQUEST_STATISTIC = 12,         //!< Return some statistic data for the active connection
+    UPD_RESPONSE_STATISTIC = 13,        //!< Response for @ref UPD_STATISTIC_RESPONSE containing the statistic data
     UPD_GET_LAST_ERROR = 20,            //!< Returns last error
     UPD_SEND_LAST_ERROR = 21,           //!< Response for @ref UPD_GET_LAST_ERROR containing the last error
 

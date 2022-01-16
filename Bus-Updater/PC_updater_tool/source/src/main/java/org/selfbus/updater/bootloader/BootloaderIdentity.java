@@ -4,14 +4,14 @@ package org.selfbus.updater.bootloader;
  *  Holds Bootloader identity information
  *  see software-arm-lib/Bus-Updater/src/update.cpp (method updRequestBootloaderIdentity) for more information.
  */
-public class BootLoaderIdentity {
+public class BootloaderIdentity {
     private final long versionMajor;
     private final long versionMinor;
     private final long identity;
     private final long features;
     private final long applicationFirstAddress;
 
-    public BootLoaderIdentity(long versionMajor, long versionMinor, long identity, long features, long applicationFirstAddress) {
+    public BootloaderIdentity(long versionMajor, long versionMinor, long identity, long features, long applicationFirstAddress) {
         this.identity = identity;
         this.features = features;
         this.applicationFirstAddress = applicationFirstAddress;
@@ -26,7 +26,7 @@ public class BootLoaderIdentity {
         }
     }
 
-    public static BootLoaderIdentity fromArray(byte[] parse) {
+    public static BootloaderIdentity fromArray(byte[] parse) {
         long identity = (parse[0] & 0xFF) +
                         ((parse[1] & 0xFF) << 8) +
                         ((parse[2] & 0xFF) << 16) +
@@ -39,7 +39,7 @@ public class BootLoaderIdentity {
                     ((parse[9] & 0xFF) << 8) +
                     ((parse[10] & 0xFF) << 16) +
                     ((long)(parse[11] & 0xFF) << 24);
-        return new BootLoaderIdentity(0, 0, identity, features, applicationFirstAddress );
+        return new BootloaderIdentity(0, 0, identity, features, applicationFirstAddress );
     }
 
     public String toString() {
