@@ -53,7 +53,9 @@ Selfbus KNX-Firmware update tool options:
     --delay <ms>                    delay telegrams during data transmission to reduce bus load,
                                     valid 0-500ms, default 0
  -l,--logLevel <TRACE|DEBUG|INFO>   Logfile logging level [TRACE|DEBUG|INFO] (default DEBUG)
-    --ERASEFLASH                    delete the entire flash except from the bootloader itself!
+    --ERASEFLASH                    USE WITH CAUTION! Erases the complete flash memory including the
+                                    physical KNX address and all settings of the device. Only the
+                                    bootloader is not deleted.
     --DUMPFLASH <start> <end>       dump a flash range in intel(R) hex to the serial port of the
                                     MCU. Works only with DEBUG version of the bootloader.
  -f0,--NO_FLASH                     for debugging use only, disable flashing firmware!

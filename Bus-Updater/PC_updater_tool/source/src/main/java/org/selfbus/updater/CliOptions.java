@@ -161,7 +161,7 @@ public class CliOptions {
         Option help = new Option(OPT_SHORT_HELP, OPT_LONG_HELP, false, "show this help message");
         Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
-        Option eraseFlash = new Option(null, OPT_LONG_ERASEFLASH, false, "delete the entire flash except from the bootloader itself!");
+        Option eraseFlash = new Option(null, OPT_LONG_ERASEFLASH, false, "USE WITH CAUTION! Erases the complete flash memory including the physical KNX address and all settings of the device. Only the bootloader is not deleted.");
 
         Option dumpFlash = Option.builder(null).longOpt(OPT_LONG_DUMPFLASH)
                 .argName("start> <end")
