@@ -40,7 +40,7 @@ public final class DeviceManagement {
         logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
         this.mc.responseTimeout(Duration.ofSeconds(responseTimeoutSec));
-        this.mc.setPriority(Priority.SYSTEM);
+        this.mc.setPriority(Priority.LOW);
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
     }
 
