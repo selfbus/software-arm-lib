@@ -34,13 +34,13 @@ public final class DeviceManagement {
     private Destination progDestination;
     private KNXNetworkLink link;
 
-    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec)
+    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec, Priority priority)
             throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
         this.link = link;
         logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
         this.mc.responseTimeout(Duration.ofSeconds(responseTimeoutSec));
-        this.mc.setPriority(Priority.LOW);
+        this.mc.setPriority(priority);
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
     }
 

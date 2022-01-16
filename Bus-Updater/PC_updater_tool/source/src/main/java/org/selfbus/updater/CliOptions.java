@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.medium.TPSettings;
 
@@ -97,12 +98,16 @@ public class CliOptions {
     private static final String OPT_SHORT_LOGLEVEL = "l";
     private static final String OPT_LONG_LOGLEVEL = "logLevel";
 
+    private static final String OPT_LONG_PRIORITY = "priority";
+
     private static final String OPT_LONG_ERASEFLASH = "ERASEFLASH";
 
     private static final String OPT_LONG_DUMPFLASH = "DUMPFLASH";
 
     private static final int PRINT_WIDTH = 100;
     private final static List VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
+    private final static List VALID_PRIORITIES = Arrays.asList("SYSTEM", "NORMAL", "URGENT", "LOW");
+
 
     private final Options cliOptions = new Options();
     // define parser
@@ -141,6 +146,8 @@ public class CliOptions {
     private boolean eraseFullFlash = false;
     private long dumpFlashStartAddress = -1;
     private long dumpFlashEndAddress = -1;
+
+    private Priority priority = Priority.LOW;
 
     private boolean help = false;
     private boolean version = false;
@@ -272,6 +279,13 @@ public class CliOptions {
                 .type(Number.class)
                 .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) \" in password may not work").build();
 
+        Option knxPriority = Option.builder(null).longOpt(OPT_LONG_PRIORITY)
+                .argName("SYSTEM|NORMAL|URGENT|LOW")
+                .hasArg()
+                .required(false)
+                .type(String.class)
+                .desc(String.format("KNX telegram priority (default %s)", this.priority.toString().toUpperCase())).build();
+
         // options will be shown in order as they are added to cliOptions
         cliOptions.addOption(fileName);
 
@@ -286,6 +300,7 @@ public class CliOptions {
         cliOptions.addOption(device);
         cliOptions.addOption(optProgDevice);
         cliOptions.addOption(ownPhysicalAddress);
+        cliOptions.addOption(knxPriority);
 
         cliOptions.addOption(userId);
         cliOptions.addOption(userPasswd);
@@ -350,6 +365,17 @@ public class CliOptions {
                 }
             }
             logger.debug("logLevel={}", root.getLevel().toString());
+
+            if (cmdLine.hasOption(OPT_LONG_PRIORITY)) {
+                String cliPriority = cmdLine.getOptionValue(OPT_LONG_PRIORITY).toUpperCase();
+                if (VALID_PRIORITIES.contains(cliPriority)) {
+                    priority = Priority.valueOf(cliPriority);
+                }
+                else {
+                    logger.warn("{}invalid {} {}, using {}{}", ConColors.RED, OPT_LONG_LOGLEVEL, cliPriority, priority, ConColors.RESET);
+                }
+            }
+            logger.debug("priority={}", priority.toString());
 
             if (cmdLine.hasOption(OPT_SHORT_HELP)) {
                 help = true;
@@ -656,5 +682,9 @@ public class CliOptions {
 
     public String devicePassword() {
         return devicePassword;
+    }
+
+    public Priority priority() {
+        return priority;
     }
 }

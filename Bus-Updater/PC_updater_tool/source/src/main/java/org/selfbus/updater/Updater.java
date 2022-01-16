@@ -287,9 +287,11 @@ public class Updater implements Runnable {
             byte[] uid = cliOptions.uid();
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC);
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC, cliOptions.priority());
 
             logger.info("KNX connection: {}\n", link);
+
+            logger.info("Telegram priority: {}", cliOptions.priority());
 
             //for option -device restart the device in bootloader mode
             if (cliOptions.device() != null) { //!< phys. knx address of the device in normal operation
