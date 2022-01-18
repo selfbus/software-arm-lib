@@ -552,7 +552,9 @@ static unsigned char updRequestStatistic(bool * sendTel)
     byte sizeB = sizeof(disconnectCount);
     byte sizeC = sizeof(hotfix_1_RepeatedControlTelegramCount);
     byte sizeD = sizeof(hotfix_2_RepeatedDataTelegramCount);
-    unsigned int sizeTotal = sizeA + sizeB + sizeC + sizeD;
+    byte sizeE = sizeof(repeatedTelegramTotalCount);
+
+    unsigned int sizeTotal = sizeA + sizeB + sizeC + sizeD + sizeE;
 
     *sendTel = prepareReturnTelegram(sizeTotal, UPD_RESPONSE_STATISTIC);
     uShort16ToStream(startPos, telegramCount);
@@ -562,11 +564,14 @@ static unsigned char updRequestStatistic(bool * sendTel)
     uShort16ToStream(startPos, hotfix_1_RepeatedControlTelegramCount);
     startPos += sizeC;
     uShort16ToStream(startPos, hotfix_2_RepeatedDataTelegramCount);
+    startPos += sizeD;
+    uShort16ToStream(startPos, repeatedTelegramTotalCount);
 
     d3(serial.print("telegramCount ", telegramCount));
     d3(serial.print(" disconnectCount ", disconnectCount));
-    d3(serial.print(" hotfix_1_RepeatedControlTelegramCount ", hotfix_1_RepeatedControlTelegramCount));
-    d3(serial.println(" hotfix_2_RepeatedDataTelegramCount ", hotfix_2_RepeatedDataTelegramCount));
+    d3(serial.print(" RepeatedControlTelegramCount ", hotfix_1_RepeatedControlTelegramCount));
+    d3(serial.println(" RepeatedDataTelegramCount ", hotfix_2_RepeatedDataTelegramCount));
+    d3(serial.println(" repeatedTelegramTotalCount ", repeatedTelegramTotalCount));
     return (T_ACK_PDU);
 }
 
@@ -905,7 +910,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     unsigned int count = data[0] & 0x0f;
     byte updCommand = data[2];
 
-#ifdef DEBUG
+#if defined(DEBUG) && (!(defined(TS_ARM)))
     digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
 #endif
 

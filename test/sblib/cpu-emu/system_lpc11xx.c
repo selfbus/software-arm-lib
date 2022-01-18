@@ -72,7 +72,7 @@ void IAP_Init_Flash(unsigned char value)
     memset(FLASH, value, FLASH_SIZE);
 }
 
-void IAP_Call (unsigned int * cmd, unsigned int * stat)
+void IAP_Call (unsigned long * cmd, unsigned long * stat)
 {
     unsigned int i;
     unsigned int end;

@@ -49,6 +49,7 @@ static BcuUpdate _bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus c
 BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
 
 Timeout runModeTimeout;              //!< running mode LED blinking timeout
+bool blinky = false;
 
 /**
  * @brief Configures the system timer to call SysTick_Handler once every 1 msec.
@@ -67,23 +68,31 @@ static inline void lib_setup()
  */
 void setup()
 {
-#ifdef DEBUG
+// setup LED's for debug
+#if defined(DEBUG) && (!(defined(TS_ARM)))
     pinMode(PIN_INFO, OUTPUT);
     digitalWrite(PIN_INFO, false);  // Turn off info LED
+    pinMode(PIN_RUN, OUTPUT);
+#endif
 
-    //serial.setRxPin(PIO3_1);
-    //serial.setTxPin(PIO3_0);
+// setup serial port for debug
+#ifdef DEBUG
+#   ifdef TS_ARM
+        serial.setRxPin(PIO3_1);
+        serial.setTxPin(PIO3_0);
+#   else
+        serial.setRxPin(PIO2_7);
+        serial.setTxPin(PIO2_8);
+#   endif
     if (!serial.enabled())
     {
         serial.begin(115200);
     }
 #endif
 
-    bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION); // We are a "Jung 2138.10" device, version 0.1
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
     extern byte userEepromModified;
     userEepromModified = 0;
-    pinMode(PIN_RUN, OUTPUT);
     runModeTimeout.start(1);
 
 #ifdef DEBUG
@@ -112,6 +121,10 @@ void setup()
     serial.println();
     serial.println("=================================================== by sh");
 #endif
+
+    // finally start the bcu
+    bcu.begin(0, 0, 0); // we are nothing, because we don't answer to property reads
+    // bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION); // We are a "Jung 2138.10" device, version 0.1
 }
 
 
@@ -129,15 +142,19 @@ void loop()
         }
         else
         {
-#ifdef DEBUG
+#if defined(DEBUG) && (!(defined(TS_ARM)))
             digitalWrite(PIN_INFO, false);  // Turn Off info LED
 #endif
             runModeTimeout.start(RUN_MODE_BLINK_IDLE);
         }
-        digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
+        blinky = !blinky;
     }
-    digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
+    digitalWrite(PIN_PROG, blinky);
+
+#if defined(DEBUG) && (!(defined(TS_ARM)))
+    digitalWrite(PIN_RUN, blinky);
+#endif
 
     if(bus.idle())
     {
@@ -183,6 +200,7 @@ void loop()
  */
 static inline void jumpToApplication(unsigned int start)
 {
+#ifndef IAP_EMULATION ///\todo use a new #define for unit-tests
     unsigned int StackTop = *(unsigned int *) (start);
     unsigned int ResetVector = *(unsigned int *) (start + 4);
     unsigned int * rom = (unsigned int *) start;
@@ -207,6 +225,7 @@ static inline void jumpToApplication(unsigned int start)
     asm volatile ("mov SP, %0" : : "r" (StackTop));
     /* Once the stack is setup we jump to the application reset vector */
     asm volatile ("bx      %0" : : "r" (ResetVector));
+#endif
 }
 
 
@@ -240,7 +259,11 @@ static inline void run_updater(bool programmingMode)
  *
  * @return never returns
  */
-int main()
+#ifndef IAP_EMULATION
+    int main()
+#else
+    int alt_main()
+#endif
 {
     // Updater request from application by setting magicWord
   	unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;

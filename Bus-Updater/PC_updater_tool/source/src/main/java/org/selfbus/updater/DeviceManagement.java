@@ -88,7 +88,7 @@ public final class DeviceManagement {
         dest = mcDevice.createDestination(device, true, false, false);
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try {
-            logger.info("\nRestarting device {} to bootloader mode using {}", device, link);
+            logger.info("\nRestarting device {} into bootloader mode using {}", device, link);
             restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             mcDevice.detach();
             logger.info("Device {} reported {}{} seconds{} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
@@ -97,7 +97,7 @@ public final class DeviceManagement {
             logger.info("Device {} should now have started into bootloader mode.", device);
             return true;
         } catch (final KNXException | InterruptedException e) {
-            logger.info("{}Restart status of device {} unknown. {}{}", ConColors.BRIGHT_RED, device, e.getMessage(), ConColors.RESET);
+            logger.info("{}Restart state of device {} unknown. {}{}", ConColors.BRIGHT_RED, device, e.getMessage(), ConColors.RESET);
             logger.debug("KNXException ", e);
             logger.info("Waiting {}{} seconds{} for device {} to restart", ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET, device);
             waitRestartTime(restartProcessTime);
@@ -238,6 +238,7 @@ public final class DeviceManagement {
         ResponseResult result = new ResponseResult();
         while (nIndex < data.length)
         {
+
             byte[] txBuffer;
             if ((data.length - nIndex) >= Mcu.MAX_PAYLOAD){
                 txBuffer = new byte[Mcu.MAX_PAYLOAD + 1];

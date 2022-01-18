@@ -36,8 +36,14 @@ extern unsigned short disconnectCount; //!< number of disconnects since system r
 ///\todo remove after bugfix and on release
 extern unsigned short hotfix_1_RepeatedControlTelegramCount;
 extern unsigned short hotfix_2_RepeatedDataTelegramCount;
+extern unsigned short repeatedTelegramTotalCount;
 ///\todo end of remove after bugfix and on release
 
+
+/**
+ * @brief Implementation of the KNX transportation layer 4 Style 1 Rationalised
+ *
+ */
 class BcuLayer4: public BcuBase
 {
 public:

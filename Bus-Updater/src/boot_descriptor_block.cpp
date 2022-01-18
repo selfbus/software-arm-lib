@@ -22,10 +22,10 @@
 #include "boot_descriptor_block.h"
 #include "crc.h"
 
-
+#ifndef IAP_EMULATION
 extern unsigned int __base_Flash;   //!< marks the beginning of the flash memory (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
-extern unsigned int  __top_Flash;   //!< marks the end of the flash memory (inserted by the linker)
+extern unsigned int __top_Flash;    //!< marks the end of the flash memory (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
 extern unsigned int _image_start;   //!< marks the beginning of the bootloader firmware (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
@@ -33,6 +33,14 @@ extern unsigned int _image_end;     //!< marks the end of the bootloader firmwar
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
 extern unsigned int _image_size;    //!< marks the size of the bootloader firmware (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
+#else
+    // for catch unit tests ///\todo move this to cpu-emulation
+    unsigned int __base_Flash = 0x0000;
+    unsigned int  __top_Flash = 0x10000;
+    unsigned int _image_start = 0x0000;
+    unsigned int _image_end = 0x2EFF;
+    unsigned int _image_size = 0x2F00;
+#endif
 
 __attribute__((unused)) unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_STRING; // actually it's used in getAppVersion,
                                                                                         // this is just to suppress compiler warning
