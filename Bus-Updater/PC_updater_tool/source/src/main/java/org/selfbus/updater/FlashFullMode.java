@@ -47,10 +47,23 @@ public class FlashFullMode {
             logger.info("Sending {} bytes: {}%", txBuffer.length, String.format("%3.1f", (float) 100 * (resultTotal.written() + txBuffer.length) / totalLength));
 
             // send data to the bootloader
+            long flashTimeStart = System.currentTimeMillis(); // time this run started
             resultSendData = dm.doFlash(txBuffer, -1, dataSendDelay);
             resultTotal.addCounters(resultSendData); // keep track of static data
 
-            // flash the previously sent boot descriptor
+            // logging of connection speed
+            long flashTimeDuration = System.currentTimeMillis() - flashTimeStart;
+            float bytesPerSecond = (float) resultSendData.written() / (flashTimeDuration / 1000f);
+            String col;
+            if (bytesPerSecond >= 50.0) {
+                col = ConColors.BRIGHT_GREEN;
+            } else {
+                col = ConColors.BRIGHT_RED;
+            }
+            System.out.println(String.format("%s(%.2f B/s)%s", col, bytesPerSecond, ConColors.RESET));
+
+
+            // flash the previously sent data
             int crc32 = Utils.crc32Value(txBuffer);
             byte[] progPars = new byte[3 * 4];
             Utils.longToStream(progPars, 0, txBuffer.length);
