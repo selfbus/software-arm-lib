@@ -28,8 +28,6 @@ public final class DeviceManagement {
     private DeviceManagement (){}
 
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
-    ///\todo check this as an alternative implementation of UpdatableManagementClient
-    // link.sendRequestWait();
     private SBManagementClientImpl mc; //!< calimero device management client
     private Destination progDestination;
     private KNXNetworkLink link;

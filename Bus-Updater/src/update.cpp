@@ -567,11 +567,11 @@ static unsigned char updRequestStatistic(bool * sendTel)
     startPos += sizeD;
     uShort16ToStream(startPos, repeatedTelegramTotalCount);
 
-    d3(serial.print("telegramCount ", telegramCount));
-    d3(serial.print(" disconnectCount ", disconnectCount));
-    d3(serial.print(" RepeatedControlTelegramCount ", hotfix_1_RepeatedControlTelegramCount));
-    d3(serial.println(" RepeatedDataTelegramCount ", hotfix_2_RepeatedDataTelegramCount));
-    d3(serial.println(" repeatedTelegramTotalCount ", repeatedTelegramTotalCount));
+    d3(serial.print("#tel ", telegramCount));
+    d3(serial.print(" #DC ", disconnectCount));
+    d3(serial.print(" #Contr ", hotfix_1_RepeatedControlTelegramCount));
+    d3(serial.println(" #Data ", hotfix_2_RepeatedDataTelegramCount));
+    d3(serial.println(" #Tot ", repeatedTelegramTotalCount));
     return (T_ACK_PDU);
 }
 
