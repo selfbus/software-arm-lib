@@ -128,7 +128,6 @@ protected:
      * @return True on success, false on failure
      */
     bool processDeviceDescriptorReadTelegram(int id);
-public: // FIXME remove "public:" after testing to make them protected again
     /**
      * Process a APCI_MEMORY_WRITE_PDU
      * see KNX Spec. 3/3/7 §3.5.4 p.73 A_Memory_Write-service
@@ -164,6 +163,28 @@ public: // FIXME remove "public:" after testing to make them protected again
      * @return true if successfully, otherwise false
      */
     bool processApciMemoryOperation(int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem);
+
+    /**
+     * Process a APCI_MASTER_RESET_PDU
+     * see KNX Spec. 3/5/2 §3.7.1.2 p.64 A_Restart
+     *
+     * @param apci          APCI to process
+     * @param senderSeqNo   The TL layer 4 sequence number of the sender
+     * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
+     * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
+     * @note sendTelegram is accessed and changed inside the function to prepare a @ref APCI_MASTER_RESET_RESPONSE_PDU
+     *
+     * @return true if a restart shall happen, otherwise false
+     */
+    bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
+
+    /**
+     * @brief Performs a system reset by calling @ref NVIC_SystemReset
+     * @details Before the reset a USR_CALLBACK_RESET is send to the application,
+     *          the UserEprom and memMapper are written to flash.
+     * @warning This function will never return.
+     */
+    void softSystemReset();
 
     // The method begin_BCU() is renamed during compilation to indicate the BCU type.
     // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.

@@ -34,6 +34,8 @@
  ******************************************************************************/
 
 #if defined (__LPC11XX__)
+// #   define SERIAL_RX_PIN PIO3_1 //!< on a TS_ARM Controller
+// #   define SERIAL_TX_PIN PIO3_0 //!< on a TS_ARM Controller
 #   define SERIAL_RX_PIN PIO2_7 //!< on a 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
 #   define SERIAL_TX_PIN PIO2_8 //!< on a 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
 #endif
