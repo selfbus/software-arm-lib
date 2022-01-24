@@ -41,10 +41,10 @@ enum IAP_Command
  */
 struct IAP_Parameter
 {
-    uint32_t cmd;         //!< Command
-    uint32_t par[4];      //!< Parameters
-    uint32_t stat;        //!< Status
-    uint32_t res[4];      //!< Result
+    unsigned long cmd;         //!< Command
+    unsigned long par[4];      //!< Parameters
+    unsigned long stat;        //!< Status
+    unsigned long res[4];      //!< Result
 };
 
 // The size of the flash in bytes. Use iapFlashSize() to get the flash size.
@@ -67,7 +67,7 @@ typedef void (*IAP_Func)(unsigned long * cmd, unsigned long * stat);
 #  endif
 #  define IAP_Call ((IAP_Func) IAP_LOCATION)
 #else
-   extern "C" void IAP_Call (unsigned int * cmd, unsigned int * stat);
+   extern "C" void IAP_Call (unsigned long * cmd, unsigned long * stat);
 #endif
 
 

@@ -41,9 +41,10 @@
 #endif
 
 // #define SERIAL_SPEED 115200 //!< baudrate e.g. 115200, 230400, 576000 serial port should run for debugging
-// #define INCLUDE_SERIAL      //!< library should open serial for us
+// #define SERIAL_SPEED 576000
 // #define SERIAL_SPEED 1500000
-# define SERIAL_SPEED 576000
+
+// #define INCLUDE_SERIAL      //!< library should open serial for us
 
 // #define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
 
@@ -97,12 +98,11 @@
 // remove any debugging and dumping stuff from release versions
 #ifndef DEBUG
 #   undef DEBUG_BUS
-#	undef BUSMONITOR
 #   undef DEBUG_BUS_BITLEVEL
+#   undef BUSMONITOR
 #   undef DUMP_TELEGRAMS
 #   undef DUMP_COM_OBJ
 #   undef DUMP_MEM_OPS
-#   undef DUMP_SERIAL
 #   undef DUMP_PROPERTIES
 #   undef LOGGING
 #   undef BH1750_DEBUG

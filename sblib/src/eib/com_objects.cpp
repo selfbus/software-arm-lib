@@ -513,7 +513,7 @@ bool sendNextGroupTelegram()
     {
     	return false;
     }
-	//  pending transmission status check, switch of innterrupts to avoid reading/storing changing data
+	//  pending transmission status check, switch off interrupts to avoid reading/storing changing data
     noInterrupts();
 	if ( !(transmitting_object_no == INVALID_OBJECT_NUMBER) && bus.getBusTXStateValid() )
 	{
