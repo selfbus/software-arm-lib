@@ -73,7 +73,12 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 {
     _begin();
 #if defined(INCLUDE_SERIAL)
-    IF_DEBUG(serial.begin(SERIAL_SPEED));
+    IF_DEBUG(
+                if (!serial.enabled())
+                {
+                    serial.begin(SERIAL_SPEED);
+                }
+            );
 #endif
 
 #ifdef DUMP_TELEGRAMS
