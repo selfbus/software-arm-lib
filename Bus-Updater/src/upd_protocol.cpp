@@ -53,6 +53,7 @@ void updCommand2Serial(byte cmd)
             case UPD_RESPONSE_BOOT_DESC: d1("RESPONSE_BOOT_DESC"); break;
             case UPD_REQUEST_BL_IDENTITY: d1("REQUEST_BL_IDENTITY"); break;
             case UPD_RESPONSE_BL_IDENTITY: d1("RESPONSE_BL_IDENTITY"); break;
+            case UPD_RESPONSE_BL_VERSION_MISMATCH: d1("RESPONSE_BL_VERSION_MISMATCH"); break;
             case UPD_SET_EMULATION: d1("SET_EMULATION"); break;
             default: serial.print("Command unknown", (unsigned int)cmd); break;
         }

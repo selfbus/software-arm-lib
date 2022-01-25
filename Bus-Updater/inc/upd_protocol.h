@@ -113,6 +113,7 @@ enum UPD_Command
 
     UPD_REQUEST_BL_IDENTITY = 40,       //!< Return the bootloader's identity @note device must be unlocked
     UPD_RESPONSE_BL_IDENTITY = 41,      //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the identity
+    UPD_RESPONSE_BL_VERSION_MISMATCH = 42, //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the minimum required major and minor version of Selfbus Updater
     UPD_SET_EMULATION = 100             //!<@warning Not implemented
 };
 

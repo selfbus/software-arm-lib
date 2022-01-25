@@ -522,20 +522,43 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
  *        to the return telegram.
  *
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
+ * @param data    the major version of Selfbus Updater in data[3-6],  the minor version of Selfbus Updater in data[7-10]
+ *
  * @return always T_ACK_PDU
  */
-static unsigned char updRequestBootloaderIdentity(bool * sendTel)
+static unsigned char updRequestBootloaderIdentity(bool * sendTel, unsigned char * data)
 {
-    unsigned int bootloaderIdentityy = BL_IDENTITY;
+    unsigned int majorVersionUpdater = streamToUIn32(data + 3);
+    unsigned int minorVersionUpdater = streamToUIn32(data + 3 + 4);
+    bool versionMatch = (majorVersionUpdater >= UPDATER_MIN_MAJOR_VERSION) && (minorVersionUpdater >= UPDATER_MIN_MINOR_VERSION);
+
+    if (!versionMatch)
+    {
+        // version mismatch send the minimum requested major and minor version
+        unsigned int minMajorVersionUpdater = UPDATER_MIN_MAJOR_VERSION;
+        unsigned int minMinorVersionUpdater = UPDATER_MIN_MINOR_VERSION;
+        *sendTel = prepareReturnTelegram(sizeof(minMajorVersionUpdater) + sizeof(minMinorVersionUpdater), UPD_RESPONSE_BL_VERSION_MISMATCH);
+        uInt32ToStream(bcu.sendTelegram + 10, minMajorVersionUpdater);
+        uInt32ToStream(bcu.sendTelegram + 10 + sizeof(minMajorVersionUpdater), minMinorVersionUpdater);
+
+        d3(serial.print("Updater version mismatch! Required ", minMajorVersionUpdater));
+        d3(serial.print(".", minMinorVersionUpdater));
+        d3(serial.print(" received: ", majorVersionUpdater));
+        d3(serial.println(".", minorVersionUpdater));
+        return (T_ACK_PDU);
+    }
+
+    unsigned int bootloaderIdentity = BL_IDENTITY;
     unsigned int bootloaderFeatures = BL_FEATURES;
     unsigned int appFirstAddress = applicationFirstAddress();
     *sendTel = prepareReturnTelegram(12, UPD_RESPONSE_BL_IDENTITY);
-    uInt32ToStream(bcu.sendTelegram + 10, bootloaderIdentityy);  // Bootloader identity
+    uInt32ToStream(bcu.sendTelegram + 10, bootloaderIdentity);  // Bootloader identity
     uInt32ToStream(bcu.sendTelegram + 14, bootloaderFeatures);  // Bootloader features
     uInt32ToStream(bcu.sendTelegram + 18, appFirstAddress);     // application first possible start address
-    d3(serial.print("BL ID 0x", bootloaderIdentityy, HEX, 8));
+    d3(serial.print("BL ID 0x", bootloaderIdentity, HEX, 8));
     d3(serial.print("    BL feature 0x", bootloaderFeatures, HEX, 8));
     d3(serial.println("    FW start   0x", appFirstAddress, HEX, 8));
+
     return (T_ACK_PDU);
 }
 
@@ -991,7 +1014,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
             return (udpRequestBootDescriptionBlock(sendTel));
 
 		case UPD_REQUEST_BL_IDENTITY:
-		    return (updRequestBootloaderIdentity(sendTel));
+		    return (updRequestBootloaderIdentity(sendTel, data));
 
 		case UPD_REQ_DATA:
 		    return (updRequestData(sendTel));

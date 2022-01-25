@@ -33,7 +33,8 @@ public enum UPDCommand {
     REQUEST_BOOT_DESC(36, "REQUEST_BOOT_DESC"),                 //!< Return the application boot descriptor block @note device must be unlocked
     RESPONSE_BOOT_DESC(37, "RESPONSE_BOOT_DESC"),               //!< Response for @ref REQUEST_BOOT_DESC containing the application boot descriptor block
     REQUEST_BL_IDENTITY(40, "REQUEST_BL_IDENTITY"),             //!< Return the bootloader's identity @note device must be unlocked
-    RESPONSE_BL_IDENTITY(41, "RESPONSE_BL_IDENTITY"),           //!< Response for @ref REQUEST_BL_IDENTITY containing the identity
+    RESPONSE_BL_IDENTITY(41, "RESPONSE_BL_IDENTITY"),           //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the identity
+    RESPONSE_BL_VERSION_MISMATCH(42, "RESPONSE_BL_VERSION_MISMATCH"), //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the minimum required major and minor version of Selfbus Updater
     SET_EMULATION(100, "SET_EMULATION");                        //!<@warning Not implemented
 
     private static final Map<Integer, UPDCommand> BY_INDEX = new HashMap<>();

@@ -134,11 +134,22 @@ public final class DeviceManagement {
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting Bootloader Identity...");
 
-        // byte[] result = m.sendUpdateData(dest, UPDCommand.REQUEST_BL_IDENTITY.id, new byte[] {0});
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_BL_IDENTITY, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
+        byte[] telegram = new byte[8];
+        Utils.longToStream(telegram, 0 , ToolInfo.versionMajor());
+        Utils.longToStream(telegram, 4 , ToolInfo.versionMinor());
+
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_BL_IDENTITY, telegram, MAX_UPD_COMMAND_RETRY).data();
         if (result[3] != UPDCommand.RESPONSE_BL_IDENTITY.id)
         {
-            UPDProtocol.checkResult(result);
+            if (result[3] == UPDCommand.RESPONSE_BL_VERSION_MISMATCH.id) {
+                long minMajorVersion = Utils.streamToLong(result, 4);
+                long minMinorVersion = Utils.streamToLong(result, 8);
+                logger.error("{}Selfbus Updater version {} not compatible. Please update to version {}.{} or higher.{}",
+                        ConColors.RED, ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ConColors.RESET);
+            }
+            else {
+                UPDProtocol.checkResult(result);
+            }
             restartProgrammingDevice();
             throw new UpdaterException(String.format("Requesting Bootloader Identity failed! result[3]=0x%02X", result[3]));
         }
