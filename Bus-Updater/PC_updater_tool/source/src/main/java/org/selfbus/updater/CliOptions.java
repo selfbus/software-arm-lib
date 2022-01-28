@@ -105,8 +105,8 @@ public class CliOptions {
     private static final String OPT_LONG_DUMPFLASH = "DUMPFLASH";
 
     private static final int PRINT_WIDTH = 100;
-    private final static List VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
-    private final static List VALID_PRIORITIES = Arrays.asList("SYSTEM", "NORMAL", "URGENT", "LOW");
+    private final static List<String> VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
+    private final static List<String> VALID_PRIORITIES = Arrays.asList("SYSTEM", "NORMAL", "URGENT", "LOW");
 
 
     private final Options cliOptions = new Options();

@@ -1,8 +1,8 @@
 package org.selfbus.updater.tests;
 
+import org.junit.Test;
 import org.selfbus.updater.BinImage;
 import org.selfbus.updater.UpdaterException;
-import org.junit.Test;
 import org.selfbus.updater.tests.flashdiff.Decompressor;
 import org.selfbus.updater.tests.flashdiff.FlashDiff;
 import org.selfbus.updater.tests.flashdiff.FlashPage;

@@ -1,7 +1,7 @@
 package org.selfbus.updater.tests;
 
-import org.selfbus.updater.BinImage;
 import org.junit.Assert;
+import org.selfbus.updater.BinImage;
 
 public class FlashDiffUtils {
 

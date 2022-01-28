@@ -1,19 +1,18 @@
 package org.selfbus.updater.tests.flashdiff;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.zip.CRC32;
-
 import org.selfbus.updater.BinImage;
 import org.selfbus.updater.ConColors;
 import org.selfbus.updater.UpdaterException;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.zip.CRC32;
 
 public class FlashDiff {
     private final static Logger logger = LoggerFactory.getLogger(FlashDiff.class.getName());

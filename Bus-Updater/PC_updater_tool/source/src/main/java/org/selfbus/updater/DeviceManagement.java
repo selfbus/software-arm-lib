@@ -33,7 +33,7 @@ public final class DeviceManagement {
     private KNXNetworkLink link;
 
     public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec, Priority priority)
-            throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
+            throws KNXLinkClosedException {
         this.link = link;
         logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
@@ -80,7 +80,7 @@ public final class DeviceManagement {
      * @return true if successful, otherwise false
      */
     public boolean restartDeviceToBootloader(KNXNetworkLink link, IndividualAddress device)
-            throws KNXLinkClosedException, NoSuchFieldException, IllegalAccessException, NoSuchMethodException {
+            throws KNXLinkClosedException {
         SBManagementClientImpl mcDevice = new SBManagementClientImpl(link);
         Destination dest;
         dest = mcDevice.createDestination(device, true, false, false);

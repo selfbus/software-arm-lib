@@ -17,12 +17,20 @@ jar {
 task fatJar(type: Jar) {
     manifest.from jar.manifest
     archiveClassifier.set('all')
-    duplicatesStrategy = DuplicatesStrategy.WARN
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     } {
+        /*
         exclude "META-INF/*.SF"
         exclude "META-INF/*.DSA"
         exclude "META-INF/*.RSA"
+        exclude "META-INF/LICENSE"
+        exclude "META-INF/LICENSE.txt"
+        exclude "META-INF/NOTICE.txt"
+        exclude "META-INF/LGPL2.1"
+        exclude "META-INF/AL2.0"
+        exclude "META-INF/versions/9/module-info.class"
+         */
     }
 
     with jar
@@ -34,39 +42,23 @@ artifacts {
 
 repositories {
     mavenCentral()
-    // jcenter() // since march 2021 readonly
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
 }
 
 gradle.projectsEvaluated{
     tasks.withType(JavaCompile){
         options.compilerArgs << "-Xlint:unchecked"
         options.compilerArgs << "-Xlint:deprecation"
+        options.compilerArgs << "-Xlint:all"
     }
 }
 
-/*
-compileJava.options*.compilerArgs = [
-        '-Xlint:all',
-        '-Xlint:-options',
-//	'-Werror'
-        "--limit-modules", "java.base,java.xml"
-]
-
-compileTestJava.options*.compilerArgs = [
-        '-Xlint:all',
-        '-Xlint:-try',
-]
-*/
-
-
 dependencies {
     // calimero knx bus access library
-    implementation 'com.github.calimero:calimero-core:2.5'
-    // implementation 'com.github.calimero:calimero-core' // uncomment git repo in settings.gradle for this
+    implementation 'com.github.calimero:calimero-core:2.6-SNAPSHOT' ///\todo change to next official release which includes commit 73fbcdba3049121f698f15ef91d905331e922005
 
     // calimero serial tx/rx lib for ft1.2 and tpuart support
-    implementation 'com.github.calimero:calimero-rxtx:2.5'
-    // implementation 'com.github.calimero:calimero-rxtx' // uncomment git repo in settings.gradle for this
+    implementation 'com.github.calimero:calimero-rxtx:2.6-SNAPSHOT' ///\todo change to next official release which includes commit 73fbcdba3049121f698f15ef91d905331e922005
 
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.2.1'
