@@ -28,6 +28,10 @@ static void _handleRx(Test_Case * tc, Telegram * tel, unsigned int tn)
 {
 	memcpy(bus.telegram, tel->bytes, tel->length);
 	bus.telegramLen = tel->length;
+    if ((bus.state == Bus::INIT) || (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE))
+    {
+        bus.timerInterruptHandler(); // move the Isr "forward"
+    }
 	bcu.processTelegram();
 	REQUIRE(bus.telegramLen == 0);
 }
@@ -59,7 +63,7 @@ static void _handleTx(Test_Case * tc, Telegram * tel, unsigned int tn)
         strcat(expected, temp);
         if (tel->bytes[i] != bus.sendCurTelegram[i])
         {
-                mismatches++;
+            mismatches++;
             snprintf(temp, 1024, "%d, ", i + 1);
             strcat(msg, temp);
         }
@@ -141,7 +145,7 @@ void executeTest(Test_Case * tc)
     if(tc->eepromSetup) tc->eepromSetup();
     memcpy(FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE, userEepromData, USER_EEPROM_SIZE);
     bcu.begin(tc->manufacturer, tc->deviceType, tc->version);
-    bus.timerInterruptHandler(); // move the ISR aut of INIT state
+    bus.timerInterruptHandler(); // move the ISR out of INIT state
     sndStartIdx = 0;
     systemTime  = 0;
     wfiSystemTimeInc = 1;

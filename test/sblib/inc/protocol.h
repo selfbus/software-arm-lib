@@ -17,9 +17,9 @@
 #define private   public
 #define protected public
 #include "sblib/eib/bus.h"
+#include "sblib/eib/bcu.h"
 #undef private
 #undef protected
-#include "sblib/eib/bcu.h"
 #include "iap_emu.h"
 
 #include <string.h>
