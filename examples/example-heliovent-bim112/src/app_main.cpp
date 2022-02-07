@@ -33,26 +33,23 @@
 #   include "heliosvent.h"
 #elif defined(VALLOX)
 #   include "vallox.h"
+#elif defined(MDT_TSS)
+#   include "mdttss.h"
 #else
 #   include "mdtled.h"
 #endif
 
-
 #if defined(HELIOS)
-    extern "C" const char APP_VERSION[13] = "BS4.70  0.9";
+    APP_VERSION("BS4.70  ", "0", "09");
 #elif defined(VALLOX)
-    extern "C" const char APP_VERSION[13] = "VALLOX  0.1";
+    APP_VERSION("VALLOX  ", "0", "01");
+#elif defined(MDT_TSS)
+    APP_VERSION("BE06001 ", "0", "02");
 #else
-    extern "C" const char APP_VERSION[13] = "AKD-0424R.02";
+    APP_VERSION("AKD0424R", "0", "02");
 #endif
 
-
 MemMapper memMapper(0xe900, 0x500);
-
-const char * getAppVersion()
-{
-    return APP_VERSION;
-}
 
 /**
  * @brief This function is called by the Selfbus's library main
@@ -62,9 +59,6 @@ const char * getAppVersion()
  */
 void setup(void)
 {
-    // currentVersion = &hardwareVersion[HARDWARE_ID];
-    volatile char v = getAppVersion()[0];
-    v++;
 #if defined(DUMP_PROPERTIES) || defined(DUMP_MEM_OPS)
     serial.setRxPin(PIO2_7);
     serial.setTxPin(PIO2_8);
@@ -77,7 +71,6 @@ void setup(void)
 #else
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION);
 #endif
-
 
     memcpy(userEeprom.order, &hardwareVersion, sizeof(hardwareVersion));
 
@@ -161,7 +154,7 @@ void loop(void)
     if ((millis() % 1000) == 0)
     {
         //FIXME why is this running into an fatalError()?
-        serial.println("userEeprom.optionReg: 0x", userEeprom.optionReg, HEX, 2);
+        // serial.println("userEeprom.optionReg: 0x", userEeprom.optionReg, HEX, 2);
     }
     checkPeriodic();
 

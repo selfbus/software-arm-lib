@@ -22,8 +22,10 @@
 #define CONFIG_H_
 
 
-#define HELIOS
+// #define HELIOS
 // #define VALLOX
+#define MDT_TSS
+// #define MDT_LED
 
 #endif /* CONFIG_H_ */
 /** @}*/
