@@ -634,7 +634,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 }
 
 /*
- *  set the Bus state maschine to idle state.
+ *  set the Bus state machine to idle state.
  *  We waited at least 50 Bit times  (without cap event enabled), now we wait for next Telegram to receive.
  *  configure the capture to falling edge and interrupt
  *  match register for low pwm output
