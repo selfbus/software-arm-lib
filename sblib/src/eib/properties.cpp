@@ -197,7 +197,9 @@ LoadState handleAllocAbsTaskSegment(const int objectIdx, const byte* payLoad, co
                 userEeprom.commsTabAddr = newAddress;
 
                 if (userEeprom.commsTabAddr != addr)
+                {
                     IF_DUMP_PROPERTIES(serial.println();serial.println("  ----> userEeprom.commsTabAddr MARKED AS READ-ONLY, WON'T CHANGE TO 0x", addr, HEX, 4);serial.println(););
+                }
 
                 IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom.commsTabAddr = 0x", userEeprom.commsTabAddr, HEX, 4););
 #           endif
