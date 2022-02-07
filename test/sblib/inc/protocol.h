@@ -36,6 +36,7 @@ typedef enum
 , TEL_TX            //!> simulated telegram to transmit to the bus
 , TIMER_TICK        //!> simulated timer tick by increasing system time
 , CHECK_TX_BUFFER
+, LOOP              //!> simulates the bcu.loop()
 , BREAK
 , END               //!> test case end
 } TelegramType;

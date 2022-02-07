@@ -77,13 +77,16 @@ static void _handleTx(Test_Case * tc, Telegram * tel, unsigned int tn)
     bus.state = Bus::SEND_END_OF_TX;
     bus.timerInterruptHandler();
     if (bus.state == Bus::SEND_WAIT_FOR_RX_ACK_WINDOW) { // device request an ACK -> so inject one
-    	bus.telegram [0] = bus.currentByte = SB_BUS_ACK;
-    	bus.telegramLen  = tel->length;
+        ///\todo maybe need to save control byte, otherwise the test can override telegram priority
+        // byte telegramControlByte = bus.telegram[0];
+        bus.telegram[0]  = bus.currentByte = SB_BUS_ACK;
+        bus.telegramLen  = tel->length;
     	bus.state        = Bus::RECV_WAIT_FOR_STARTBIT_OR_TELEND;
     	bus.nextByteIndex = 1;
     	bus.parity        = 1;
     	_LPC_TMR16B1.IR  = 0;
         bus.timerInterruptHandler ();
+        // bus.telegram[0] = telegramControlByte; // restore the state
     }
     REQUIRE(bus.sendNextTel == NULL);
 }
@@ -134,6 +137,18 @@ static unsigned int _handleBreak (Test_Case * tc, Telegram * tel, unsigned int t
     return tn - 1;
 }
 
+static void _handleLoop (Test_Case * tc, Telegram * tel, unsigned int tn)
+{
+    for (unsigned int i = 0; i < tel->variable; i++)
+    {
+        if ((bus.state == Bus::INIT) || (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE))
+        {
+            bus.timerInterruptHandler(); // move the Isr "forward"
+        }
+        bcu.loop();
+    }
+}
+
 void executeTest(Test_Case * tc)
 {
     Telegram * tel = tc->telegram;
@@ -173,6 +188,8 @@ void executeTest(Test_Case * tc)
                 _handleCheckTx(tc, tel, tn);
         else if (TIMER_TICK == tel->type)
                 _handleTime(tc, tel, tn);
+        else if (LOOP == tel->type)
+                _handleLoop(tc, tel, tn);
 
         if (tel->stepFunction) tel->stepFunction(refState, tel->variable);
         if (tc->gatherState) tc->gatherState(stepState, refState);
