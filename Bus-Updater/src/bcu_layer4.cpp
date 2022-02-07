@@ -220,6 +220,7 @@ BcuLayer4::BcuLayer4()
 
 void BcuLayer4::_begin()
 {
+    state = BcuLayer4::CLOSED;
     dumpLogHeader();
     telegramCount = 0;
     disconnectCount = 0;
