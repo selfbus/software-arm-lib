@@ -28,14 +28,19 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>bus-updater-inc</name>
+			<name>inc-bus-updater</name>
 			<type>2</type>
-			<location>D:/SVN/Selfbus Darthyson/software-arm-lib/Bus-Updater/inc</location>
+			<locationURI>PARENT-1-PROJECT_LOC/inc</locationURI>
 		</link>
 		<link>
-			<name>bus-updater-src</name>
+			<name>inc-sblib-test</name>
 			<type>2</type>
-			<location>D:/SVN/Selfbus Darthyson/software-arm-lib/Bus-Updater/src</location>
+			<locationURI>PARENT-2-PROJECT_LOC/test/sblib/inc</locationURI>
+		</link>
+		<link>
+			<name>src-bus-updater</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/src</locationURI>
 		</link>
 	</linkedResources>
 </projectDescription>

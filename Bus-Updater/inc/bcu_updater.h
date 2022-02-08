@@ -61,6 +61,15 @@ protected:
       * @return true if a restart shall happen, otherwise false
       */
      bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
+
+     /**
+      * Process a device-descriptor-read request.
+      *
+      * @param id - the device-descriptor type ID
+      *
+      * @return True on success, false on failure
+      */
+     bool processDeviceDescriptorReadTelegram(int id);
 };
 
 #ifndef INSIDE_BCU_CPP

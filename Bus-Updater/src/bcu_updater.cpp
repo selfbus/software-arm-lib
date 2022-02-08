@@ -67,6 +67,14 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
 #endif
             break;
 
+        case APCI_DEVICEDESCRIPTOR_READ_PDU:
+            *sendTel = processDeviceDescriptorReadTelegram(apci & 0x3f);
+            if (!sendTel)
+            {
+                sendAckTpu = T_NACK_PDU; ///\todo this is not correct, it must be always T_ACK_PDU
+            }
+            break;
+
         default:
             // attention we check acpi not like before apciCommand!
             switch (apci)
@@ -153,6 +161,28 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
     }
 
     return (false);
+}
+
+bool BcuUpdate::processDeviceDescriptorReadTelegram(int id)
+{
+    switch (id)
+    {
+    case 0:
+        {
+            int version = maskVersion();
+            sendTelegram[5] = 0x63;
+            sendTelegram[6] = 0x43;
+            sendTelegram[7] = 0x40;
+            sendTelegram[8] = version >> 8;
+            sendTelegram[9] = version;
+
+            return true;
+        }
+
+    default:
+        return false; // unknown device descriptor
+    }
+    return false; // unknown device descriptor
 }
 
 
