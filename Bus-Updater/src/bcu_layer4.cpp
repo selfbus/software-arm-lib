@@ -409,20 +409,20 @@ bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
               serial.print(LOG_SEP);
         );
 
-        // check for event E10
-        if (connectedAddr != senderAddr)
+        // check CLOSED state for E08, E09
+        if (state == BcuLayer4::CLOSED)
         {
-            dump2(serial.print(" EVENT 10 "););
-
+            dump2(serial.print(" EVENT 8/9/10 CLOSED "););
             actionA10Disconnect(senderAddr);
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             return (false);
         }
 
-        // check CLOSED state for E08, E09
-        if (state == BcuLayer4::CLOSED)
+        // check for event E10
+        if (connectedAddr != senderAddr)
         {
-            dump2(serial.print(" EVENT 8/9 "););
+            dump2(serial.print(" EVENT 10 "););
+
             actionA10Disconnect(senderAddr);
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             return (false);
@@ -490,19 +490,17 @@ bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
               serial.print(LOG_SEP);
         );
 
-        // check for event E14
-        if (connectedAddr != senderAddr)
+        // event E11b
+        if (state == BcuLayer4::CLOSED)
         {
-            dump2(serial.print(" EVENT 14"););
+            dump2(serial.print(" EVENT 11b/14 "););
             actionA10Disconnect(senderAddr);
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             return (false);
         }
-
-        // event E11b
-        if (state == BcuLayer4::CLOSED)
+        else if (connectedAddr != senderAddr) // check for event E14
         {
-            dump2(serial.print(" EVENT 11b_1 "););
+            dump2(serial.print(" EVENT 14"););
             actionA10Disconnect(senderAddr);
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             return (false);
@@ -699,6 +697,10 @@ bool BcuLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, uns
     seqNoRcv++;
     seqNoRcv &= 0x0F;
     connectedTime = systemTime; // "restart the connection timeout timer"
+    if (sendTel)
+    {
+        sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte, set same priority as received
+    }
     return sendTel;
 }
 
@@ -762,7 +764,7 @@ void BcuLayer4::actionA07SendDirectTelegram()
         serial.print(LOG_SEP);
     );
 
-    sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
+    // 0 priority is was already as set in actionA02sendAckPduAndProcessApci
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
     sendTelegram[3] = static_cast<byte>(connectedAddr >> 8);
     sendTelegram[4] = static_cast<byte>(connectedAddr);
@@ -792,7 +794,6 @@ void BcuLayer4::actionA10Disconnect(unsigned int address)
         serial.println("ERROR A10Disconnect ");
     );
     sendConControlTelegram(T_DISCONNECT_PDU, address, 0);
-    resetConnection();
 }
 
 void BcuLayer4::loop()
@@ -800,7 +801,7 @@ void BcuLayer4::loop()
     if (!enabled)
         return;
     // Send a disconnect after TL4_CONNECTION_TIMEOUT_MS milliseconds inactivity
-    if ((state != BcuLayer4::CLOSED) && (elapsed(connectedTime) > TL4_CONNECTION_TIMEOUT_MS))
+    if ((state != BcuLayer4::CLOSED) && (elapsed(connectedTime) >= TL4_CONNECTION_TIMEOUT_MS))
     {
         actionA06Disconnect();
         dump2(serial.println("direct connection timed out => disconnecting"));
