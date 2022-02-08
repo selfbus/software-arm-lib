@@ -12,7 +12,7 @@
 #include "sblib/internal/variables.h"
 #include <sblib/internal/iap.h>
 
-extern byte userEepromModified;
+extern volatile byte userEepromModified;
 extern int sndStartIdx;
 extern unsigned int wfiSystemTimeInc;
 

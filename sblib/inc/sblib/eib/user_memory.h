@@ -258,6 +258,9 @@ enum DeviceControl
 //  Inline functions
 //
 
+extern volatile byte userEepromModified;
+extern volatile unsigned int writeUserEepromTime;
+
 inline byte& UserRam::operator[](int idx) const
 {
     extern int userRamStart;
@@ -283,16 +286,12 @@ inline unsigned short UserEeprom::getUInt16(int idx) const
 
 inline void UserEeprom::modified()
 {
-    extern byte userEepromModified;
-    extern unsigned int writeUserEepromTime;
-
     userEepromModified = 1;
     writeUserEepromTime = 0;
 }
 
 inline bool UserEeprom::isModified() const
 {
-    extern byte userEepromModified;
     return userEepromModified;
 }
 

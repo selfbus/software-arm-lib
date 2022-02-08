@@ -25,7 +25,7 @@
 // The interrupt handler for the EIB bus access object
 BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, bus);
 
-extern unsigned int writeUserEepromTime;
+extern volatile unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
 
 BcuBase::BcuBase()

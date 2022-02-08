@@ -50,7 +50,7 @@
 #   define DB_COM_OBJ(x)
 #endif
 
-extern unsigned int writeUserEepromTime;
+extern volatile unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
 
 void BCU::_begin()
