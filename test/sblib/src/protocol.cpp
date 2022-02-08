@@ -141,10 +141,7 @@ static void _handleLoop (Test_Case * tc, Telegram * tel, unsigned int tn)
 {
     for (unsigned int i = 0; i < tel->variable; i++)
     {
-        if ((bus.state == Bus::INIT) || (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE))
-        {
-            bus.timerInterruptHandler(); // move the Isr "forward"
-        }
+        bus.timerInterruptHandler(); // move the Isr "forward"
         bcu.loop();
     }
 }
