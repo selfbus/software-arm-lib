@@ -21,11 +21,7 @@
 
 #define CATCH_CONFIG_MAIN
 #include <catch.hpp>
-
-#include <../../../test/sblib/inc/protocol.h> ///\todo this is not the correct way to import
-// #include <sblib-test/protocol.h>
-
-
+#include <protocol.h>
 
 #define private   public
 #define protected public

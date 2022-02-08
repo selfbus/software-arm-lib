@@ -3,6 +3,7 @@
 	<name>test-bcu_layer4</name>
 	<comment></comment>
 	<projects>
+		<project>Bus-Updater</project>
 		<project>Catch</project>
 		<project>sblib-test</project>
 	</projects>
@@ -28,17 +29,12 @@
 	</natures>
 	<linkedResources>
 		<link>
-			<name>inc-bus-updater</name>
+			<name>bus-updater-inc</name>
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/inc</locationURI>
 		</link>
 		<link>
-			<name>inc-sblib-test</name>
-			<type>2</type>
-			<locationURI>PARENT-2-PROJECT_LOC/test/sblib/inc</locationURI>
-		</link>
-		<link>
-			<name>src-bus-updater</name>
+			<name>bus-updater-src</name>
 			<type>2</type>
 			<locationURI>PARENT-1-PROJECT_LOC/src</locationURI>
 		</link>
