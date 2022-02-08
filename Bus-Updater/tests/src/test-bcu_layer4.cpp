@@ -583,7 +583,20 @@ static Test_Case testCaseTelegramSequence_42 =
     testCaseTelegrams_42
 };
 
-TEST_CASE("Transport layer 4 protocol", "[protocol][TL4]")
+static Test_Case testCaseTelegramSequence_CustomCheckRepeatedFlag =
+{
+    "Repeated T_CONNECT",
+    MANUFACTURER, DEVICE, VERSION,
+    0,
+    NULL,
+    tc_setup,
+    (StateFunction *) gatherProtocolState_machineState,
+    (TestCaseState *) &protoState[0],
+    (TestCaseState *) &protoState[1],
+    testCaseTelegrams_CustomCheckRepeatedFlag
+};
+
+TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
 {
     // See KNX Spec. 2.1 8/3/4 for all test details
     executeTest(& testCaseTelegramSequence_1);
@@ -626,4 +639,8 @@ TEST_CASE("Transport layer 4 protocol", "[protocol][TL4]")
     executeTest(& testCaseTelegramSequence_42);
 }
 
+TEST_CASE("Layer 2 protocol", "[protocol][L2]")
+{
+    executeTest(& testCaseTelegramSequence_CustomCheckRepeatedFlag);
+}
 

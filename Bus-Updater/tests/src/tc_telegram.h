@@ -510,5 +510,18 @@ static Telegram testCaseTelegrams_42[] =
     {END}
 };
 
+static Telegram testCaseTelegrams_CustomCheckRepeatedFlag[] =
+{
+    // Test is not in KNX Spec.
+    // send the same telegram twice, second time with repeated flag set
+    // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  7, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 2. T_CONNECT_PDU (0x80) with repeated flag set from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  7, 0xA001, connect, {0x90, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 3. Check for empty TX-Response
+    {CHECK_TX_BUFFER,  0, 0, NULL, {}},
+    {END}
+};
+
 #endif /* TC_TELEGRAM_H_ */
 /** @}*/
