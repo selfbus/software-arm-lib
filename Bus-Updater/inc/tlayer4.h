@@ -61,6 +61,13 @@ public:
     virtual void _begin();
 
     /**
+     * Test if a connection-oriented connection is open.
+     *
+     * @return True if a connection is open, otherwise false.
+     */
+    bool directConnection() const; ///\todo delete from BcuBase (no need for virtual)
+
+    /**
      * @brief pre-processes the received telegram from bus.telegram.
      *        Only telegrams matching @ref destAddr == @ref bus.ownAddress()
      *        are processed.
@@ -73,12 +80,7 @@ public:
      */
     virtual void loop();
 
-    /**
-     * Test if a direct data connection is open.
-     *
-     * @return True if a connection is open, false if not.
-     */
-    bool directConnection() const;
+    int connectedTo(); ///\todo delete from BCU
 
 protected:
     /**
@@ -97,6 +99,9 @@ protected:
     virtual void sendConControlTelegram(int cmd, unsigned int address, int senderSeqNo);
 
     virtual unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data);
+
+    const byte sequenceNumberReceived();
+    const byte sequenceNumberSend();
 
 private:
     bool setTL4State(TLayer4::TL4State newState);
@@ -183,9 +188,11 @@ private:
     void actionA10Disconnect(unsigned int address);
 
     TLayer4::TL4State state = TLayer4::CLOSED;
+    int connectedAddrNew;          //!< Remote address of the connected partner. //\todo refactor back to connectedAddr check possibility of using short
     byte seqNoSend = -1;
     byte seqNoRcv = -1;
     bool telegramReadyToSend = false;
+    unsigned int connectedTime;    //!< System time of the last connection oriented telegram
 
     bool checkValidRepeatedTelegram();  ///\todo remove after fix in Bus and on release
     void copyTelegram();
@@ -196,6 +203,29 @@ private:
 inline bool TLayer4::directConnection() const
 {
     return state != TLayer4::CLOSED;
+}
+
+
+inline int TLayer4::connectedTo()
+{
+    if (directConnection())
+    {
+        return connectedAddrNew;
+    }
+    else
+    {
+        return (-1);
+    }
+}
+
+inline const byte TLayer4::sequenceNumberReceived()
+{
+    return seqNoRcv;
+}
+
+inline const byte TLayer4::sequenceNumberSend()
+{
+    return seqNoSend;
 }
 
 #endif /* TLAYER4_H_ */

@@ -160,7 +160,7 @@ public:
      *
      * @return True if a connection is open, false if not.
      */
-    bool directConnection() const;
+    virtual bool directConnection() const;
 
     /**
      * Process the received telegram from bus.telegram.

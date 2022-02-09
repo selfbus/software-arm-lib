@@ -27,13 +27,9 @@ typedef struct
     unsigned char  state;
     bool           connected;
     unsigned short ownAddress;
-    int connectedAddr; ///\todo implement all below
-    int connectedSeqNo;
-    bool incConnectedSeqNo;
-    int lastAckSeqNo;
-
-    // from tlayer4.h
+    // from TLayer4
     TLayer4::TL4State machineState;
+    int connectedAddrNew;
     byte seqNoSend;
     byte seqNoRcv;
     bool telegramReadyToSend;
@@ -45,7 +41,7 @@ static ProtocolTestState protoState[2];
 
 static void connect(void * state, unsigned int param)
 {
-    VaS(state)->connectedAddr = param;
+    VaS(state)->connectedAddrNew = param;
     VaS(state)->machineState = TLayer4::OPEN_IDLE;
     VaS(state)->seqNoSend = 0;
     VaS(state)->seqNoRcv = 0;
@@ -54,19 +50,19 @@ static void connect(void * state, unsigned int param)
 
 static void connectWhileConnectedClosed(void * state, unsigned int param)
 {
-    VaS(state)->connectedAddr = param;
+    VaS(state)->connectedAddrNew = param;
     VaS(state)->machineState = TLayer4::CLOSED;
 }
 
 static void connectedOpenIdle(void * state, unsigned int param)
 {
-    VaS(state)->connectedAddr = param;
+    VaS(state)->connectedAddrNew = param;
     VaS(state)->machineState = TLayer4::OPEN_IDLE;
 }
 
 static void connectedOpenWait(void * state, unsigned int param)
 {
-    VaS(state)->connectedAddr = param;
+    VaS(state)->connectedAddrNew = param;
     VaS(state)->machineState = TLayer4::OPEN_WAIT;
 }
 
@@ -77,13 +73,13 @@ static void disconnectClosed(void * state, unsigned int param)
 
 static void disconnectWhileConnectedOpenIdle(void * state, unsigned int param)
 {
-    VaS(state)->connectedAddr = param;
+    VaS(state)->connectedAddrNew = param;
     VaS(state)->machineState = TLayer4::OPEN_IDLE;
 }
 
 static void disconnectWhileConnectedOpenWait(void * state, unsigned int param)
 {
-    VaS(state)->connectedAddr = param;
+    VaS(state)->connectedAddrNew = param;
     VaS(state)->machineState = TLayer4::OPEN_WAIT;
 }
 

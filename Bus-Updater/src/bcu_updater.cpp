@@ -113,8 +113,8 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
     // create the APCI_MASTER_RESET_RESPONSE_PDU
     sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendTelegram[3] = connectedAddr >> 8;
-    sendTelegram[4] = connectedAddr;
+    sendTelegram[3] = connectedTo() >> 8;
+    sendTelegram[4] = connectedTo();
     sendTelegram[5] = 0x64; // length of the telegram is 4 bytes
     sendTelegram[6] = 0x40 | (APCI_MASTER_RESET_RESPONSE_PDU >> 8); // set first byte of apci
     sendTelegram[7] = APCI_MASTER_RESET_RESPONSE_PDU & 0xff; // set second byte of apci
@@ -141,12 +141,12 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
 
         // Add the sequence number
         sendTelegram[6] &= ~0x3c;
-        sendTelegram[6] |= connectedSeqNo;
+        sendTelegram[6] |= sequenceNumberSend();
         // set no error
         sendTelegram[8] = T_RESTART_NO_ERROR;
 
         // send transport layer 4 ACK
-        sendConControlTelegram(T_ACK_PDU, connectedAddr, senderSeqNo);
+        sendConControlTelegram(T_ACK_PDU, connectedTo(), sequenceNumberReceived());
         while (!bus.idle())
             ;
         // send APCI_MASTER_RESET_RESPONSE_PDU
@@ -154,7 +154,7 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
         while (!bus.idle())
                     ;
         // send disconnect
-        sendConControlTelegram(T_DISCONNECT_PDU, connectedAddr, 0);
+        sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
         while (!bus.idle())
             ;
         NVIC_SystemReset();// Software Reset

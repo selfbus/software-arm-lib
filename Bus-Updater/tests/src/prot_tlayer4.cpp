@@ -66,13 +66,13 @@ static void tc_setup_OpenWait(void)
 static void tc_setup_OpenWait_A007(void)
 {
     tc_setup_OpenWait();
-    bcuTL4->connectedAddr = 0xA007;
+    bcuTL4->connectedAddrNew = 0xA007;
 }
 
 static void tc_setup_OpenWait_A001(void)
 {
     tc_setup_OpenWait();
-    bcuTL4->connectedAddr = 0xA001;
+    bcuTL4->connectedAddrNew = 0xA001;
 }
 
 static void gatherProtocolState_1(ProtocolTestState * state, ProtocolTestState * refState)
@@ -80,11 +80,7 @@ static void gatherProtocolState_1(ProtocolTestState * state, ProtocolTestState *
     state->connected  = bcuTL4->directConnection();
     state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
 
-    state->connectedAddr = bcuTL4->connectedAddr;
-    state->connectedSeqNo = bcuTL4->connectedSeqNo;
-    state->incConnectedSeqNo = bcuTL4->incConnectedSeqNo;
-    state->lastAckSeqNo = bcuTL4->lastAckSeqNo;
-
+    state->connectedAddrNew = bcuTL4->connectedAddrNew;
     state->machineState = bcuTL4->state;
     state->seqNoSend = bcuTL4->seqNoSend;
     state->seqNoRcv = bcuTL4->seqNoRcv;
@@ -93,12 +89,8 @@ static void gatherProtocolState_1(ProtocolTestState * state, ProtocolTestState *
     if(refState)
     {
         REQUIRE(state->ownAddress == refState->ownAddress);
-        REQUIRE(state->connectedAddr == refState->connectedAddr);
-        REQUIRE(state->connectedSeqNo == refState->connectedSeqNo);
-        REQUIRE(state->incConnectedSeqNo == refState->incConnectedSeqNo);
-        REQUIRE(state->lastAckSeqNo == refState->lastAckSeqNo);
-
         REQUIRE(state->machineState == refState->machineState);
+        REQUIRE(state->connectedAddrNew == refState->connectedAddrNew);
         REQUIRE(state->seqNoSend == refState->seqNoSend);
         REQUIRE(state->seqNoRcv == refState->seqNoRcv);
         REQUIRE(state->telegramReadyToSend == refState->telegramReadyToSend);
@@ -133,13 +125,13 @@ static void gatherProtocolState_4(ProtocolTestState * state, ProtocolTestState *
 {
     state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
     state->machineState = bcuTL4->state;
-    state->connectedAddr = bcuTL4->connectedAddr;
+    state->connectedAddrNew = bcuTL4->connectedAddrNew;
 
     if(refState)
     {
         REQUIRE(state->ownAddress == refState->ownAddress);
         REQUIRE(state->machineState == refState->machineState);
-        REQUIRE(state->connectedAddr == refState->connectedAddr);
+        REQUIRE(state->connectedAddrNew == refState->connectedAddrNew);
     }
 }
 
@@ -147,13 +139,13 @@ static void gatherProtocolState_stillConnected(ProtocolTestState * state, Protoc
 {
     state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
     state->machineState = bcuTL4->state;
-    state->connectedAddr = bcuTL4->connectedAddr;
+    state->connectedAddrNew = bcuTL4->connectedAddrNew;
 
     if(refState)
     {
         REQUIRE(state->ownAddress == refState->ownAddress);
         REQUIRE(state->machineState == refState->machineState);
-        REQUIRE(state->connectedAddr == refState->connectedAddr);
+        REQUIRE(state->connectedAddrNew == refState->connectedAddrNew);
     }
 }
 
