@@ -892,11 +892,10 @@ void Bus::sendNextTelegram()
  * State Machine - driven by interrupts of timer and capture input
  *
  * Interrupt prolog  (from event at cap pin or timer match) takes about 3-5us processing time (incl SM state select)
- *  Selecting the right state of SM ?us
+ * Selecting the right state of SM Bus
  *
  */
-//__attribute__((optimize("Os")))  void Bus::timerInterruptHandler() //XXX check if this works
-void Bus::timerInterruptHandler()
+__attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 {
 	D(static unsigned short tick = 0);
 	volatile bool timeout;
