@@ -23,20 +23,20 @@
 #ifndef BCU_UPDATER_H_
 #define BCU_UPDATER_H_
 
-#include "bcu_layer4.h"
 #include <sblib/internal/variables.h>
 #include <sblib/timeout.h>
 #include <sblib/io_pin_names.h>
+#include <tlayer4.h>
 #include "update.h"
 
 // Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
 // link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
 #define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
 
-class BcuUpdate: public BcuLayer4
+class BcuUpdate: public TLayer4
 {
 public:
-    using BcuLayer4::setProgrammingMode; // make it public so we can use it in bootloader.cpp
+    using TLayer4::setProgrammingMode; // make it public so we can use it in bootloader.cpp
 
 protected:
     /**

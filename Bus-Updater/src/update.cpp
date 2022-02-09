@@ -570,12 +570,13 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel, unsigned char 
  */
 static unsigned char updRequestStatistic(bool * sendTel)
 {
+    unsigned short dummy = 0;
     byte *startPos = bcu.sendTelegram + 10;
     byte sizeA = sizeof(telegramCount);
     byte sizeB = sizeof(disconnectCount);
-    byte sizeC = sizeof(hotfix_1_RepeatedControlTelegramCount);
-    byte sizeD = sizeof(hotfix_2_RepeatedDataTelegramCount);
-    byte sizeE = sizeof(repeatedTelegramTotalCount);
+    byte sizeC = sizeof(repeatedTelegramCount);
+    byte sizeD = sizeof(repeatedIgnoredTelegramCount);
+    byte sizeE = sizeof(dummy);
 
     unsigned int sizeTotal = sizeA + sizeB + sizeC + sizeD + sizeE;
 
@@ -584,17 +585,16 @@ static unsigned char updRequestStatistic(bool * sendTel)
     startPos += sizeA;
     uShort16ToStream(startPos, disconnectCount);
     startPos += sizeB;
-    uShort16ToStream(startPos, hotfix_1_RepeatedControlTelegramCount);
+    uShort16ToStream(startPos, repeatedTelegramCount);
     startPos += sizeC;
-    uShort16ToStream(startPos, hotfix_2_RepeatedDataTelegramCount);
+    uShort16ToStream(startPos, repeatedIgnoredTelegramCount);
     startPos += sizeD;
-    uShort16ToStream(startPos, repeatedTelegramTotalCount);
+    uShort16ToStream(startPos, dummy);
 
     d3(serial.print("#tel ", telegramCount));
     d3(serial.print(" #DC ", disconnectCount));
-    d3(serial.print(" #Contr ", hotfix_1_RepeatedControlTelegramCount));
-    d3(serial.println(" #Data ", hotfix_2_RepeatedDataTelegramCount));
-    d3(serial.println(" #Tot ", repeatedTelegramTotalCount));
+    d3(serial.print(" #rep. ", repeatedTelegramCount));
+    d3(serial.println(" #ignor ", repeatedIgnoredTelegramCount));
     return (T_ACK_PDU);
 }
 

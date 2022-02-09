@@ -1,6 +1,6 @@
 /**************************************************************************//**
- * @addtogroup SBLIB_MAIN_GROUP Main Group Description
- * @defgroup SBLIB_SUB_GROUP_1 Sub Group 1 Description
+ * @addtogroup SBLIB_MAIN_GROUP Main Selfbus KNX-Library
+ * @defgroup SBLIB_SUB_GROUP_1 Sub KNX Transport layer 4
  * @ingroup SBLIB_MAIN_GROUP
  * @brief   
  * @details 
@@ -8,7 +8,7 @@
  *
  * @{
  *
- * @file   bcu_layer4.cpp
+ * @file   tlayer4.cpp
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/
@@ -21,7 +21,7 @@
 
 #include <sblib/eib/apci.h>
 #include <sblib/timeout.h>
-#include "bcu_layer4.h"
+#include <tlayer4.h>
 #include "dump.h"
 
 dump2(
@@ -32,9 +32,8 @@ unsigned short telegramCount = 0;   //!< number of telegrams since system reset
 unsigned short disconnectCount = 0; //!< number of disconnects since system reset
 
 ///\todo remove after bugfix and on release
-unsigned short hotfix_1_RepeatedControlTelegramCount = 0;
-unsigned short hotfix_2_RepeatedDataTelegramCount = 0;
-unsigned short repeatedTelegramTotalCount = 0;
+unsigned short repeatedTelegramCount = 0;
+unsigned short repeatedIgnoredTelegramCount = 0;
 ///\todo end of remove after bugfix and on release
 
 byte getSequenceNumber(byte tpci)
@@ -78,20 +77,20 @@ void dumpTelegramBytes(bool tx, const unsigned char * telegram, const unsigned i
     );
 }
 
-void dumpState(BcuLayer4::TL4State dumpState)
+void dumpState(TLayer4::TL4State dumpState)
 {
     dump2(
         switch (dumpState)
         {
-            case BcuLayer4::CLOSED:
+            case TLayer4::CLOSED:
                 serial.print("CLSD");
                 break;
 
-            case BcuLayer4::OPEN_IDLE:
+            case TLayer4::OPEN_IDLE:
                 serial.print("IDLE");
                 break;
 
-            case BcuLayer4::OPEN_WAIT:
+            case TLayer4::OPEN_WAIT:
                 serial.print("WAIT");
                 break;
 
@@ -136,7 +135,7 @@ void dumpSequenceNumber(const unsigned int tpci)
     );
 }
 
-void dumpTelegramInfo(const unsigned int address, const unsigned int tpci, const bool isTX, const BcuLayer4::TL4State state)
+void dumpTelegramInfo(const unsigned int address, const unsigned int tpci, const bool isTX, const TLayer4::TL4State state)
 {
     dump2(
         dumpTicks();
@@ -213,24 +212,24 @@ void dumpLogHeader()
     );
 }
 
-BcuLayer4::BcuLayer4()
+TLayer4::TLayer4()
 {
 
 }
 
-void BcuLayer4::_begin()
+void TLayer4::_begin()
 {
-    state = BcuLayer4::CLOSED;
+    state = TLayer4::CLOSED;
     dumpLogHeader();
     telegramCount = 0;
     disconnectCount = 0;
 
-    ///\todo remove after bugfix and on release
-    hotfix_1_RepeatedControlTelegramCount = 0;
-    hotfix_2_RepeatedDataTelegramCount = 0;
+    lastTelegramLength = 0;
+    repeatedTelegramCount = 0;
+    repeatedIgnoredTelegramCount = 0;
 }
 
-void BcuLayer4::processTelegram()
+void TLayer4::processTelegram()
 {
     if ((bus.telegram[5] & T_GROUP_ADDRESS_FLAG_Msk))
     {
@@ -252,16 +251,13 @@ void BcuLayer4::processTelegram()
     unsigned int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
     telegramCount++;
 
-    if (is_repeated(bus.telegram[0]))
-    {
-        dump2(
-            repeatedTelegramTotalCount++;
-            serial.print("REPEATED");
-            serial.print(LOG_SEP);
-        );
-    }
-
     dumpTelegramInfo(senderAddr, bus.telegram[6], false, state);
+
+    if (!checkValidRepeatedTelegram())
+    {
+        bus.discardReceivedTelegram();
+        return;
+    }
 
     if (tpci & T_CONNECTION_CTRL_COMMAND_Msk)  // A connection control command
     {
@@ -275,7 +271,7 @@ void BcuLayer4::processTelegram()
     bus.discardReceivedTelegram();
 }
 
-void BcuLayer4::processConControlTelegram(const unsigned int senderAddr, const unsigned int tpci)
+void TLayer4::processConControlTelegram(const unsigned int senderAddr, const unsigned int tpci)
 {
     bool result = false;
     switch (tpci)
@@ -314,7 +310,7 @@ void BcuLayer4::processConControlTelegram(const unsigned int senderAddr, const u
     }
 }
 
-bool BcuLayer4::processConControlConnectPDU(int senderAddr)
+bool TLayer4::processConControlConnectPDU(int senderAddr)
 {
     // event E00 and E01 handling
     dump2(
@@ -324,17 +320,17 @@ bool BcuLayer4::processConControlConnectPDU(int senderAddr)
 
     switch (state)
     {
-        case BcuLayer4::CLOSED:
+        case TLayer4::CLOSED:
             actionA01Connect(senderAddr);
             return (true);
             break;
 
-        case BcuLayer4::OPEN_IDLE:
-        case BcuLayer4::OPEN_WAIT:
+        case TLayer4::OPEN_IDLE:
+        case TLayer4::OPEN_WAIT:
             if (connectedAddr == senderAddr)
             {
                 // event E00
-                setTL4State(BcuLayer4::CLOSED);
+                setTL4State(TLayer4::CLOSED);
                 actionA06Disconnect();
             }
             else
@@ -350,7 +346,7 @@ bool BcuLayer4::processConControlConnectPDU(int senderAddr)
     return (false);
 }
 
-bool BcuLayer4::processConControlDisconnectPDU(int senderAddr)
+bool TLayer4::processConControlDisconnectPDU(int senderAddr)
 {
     dump2(
           serial.print("T_DISCONNECT");
@@ -359,16 +355,16 @@ bool BcuLayer4::processConControlDisconnectPDU(int senderAddr)
     // event E02 and E03 handling
     switch (state)
     {
-        case BcuLayer4::CLOSED:
+        case TLayer4::CLOSED:
             actionA00Nothing();
             break;
 
-        case BcuLayer4::OPEN_IDLE:
-        case BcuLayer4::OPEN_WAIT:
+        case TLayer4::OPEN_IDLE:
+        case TLayer4::OPEN_WAIT:
             if (senderAddr == connectedAddr)
             {
                 // event E02
-                setTL4State(BcuLayer4::CLOSED);
+                setTL4State(TLayer4::CLOSED);
                 actionA05DisconnectUser();
             }
             else
@@ -385,7 +381,7 @@ bool BcuLayer4::processConControlDisconnectPDU(int senderAddr)
     return (true);
 }
 
-bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
+bool TLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
 {
     if (!(tpci & T_ACKNOWLEDGE_Msk))
     {
@@ -410,7 +406,7 @@ bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
         );
 
         // check CLOSED state for E08, E09
-        if (state == BcuLayer4::CLOSED)
+        if (state == TLayer4::CLOSED)
         {
             dump2(serial.print(" EVENT 8/9/10 CLOSED "););
             actionA10Disconnect(senderAddr);
@@ -433,22 +429,6 @@ bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
         if (curSeqNo != seqNoSend)
         {
             // event E09
-            ///\todo FIX hotfix repeated telegram's getting twice into the Application. Maybe a bug in Bus or BcuBase
-            bool isRepeated = is_repeated(bus.telegram[0]);
-            if ((curSeqNo == ((seqNoSend-1) & 0x0F)) && (isRepeated))
-            {
-                hotfix_1_RepeatedControlTelegramCount++;
-                dump2(
-                    serial.print("EVENT 9 HOTFIX");
-                    serial.print(" curSeqNo ", curSeqNo);
-                    serial.print(" != ", seqNoSend);
-                    serial.print(" seqNoSend");
-                    dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
-                );
-                return (true);
-            }
-            ///\todo end of hotfix
-
             dump2(
                 serial.print("EVENT 9 curSeqNo ", curSeqNo);
                 serial.print(" != ", seqNoSend);
@@ -457,27 +437,27 @@ bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
                 dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             );
             actionA06Disconnect();
-            setTL4State(BcuLayer4::CLOSED);
+            setTL4State(TLayer4::CLOSED);
             return (false);
         }
 
         // check correct state for event E08
-        if (state == BcuLayer4::OPEN_WAIT)
+        if (state == TLayer4::OPEN_WAIT)
         {
             dump2(
                   serial.print("OK");
                   serial.print(LOG_SEP);
             );
             actionA08IncrementSequenceNumber();
-            setTL4State(BcuLayer4::OPEN_IDLE);
+            setTL4State(TLayer4::OPEN_IDLE);
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             return (true);
         }
         else
         {
-            dump2(serial.print(" EVENT 8 state != BcuLayer4::OPEN_WAIT"););
+            dump2(serial.print(" EVENT 8 state != OPEN_WAIT"););
             actionA06Disconnect();
-            setTL4State(BcuLayer4::CLOSED);
+            setTL4State(TLayer4::CLOSED);
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             return (false);
         }
@@ -491,7 +471,7 @@ bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
         );
 
         // event E11b
-        if (state == BcuLayer4::CLOSED)
+        if (state == TLayer4::CLOSED)
         {
             dump2(serial.print(" EVENT 11b/14 "););
             actionA10Disconnect(senderAddr);
@@ -509,14 +489,14 @@ bool BcuLayer4::processConControlAcknowledgmentPDU(int senderAddr, int tpci)
         {
             dump2(serial.print(" EVENT 11b_2 "););
             actionA06Disconnect();
-            setTL4State(BcuLayer4::CLOSED);
+            setTL4State(TLayer4::CLOSED);
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
             return (false);
         }
     }
 }
 
-void BcuLayer4::sendConControlTelegram(int cmd, unsigned int address, int senderSeqNo)
+void TLayer4::sendConControlTelegram(int cmd, unsigned int address, int senderSeqNo)
 {
     if (cmd & 0x40)  // Add the sequence number if the command shall contain it
     {
@@ -548,7 +528,7 @@ void BcuLayer4::sendConControlTelegram(int cmd, unsigned int address, int sender
     bus.sendTelegram(sendCtrlTelegram, 7);
 }
 
-void BcuLayer4::processDirectTelegram(int apci)
+void TLayer4::processDirectTelegram(int apci)
 {
     dump2(
           serial.print("DirectTele");
@@ -559,7 +539,7 @@ void BcuLayer4::processDirectTelegram(int apci)
     const byte seqNo = getSequenceNumber(bus.telegram[6]);
 
     // check for event E07 or CLOSED state of events E04, E05, E06
-    if ((connectedAddr != senderAddr) || (state == BcuLayer4::CLOSED))
+    if ((connectedAddr != senderAddr) || (state == TLayer4::CLOSED))
     {
         // event E07 or state CLOSED -> always action A10
         dump2(
@@ -598,7 +578,7 @@ void BcuLayer4::processDirectTelegram(int apci)
         telegramReadyToSend = actionA02sendAckPduAndProcessApci(apci, seqNo, &bus.telegram[7]);
         /*
         // this either does not work, it's even worse
-        if (state == BcuLayer4::OPEN_IDLE)
+        if (state == TLayer4::OPEN_IDLE)
         {
             telegramReadyToSend = actionA02sendAckPduAndProcessApci(apci, seqNo, &bus.telegram[7]);
         }
@@ -607,7 +587,7 @@ void BcuLayer4::processDirectTelegram(int apci)
             // according to KNX Spec 2.1, we should execute action A02
             // but that can lead to a infinite loop, instead we execute A06 to disconnect the connection
             dump2(serial.print("EVENT 4 DirectTelegram while waiting for T_ACK ");); ///\todo CHECK THIS
-            setTL4State(BcuLayer4::CLOSED);
+            setTL4State(TLayer4::CLOSED);
             actionA06Disconnect();
             dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
         }
@@ -618,24 +598,6 @@ void BcuLayer4::processDirectTelegram(int apci)
     if (seqNo == ((seqNoRcv-1) & 0x0F))
     {
         // event E05
-
-        ///\todo FIX hotfix 2 repeated telegram's getting twice into the Application. Maybe a bug in Bus or BcuBase
-        bool isRepeated = is_repeated(bus.telegram[0]);
-        if ((isRepeated) && ((state == BcuLayer4::OPEN_IDLE) || (state == BcuLayer4::OPEN_WAIT))) // happens in IDLE and also WAIT state
-        {
-            hotfix_2_RepeatedDataTelegramCount++;
-            dump2(
-                serial.println("EVENT 5 HOTFIX 2 ");
-                serial.print(" seqNo ", seqNo);
-                serial.print(" != ", (seqNoRcv-1) & 0x0F);
-                serial.print(" seqNoRcv-1");
-                serial.print(LOG_SEP);
-                dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
-            );
-            return;
-        }
-        ///\todo end of hotfix 2
-
         dump2(
             serial.print("EVENT 5 seqNo ", seqNo);
             serial.print(" != ", (seqNoRcv-1) & 0x0F);
@@ -652,11 +614,11 @@ void BcuLayer4::processDirectTelegram(int apci)
           serial.print("EVENT 6 out of sequence ");
     );
     actionA06Disconnect();
-    setTL4State(BcuLayer4::CLOSED);
+    setTL4State(TLayer4::CLOSED);
     dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
 }
 
-unsigned char BcuLayer4::processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data)
+unsigned char TLayer4::processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data)
 {
     dump2(
           serial.print("processApci");
@@ -666,12 +628,12 @@ unsigned char BcuLayer4::processApci(int apci, const int senderAddr, const int s
     return (0); // we return nothing
 }
 
-void BcuLayer4::actionA00Nothing()
+void TLayer4::actionA00Nothing()
 {
     dump2(serial.println("A00Nothing "));
 }
 
-void BcuLayer4::actionA01Connect(unsigned int address)
+void TLayer4::actionA01Connect(unsigned int address)
 {
     dump2(serial.print("A01Connect with ");
           dumpKNXAddress(address);
@@ -683,16 +645,16 @@ void BcuLayer4::actionA01Connect(unsigned int address)
     seqNoSend = 0;
     seqNoRcv = 0;
     connectedTime = systemTime; // "start connection timeout timer"
-    setTL4State(BcuLayer4::OPEN_IDLE);
+    setTL4State(TLayer4::OPEN_IDLE);
     dump2(lastTick = connectedTime;); // for debug logging
 }
 
-bool BcuLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsigned char * data)
+bool TLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsigned char * data)
 {
     dump2(serial.print("actionA02 "));
     bool sendTel = false;
     processApci(apci, connectedAddr, seqNo, &sendTel, data);
-    // dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
+    dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen);
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     seqNoRcv++;
     seqNoRcv &= 0x0F;
@@ -704,14 +666,14 @@ bool BcuLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, uns
     return sendTel;
 }
 
-void BcuLayer4::actionA03sendAckPduAgain(const int seqNo)
+void TLayer4::actionA03sendAckPduAgain(const int seqNo)
 {
     dump2(serial.println("ERROR A03sendAckPduAgain "));
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     connectedTime = systemTime; // "restart the connection timeout timer"
 }
 
-void BcuLayer4::actionA05DisconnectUser()
+void TLayer4::actionA05DisconnectUser()
 {
     disconnectCount++;
     dump2(
@@ -720,10 +682,10 @@ void BcuLayer4::actionA05DisconnectUser()
     resetConnection();
 }
 
-void BcuLayer4::actionA06Disconnect()
+void TLayer4::actionA06Disconnect()
 {
     disconnectCount++;
-    setTL4State(BcuLayer4::CLOSED);
+    setTL4State(TLayer4::CLOSED);
     dump2(
         serial.println("A06Disconnect");
     );
@@ -731,7 +693,7 @@ void BcuLayer4::actionA06Disconnect()
     resetConnection();
 }
 
-void BcuLayer4::actionA07SendDirectTelegram()
+void TLayer4::actionA07SendDirectTelegram()
 {
     if (state == CLOSED)
     {
@@ -769,7 +731,7 @@ void BcuLayer4::actionA07SendDirectTelegram()
     sendTelegram[3] = static_cast<byte>(connectedAddr >> 8);
     sendTelegram[4] = static_cast<byte>(connectedAddr);
 
-    setTL4State(BcuLayer4::OPEN_WAIT);
+    setTL4State(TLayer4::OPEN_WAIT);
 
     dump2(
         dumpTelegramBytes(true, &sendTelegram[0], telegramSize(sendTelegram), true);
@@ -779,7 +741,7 @@ void BcuLayer4::actionA07SendDirectTelegram()
     connectedTime = systemTime;
 }
 
-void BcuLayer4::actionA08IncrementSequenceNumber()
+void TLayer4::actionA08IncrementSequenceNumber()
 {
     dump2(serial.print("A08IncrementSequenceNumber "));
     seqNoSend++;
@@ -787,7 +749,7 @@ void BcuLayer4::actionA08IncrementSequenceNumber()
     connectedTime = systemTime; // "restart the connection timeout timer"
 }
 
-void BcuLayer4::actionA10Disconnect(unsigned int address)
+void TLayer4::actionA10Disconnect(unsigned int address)
 {
     disconnectCount++;
     dump2(
@@ -796,18 +758,18 @@ void BcuLayer4::actionA10Disconnect(unsigned int address)
     sendConControlTelegram(T_DISCONNECT_PDU, address, 0);
 }
 
-void BcuLayer4::loop()
+void TLayer4::loop()
 {
     if (!enabled)
         return;
     // Send a disconnect after TL4_CONNECTION_TIMEOUT_MS milliseconds inactivity
-    if ((state != BcuLayer4::CLOSED) && (elapsed(connectedTime) >= TL4_CONNECTION_TIMEOUT_MS))
+    if ((state != TLayer4::CLOSED) && (elapsed(connectedTime) >= TL4_CONNECTION_TIMEOUT_MS))
     {
         actionA06Disconnect();
         dump2(serial.println("direct connection timed out => disconnecting"));
     }
 
-    // if ((state == BcuLayer4::OPEN_IDLE) && (telegramReadyToSend) && (bus.idle()))
+    // if ((state == TLayer4::OPEN_IDLE) && (telegramReadyToSend) && (bus.idle()))
     if (telegramReadyToSend && bus.idle())
     {
         // event E15
@@ -817,12 +779,12 @@ void BcuLayer4::loop()
     BcuBase::loop();
 }
 
-void BcuLayer4::resetConnection()
+void TLayer4::resetConnection()
 {
-    dump2(serial.println("BcuLayer4::resetConnection"));
+    dump2(serial.println("TLayer4::resetConnection"));
 }
 
-bool BcuLayer4::setTL4State(BcuLayer4::TL4State newState)
+bool TLayer4::setTL4State(TLayer4::TL4State newState)
 {
     dump2(
         dumpState(state);
@@ -837,6 +799,63 @@ bool BcuLayer4::setTL4State(BcuLayer4::TL4State newState)
     }
     state = newState;
     return (true);
+}
+
+void TLayer4::copyTelegram()
+{
+    for (unsigned short i = 0; i < bus.telegramLen; i++)
+    {
+        lastTelegram[i] = bus.telegram[i];
+    }
+    lastTelegramLength = bus.telegramLen;
+}
+
+bool TLayer4::checkValidRepeatedTelegram()
+{
+    if (!is_repeated(bus.telegram[0]))
+    {
+        // telegram is not repeated, buffer it for later checks
+        copyTelegram();
+        return true;
+    }
+
+    dump2(
+        repeatedTelegramCount++;
+        serial.println("REPEATED");
+    );
+
+    if ((lastTelegramLength < 1) || (lastTelegramLength != bus.telegramLen))
+    {
+        copyTelegram();
+        return true;
+    }
+
+    // ignore repeated flag (5.bit) of control byte
+    if (bus.telegram[0] != (lastTelegram[0] & 0xDF))
+    {
+        copyTelegram();
+        return true;
+    }
+
+    // check remaining bytes, exclude control byte (1.byte) and checksum (last byte)
+    for (int i = 1; i < bus.telegramLen - 1; i++)
+    {
+        if (lastTelegram[i] != bus.telegram[i])
+        {
+            // telegrams don't match, everything ok
+            copyTelegram();
+            return true;
+        }
+    }
+
+    // we received a already processed telegram, ignore it
+    dump2(
+        repeatedIgnoredTelegramCount++;
+        serial.print("IGNORED");
+        serial.print(LOG_SEP);
+        dumpTelegramBytes(false, &bus.telegram[0], bus.telegramLen, true);
+    );
+    return false;
 }
 
 /** @}*/

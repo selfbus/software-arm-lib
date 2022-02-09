@@ -105,7 +105,7 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
 
 void BcuUpdate::resetConnection()
 {
-    BcuLayer4::resetConnection();
+    TLayer4::resetConnection();
 }
 
 bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber)

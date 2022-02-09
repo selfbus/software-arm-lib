@@ -3,32 +3,32 @@ package org.selfbus.updater.bootloader;
 public class BootloaderStatistic {
     private final int telegramCount;
     private final int disConnectCount;
-    private final int hotfix_1_RepeatedControlTelegramCount;
-    private final int hotfix_2_RepeatedDataTelegramCount;
-    private final int repeatedTelegramTotalCount;
+    private final int repeatedTelegramCount;
+    private final int repeatedIgnoredTelegramCount;
+    private final int dummy;
 
 
-    public BootloaderStatistic(int telegramCount, int disConnectCount, int hotfix_1_RepeatedControlTelegramCount, int hotfix_2_RepeatedDataTelegramCount, int repeatedTelegramTotalCount) {
+    public BootloaderStatistic(int telegramCount, int disConnectCount, int repeatedTelegramCount, int repeatedIgnoredTelegramCount, int dummy) {
         this.telegramCount = telegramCount;
         this.disConnectCount = disConnectCount;
-        this.hotfix_1_RepeatedControlTelegramCount = hotfix_1_RepeatedControlTelegramCount;
-        this.hotfix_2_RepeatedDataTelegramCount = hotfix_2_RepeatedDataTelegramCount;
-        this.repeatedTelegramTotalCount = repeatedTelegramTotalCount;
+        this.repeatedTelegramCount = repeatedTelegramCount;
+        this.repeatedIgnoredTelegramCount = repeatedIgnoredTelegramCount;
+        this.dummy = dummy;
     }
 
     public static BootloaderStatistic fromArray(byte[] parse) {
         int telegramCount = (parse[0] & 0xFF) + ((parse[1] & 0xFF) << 8);
         int disConnectCount = (parse[2] & 0xFF) + ((parse[3] & 0xFF) << 8);
-        int hotfix_1 = (parse[4] & 0xFF) + ((parse[5] & 0xFF) << 8);
-        int hotfix_2 = (parse[6] & 0xFF) + ((parse[7] & 0xFF) << 8);;
-        int repeatedTelegramTotalCount = (parse[8] & 0xFF) + ((parse[9] & 0xFF) << 8);;
-        return new BootloaderStatistic(telegramCount, disConnectCount, hotfix_1, hotfix_2, repeatedTelegramTotalCount);
+        int repeatedTelegramCount = (parse[4] & 0xFF) + ((parse[5] & 0xFF) << 8);
+        int repeatedIgnoredTelegramCount = (parse[6] & 0xFF) + ((parse[7] & 0xFF) << 8);;
+        int dummy = (parse[8] & 0xFF) + ((parse[9] & 0xFF) << 8);;
+        return new BootloaderStatistic(telegramCount, disConnectCount, repeatedTelegramCount, repeatedIgnoredTelegramCount, dummy);
     }
 
     public String toString() {
-        long repeatedMissed = repeatedTelegramTotalCount() - hotfix_1_RepeatedControlTelegramCount() - hotfix_2_RepeatedDataTelegramCount();
-        return String.format("#Telegram: %d #Disconnect: %d Hotfix #RepeatedControlTelegram: %d #RepeatedDataTelegram: %d #RepeatedTotal: %d #Diff: %d",
-                telegramCount(), disConnectCount(), hotfix_1_RepeatedControlTelegramCount(), hotfix_2_RepeatedDataTelegramCount(), repeatedTelegramTotalCount(), repeatedMissed);
+        long diff = repeatedTelegramCount() - repeatedIgnoredTelegramCount();
+        return String.format("#Telegram: %d #Disconnect: %d #Repeated: %d #Ignored: %d #Diff: %d",
+                telegramCount(), disConnectCount(), repeatedTelegramCount(), repeatedIgnoredTelegramCount(), diff);
     }
 
     public long telegramCount()
@@ -41,18 +41,18 @@ public class BootloaderStatistic {
         return disConnectCount;
     }
 
-    public long hotfix_1_RepeatedControlTelegramCount()
+    public long repeatedTelegramCount()
     {
-        return hotfix_1_RepeatedControlTelegramCount;
+        return repeatedTelegramCount;
     }
 
-    public long hotfix_2_RepeatedDataTelegramCount()
+    public long repeatedIgnoredTelegramCount()
     {
-        return hotfix_2_RepeatedDataTelegramCount;
+        return repeatedIgnoredTelegramCount;
     }
 
-    public long repeatedTelegramTotalCount()
+    public long dummy()
     {
-        return repeatedTelegramTotalCount;
+        return dummy;
     }
 }

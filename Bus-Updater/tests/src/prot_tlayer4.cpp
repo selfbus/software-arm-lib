@@ -8,7 +8,7 @@
  *
  * @{
  *
- * @file   test-bcu_layer4.cpp
+ * @file   prot_tlayer4.cpp
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/
@@ -25,7 +25,7 @@
 
 #define private   public
 #define protected public
-#   include <bcu_layer4.h>
+#   include <tlayer4.h>
 #undef private
 #undef protected
 
@@ -40,25 +40,25 @@
 
 #define OWN_KNX_ADDRESS (0xA000) // own address 10.0.0
 
-BcuLayer4* bcuTL4 = (BcuLayer4*) &bcu;
+TLayer4* bcuTL4 = (TLayer4*) &bcu;
 
 static void tc_setup(void)
 {
-    bcuTL4->state = BcuLayer4::CLOSED; // to "reset" connection for next test
-    bcu.setOwnAddress(OWN_KNX_ADDRESS);
+    bcuTL4->state = TLayer4::CLOSED; // to "reset" connection for next test
+    bcuTL4->setOwnAddress(OWN_KNX_ADDRESS);
 }
 
 static void tc_setup_1001(void)
 {
-    bcuTL4->state = BcuLayer4::CLOSED; // to "reset" connection for next test
-    bcu.setOwnAddress(0x1001);
+    bcuTL4->state = TLayer4::CLOSED; // to "reset" connection for next test
+    bcuTL4->setOwnAddress(0x1001);
 }
 
 static void tc_setup_OpenWait(void)
 {
     tc_setup();
     bcuTL4->connectedTime = millis(); // "start connection timeout timer"
-    bcuTL4->state = BcuLayer4::OPEN_WAIT;
+    bcuTL4->state = TLayer4::OPEN_WAIT;
     bcuTL4->seqNoRcv = 0;
     bcuTL4->seqNoSend = 0;
 }
@@ -77,13 +77,13 @@ static void tc_setup_OpenWait_A001(void)
 
 static void gatherProtocolState_1(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->connected  = bcu.directConnection();
+    state->connected  = bcuTL4->directConnection();
     state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
 
-    state->connectedAddr = bcu.connectedAddr;
-    state->connectedSeqNo = bcu.connectedSeqNo;
-    state->incConnectedSeqNo = bcu.incConnectedSeqNo;
-    state->lastAckSeqNo = bcu.lastAckSeqNo;
+    state->connectedAddr = bcuTL4->connectedAddr;
+    state->connectedSeqNo = bcuTL4->connectedSeqNo;
+    state->incConnectedSeqNo = bcuTL4->incConnectedSeqNo;
+    state->lastAckSeqNo = bcuTL4->lastAckSeqNo;
 
     state->machineState = bcuTL4->state;
     state->seqNoSend = bcuTL4->seqNoSend;
@@ -133,7 +133,7 @@ static void gatherProtocolState_4(ProtocolTestState * state, ProtocolTestState *
 {
     state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
     state->machineState = bcuTL4->state;
-    state->connectedAddr = bcu.connectedAddr;
+    state->connectedAddr = bcuTL4->connectedAddr;
 
     if(refState)
     {
@@ -147,7 +147,7 @@ static void gatherProtocolState_stillConnected(ProtocolTestState * state, Protoc
 {
     state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
     state->machineState = bcuTL4->state;
-    state->connectedAddr = bcu.connectedAddr;
+    state->connectedAddr = bcuTL4->connectedAddr;
 
     if(refState)
     {

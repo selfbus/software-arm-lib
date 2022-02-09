@@ -1,6 +1,6 @@
 /**************************************************************************//**
- * @addtogroup SBLIB_MAIN_GROUP Main Group Description
- * @defgroup SBLIB_SUB_GROUP_1 Sub Group 1 Description
+ * @addtogroup SBLIB_MAIN_GROUP Main Selfbus KNX-Library
+ * @defgroup SBLIB_SUB_GROUP_1 Sub KNX Transport layer 4
  * @ingroup SBLIB_MAIN_GROUP
  * @brief   
  * @details 
@@ -8,7 +8,7 @@
  *
  * @{
  *
- * @file   bcu_layer4.h
+ * @file   tlayer4.h
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/
@@ -19,12 +19,13 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#ifndef BCU_LAYER4_H_
-#define BCU_LAYER4_H_
+#ifndef TLAYER4_H_
+#define TLAYER4_H_
 
 #include <sblib/eib/bcu_base.h>
 
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
+#define TL4_ACK_TIMEOUT_MS        (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds ///\todo not used in Style 1
 
 #ifdef DEBUG
 #   define LONG_PAUSE_THRESHOLD_MS (500)
@@ -34,9 +35,8 @@ extern unsigned short telegramCount;   //!< number of telegrams since system res
 extern unsigned short disconnectCount; //!< number of disconnects since system reset
 
 ///\todo remove after bugfix and on release
-extern unsigned short hotfix_1_RepeatedControlTelegramCount;
-extern unsigned short hotfix_2_RepeatedDataTelegramCount;
-extern unsigned short repeatedTelegramTotalCount;
+extern unsigned short repeatedTelegramCount;
+extern unsigned short repeatedIgnoredTelegramCount;
 ///\todo end of remove after bugfix and on release
 
 
@@ -44,7 +44,7 @@ extern unsigned short repeatedTelegramTotalCount;
  * @brief Implementation of the KNX transportation layer 4 Style 1 Rationalised
  *
  */
-class BcuLayer4: public BcuBase
+class TLayer4: public BcuBase
 {
 public:
     /** The states of the transport layer 4 state machine Style 1 rationalised */
@@ -55,8 +55,8 @@ public:
         OPEN_WAIT
     };
 
-    BcuLayer4();
-    virtual ~BcuLayer4() = default;
+    TLayer4();
+    virtual ~TLayer4() = default;
 
     virtual void _begin();
 
@@ -99,7 +99,7 @@ protected:
     virtual unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data);
 
 private:
-    bool setTL4State(BcuLayer4::TL4State newState);
+    bool setTL4State(TLayer4::TL4State newState);
 
     /**
      * Process a unicast connection control telegram with our physical address as
@@ -149,14 +149,6 @@ private:
      */
     void processDirectTelegram(int apci);
 
-    /**
-     * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
-     * @param senderSeqNo Senders sequence number
-     *
-     * @return true if sequence number was added, otherwise false
-     */
-    bool sendDirectTelegram(int senderSequenceNumber);
-
     void actionA00Nothing();
     void actionA01Connect(unsigned int address);
     bool actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsigned char * data);
@@ -172,27 +164,39 @@ private:
      *        Send a @ref T_DISCONNECT_PDU to @ref connectedAddr with system priority and Sequence# = 0
      */
     void actionA06Disconnect();
+
+    /**
+     * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
+     * @param senderSeqNo Senders sequence number
+     *
+     * @return true if sequence number was added, otherwise false
+     */
     void actionA07SendDirectTelegram();
     void actionA08IncrementSequenceNumber();
 
     /**
      * @brief Performs action A10 as described in the KNX Spec.
-     *        Send a @ref T_DISCONNECT_PDU with system priority and Sequence# = 0
+     *        Send a @ref T_DISCONNECT_PDU to @ref address with system priority and Sequence# = 0
      *
      * @param address KNX address to send the @ref T_DISCONNECT_PDU
      */
     void actionA10Disconnect(unsigned int address);
 
-    BcuLayer4::TL4State state = BcuLayer4::CLOSED;
+    TLayer4::TL4State state = TLayer4::CLOSED;
     byte seqNoSend = -1;
     byte seqNoRcv = -1;
     bool telegramReadyToSend = false;
+
+    bool checkValidRepeatedTelegram();  ///\todo remove after fix in Bus and on release
+    void copyTelegram();
+    byte lastTelegram[Bus::TELEGRAM_SIZE];
+    int lastTelegramLength = 0;
 };
 
-inline bool BcuLayer4::directConnection() const
+inline bool TLayer4::directConnection() const
 {
-    return state != BcuLayer4::CLOSED;
+    return state != TLayer4::CLOSED;
 }
 
-#endif /* BCU_LAYER4_H_ */
+#endif /* TLAYER4_H_ */
 /** @}*/

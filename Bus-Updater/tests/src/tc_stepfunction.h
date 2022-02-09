@@ -32,8 +32,8 @@ typedef struct
     bool incConnectedSeqNo;
     int lastAckSeqNo;
 
-    // from bcu_layer4.h
-    BcuLayer4::TL4State machineState;
+    // from tlayer4.h
+    TLayer4::TL4State machineState;
     byte seqNoSend;
     byte seqNoRcv;
     bool telegramReadyToSend;
@@ -46,7 +46,7 @@ static ProtocolTestState protoState[2];
 static void connect(void * state, unsigned int param)
 {
     VaS(state)->connectedAddr = param;
-    VaS(state)->machineState = BcuLayer4::OPEN_IDLE;
+    VaS(state)->machineState = TLayer4::OPEN_IDLE;
     VaS(state)->seqNoSend = 0;
     VaS(state)->seqNoRcv = 0;
     VaS(state)->telegramReadyToSend = false;
@@ -55,36 +55,36 @@ static void connect(void * state, unsigned int param)
 static void connectWhileConnectedClosed(void * state, unsigned int param)
 {
     VaS(state)->connectedAddr = param;
-    VaS(state)->machineState = BcuLayer4::CLOSED;
+    VaS(state)->machineState = TLayer4::CLOSED;
 }
 
 static void connectedOpenIdle(void * state, unsigned int param)
 {
     VaS(state)->connectedAddr = param;
-    VaS(state)->machineState = BcuLayer4::OPEN_IDLE;
+    VaS(state)->machineState = TLayer4::OPEN_IDLE;
 }
 
 static void connectedOpenWait(void * state, unsigned int param)
 {
     VaS(state)->connectedAddr = param;
-    VaS(state)->machineState = BcuLayer4::OPEN_WAIT;
+    VaS(state)->machineState = TLayer4::OPEN_WAIT;
 }
 
 static void disconnectClosed(void * state, unsigned int param)
 {
-    VaS(state)->machineState = BcuLayer4::CLOSED;
+    VaS(state)->machineState = TLayer4::CLOSED;
 }
 
 static void disconnectWhileConnectedOpenIdle(void * state, unsigned int param)
 {
     VaS(state)->connectedAddr = param;
-    VaS(state)->machineState = BcuLayer4::OPEN_IDLE;
+    VaS(state)->machineState = TLayer4::OPEN_IDLE;
 }
 
 static void disconnectWhileConnectedOpenWait(void * state, unsigned int param)
 {
     VaS(state)->connectedAddr = param;
-    VaS(state)->machineState = BcuLayer4::OPEN_WAIT;
+    VaS(state)->machineState = TLayer4::OPEN_WAIT;
 }
 
 
