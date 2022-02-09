@@ -38,7 +38,7 @@
  * and serial support need to be started with a high baud rate (recommended 1.5Mb) in the app module. Usage of timer32_0 for time
  * measurement on bit/byte level
  *
- * Compile time switches: see config.h
+ * Compile time switches: see libconfig.h
  *
  * Interface to upper layers (see bus.h for details)
  *

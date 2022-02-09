@@ -172,7 +172,7 @@ public:
      * Get the mask version.
      * Usually 0x0012 for BCU1, 0x0020 for BCU2.
      */
-    int maskVersion() const;
+    unsigned short maskVersion();
 
     /**
      * The BCU's main processing loop. This is like the application's loop() function,
@@ -326,7 +326,7 @@ inline bool BcuBase::applicationRunning() const
 #endif
 }
 
-inline int BcuBase::maskVersion() const
+inline unsigned short BcuBase::maskVersion()
 {
     return MASK_VERSION;
 }

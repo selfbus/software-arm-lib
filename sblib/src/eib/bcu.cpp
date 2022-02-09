@@ -217,17 +217,15 @@ bool BCU::processDeviceDescriptorReadTelegram(int id)
 {
     if (id == 0)
     {
-        int version = maskVersion();
-
-        sendTelegram[5] = 0x63;
+        unsigned short version = maskVersion();
+        sendTelegram[5] = (bus.telegram[5] & 0xf0) | 0x03; // routing count in high nibble, length in low nibble already set from caller
         sendTelegram[6] = 0x43;
         sendTelegram[7] = 0x40;
         sendTelegram[8] = version >> 8;
         sendTelegram[9] = version;
-        return true;
+        return (true);
     }
-
-    return false; // unknown device descriptor
+    return (false); // unknown device descriptor
 }
 
 static void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
