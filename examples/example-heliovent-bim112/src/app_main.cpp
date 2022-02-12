@@ -36,7 +36,8 @@
 #elif defined(MDT_TSS)
 #   include "mdttss.h"
 #else
-#   include "mdtled.h"
+// #   include "mdtled.h"
+#   include "mdtpushbutton.h"
 #endif
 
 #if defined(HELIOS)
@@ -46,7 +47,8 @@
 #elif defined(MDT_TSS)
     APP_VERSION("BE06001 ", "0", "02");
 #else
-    APP_VERSION("AKD0424R", "0", "02");
+    // APP_VERSION("AKD0424R", "0", "02");
+    APP_VERSION("BEGT2Tx", "0", "01");
 #endif
 
 MemMapper memMapper(0xe900, 0x500);

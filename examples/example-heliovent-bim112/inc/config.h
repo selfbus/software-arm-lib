@@ -24,8 +24,8 @@
 
 // #define HELIOS
 // #define VALLOX
-#define MDT_TSS
-// #define MDT_LED
+// #define MDT_TSS
+#define MDT_LED
 
 #endif /* CONFIG_H_ */
 /** @}*/
