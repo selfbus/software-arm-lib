@@ -163,7 +163,7 @@ bool DHT::readData(bool bForceRead)
 float DHT::ConvertTemperature(eScale Scale)
 {
   if (Scale == FARENHEIT) return (this->_lastTemperature * 9 / 5 + 32);
-  else if (Scale == KELVIN) return (this->_lastTemperature + 273.15);
+  else if (Scale == KELVIN) return (this->_lastTemperature + 273.15f);
   else return this->_lastTemperature;
 }
 
@@ -202,8 +202,8 @@ uint32_t DHT::expectPulse(bool level) {
 *****************************************************************************/
 float DHT::CalcdewPointFast(float celsius, float humidity)
 {
-  float temp = (17.271 * celsius) / (237.7 + celsius) + log(humidity/100);
-  return ( (237.7 * temp) / (17.271 - temp) );
+  float temp = (17.271f * celsius) / (237.7f + celsius) + log(humidity/100.0f);
+  return ( (237.7f * temp) / (17.271f - temp) );
 }
 
 /*****************************************************************************
