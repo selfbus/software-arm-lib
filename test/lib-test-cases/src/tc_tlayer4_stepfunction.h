@@ -27,7 +27,6 @@ typedef struct
     unsigned char  state;
     bool           connected;
     unsigned short ownAddress;
-    // from TLayer4
     TLayer4::TL4State machineState;
     int connectedAddrNew;
     byte seqNoSend;

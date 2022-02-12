@@ -22,9 +22,9 @@
 #ifndef TC_TELEGRAM_H_
 #define TC_TELEGRAM_H_
 
-#include "tc_stepfunction.h"
+#include "tc_tlayer4_stepfunction.h"
 
-static Telegram testCaseTelegrams_1[] =
+static Telegram testCaseTelegrams_01[] =
 {
     // KNX Spec. 8/3/4 2.2.1.1 p.12
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
@@ -34,7 +34,7 @@ static Telegram testCaseTelegrams_1[] =
     {END}
 };
 
-static Telegram testCaseTelegrams_2[] =
+static Telegram testCaseTelegrams_02[] =
 {
     // KNX Spec. 8/3/4 2.2.1.2 p.13
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
@@ -46,19 +46,27 @@ static Telegram testCaseTelegrams_2[] =
     {END}
 };
 
-static Telegram testCaseTelegrams_3[] =
+static Telegram testCaseTelegrams_03[] =
 {
-    ///\todo KNX Spec. 8/3/4 2.2.1.3 p.14 test is unclear, so we just connect and send a APCI_DEVICEDESCRIPTOR_READ_PDU
+    // KNX Spec. 8/3/4 2.2.1.3 p.14
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
-    // 2. APCI_DEVICEDESCRIPTOR_READ_PDU from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  8, 0, NULL,    {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
-    // 3. Check TX-Response for a T_ACK_PDU (0xC2) to 10.0.1
-    {TEL_TX,  7, 0, NULL,    {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
+    // 2. APCI_DEVICEDESCRIPTOR_READ_PDU from sourceAddr=10.0.1 to destAddr=10.0.0 (MaskVersionRead())
+    {TEL_RX,  8, 0, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    // 3. Check T_ACK 10.0.0->10.0.1
+    {TEL_TX,  7, 0, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
+    // 4. bcu.loop() once, so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
+    {LOOP,  1, 0, connectedOpenWait, {}},
+    // 5. remove DeviceDescriptorResponse, not in Spec. but we need it to clear sendTelegram
+    {TEL_TX,  10, 0, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}},
+    // 6. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  7, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 7. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
+    {TEL_TX,  7, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
     {END}
 };
 
-static Telegram testCaseTelegrams_4[] =
+static Telegram testCaseTelegrams_04[] =
 {
     // KNX Spec. 8/3/4 2.2.2.1 p.15
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.7 to destAddr=10.0.0
@@ -70,7 +78,7 @@ static Telegram testCaseTelegrams_4[] =
     {END}
 };
 
-static Telegram testCaseTelegrams_5[] =
+static Telegram testCaseTelegrams_05[] =
 {
     // KNX Spec. 8/3/4 2.2.2.2 p.16
     // 0. T_CONNECT_PDU (0x80) from sourceAddr=10.0.7 to destAddr=10.0.0
@@ -84,7 +92,7 @@ static Telegram testCaseTelegrams_5[] =
     {END}
 };
 
-static Telegram testCaseTelegrams_6[] =
+static Telegram testCaseTelegrams_06[] =
 {
     // KNX Spec. 8/3/4 2.2.3.1 p.16/17
     // 1. T_DISCONNECT_PDU (0x81) from sourceAddr=10.0.7 to destAddr=10.0.0
@@ -94,7 +102,7 @@ static Telegram testCaseTelegrams_6[] =
     {END}
 };
 
-static Telegram testCaseTelegrams_7[] =
+static Telegram testCaseTelegrams_07[] =
 {
     // KNX Spec. 8/3/4 2.2.3.2 p.17
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
@@ -106,7 +114,7 @@ static Telegram testCaseTelegrams_7[] =
     {END}
 };
 
-static Telegram testCaseTelegrams_8[] =
+static Telegram testCaseTelegrams_08[] =
 {
     // KNX Spec. 8/3/4 2.2.3.3 p.18
     // 0. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
@@ -120,7 +128,7 @@ static Telegram testCaseTelegrams_8[] =
     {END}
 };
 
-static Telegram testCaseTelegrams_9[] =
+static Telegram testCaseTelegrams_09[] =
 {
     // KNX Spec. 8/3/4 2.2.4.1 p.18/19
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
@@ -154,7 +162,7 @@ static Telegram testCaseTelegrams_18[] =
     // 2. simulate 6000 milliseconds passing
     {TIMER_TICK,  6000, 0, NULL, {}},
     // 3. loop bcu once
-    {LOOP,  0, 1, disconnectClosed, {}},
+    {LOOP,  1, 0, disconnectClosed, {}},
     // 4. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
     {TEL_TX,  7, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
     // 5. Check for empty TX-Response
@@ -172,7 +180,7 @@ static Telegram testCaseTelegrams_19[] =
     // 1. simulate 6000 milliseconds passing
     {TIMER_TICK,  6000, 0, NULL, {}},
     // 2. loop bcu once
-    {LOOP,  0, 1, disconnectClosed, {}},
+    {LOOP,  1, 0, disconnectClosed, {}},
     // 3. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
     {TEL_TX,  7, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
     // 4. Check for empty TX-Response
@@ -188,6 +196,7 @@ static Telegram testCaseTelegrams_20a[] =
     // 2. T_DATA_CONNECTED_REQ from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  8, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}}, // MaskVersionRead()
     // 3. Check T_ACK response for the T_DATA_CONNECTED_REQ
+    // Spec. says check for IDLE, but bcu.loop already sent the DeviceDescriptorResponse, so we are in WAIT
     {TEL_TX,  7, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU
     // 4. Check for empty TX-Response
     {CHECK_TX_BUFFER,  0, 0, NULL, {}},
@@ -200,25 +209,24 @@ static Telegram testCaseTelegrams_20b[] =
     // KNX Spec. 8/3/4 2.3.2 p.29/30
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.15.254 to destAddr=1.0.1
     {TEL_RX,  7, 0x1001, connect, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x60, 0x80}},
-    // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.15.254 to destAddr=1.0.1
-    {TEL_RX,  8, 0, NULL, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x61, 0x43, 0x00}},
+    // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.15.254 to destAddr=1.0.1 (MaskVersionRead)
+    {TEL_RX,  8, 0, connectedOpenIdle, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x61, 0x43, 0x00}},
     // 3. Check T_ACK response for the DeviceDescriptorRead
     {TEL_TX,  7, 0xAFFE, connectedOpenIdle, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0xC2}}, // T_ACK_PDU
     // 4. loop bcu once
-    {LOOP,  0, 1, connectedOpenWait, {}},
+    {LOOP,  1, 0, connectedOpenWait, {}},
     // 5. Check DeviceDescriptorResponse Maskversion 0x0012
-    {TEL_TX,  10, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, 0x00, 0x12}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
-
+    {TEL_TX,  10, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
     // 6. simulate 3500 milliseconds passing
-    {TIMER_TICK,  3500, 0, NULL, {}},
+    {TIMER_TICK,  3500, 0, connectedOpenWait, {}},
     // 7. MemoryRead(Count=1, Addr=0x01FE) from sourceAddr=10.15.254 to destAddr=1.0.1
     {TEL_RX,  8, 0, NULL, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x63, 0x46, 0x01, 0x01, 0xFE}},
     // 8. Check T_ACK response for the MemoryRead
     {TEL_TX,  7, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0xC6}}, // T_ACK_PDU
     // 9. loop bcu once
-    {LOOP,  0, 1, connectedOpenWait, {}},
+    {LOOP,  1, 0, connectedOpenWait, {}},
     // 10. Check second try of DeviceDescriptorResponse Maskversion 0x0012
-    {TEL_TX,  10, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, 0x00, 0x12}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
+    {TEL_TX,  10, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
 
 
     // x. Check for empty TX-Response
@@ -238,7 +246,7 @@ static Telegram testCaseTelegrams_21[] =
     // 4. simulate 6000 milliseconds passing
     {TIMER_TICK,  6000, 0, NULL, {}},
     // 5. loop bcu once
-    {LOOP,  0, 1, disconnectClosed, {}},
+    {LOOP,  1, 0, disconnectClosed, {}},
     // 6. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
     {TEL_TX,  7, 0, disconnectClosed, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0x81}},
     // 7. Check for empty TX-Response
@@ -506,19 +514,6 @@ static Telegram testCaseTelegrams_42[] =
     // 6. Check T_DISCONNECT_PDU
     {TEL_TX,  7, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}}, // T_DISCONNECT
     // 7. Check for empty TX-Response
-    {CHECK_TX_BUFFER,  0, 0, NULL, {}},
-    {END}
-};
-
-static Telegram testCaseTelegrams_CustomCheckRepeatedFlag[] =
-{
-    // Test is not in KNX Spec.
-    // send the same telegram twice, second time with repeated flag set
-    // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  7, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
-    // 2. T_CONNECT_PDU (0x80) with repeated flag set from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  7, 0xA001, connect, {0x90, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
-    // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER,  0, 0, NULL, {}},
     {END}
 };

@@ -11,7 +11,7 @@
 #define sblib_BcuBase_h
 
 #include <sblib/types.h>
-#include <sblib/eib/bus.h>
+#include <sblib/eib/knx_tlayer4.h>
 #include <sblib/eib/bcu_type.h>
 #include <sblib/eib/properties.h>
 #include <sblib/eib/user_memory.h>
@@ -36,7 +36,7 @@ extern BcuBase& bcu;
  * In order to use the EIB bus, you need to call bcu.begin() once in your application's
  * setup() function.
  */
-class BcuBase
+class BcuBase: public TLayer4
 {
 public:
     BcuBase();
@@ -134,11 +134,6 @@ public:
     void setOwnAddress(int addr);
 
     /**
-     * Get our own physical address.
-     */
-    int ownAddress() const;
-
-    /**
      * Test if the programming mode is active. This is also indicated
      * by the programming mode LED.
      *
@@ -154,19 +149,6 @@ public:
      * @return True if the user application is active, false if not.
      */
     bool applicationRunning() const;
-
-    /**
-     * Test if a direct data connection is open.
-     *
-     * @return True if a connection is open, false if not.
-     */
-    virtual bool directConnection() const;
-
-    /**
-     * Process the received telegram from bus.telegram.
-     * Called by main()
-     */
-    virtual void processTelegram();
 
     /**
      * Get the mask version.
@@ -185,12 +167,6 @@ public:
      * @return The read-only CommObjectTable address which can't be changed by KNX telegrams
      */
     word getCommObjectTableAddressStatic() const;
-
-    /**
-     * A buffer for sending telegrams. This buffer is considered library private
-     * and should rather not be used by the application program.
-     */
-    byte sendTelegram[Bus::TELEGRAM_SIZE];
 
     /**
      * The pin where the programming LED + button are connected. The default pin
@@ -215,18 +191,6 @@ protected:
     virtual void _begin();
 
     /**
-     * Creates a len_hash wide hash of the uid.
-     * Hash will be generated in provided hash buffer
-     *
-     * @param uid - LPC-serial (128bit GUID) returned by iapReadUID() which will be hashed
-     * @param len_uid - size of uid  (normally 16 byte)
-     * @param hash - buffer for generated hash
-     * @param len_hash - size of provided hash buffer (normally 6byte/48bit for EIB)
-     * @return True if hash successfully created, false if not.
-     */
-    int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
-
-    /**
      * @brief Set or unset the programming mode of the bcu
      *
      * @param  new programming button state
@@ -235,13 +199,6 @@ protected:
     bool setProgrammingMode(bool newMode);
 
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
-    bool enabled;                  //!< The BCU is enabled. Set by bcu.begin().
-    int  connectedAddr;            //!< Remote address of the connected partner.
-    byte sendCtrlTelegram[8];      //!< A short buffer for connection control telegrams.
-    int  connectedSeqNo;           //!< Sequence number for connected data telegrams.
-    unsigned int connectedTime;    //!< System time of the last connected telegram.
-    bool incConnectedSeqNo;        //!< True if the sequence number shall be incremented on ACK.
-    int lastAckSeqNo;              //!< Last acknowledged sequence number
 
 private:
     word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
@@ -305,11 +262,6 @@ inline bool BcuBase::programmingMode() const
     return (userRam.status & BCU_STATUS_PROG) == BCU_STATUS_PROG;
 }
 
-inline int BcuBase::ownAddress() const
-{
-    return bus.ownAddr;
-}
-
 inline bool BcuBase::applicationRunning() const
 {
     if (!enabled)
@@ -329,11 +281,6 @@ inline bool BcuBase::applicationRunning() const
 inline unsigned short BcuBase::maskVersion()
 {
     return MASK_VERSION;
-}
-
-inline bool BcuBase::directConnection() const
-{
-    return connectedAddr != 0;
 }
 
 inline word BcuBase::getCommObjectTableAddressStatic() const

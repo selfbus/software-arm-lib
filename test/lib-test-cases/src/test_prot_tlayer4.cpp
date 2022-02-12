@@ -19,19 +19,11 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#define CATCH_CONFIG_MAIN
 #include <catch.hpp>
 #include <protocol.h>
-
-#define private   public
-#define protected public
-#   include <tlayer4.h>
-#undef private
-#undef protected
-
 #include <sblib/timer.h>
 
-#include "tc_telegram.h"
+#include "tc_tlayer4_telegram.h"
 
 
 #define MANUFACTURER (0x0004)
@@ -44,7 +36,7 @@ TLayer4* bcuTL4 = (TLayer4*) &bcu;
 
 static void tc_setup(void)
 {
-    bcuTL4->state = TLayer4::CLOSED; // to "reset" connection for next test
+    bcuTL4->setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
     bcuTL4->setOwnAddress(OWN_KNX_ADDRESS);
 }
 
@@ -66,21 +58,21 @@ static void tc_setup_OpenWait(void)
 static void tc_setup_OpenWait_A007(void)
 {
     tc_setup_OpenWait();
-    bcuTL4->connectedAddrNew = 0xA007;
+    bcuTL4->connectedAddr = 0xA007;
 }
 
 static void tc_setup_OpenWait_A001(void)
 {
     tc_setup_OpenWait();
-    bcuTL4->connectedAddrNew = 0xA001;
+    bcuTL4->connectedAddr = 0xA001;
 }
 
-static void gatherProtocolState_1(ProtocolTestState * state, ProtocolTestState * refState)
+static void gatherProtocolState_01(ProtocolTestState * state, ProtocolTestState * refState)
 {
     state->connected  = bcuTL4->directConnection();
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->ownAddress = bcuTL4->ownAddress();
 
-    state->connectedAddrNew = bcuTL4->connectedAddrNew;
+    state->connectedAddrNew = bcuTL4->connectedTo();
     state->machineState = bcuTL4->state;
     state->seqNoSend = bcuTL4->seqNoSend;
     state->seqNoRcv = bcuTL4->seqNoRcv;
@@ -97,9 +89,9 @@ static void gatherProtocolState_1(ProtocolTestState * state, ProtocolTestState *
     }
 }
 
-static void gatherProtocolState_2(ProtocolTestState * state, ProtocolTestState * refState)
+static void gatherProtocolState_02(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->ownAddress = bcuTL4->ownAddress();
     state->machineState = bcuTL4->state;
 
     if(refState)
@@ -109,9 +101,9 @@ static void gatherProtocolState_2(ProtocolTestState * state, ProtocolTestState *
     }
 }
 
-static void gatherProtocolState_3(ProtocolTestState * state, ProtocolTestState * refState)
+static void gatherProtocolState_03(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->ownAddress = bcuTL4->ownAddress();
     state->machineState = bcuTL4->state;
 
     if(refState)
@@ -121,11 +113,11 @@ static void gatherProtocolState_3(ProtocolTestState * state, ProtocolTestState *
     }
 }
 
-static void gatherProtocolState_4(ProtocolTestState * state, ProtocolTestState * refState)
+static void gatherProtocolState_04(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->ownAddress = bcuTL4->ownAddress();
     state->machineState = bcuTL4->state;
-    state->connectedAddrNew = bcuTL4->connectedAddrNew;
+    state->connectedAddrNew = bcuTL4->connectedTo();
 
     if(refState)
     {
@@ -137,9 +129,9 @@ static void gatherProtocolState_4(ProtocolTestState * state, ProtocolTestState *
 
 static void gatherProtocolState_stillConnected(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->ownAddress = bcuTL4->ownAddress();
     state->machineState = bcuTL4->state;
-    state->connectedAddrNew = bcuTL4->connectedAddrNew;
+    state->connectedAddrNew = bcuTL4->connectedTo();
 
     if(refState)
     {
@@ -159,59 +151,59 @@ static void gatherProtocolState_machineState(ProtocolTestState * state, Protocol
     }
 }
 
-static Test_Case testCaseTelegramSequence_1 =
+static Test_Case testCaseTelegramSequence_01 =
 {
     "TelSeq 1 Connect from a remote device with initial state CLOSED",
     MANUFACTURER, DEVICE, VERSION,
     0,    //powerOnDelay
     NULL, // eePromSetup
     tc_setup,
-    (StateFunction *) gatherProtocolState_1,
+    (StateFunction *) gatherProtocolState_01,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_1
+    testCaseTelegrams_01
 };
 
-static Test_Case testCaseTelegramSequence_2 =
+static Test_Case testCaseTelegramSequence_02 =
 {
     "TelSeq 2 Connect from remote device with initial state OPEN_IDLE/OPEN_WAIT",
     MANUFACTURER, DEVICE, VERSION,
     0,    //powerOnDelay
     NULL, // eePromSetup
     tc_setup,
-    (StateFunction *) gatherProtocolState_2,
+    (StateFunction *) gatherProtocolState_02,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_2
+    testCaseTelegrams_02
 };
 
-static Test_Case testCaseTelegramSequence_3 =
+static Test_Case testCaseTelegramSequence_03 =
 {
-    "TelSeq 3 Procedure with initial state OPEN_WAIT (style 1)",
+    "TelSeq 3 Connect from remote device with initial state OPEN_WAIT (style 1)",
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
     tc_setup,
-    (StateFunction *) gatherProtocolState_3,
+    (StateFunction *) gatherProtocolState_03,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_3
+    testCaseTelegrams_03
 };
 
-static Test_Case testCaseTelegramSequence_4 =
+static Test_Case testCaseTelegramSequence_04 =
 {
     "TelSeq 4 Connect while connected, with initial state OPEN_IDLE (style 1/3)",
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
     tc_setup,
-    (StateFunction *) gatherProtocolState_4,
+    (StateFunction *) gatherProtocolState_04,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_4
+    testCaseTelegrams_04
 };
 
-static Test_Case testCaseTelegramSequence_5 =
+static Test_Case testCaseTelegramSequence_05 =
 {
     "TelSeq 5 Connect while connected, with initial state OPEN_WAIT (style 1/3)",
     MANUFACTURER, DEVICE, VERSION,
@@ -221,10 +213,10 @@ static Test_Case testCaseTelegramSequence_5 =
     (StateFunction *) gatherProtocolState_stillConnected,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_5
+    testCaseTelegrams_05
 };
 
-static Test_Case testCaseTelegramSequence_6 =
+static Test_Case testCaseTelegramSequence_06 =
 {
     "TelSeq 6 Disconnect from a remote device, with initial state CLOSED (all styles)",
     MANUFACTURER, DEVICE, VERSION,
@@ -234,10 +226,10 @@ static Test_Case testCaseTelegramSequence_6 =
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_6
+    testCaseTelegrams_06
 };
 
-static Test_Case testCaseTelegramSequence_7 =
+static Test_Case testCaseTelegramSequence_07 =
 {
     "TelSeq 7 Disconnect from a remote device, with initial state OPEN_IDLE (all styles)",
     MANUFACTURER, DEVICE, VERSION,
@@ -247,10 +239,10 @@ static Test_Case testCaseTelegramSequence_7 =
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_7
+    testCaseTelegrams_07
 };
 
-static Test_Case testCaseTelegramSequence_8 =
+static Test_Case testCaseTelegramSequence_08 =
 {
     "TelSeq 8 Disconnect from a remote device, with initial state OPEN_WAIT (all styles)",
     MANUFACTURER, DEVICE, VERSION,
@@ -260,10 +252,10 @@ static Test_Case testCaseTelegramSequence_8 =
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_8
+    testCaseTelegrams_08
 };
 
-static Test_Case testCaseTelegramSequence_9 =
+static Test_Case testCaseTelegramSequence_09 =
 {
     "TelSeq 9 Disconnect from a foreign device, with initial state OPEN_IDLE (all styles)",
     MANUFACTURER, DEVICE, VERSION,
@@ -273,7 +265,7 @@ static Test_Case testCaseTelegramSequence_9 =
     (StateFunction *) gatherProtocolState_stillConnected,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_9
+    testCaseTelegrams_09
 };
 
 static Test_Case testCaseTelegramSequence_10 =
@@ -575,31 +567,18 @@ static Test_Case testCaseTelegramSequence_42 =
     testCaseTelegrams_42
 };
 
-static Test_Case testCaseTelegramSequence_CustomCheckRepeatedFlag =
-{
-    "Repeated T_CONNECT",
-    MANUFACTURER, DEVICE, VERSION,
-    0,
-    NULL,
-    tc_setup,
-    (StateFunction *) gatherProtocolState_machineState,
-    (TestCaseState *) &protoState[0],
-    (TestCaseState *) &protoState[1],
-    testCaseTelegrams_CustomCheckRepeatedFlag
-};
-
 TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
 {
     // See KNX Spec. 2.1 8/3/4 for all test details
-    executeTest(& testCaseTelegramSequence_1);
-    executeTest(& testCaseTelegramSequence_2);
-    executeTest(& testCaseTelegramSequence_3);
-    executeTest(& testCaseTelegramSequence_4);
-    executeTest(& testCaseTelegramSequence_5);
-    executeTest(& testCaseTelegramSequence_6);
-    executeTest(& testCaseTelegramSequence_7);
-    executeTest(& testCaseTelegramSequence_8);
-    executeTest(& testCaseTelegramSequence_9);
+    executeTest(& testCaseTelegramSequence_01);
+    executeTest(& testCaseTelegramSequence_02);
+    executeTest(& testCaseTelegramSequence_03);
+    executeTest(& testCaseTelegramSequence_04);
+    executeTest(& testCaseTelegramSequence_05);
+    executeTest(& testCaseTelegramSequence_06);
+    executeTest(& testCaseTelegramSequence_07);
+    executeTest(& testCaseTelegramSequence_08);
+    executeTest(& testCaseTelegramSequence_09);
     executeTest(& testCaseTelegramSequence_10);
     // test cases 11-17 not implemented, they are for client only, (connect/disconnect from the local user)
     executeTest(& testCaseTelegramSequence_18);
@@ -618,7 +597,6 @@ TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
     // test cases 27-30 not implemented, they are for client only, (T_DATA_CONNECTED from the local user)
     executeTest(& testCaseTelegramSequence_31); // from KNX Spec note: "Current System 1 implementations (see volume 6) transmit faulty telegrams. This is not allowed for updated versions or new developed system 1 implementations."
     executeTest(& testCaseTelegramSequence_32);
-
     executeTest(& testCaseTelegramSequence_33);
     executeTest(& testCaseTelegramSequence_34);
     executeTest(& testCaseTelegramSequence_35);
@@ -629,10 +607,6 @@ TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
     executeTest(& testCaseTelegramSequence_40);
     executeTest(& testCaseTelegramSequence_41);
     executeTest(& testCaseTelegramSequence_42);
-}
 
-TEST_CASE("Layer 2 protocol", "[protocol][L2]")
-{
-    executeTest(& testCaseTelegramSequence_CustomCheckRepeatedFlag);
 }
 

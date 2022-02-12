@@ -99,7 +99,7 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
         REQUIRE(iap_calls [I_BLANK_CHECK] == (iap_save [I_BLANK_CHECK] + 0));
         REQUIRE(iap_calls [I_RAM2FLASH]   == (iap_save [I_RAM2FLASH]   + 1));
         REQUIRE(iap_calls [I_COMPARE]     == (iap_save [I_COMPARE]     + 1));
-        checkFlash(FLASH + 0x7100);
+        checkFlash(FLASH + 0x7100); ///\todo 0x7100 is not correct, value depends on USER_EEPROM_START i think
     }
     SECTION("Test an overrun of the FLASH area")
     {

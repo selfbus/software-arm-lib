@@ -48,7 +48,7 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
     }
 #endif
 
-unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data)
+unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength)
 {
     unsigned char sendAckTpu = 0;
     int apciCommand = apci & APCI_GROUP_MASK;
@@ -56,23 +56,15 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
     {
         case APCI_MEMORY_READ_PDU:
         case APCI_MEMORY_WRITE_PDU:
-            sendAckTpu = handleMemoryRequests(apciCommand, sendTel, &bus.telegram[7]);
+            sendAckTpu = handleMemoryRequests(apciCommand, sendResponse, &telegram[7]); ///\todo this 7 is not consistent with other telegram handling in sblib
 #ifdef DEBUG
             if (checkCountToFail())
             {
                 sendConControlTelegram(T_DISCONNECT_PDU, senderAddr, 0);
-                *sendTel = false;
+                *sendResponse = false;
                 return (0);
             }
 #endif
-            break;
-
-        case APCI_DEVICEDESCRIPTOR_READ_PDU:
-            *sendTel = processDeviceDescriptorReadTelegram(apci & 0x3f);
-            if (!sendTel)
-            {
-                sendAckTpu = T_NACK_PDU; ///\todo this is not correct, it must be always T_ACK_PDU
-            }
             break;
 
         default:
@@ -86,12 +78,12 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
 
                 case APCI_MASTER_RESET_PDU:
                     dump2(serial.println("APCI_MASTER_RESET_PDU"));
-                    if (processApciMasterResetPDU(apci, senderSeqNo, bus.telegram[8], bus.telegram[9]))
+                    if (processApciMasterResetPDU(apci, senderSeqNo, telegram[8], telegram[9]))
                     {
                         restartRequest(RESET_DELAY_MS); // Software Reset
                     }
                     // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
-                    *sendTel = true;
+                    *sendResponse = true;
                     break;
                     sendAckTpu = T_ACK_PDU;
 
@@ -105,7 +97,7 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
 
 void BcuUpdate::resetConnection()
 {
-    TLayer4::resetConnection();
+    BcuBase::resetConnection();
 }
 
 bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber)
@@ -163,26 +155,16 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
     return (false);
 }
 
-bool BcuUpdate::processDeviceDescriptorReadTelegram(int id)
+bool BcuUpdate::processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength)
 {
-    switch (id)
-    {
-    case 0:
-        {
-            int version = maskVersion();
-            sendTelegram[5] = 0x63;
-            sendTelegram[6] = 0x43;
-            sendTelegram[7] = 0x40;
-            sendTelegram[8] = version >> 8;
-            sendTelegram[9] = version;
+    bus.discardReceivedTelegram();
+    return (true);
+}
 
-            return true;
-        }
-
-    default:
-        return false; // unknown device descriptor
-    }
-    return false; // unknown device descriptor
+bool BcuUpdate::processBroadCastTelegram(unsigned char *telegram, unsigned short telLength)
+{
+    bus.discardReceivedTelegram();
+    return (true);
 }
 
 

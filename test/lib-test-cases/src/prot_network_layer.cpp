@@ -248,6 +248,7 @@ static Telegram testCaseTelegrams_ConnectionLess[] =
 
 static void tc_setup(void)
 {
+    bcu.setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
     bcu.setOwnAddress(0x1001); // set own address to 1.0.1
 }
 
@@ -306,9 +307,9 @@ static Test_Case testCaseConnectionLess =
 
 TEST_CASE("Network Layer", "[protocol][L3]")
 {
-    // executeTest(& testCaseGroupOriented);
+    executeTest(& testCaseGroupOriented);
     // executeTest(& testCaseConnectionOriented);
-    executeTest(& testCaseConnectionLess);
+    // executeTest(& testCaseConnectionLess);
 }
 
 /** @}*/

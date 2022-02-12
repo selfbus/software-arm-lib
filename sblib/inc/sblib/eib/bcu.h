@@ -15,7 +15,6 @@
 
 #include <sblib/eib/bcu_base.h>
 #include <sblib/types.h>
-#include <sblib/eib/bus.h>
 #include <sblib/eib/bcu_type.h>
 #include <sblib/eib/properties.h>
 #include <sblib/eib/user_memory.h>
@@ -37,15 +36,23 @@
 class BCU : public BcuBase
 {
 public:
-    virtual void processTelegram();
+    /**
+     * @brief Process a group address (T_Data_Group) telegram.
+     */
+    virtual bool processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength);
+
+    /**
+     * @brief Process a broadcast telegram.
+     */
+    virtual bool processBroadCastTelegram(unsigned char *telegram, unsigned short telLength);
+
+    virtual unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength);
 
     /**
      * The BCU's main processing loop. This is like the application's loop() function,
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
     virtual void loop();
-
-    int connectedTo();
 
     /**
      * Allow an user provided memory mapper to store parameter data via memory write / read
@@ -93,16 +100,6 @@ protected:
      */
     virtual void _begin();
     /**
-     * Process a unicast connection control telegram with our physical address as
-     * destination address. The telegram is stored in sbRecvTelegram[].
-     *
-     * When this function is called, the sender address is != 0 (not a broadcast).
-     *
-     * @param tpci - the transport control field
-     */
-    void processConControlTelegram(int tpci);
-
-    /**
      * Process a unicast telegram with our physical address as destination address.
      * The telegram is stored in sbRecvTelegram[].
      *
@@ -111,14 +108,6 @@ protected:
      * @param apci - the application control field
      */
     void processDirectTelegram(int apci);
-
-    /**
-     * Send a connection control telegram.
-     *
-     * @param cmd - the transport command, see SB_T_xx defines
-     * @param senderSeqNo - the sequence number of the sender, 0 if not required
-     */
-    void sendConControlTelegram(int cmd, int senderSeqNo);
 
     /**
      * Process a device-descriptor-read request.
@@ -205,12 +194,6 @@ private:
 //
 //  Inline functions
 //
-
-inline int BCU::connectedTo()
-{
-    return connectedAddr;
-}
-
 inline void BCU::setMemMapper(MemMapper *mapper)
 {
     memMapper = mapper;

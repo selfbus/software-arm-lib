@@ -365,7 +365,9 @@ private:
 
 
 protected:
+    friend class TLayer4;
     friend class BcuBase;
+
     Timer& timer;                //!< The timer
     int rxPin, txPin;            //!< The pins for bus receiving and sending
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
