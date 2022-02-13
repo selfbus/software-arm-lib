@@ -295,11 +295,11 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 // start & end are in USER_EEPROM
                 if (readMem)
                 {
-                    memcpy(&payLoad[0], userEepromData + (addressStart - USER_EEPROM_START), addressEnd - addressStart + 1);
+                    memcpy(&payLoad[0], &userEeprom[addressStart], addressEnd - addressStart + 1);
                 }
                 else
                 {
-                    memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], addressEnd - addressStart + 1);
+                    memcpy(&userEeprom[addressStart], &payLoad[0], addressEnd - addressStart + 1);
                     userEeprom.modified();
                 }
                 DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
@@ -311,11 +311,11 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 const int copyCount = USER_EEPROM_END - addressStart;
                 if (readMem)
                 {
-                    memcpy(&payLoad[0], userEepromData + (addressStart - USER_EEPROM_START), copyCount);
+                    memcpy(&payLoad[0], &userEeprom[addressStart], copyCount);
                 }
                 else
                 {
-                    memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], copyCount);
+                    memcpy(&userEeprom[addressStart], &payLoad[0], copyCount);
                     userEeprom.modified();
                 }
                 addressStart += copyCount;
