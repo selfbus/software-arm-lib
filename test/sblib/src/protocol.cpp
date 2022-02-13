@@ -52,8 +52,20 @@ static void _handleBusSendingInterrupt()
     REQUIRE(((bus.state == Bus::IDLE) || (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)));
 }
 
+static void addChecksum(unsigned char * telegram, unsigned int telLength)
+{
+    unsigned char checksum = 0xff;
+    for (unsigned short i = 0; i < (telLength-1); i++)
+    {
+        checksum ^= telegram[i];
+    }
+    telegram[telLength-1] = checksum;
+}
+
 static void _handleRx(Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
+    tel->length++; // add one byte for checksum
+    addChecksum(tel->bytes, tel->length);
 	memcpy(bus.telegram, tel->bytes, tel->length);
 	bus.telegramLen = tel->length;
 	bcu.processTelegram(bus.telegram, bus.telegramLen);

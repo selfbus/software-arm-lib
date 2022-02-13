@@ -51,7 +51,7 @@ typedef struct
     int              length;
     unsigned int     variable;
     StepFunction   * stepFunction;
-    unsigned char    bytes[23];
+    unsigned char    bytes[24]; ///\todo more space for extended frames
 } Telegram;
 
 typedef struct
