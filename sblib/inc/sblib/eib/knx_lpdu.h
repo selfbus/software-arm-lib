@@ -30,17 +30,37 @@
 #define LPDU_DESTINATION_HIGH_BYTE  (3)
 #define LPDU_DESTINATION_LOW_BYTE   (4)
 
+/**
+ *  KNX Priority
+ */
 enum KNXPriority : byte
 {
-    PRIORITY_SYSTEM = 0,
-    PRIORITY_HIGH = 1,
-    PRIORITY_ALARM = 2,
-    PRIORITY_LOW = 3
+    PRIORITY_SYSTEM = 0,/**< PRIORITY_SYSTEM */
+    PRIORITY_HIGH = 1,  /**< PRIORITY_HIGH */
+    PRIORITY_ALARM = 2, /**< PRIORITY_ALARM */
+    PRIORITY_LOW = 3    /**< PRIORITY_LOW */
 };
 
-void setRepeated(unsigned char *telegram, bool repeated);
-void setPriority(unsigned char *telegram, KNXPriority newPriority);
+/**
+ *  KNX Frame format
+ */
+enum KNXFrameType
+{
+    FRAME_STANDARD,/**< FRAME_STANDARD */
+    FRAME_EXTENDED /**< FRAME_EXTENDED */
+};
 
+void initLpdu(unsigned char *telegram, KNXPriority newPriority, bool newRepeated);
+byte controlByte(unsigned char *telegram);
+bool isRepeated(unsigned char *telegram);
+void setRepeated(unsigned char *telegram, bool repeated);
+KNXPriority priority(unsigned char *telegram);
+void setPriority(unsigned char *telegram, KNXPriority newPriority);
+unsigned short senderAddress(unsigned char *telegram);
+unsigned short destinationAddress(unsigned char *telegram);
+void setDestinationAddress(unsigned char *telegram, unsigned short newDestinationAddress);
+KNXFrameType frameType(unsigned char *telegram);
+void setFrameType(unsigned char *telegram, KNXFrameType newFrameType);
 
 
 inline void initLpdu(unsigned char *telegram, KNXPriority newPriority, bool newRepeated)
@@ -102,6 +122,23 @@ inline void setDestinationAddress(unsigned char *telegram, unsigned short newDes
 {
     telegram[LPDU_DESTINATION_HIGH_BYTE] = (byte)(newDestinationAddress >> 8);
     telegram[LPDU_DESTINATION_LOW_BYTE] = (byte)newDestinationAddress;
+}
+
+inline KNXFrameType frameType(unsigned char *telegram)
+{
+    if (controlByte(telegram) & 0x01)
+    {
+        return FRAME_EXTENDED;
+    }
+    else
+    {
+        return FRAME_STANDARD;
+    }
+}
+
+inline void setFrameType(unsigned char *telegram, KNXFrameType newFrameType)
+{
+///\todo implement this
 }
 
 

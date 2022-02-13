@@ -61,6 +61,7 @@ unsigned short disconnectCount = 0; //!< number of disconnects since system rese
 ///\todo remove after bugfix and on release
 unsigned short repeatedTelegramCount = 0;
 unsigned short repeatedIgnoredTelegramCount = 0;
+unsigned short invalidCheckSum = 0;
 ///\todo end of remove after bugfix and on release
 
 void dumpTelegramBytes(bool tx, const unsigned char * telegram, const unsigned int length, const bool newLine = true)
@@ -134,13 +135,13 @@ void dumpTicks()
     );
 }
 
-void dumpSequenceNumber(const unsigned int tpci)
+void dumpSequenceNumber(unsigned char *telegram, const unsigned int tpci)
 {
     dump2(
         serial.print("#");
         if ((tpci & T_IS_SEQUENCED_Msk))
         {
-            serial.print(getSequenceNumber(tpci), DEC, 2);
+            serial.print(sequenceNumber(telegram), DEC, 2);
         }
         else
         {
@@ -150,7 +151,7 @@ void dumpSequenceNumber(const unsigned int tpci)
     );
 }
 
-void dumpTelegramInfo(const unsigned int address, const unsigned int tpci, const bool isTX, const TLayer4::TL4State state)
+void dumpTelegramInfo(unsigned char *telegram, const unsigned int address, const unsigned int tpci, const bool isTX, const TLayer4::TL4State state)
 {
     dump2(
         dumpTicks();
@@ -165,7 +166,7 @@ void dumpTelegramInfo(const unsigned int address, const unsigned int tpci, const
             serial.print("->RX");
         }
         serial.print(LOG_SEP);
-        dumpSequenceNumber(tpci);
+        dumpSequenceNumber(telegram, tpci);
         dumpState(state);
         serial.print(LOG_SEP);
 
@@ -246,6 +247,7 @@ void TLayer4::_begin()
     lastTelegramLength = 0;
     repeatedTelegramCount = 0;
     repeatedIgnoredTelegramCount = 0;
+    invalidCheckSum = 0;
 }
 
 bool TLayer4::processTelegram(unsigned char *telegram, unsigned short telLength)
@@ -260,6 +262,12 @@ bool TLayer4::processTelegram(unsigned char *telegram, unsigned short telLength)
 
 bool TLayer4::processTelegramInternal(unsigned char *telegram, unsigned short telLength)
 {
+    if (!checksumValid(telegram, telLength))
+    {
+
+        return (true);
+    }
+
     unsigned short destAddr = destinationAddress(telegram);
 
     if (destAddr == 0)
@@ -283,7 +291,7 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, unsigned short te
     unsigned int senderAddr = senderAddress(telegram);
     telegramCount++;
 
-    dumpTelegramInfo(senderAddr, telegram[6], false, state);
+    dumpTelegramInfo(telegram, senderAddr, telegram[6], false, state);
 
     if (!checkValidRepeatedTelegram(telegram, telLength))
     {
@@ -340,7 +348,7 @@ void TLayer4::processConControlTelegram(const unsigned int senderAddr, const uns
             serial.println("seqNoRcv         #", seqNoRcv , DEC, 2);
             if ((tpci != T_CONNECT_PDU) && (tpci !=T_DISCONNECT_PDU))
             {
-                serial.println("curSeqNo         #", getSequenceNumber(telegram[6]), DEC, 2);
+                serial.println("curSeqNo         #", sequenceNumber(telegram), DEC, 2);
             }
         );
     }
@@ -542,7 +550,7 @@ void TLayer4::sendConControlTelegram(int cmd, unsigned int address, int senderSe
     telegramCount++;
 
     dump2(
-        dumpTelegramInfo(address, cmd, true, state);
+        dumpTelegramInfo(bus.telegram, address, cmd, true, state); ///\todo rewrite dumpTelegramInfo without using bus.telegram
         serial.print("sendControl");
     );
 
@@ -754,7 +762,7 @@ void TLayer4::actionA07SendDirectTelegram()
     telegramCount++;
 
     dump2(
-        dumpTelegramInfo(connectedAddr, sendTelegram[6], true, state);
+        dumpTelegramInfo(sendTelegram, connectedAddr, sendTelegram[6], true, state);
         serial.print("sendDirectT");
         serial.print(LOG_SEP);
         serial.print("A07SendTelegram");
@@ -886,6 +894,30 @@ bool TLayer4::checkValidRepeatedTelegram(unsigned char *telegram, unsigned short
         dumpTelegramBytes(false, telegram, telLength, true);
     );
     return false;
+}
+
+///\todo remove on release
+bool TLayer4::checksumValid(unsigned char *telegram, unsigned short telLength)
+{
+    unsigned char checksum = 0xff;
+    // Calculate the checksum
+    for (unsigned short i = 0; i < (telLength-1); i++)
+    {
+        checksum ^= telegram[i];
+    }
+
+    if (telegram[telLength-1] == checksum)
+    {
+        return (true);
+    }
+
+    dump2(
+        invalidCheckSum++;
+        serial.print("ERROR CHECKSUM");
+        serial.print(LOG_SEP);
+        dumpTelegramBytes(false, telegram, telLength, true);
+    );
+    return (false);
 }
 
 /** @}*/
