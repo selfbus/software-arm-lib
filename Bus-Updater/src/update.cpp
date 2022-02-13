@@ -23,6 +23,7 @@
 #include <string.h>
 #include <sblib/eib.h>
 #include <sblib/eib/bus.h>
+#include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 #include <sblib/timeout.h>
 #include <sblib/internal/iap.h>

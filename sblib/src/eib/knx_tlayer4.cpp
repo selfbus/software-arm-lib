@@ -280,7 +280,7 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, unsigned short te
 
     unsigned char tpci = telegram[6] & 0b11000011; // Transport control field (see KNX 3/3/4 p.6 TPDU)
     unsigned short apci = (unsigned short)(((telegram[6] & 3) << 8) | telegram[7]);
-    unsigned int senderAddr = (telegram[1] << 8) | telegram[2];
+    unsigned int senderAddr = senderAddress(telegram);
     telegramCount++;
 
     dumpTelegramInfo(senderAddr, telegram[6], false, state);
@@ -546,10 +546,9 @@ void TLayer4::sendConControlTelegram(int cmd, unsigned int address, int senderSe
         serial.print("sendControl");
     );
 
-    sendCtrlTelegram[0] = 0xb0; // connection controls always in system priority
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendCtrlTelegram[3] = (byte)(address >> 8);
-    sendCtrlTelegram[4] = (byte)address;
+    initLpdu(sendCtrlTelegram, PRIORITY_SYSTEM, false); // connection control commands always in system priority
+    // sender address will be set by bus.sendTelegram()
+    setDestinationAddress(sendCtrlTelegram, address);
     sendCtrlTelegram[5] = (byte)0x60; ///\todo set correct routing counter
     sendCtrlTelegram[6] = (byte)cmd;
 
@@ -690,7 +689,7 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsig
 {
     dump2(serial.print("actionA02 "));
     bool sendResponse = false;
-    processApci(apci, connectedAddr, seqNo, &sendResponse, telegram, telLength);  ///\todo 7 is not uniform with other process... Calls
+    processApci(apci, connectedAddr, seqNo, &sendResponse, telegram, telLength);
     dumpTelegramBytes(false,telegram, telLength);
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     seqNoRcv++;                 // increment sequence counter
@@ -698,8 +697,8 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsig
     connectedTime = systemTime; // "restart the connection timeout timer"
     if (sendResponse)
     {
-        ///\todo this has to be done in Layer 2
-        sendTelegram[0] = 0xb0 | (telegram[0] & 0x0c); // Control byte, set same priority as received
+        ///\todo normally this has to be done in Layer 2
+        initLpdu(sendTelegram, priority(telegram), false); // same priority as received
     }
     return sendResponse;
 }
@@ -751,9 +750,7 @@ void TLayer4::actionA07SendDirectTelegram()
         return;
     }
 
-    // set sequence number
-    sendTelegram[6] &= static_cast<byte>(~T_SEQUENCE_NUMBER_Msk);
-    sendTelegram[6] |= static_cast<byte>(seqNoSend << T_SEQUENCE_NUMBER_FIRST_BIT_Pos);
+    setSequenceNumber(sendTelegram, seqNoSend);
     telegramCount++;
 
     dump2(
@@ -764,11 +761,9 @@ void TLayer4::actionA07SendDirectTelegram()
         serial.print(LOG_SEP);
     );
 
-    // 0 priority is was already as set in actionA02sendAckPduAndProcessApci
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendTelegram[3] = static_cast<byte>(connectedAddr >> 8);
-    sendTelegram[4] = static_cast<byte>(connectedAddr);
-
+    // priority already set in actionA02sendAckPduAndProcessApci
+    // sender address will be set by bus.sendTelegram()
+    setDestinationAddress(sendTelegram, connectedAddr);
     setTL4State(TLayer4::OPEN_WAIT);
 
     dump2(
@@ -867,7 +862,8 @@ bool TLayer4::checkValidRepeatedTelegram(unsigned char *telegram, unsigned short
     }
 
     // check controlByte of last and new telegram, ignoring the repeated flag
-    if (controlByte(telegram) != (setRepeated(controlByte(lastTelegram), true)))
+    setRepeated(lastTelegram, true);
+    if (controlByte(telegram) != controlByte(lastTelegram))
     {
         return true;
     }

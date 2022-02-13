@@ -97,36 +97,6 @@ enum
     APCI_INDIVIDUALADDRESS_SERIALNUMBER_READ_PDU        = 0x3DC, //!< A_IndividualAddressSerialNumber_Read-PDU, broadcast
     APCI_INDIVIDUALADDRESS_SERIALNUMBER_RESPONSE_PDU    = 0x3DD, //!< A_IndividualAddressSerialNumber_Response-PDU, broadcast
     APCI_INDIVIDUALADDRESS_SERIALNUMBER_WRITE_PDU       = 0x3DE, //!< A_IndividualAddressSerialNumber_Write-PDU, broadcast
-
-    // Transport commands (see KNX 2.1 3/3/4 p.6 Transport Control Field)
-    T_CONNECT_PDU       = 0x80,         //!< T_Connect-PDU
-    T_DISCONNECT_PDU    = 0x81,         //!< T_Disconnect-PDU
-    T_ACK_PDU           = 0xc2,         //!< T_ACK-PDU
-    T_NACK_PDU          = 0xc3,         //!< T_NAK-PDU
-
-    // Transport command bit positions and masks
-    T_CONNECTION_CTRL_COMMAND_Pos   = 7,                                        //!< Position of the control command bit
-    T_CONNECTION_CTRL_COMMAND_Msk   = (1UL << T_CONNECTION_CTRL_COMMAND_Pos),   //!< Bitmask to check for an connection control command
-
-    T_ACKNOWLEDGE_Msk               = 0b11000010,                               //!< Bitmask to check for an @ref T_ACK_PDU or @ref T_NACK_PDU
-    T_NACK_Pos                      = 0,                                        //!< Position of the @ref T_NACK_PDU bit
-    T_NACK_Msk                      = (1UL << T_NACK_Pos),                      //!< Bitmask to check for an  @ref T_NACK_PDU bit
-
-    T_IS_SEQUENCED_Pos              = 6,                                        //!< Position of the TPDU has sequence number bit
-    T_IS_SEQUENCED_Msk              = (1UL << T_IS_SEQUENCED_Pos),              //!< Bitmask to check TPDU has a sequence number
-
-    T_SEQUENCE_NUMBER_Msk           = 0b00111100,                               //!< Bitmask to get the sequence number of an TPDU
-    T_SEQUENCED_COMMAND             = 0b01000000,
-    T_SEQUENCE_NUMBER_FIRST_BIT_Pos = 2,                                        //!< Position of first bit of the sequence number
-    T_SEQUENCE_NUMBER_FIRST_BIT_Msk = (1UL << T_SEQUENCE_NUMBER_FIRST_BIT_Pos), //!< Bitmask to get the first bit of the sequence number
-
-    T_GROUP_ADDRESS_FLAG_Pos          = 7,                                 //!< Position of address type flag bit
-    T_GROUP_ADDRESS_FLAG_Msk          = (1UL << T_GROUP_ADDRESS_FLAG_Pos), //!< Bitmask to check for an group address
-
-
-
-    // TPCI (TPDU) commands
-    T_GROUP_PDU = 0x00
 };
 
 /**

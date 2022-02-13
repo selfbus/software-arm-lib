@@ -20,6 +20,7 @@
  published by the Free Software Foundation.
  -----------------------------------------------------------------------------*/
 
+#include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 #include "bcu_updater.h"
 #include "dump.h"
