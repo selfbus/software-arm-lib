@@ -36,8 +36,8 @@ typedef void (StepFunction)  (void * state, unsigned int var);
 
 typedef enum
 {
-  TEL_RX            //!> simulated telegram received from the bus
-, TEL_TX            //!> simulated telegram to transmit to the bus
+  TEL_RX            //!> simulated telegram received from the bus, at least the length must be specified
+, TEL_TX            //!> simulated telegram to transmit to the bus, at least the length must be specified
 , TIMER_TICK        //!> simulated timer tick by increasing system time
 , CHECK_TX_BUFFER
 , LOOP              //!> simulates bcu.loop()

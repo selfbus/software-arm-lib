@@ -32,12 +32,11 @@ void IAP_Init_Flash(unsigned char value);
 // Size of a flash sector: 4k
 #define SECTOR_SIZE  0x1000
 
-///\todo old value for LPC1114 ?
-// Size for the simulated flash: 32k (8 * 4k)
-#define FLASH_SIZE  0x8000
+// Size for smaller LPC1114 simulated flash: 32k (8 * 4k)
+// #define FLASH_SIZE  0x8000
 
 // Size for the simulated flash: 64k (16 * 4k), value for LPC1115
-// #define FLASH_SIZE  0x10000
+#define FLASH_SIZE  0x10000
 
 
 #ifdef __cplusplus

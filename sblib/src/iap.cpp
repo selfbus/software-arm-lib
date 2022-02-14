@@ -13,7 +13,7 @@
 #include <string.h>
 
 // The maximum memory that is tested when searching for the flash size, in bytes
-#define MAX_FLASH_SIZE 0x80000
+#define MAX_FLASH_SIZE 0x80000 // (524kB)
 
 // The increments when searching for the flash size
 #define FLASH_SIZE_SEARCH_INC 0x2000
