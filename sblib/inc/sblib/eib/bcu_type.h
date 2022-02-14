@@ -109,7 +109,7 @@
     /** The length of the HighRam */
 #   define HIGH_RAM_LENGTH 0xBC
 
-#elif BCU_TYPE == 0x701 || BCU_TYPE == 0x705 /* BIM 112, v7.1 and v7.5*/
+#elif BCU_TYPE == 0x701 || BCU_TYPE == 0x705 || BCU_TYPE == 0x7B0 /* BIM 112, v7.1, v7.5 and 0x07B0*/
 
     /** Address for load control */
 #   define LOAD_CONTROL_ADDR 0x104
@@ -131,40 +131,11 @@
 #   define USER_RAM_SHADOW_SIZE 3
 
     /** Start address of the user EEPROM when ETS talks with us. */
-#   define USER_EEPROM_START 0x3f00
-
-    /** The size of the user EEPROM in bytes. */
-#   ifndef __LPC11UXX__
-#       define USER_EEPROM_SIZE       3072
-#       define USER_EEPROM_FLASH_SIZE 4096
+#   if BCU_TYPE != 0x7B0
+#      define USER_EEPROM_START 0x3f00
 #   else
-#       define USER_EEPROM_SIZE       3072  // was reduced from 4096 to 3072 to support LPC11Uxx. see commit 3194e058a850bdacb33cd068222647f1dbf19488
-#       define USER_EEPROM_FLASH_SIZE 4096
+#      define USER_EEPROM_START 0x3300
 #   endif
-
-#elif BCU_TYPE == 0x7B0 /* SYSTEM_B */
-
-    /** Address for load control */
-#   define LOAD_CONTROL_ADDR 0x104
-
-    /** Address for load state */
-#   define LOAD_STATE_ADDR 0xb6e9
-
-    /** Start address of the user RAM when ETS talks with us. */
-#   define USER_RAM_START_DEFAULT 0x5FC
-
-#   ifndef EXTRA_USER_RAM_SIZE
-#       define EXTRA_USER_RAM_SIZE 0
-#   endif
-
-    /** The size of the user RAM in bytes. */
-#   define USER_RAM_SIZE (0x304 + EXTRA_USER_RAM_SIZE)
-
-    /** How many bytes have to be allocated at the end of the RAM for shadowed values */
-#   define USER_RAM_SHADOW_SIZE 3
-
-    /** Start address of the user EEPROM when ETS talks with us. */
-#   define USER_EEPROM_START 0x3300
 
     /** The size of the user EEPROM in bytes. */
 #   ifndef __LPC11UXX__
