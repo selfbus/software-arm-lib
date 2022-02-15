@@ -67,7 +67,7 @@ int main()
 
 	for (unsigned int i = (unsigned int)&incbin_bl_start; i < (unsigned int)&incbin_bl_end; i += FLASH_SECTOR_SIZE)
 	{
-	    __attribute__ ((aligned (4))) byte buf[FLASH_SECTOR_SIZE]; // Address of buf must be word aligned, see iapProgram(..) hint.
+	    __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) byte buf[FLASH_SECTOR_SIZE]; // Address of buf must be word aligned, see iapProgram(..) hint.
 		memset(buf, 0xFF, FLASH_SECTOR_SIZE);
 		unsigned int len = (unsigned int)&incbin_bl_end - i;
 		if (len > FLASH_SECTOR_SIZE)
