@@ -67,7 +67,7 @@ public:
     /**
      * 0x0060: BCU1 system status. See enum BcuStatus below.
      *         In some modes (BCU2 as BCU1) this part of the RAM
-     *         is sued for com objects as well. Therefor the real
+     *         is sued for com objects as well. Therefore the real
      *         status is at the end of the user ram.
      */
 	volatile byte _status;
@@ -81,7 +81,7 @@ public:
      * 3 = the program is terminated
      *
      *         In some modes (BCU2 as BCU1) this part of the RAM
-     *         is sued for com objects as well. Therefor the real
+     *         is sued for com objects as well. Therefore the real
      *         runState is at the end of the user ram.
      */
 	volatile byte _runState;
@@ -126,11 +126,15 @@ public:
 
 
 /**
- * The user EEPROM.
+ *          The user EEPROM.
+ * @details Can be accessed by name, like userEeprom.status and as an array, like
+ *          userEeprom[addr]. Please note that the start address of @ref USER_EEPROM_START is subtracted.
+ *          E.g. userEeprom[0x107] is the correct address for userEeprom.version not userEeprom[0x07].
  *
- * The user EEPROM can be accessed by name, like userEeprom.status and as an array, like
- * userEeprom[addr]. Please note that the start address of the EEPROM is subtracted. That means
- * userEeprom[0x107] is the correct address for userEeprom.version; not userEeprom[0x07].
+ * @note see KNX Spec. 2.1
+ *       - BCU 1 (256 bytes) : 9/4/1 3.1.10.3.1 p.13ff
+ *       - BCU 2 (992 bytes) : 9/4/1 5.1.2.12.5 p.45ff
+ *       - BIM112            : not in Spec. 2.1 some information in 06 Profiles 4.2.10 p.36
  */
 class UserEeprom
 {
@@ -160,15 +164,15 @@ public:
     byte usrSavePtr;     //!< 0x0115: Low byte of the pointer to user save function (BCU1 only)
     byte addrTabSize;    //!< 0x0116: Size of the address table
     byte addrTab[2];     //!< 0x0117+: Address table, 2 bytes per entry. Real array size is addrTabSize*2
-    byte user[220];      //!< 0x0116: User EEPROM: 220 bytes (BCU1)
+    byte user[230];      //!< 0x0119: User EEPROM: 230 bytes (BCU1)
     byte checksum;       //!< 0x01ff: EEPROM checksum (BCU1 only)
 #else
     byte appType;        //!< 0x0115: Application program type: 0=BCU2, else BCU1
     byte addrTabSize;    //!< 0x0116: Size of the address table
     byte addrTab[2];     //!< 0x0117+:Address table, 2 bytes per entry. Real array size is addrTabSize*2
-#if BCU_TYPE != SYSTEM_B_TYPE
-    byte user[855];      //!< 0x0119+:User EEPROM: 856 bytes (BCU2)
-#endif
+#   if BCU_TYPE != SYSTEM_B_TYPE
+       byte user[855];   //!< 0x0119+:User EEPROM: 856 bytes (BCU2)
+#   endif
                          //!< ------  System EEPROM below (BCU2)
     byte loadState[INTERFACE_OBJECT_COUNT];   //!< 0x0470: Load state of the system interface objects
     word addrTabAddr;    //!< 0x0478: Address of the address table
@@ -189,8 +193,8 @@ public:
     byte commsTabMcb[8];
     byte eibObjMcb[8];
     byte commsSeg0Mcb[8];
-    byte eibObjVer[5];      //!< Application programm 1 version
-    byte commsSeg0Ver[5];   //!< Application programm 2 version
+    byte eibObjVer[5];      //!< Application program 1 version
+    byte commsSeg0Ver[5];   //!< Application program 2 version
 #endif /*BCU_TYPE*/
 
     /**
