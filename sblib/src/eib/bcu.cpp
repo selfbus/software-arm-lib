@@ -470,7 +470,9 @@ unsigned char BCU::processApci(int apci, const int senderAddr, const int senderS
     int apciCommand = apci & APCI_GROUP_MASK;
     switch (apciCommand)
     {
-    case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI
+    case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI,
+                            //!> Estimation of the current bus via the AD-converter channel 1 and the AdcRead-service.
+                            //!  The value read can be converted to a voltage value by using the following formula: Voltage = ADC_Value * 0,15V
         index = bus.telegram[7] & 0x3f;  // ADC channel
         count = bus.telegram[8];         // number of samples
         sendTelegram[5] = 0x64;
