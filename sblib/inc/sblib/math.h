@@ -74,7 +74,7 @@
 /**
  * Round x to the nearest integer.
  */
-#define round(x) ((x) >= 0 ? (int)((x) + 0.5) : (int)((x) - 0.5))
+#define round(x) ((x) >= 0 ? (int)((x) + 0.5f) : (int)((x) - 0.5f))
 
 /**
  * Convert degrees to radians.
