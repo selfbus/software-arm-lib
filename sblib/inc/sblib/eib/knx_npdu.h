@@ -19,8 +19,8 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#ifndef SBLIB_EIB_KNX_NPDU_H_
-#define SBLIB_EIB_KNX_NPDU_H_
+#ifndef SBLIB_KNX_NPDU_H_
+#define SBLIB_KNX_NPDU_H_
 
 #define NPDU_CONTROL_BYTE           (0)
 
@@ -39,5 +39,5 @@ enum Hop_count_type
 
 
 
-#endif /* SBLIB_EIB_KNX_NPDU_H_ */
+#endif /* SBLIB_KNX_NPDU_H_ */
 /** @}*/

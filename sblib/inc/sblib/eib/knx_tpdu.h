@@ -19,8 +19,8 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#ifndef SBLIB_EIB_KNX_TPDU_H_
-#define SBLIB_EIB_KNX_TPDU_H_
+#ifndef SBLIB_KNX_TPDU_H_
+#define SBLIB_KNX_TPDU_H_
 
 #include <sblib/types.h>
 
@@ -84,5 +84,5 @@ inline void setSequenceNumber(unsigned char *telegram, byte newSequenceNumber)
 
 
 
-#endif /* SBLIB_EIB_KNX_TPDU_H_ */
+#endif /* SBLIB_KNX_TPDU_H_ */
 /** @}*/
