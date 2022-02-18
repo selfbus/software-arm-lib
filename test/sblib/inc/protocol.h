@@ -18,7 +18,7 @@
 #define protected public
 #   include <sblib/eib/bus.h>
 #   include <sblib/eib/bcu.h>
-#   include <sblib/eib/knx_tlayer4.h>
+// #   include <sblib/eib/knx_tlayer4.h>
 #undef private
 #undef protected
 #include "iap_emu.h"
@@ -36,7 +36,7 @@ typedef void (StepFunction)  (void * state, unsigned int var);
 
 typedef enum
 {
-  TEL_RX            //!> simulated telegram received from the bus, at least the length must be specified
+  TEL_RX            //!> simulated telegram received from the bus, at least the length must be specified, loopCount can be used to call bcu.loop() after stepFunction is evaluated
 , TEL_TX            //!> simulated telegram to transmit to the bus, at least the length must be specified
 , TIMER_TICK        //!> simulated timer tick by increasing system time
 , CHECK_TX_BUFFER
@@ -49,6 +49,7 @@ typedef struct
 {
     TelegramType     type;
     int              length;
+    unsigned int     loopCount;
     unsigned int     variable;
     StepFunction   * stepFunction;
     unsigned char    bytes[24]; ///\todo more space for extended frames

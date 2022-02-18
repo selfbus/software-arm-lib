@@ -32,7 +32,7 @@
 
 #define OWN_KNX_ADDRESS (0xA000) // own address 10.0.0
 
-TLayer4* bcuTL4 = (TLayer4*) &bcu;
+TLayer4 *bcuTL4 = (TLayer4*) &bcu;
 
 static void tc_setup(void)
 {
@@ -580,6 +580,7 @@ TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
     executeTest(& testCaseTelegramSequence_08);
     executeTest(& testCaseTelegramSequence_09);
     executeTest(& testCaseTelegramSequence_10);
+
     // test cases 11-17 not implemented, they are for client only, (connect/disconnect from the local user)
     executeTest(& testCaseTelegramSequence_18);
     executeTest(& testCaseTelegramSequence_19);
@@ -607,6 +608,5 @@ TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
     executeTest(& testCaseTelegramSequence_40);
     executeTest(& testCaseTelegramSequence_41);
     executeTest(& testCaseTelegramSequence_42);
-
 }
 

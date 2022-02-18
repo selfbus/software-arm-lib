@@ -162,12 +162,17 @@ static unsigned int _handleBreak (Test_Case * tc, Telegram * tel, unsigned int t
     return testStep - 1;
 }
 
-static void _handleLoop (Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _loop(const int loopCount)
 {
-    for (int i = 0; i < tel->length; i++)
+    for (int i = 0; i < loopCount; i++)
     {
         bcu.loop();
     }
+}
+
+static void _handleLoop (Test_Case * tc, Telegram * tel, unsigned int testStep)
+{
+    _loop(tel->loopCount);
 }
 
 void executeTest(Test_Case * tc)
@@ -229,6 +234,13 @@ void executeTest(Test_Case * tc)
 
         if (tel->stepFunction) tel->stepFunction(refState, tel->variable);
         if (tc->gatherState) tc->gatherState(stepState, refState);
+
+        // loopCount > 0 specifies to loop the bcu x times
+        if ((tel->loopCount > 0) && (tel->type != LOOP) && (tel->type != BREAK))
+        {
+            _loop(tel->loopCount);
+        }
+
         testStep++;
         tel++;
     }
