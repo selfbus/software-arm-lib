@@ -41,8 +41,8 @@
 #endif
 
 // #define SERIAL_SPEED 115200 //!< baudrate e.g. 115200, 230400, 576000 serial port should run for debugging
-// #define SERIAL_SPEED 576000
-// #define SERIAL_SPEED 1500000
+//#define SERIAL_SPEED 576000
+ #define SERIAL_SPEED 1500000
 
 // #define INCLUDE_SERIAL      //!< library should open serial for us
 
@@ -64,7 +64,8 @@
 //#define DEBUG_BUS_BITLEVEL  //!< extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow of the trace buffer
 //#define BUSMONITOR				//!< enables bus monitoring: dump of all bus traffic incl timing info, no sending, no processing of rx-telegrams
 //to avoid trace buffer overflow DUMP_TELEGRAMS should not be used in parallel with DEBUG_BUS or DEBUG_BUS_BITLEVEL"
-//#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack over serial interface
+#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack and timing info over serial interface
+//#define USEPIO_FOR_TEL_END_IND //<! toggle PIN PIO1_4 at end of a received telegram
 //#define DUMP_COM_OBJ    //!< dump object handling information on app-server level over serial interface
 //#define DUMP_MEM_OPS    //!< dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
 //#define DUMP_PROPERTIES //!< dump interface object and property handling over serial interface
@@ -102,6 +103,7 @@
 #   undef DEBUG_BUS_BITLEVEL
 #   undef BUSMONITOR
 #   undef DUMP_TELEGRAMS
+#	undef USEPIO_FOR_TEL_END_IND
 #   undef DUMP_COM_OBJ
 #   undef DUMP_MEM_OPS
 #   undef DUMP_PROPERTIES

@@ -56,7 +56,6 @@ bool CCS811Class::begin(uint8_t I2C_ADDR, int WAKE_PIN) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   Chip_I2C_MasterSend(I2C0, _I2C_ADDR, &APP_START, sizeof(APP_START));
-  //i2c_CCS811->Write(_I2C_ADDR, &APP_START, sizeof(APP_START)); //F4
 
   digitalWrite(_WAKE_PIN, true);
 
@@ -71,7 +70,6 @@ bool CCS811Class::begin(uint8_t I2C_ADDR, int WAKE_PIN) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t i2cData[2] = {MEAS_MODE, 0x20};
-  //i2c_CCS811->Write(_I2C_ADDR, i2cData, sizeof(i2cData));
   Chip_I2C_MasterSend(I2C0, _I2C_ADDR, i2cData, sizeof(i2cData));
   digitalWrite(_WAKE_PIN, true);
 
@@ -83,7 +81,6 @@ char CCS811Class::readStatus(void) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t status;// = STATUS;
-  //i2c_CCS811->Read(_I2C_ADDR, &status, 1);
   Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, STATUS, &status, 1);
   digitalWrite(_WAKE_PIN, true);
   return status;
@@ -93,7 +90,6 @@ char CCS811Class::readHW_ID(void) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t hw_id;// = HW_ID;
-  //if( i2c_CCS811->Read(_I2C_ADDR, &hw_id, 1) != true){
   if(Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, HW_ID, &hw_id, 1) != true){
     hw_id=0;
   }
@@ -101,11 +97,39 @@ char CCS811Class::readHW_ID(void) {
   return hw_id;
 }
 
+// get the Baseline from CSS811
+// A two byte read/write register which contains an encoded
+// version of the current baseline used in Algorithm Calculations.
+// A previously stored value may be written back to this two byte
+// register and the Algorithms will use the new value in its
+// calculations (until it adjusts it as part of its internal Automatic
+// Baseline Correction).
+int CCS811Class::getBaseline(void) {
+  _digitalWrite(_WAKE_PIN, false);
+  delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
+  uint8_t buffer[2];
+  Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, BASELINE_REG, buffer, 2); // read BASELINE register
+
+  int baseline = ((uint8_t) buffer[0] << 8) + buffer[1];
+
+  digitalWrite(_WAKE_PIN, true);
+
+  return baseline;
+}
+
+// set the baseline from before reading to the CCS811
+void CCS811Class::setBaseline(int baseline) {
+  _digitalWrite(_WAKE_PIN, false);
+  delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
+  uint8_t i2cData[] = {BASELINE_REG, (uint8_t)(baseline >> 8), (uint8_t) baseline};
+  Chip_I2C_MasterSend(I2C0, _I2C_ADDR, i2cData, sizeof(i2cData));
+  digitalWrite(_WAKE_PIN, true); // set WAKE_PIN high - this puts sensor in sleep mode (~2uA) and all I2C communications are ignored
+}
+
 char CCS811Class::readErrorID(char _status) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t error_id;// = ERROR_ID;
-  //i2c_CCS811->Read(_I2C_ADDR, &error_id, 1);
   Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, ERROR_ID, &error_id, 1);
   digitalWrite(_WAKE_PIN, true);
   uint8_t bit = (_status & 1) != 0; // black magic to read ERROR bit from STATUS register
@@ -119,18 +143,29 @@ void CCS811Class::sleep() {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t i2cData[] = {MEAS_MODE, 0x00};
-  //i2c_CCS811->Write(_I2C_ADDR, i2cData, sizeof(i2cData));
   Chip_I2C_MasterSend(I2C0, _I2C_ADDR, i2cData, sizeof(i2cData));
   digitalWrite(_WAKE_PIN, true); // set WAKE_PIN high - this puts sensor in sleep mode (~2uA) and all I2C communications are ignored
 }
 
+// set the Mode of the CSS811
+// Mode 0 – Idle (Measurements are disabled in this mode)
+// Mode 1 – Constant power mode, IAQ measurement every second
+// Mode 2 – Pulse heating mode IAQ measurement every 10 seconds
+// Mode 3 – Low power pulse heating mode IAQ measurement every 60
+void CCS811Class::setMode(uint8_t modeNumber) {
+  _digitalWrite(_WAKE_PIN, false);
+  delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
+  uint8_t i2cData[] = {MEAS_MODE, (uint8_t)(modeNumber << 4)};
+  Chip_I2C_MasterSend(I2C0, _I2C_ADDR, i2cData, sizeof(i2cData));
+  digitalWrite(_WAKE_PIN, true); // set WAKE_PIN high - this puts sensor in sleep mode (~2uA) and all I2C communications are ignored
+}
+
+// get the CO2 and TVOC Data from CSS811
 void CCS811Class::getData(void) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t buffer[4];
-  //buffer[0] = ALG_RESULT_DATA;  // reading ALG_RESULT_DATA clears DATA_READY bit in 0x00
-  //i2c_CCS811->Read(_I2C_ADDR, buffer, 4);
-  Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, ALG_RESULT_DATA, buffer, 4);
+  Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, ALG_RESULT_DATA, buffer, 4); // reading ALG_RESULT_DATA clears DATA_READY bit in 0x00
 
   CO2 = ((uint8_t) buffer[0] << 8) + buffer[1];
   TVOC = ((uint8_t) buffer[2] << 8) + buffer[3];
