@@ -77,7 +77,7 @@ private:
   // Correction factor used to calculate lux. Typical value is 1.2 but can
   // range from 0.96 to 1.44. See the data sheet (p.2, Measurement Accuracy)
   // for more information.
-  const float BH1750_CONV_FACTOR = 1.2;
+  const float BH1750_CONV_FACTOR = 1.2f;
   Mode BH1750_MODE = UNCONFIGURED;
   unsigned long lastReadTimestamp;
 };

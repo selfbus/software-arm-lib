@@ -23,20 +23,20 @@
 #ifndef BCU_UPDATER_H_
 #define BCU_UPDATER_H_
 
-#include "bcu_layer4.h"
 #include <sblib/internal/variables.h>
 #include <sblib/timeout.h>
 #include <sblib/io_pin_names.h>
+#include <sblib/eib/bcu_base.h>
 #include "update.h"
 
 // Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
 // link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
 #define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
 
-class BcuUpdate: public BcuLayer4
+class BcuUpdate: public BcuBase
 {
 public:
-    using BcuLayer4::setProgrammingMode; // make it public so we can use it in bootloader.cpp
+    using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
 
 protected:
     /**
@@ -45,7 +45,7 @@ protected:
      */
     virtual void resetConnection();
 
-    virtual unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data);
+    unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength);
 
 
      /**
@@ -61,6 +61,9 @@ protected:
       * @return true if a restart shall happen, otherwise false
       */
      bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
+
+     bool processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength);
+     bool processBroadCastTelegram(unsigned char *telegram, unsigned short telLength);
 };
 
 #ifndef INSIDE_BCU_CPP

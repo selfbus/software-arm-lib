@@ -69,6 +69,7 @@
 //#define DUMP_COM_OBJ    //!< dump object handling information on app-server level over serial interface
 //#define DUMP_MEM_OPS    //!< dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
 //#define DUMP_PROPERTIES //!< dump interface object and property handling over serial interface
+//#define DUMP_TL4        //!< dump transport layer 4 protocol handling over serial interface
 
 /// \todo following #defines should be moved to this libconfig.h file
 // IAP_EMULATION        /// \todo from platform.h & analog_pin.cpp (used for catch-unit tests of the sblib)
@@ -106,6 +107,7 @@
 #   undef DUMP_COM_OBJ
 #   undef DUMP_MEM_OPS
 #   undef DUMP_PROPERTIES
+#   undef DUMP_TL4
 #   undef LOGGING
 #   undef BH1750_DEBUG
 #   undef DEBUG_ACTIVE
@@ -130,7 +132,7 @@
 
 // list here all defines which need the serial port
 #if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined(DUMP_TELEGRAMS) || defined(DUMP_COM_OBJ) || \
-    defined(DUMP_MEM_OPS) || defined(DUMP_PROPERTIES)
+    defined(DUMP_MEM_OPS) || defined(DUMP_PROPERTIES) || defined(DUMP_TL4)
 #   define INCLUDE_SERIAL
 #endif
 

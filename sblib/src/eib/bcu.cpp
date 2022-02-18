@@ -17,22 +17,41 @@
 #include <sblib/eib/apci.h>
 #include <sblib/internal/functions.h>
 #include <sblib/eib/com_objects.h>
-#include <string.h>
 #include <sblib/internal/variables.h>
 #include <sblib/mem_mapper.h>
+
+#include <string.h>
 
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
 #endif
 
 // Enable informational debug statements
-#if defined(INCLUDE_SERIAL)
-#   define DB(x) x
+#if defined(DUMP_MEM_OPS)
+#   define DB_MEM_OPS(x) x
 #else
-#   define DB(x)
+#   define DB_MEM_OPS(x)
 #endif
 
-extern unsigned int writeUserEepromTime;
+#if defined(DUMP_PROPERTIES)
+#   define DB_PROPERTIES(x) x
+#else
+#   define DB_PROPERTIES(x)
+#endif
+
+#if defined(DUMP_COM_OBJ)
+#   define DB_COM_OBJ(x) x
+#else
+#   define DB_COM_OBJ(x)
+#endif
+
+#if !defined(INCLUDE_SERIAL)
+#   define DB_MEMP_OPS(x)
+#   define DB_PROPERTIES(x)
+#   define DB_COM_OBJ(x)
+#endif
+
+extern volatile unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
 
 void BCU::_begin()
@@ -89,14 +108,7 @@ void BCU::loop()
         }
     }
 
-    // Send a disconnect after 6 seconds inactivity
-    if (connectedAddr && elapsed(connectedTime) > 6000)
-    {
-        sendConControlTelegram(T_DISCONNECT_PDU, 0);
-        connectedAddr = 0;
-    }
-
-    if (userEeprom.isModified() && bus.idle() && bus.telegramLen == 0 && connectedAddr == 0)
+    if (userEeprom.isModified() && bus.idle() && bus.telegramLen == 0 && connectedTo() == 0)
     {
         if (writeUserEepromTime)
         {
@@ -115,101 +127,61 @@ void BCU::loop()
     }
 }
 
-void BCU::sendConControlTelegram(int cmd, int senderSeqNo)
+/**
+ * todo check for RX status and inform upper layer if needed
+ */
+bool BCU::processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength)
 {
-    if (cmd & 0x40)  // Add the sequence number if the command shall contain it
-        cmd |= senderSeqNo & 0x3c;
+    unsigned short destAddr = (telegram[3] << 8) | telegram[4];
+    unsigned short apci = ((telegram[6] & 3) << 8) | telegram[7];
 
-    sendCtrlTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendCtrlTelegram[3] = connectedAddr >> 8;
-    sendCtrlTelegram[4] = connectedAddr;
-    sendCtrlTelegram[5] = 0x60;
-    sendCtrlTelegram[6] = cmd;
+    DB_COM_OBJ(
+        serial.println();
+        serial.print("BCU1 grp addr: 0x", (unsigned int)destAddr, HEX, 4);
+        serial.println(" error state:  0x",(unsigned int)bus.receivedTelegramState(), HEX, 4);
+    );
 
-    bus.sendTelegram(sendCtrlTelegram, 7);
+    processGroupTelegram(destAddr, apci & APCI_GROUP_MASK, telegram);
+    return (true);
 }
 
-
-/**
- * BUS process has receive a telegram - now process it
- *
- * called from BCUBase-loop
- *
- * todo check for RX status and inform upper layer if needed
- *
- */
-void BCU::processTelegram()
+bool BCU::processBroadCastTelegram(unsigned char *telegram, unsigned short telLength)
 {
-    unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
-    unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
-    unsigned short apci = ((bus.telegram[6] & 3) << 8) | bus.telegram[7];
-
-    DB(serial.println());
-	DB(serial.print("BCU1 grp addr: ");)
-	DB(serial.print((unsigned int)destAddr, HEX, 4);)
-	DB(serial.print(" error state:  ");)
-	DB(serial.println((unsigned int)bus.receivedTelegramState(), HEX, 4);)
-
-    if (destAddr == 0) // a broadcast
+    unsigned short apci = ((telegram[6] & 3) << 8) | telegram[7];
+    if (programmingMode()) // we are in programming mode
     {
-        if (programmingMode()) // we are in programming mode
+        if (apci == APCI_INDIVIDUAL_ADDRESS_WRITE_PDU)
         {
-            if (apci == APCI_INDIVIDUAL_ADDRESS_WRITE_PDU)
-            {
-                setOwnAddress((bus.telegram[8] << 8) | bus.telegram[9]);
-            }
-            else if (apci == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
-            {
-                sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-                // 1+2 contain the sender address, which is set by bus.sendTelegram()
-                sendTelegram[3] = 0x00;  // Zero target address, it's a broadcast
-                sendTelegram[4] = 0x00;
-                sendTelegram[5] = 0xe1;
-                sendTelegram[6] = 0x01;  // APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU (0x0140)
-                sendTelegram[7] = 0x40;
-                bus.sendTelegram(sendTelegram, 8);
-            }
+            setOwnAddress((telegram[8] << 8) | telegram[9]);
+        }
+        else if (apci == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
+        {
+            sendTelegram[0] = 0xb0 | (telegram[0] & 0x0c); // Control byte
+            // 1+2 contain the sender address, which is set by bus.sendTelegram()
+            sendTelegram[3] = 0x00;  // Zero target address, it's a broadcast
+            sendTelegram[4] = 0x00;
+            sendTelegram[5] = 0xe1;
+            sendTelegram[6] = 0x01;  // APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU (0x0140)
+            sendTelegram[7] = 0x40;
+            bus.sendTelegram(sendTelegram, 8);
         }
     }
-    else if ((bus.telegram[5] & 0x80) == 0) // a physical destination address
-    {
-        if (destAddr == bus.ownAddress()) // it's our physical address
-        {
-            if (tpci & 0x80)  // A connection control command
-            {
-                processConControlTelegram(bus.telegram[6]);
-            }
-            else
-            {
-                processDirectTelegram(apci);
-            }
-        }
-    }
-    else if (tpci == T_GROUP_PDU) // a group destination address and multicast
-    {
-        processGroupTelegram(destAddr, apci & APCI_GROUP_MASK, bus.telegram);
-    }
-
-    // At the end: discard the received telegram
-    bus.discardReceivedTelegram();
+    return (true);
 }
 
 bool BCU::processDeviceDescriptorReadTelegram(int id)
 {
     if (id == 0)
     {
-        int version = maskVersion();
-
-        sendTelegram[5] = 0x63;
+        unsigned short version = maskVersion();
+        sendTelegram[5] = (bus.telegram[5] & 0xf0) | 0x03; // routing count in high nibble, length in low nibble already set from caller
         sendTelegram[6] = 0x43;
         sendTelegram[7] = 0x40;
         sendTelegram[8] = version >> 8;
         sendTelegram[9] = version;
-        return true;
+        return (true);
     }
-
-    return false; // unknown device descriptor
+    return (false); // unknown device descriptor
 }
 
 static void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
@@ -261,7 +233,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
 
     if (lengthPayLoad == 0)
     {
-        DB(serial.println(" Error processApciMemoryOperation : lengthPayLoad: 0x", lengthPayLoad , HEX, 2));
+        DB_MEM_OPS(serial.println(" Error processApciMemoryOperation : lengthPayLoad: 0x", lengthPayLoad , HEX, 2));
         return false;
     }
 
@@ -282,7 +254,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
 
                 if (operationResult)
                 {
-                    DB(serial.println(" -> memmapped ", lengthPayLoad, DEC));
+                    DB_MEM_OPS(serial.println(" -> memmapped ", lengthPayLoad, DEC));
                     return true;
                 }
                 else
@@ -311,7 +283,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                     }
                     else
                     {
-                        DB(serial.println(" -> memmapped processed : ", i , DEC));
+                        DB_MEM_OPS(serial.println(" -> memmapped processed : ", i , DEC));
                         break;
                     }
                 }
@@ -333,7 +305,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                     memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], addressEnd - addressStart + 1);
                     userEeprom.modified();
                 }
-                DB(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
+                DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
                 return true;
             }
             else if ((addressStart >= USER_EEPROM_START) && (addressStart < USER_EEPROM_END))
@@ -352,7 +324,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 addressStart += copyCount;
                 payLoad += copyCount;
                 startNotFound = false;
-                DB(serial.println(" -> EEPROM processed: ", copyCount, DEC));
+                DB_MEM_OPS(serial.println(" -> EEPROM processed: ", copyCount, DEC));
             }
         }
 
@@ -366,7 +338,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                     cpyFromUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
                 else
                     cpyToUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
-                DB(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC));
+                DB_MEM_OPS(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC));
                 return true;
             }
             else if ((addressStart >= getUserRamStart()) && (addressStart <= getUserRamEnd()))
@@ -380,7 +352,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 addressStart += copyCount;
                 payLoad += copyCount;
                 startNotFound = false;
-                DB(serial.println(" -> UserRAM processed: ", copyCount, DEC));
+                DB_MEM_OPS(serial.println(" -> UserRAM processed: ", copyCount, DEC));
             }
         }
 
@@ -388,7 +360,8 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
         lengthPayLoad = addressEnd - addressStart + 1;
         if (!startNotFound)
         {
-            DB((readMem) ? serial.print(" -> MemoryRead :", addressStart, HEX, 4) : serial.print(" -> MemoryWrite:", addressStart, HEX, 4);
+            DB_MEM_OPS(
+                (readMem) ? serial.print(" -> MemoryRead :", addressStart, HEX, 4) : serial.print(" -> MemoryWrite:", addressStart, HEX, 4);
                 serial.print(" Data:");
                 for(int i=0; i<lengthPayLoad ; i++)
                 {
@@ -399,7 +372,8 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
         }
     }
 
-    DB(if (lengthPayLoad != 0)
+    DB_MEM_OPS(
+       if (lengthPayLoad != 0)
        {
            serial.print(" not found start: 0x", addressStart, HEX, 4);
            serial.print(" end: 0x", addressEnd, HEX, 4);
@@ -412,7 +386,8 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
 
 bool BCU::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
-    DB(serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
+    DB_MEM_OPS(
+       serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
        serial.print(" Data:");
        for(int i=0; i<lengthPayLoad ; i++)
        {
@@ -427,17 +402,17 @@ bool BCU::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthP
     if (addressStart == LOAD_CONTROL_ADDR)
     {
         unsigned int objectIdx = payLoad[0] >> 4;
-        DB(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
+        DB_PROPERTIES(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
         if (objectIdx < INTERFACE_OBJECT_COUNT)
         {
             userEeprom.loadState[objectIdx] = loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
             userEeprom.modified();
-            DB(serial.println());
+            DB_PROPERTIES(serial.println());
             return true;
         }
         else
         {
-            DB(serial.println(" not found"));
+            DB_PROPERTIES(serial.println(" not found"));
             return false;
         }
     }
@@ -448,7 +423,8 @@ bool BCU::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthP
 
 bool BCU::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
-    DB(serial.print("ApciMemoryReadPDU :", addressStart, HEX, 4);
+    DB_MEM_OPS(
+       serial.print("ApciMemoryReadPDU :", addressStart, HEX, 4);
        serial.print(" count: ", lengthPayLoad, DEC);
     );
 
@@ -458,14 +434,15 @@ bool BCU::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPa
     if (addressStart >= LOAD_STATE_ADDR && addressStart < LOAD_STATE_ADDR + INTERFACE_OBJECT_COUNT)
     {
         memcpy(payLoad, userEeprom.loadState + (addressStart - LOAD_STATE_ADDR), lengthPayLoad);
-        DB(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX));
+        DB_PROPERTIES(serial.println(" LOAD_STATE_ADDR: ", addressStart, HEX));
         return true;
     }
 #endif
 
     bool result = processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, true);
 
-    DB(if (result)
+    DB_MEM_OPS(
+       if (result)
        {
            serial.print("           result :", addressStart, HEX, 4);
            serial.print(" Data:");
@@ -479,28 +456,24 @@ bool BCU::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPa
     return result;
 }
 
-void BCU::processDirectTelegram(int apci)
+unsigned char BCU::processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength)
 {
-    const int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
-    const int senderSeqNo = bus.telegram[6] & 0x3c;
-    int count, address, index;
+    int count;
+    int address;
+    int index;
 #if BCU_TYPE != BCU1_TYPE
     bool found;
     int id;
 #endif
-    unsigned char sendAck = 0;
-    bool sendTel = false;
+    unsigned char sendAckTpu = 0;
+    *sendResponse = false;
 
-    if (connectedAddr != senderAddr) // ensure that the sender is correct
-        return;
-
-    connectedTime = systemTime;
     sendTelegram[6] = 0;
 
     int apciCommand = apci & APCI_GROUP_MASK;
-    switch (apciCommand)  // ADC / memory commands use the low bits for data
+    switch (apciCommand)
     {
-    case APCI_ADC_READ_PDU: // todo adc service  to be implemented for bus voltage and PEI
+    case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI
         index = bus.telegram[7] & 0x3f;  // ADC channel
         count = bus.telegram[8];         // number of samples
         sendTelegram[5] = 0x64;
@@ -509,7 +482,7 @@ void BCU::processDirectTelegram(int apci)
         sendTelegram[8] = count;                   // read count
         sendTelegram[9] = 0;                       // FIXME dummy - ADC value high byte
         sendTelegram[10] = 0;                      // FIXME dummy - ADC value low byte
-        sendTel = true;
+        *sendResponse = true;
         break;
 
     case APCI_MEMORY_READ_PDU:
@@ -529,7 +502,7 @@ void BCU::processDirectTelegram(int apci)
                 }
 #endif
             }
-            sendAck = T_ACK_PDU;
+            sendAckTpu = T_ACK_PDU;
         }
 
         if (apciCommand == APCI_MEMORY_READ_PDU)
@@ -546,14 +519,19 @@ void BCU::processDirectTelegram(int apci)
             sendTelegram[7] = 0x40 | count;
             sendTelegram[8] = address >> 8;
             sendTelegram[9] = address;
-            sendTel = true;
+            *sendResponse = true;
         }
         break;
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
         if (processDeviceDescriptorReadTelegram(apci & 0x3f))
-            sendTel = true;
-        else sendAck = T_NACK_PDU;
+        {
+            *sendResponse = true;
+        }
+        else
+        {
+            sendAckTpu = T_NACK_PDU; ///\todo this needs a check. On TL4 Style 1 rationalised only T_ACK is allowed
+        }
         break;
 
     default:
@@ -569,7 +547,7 @@ void BCU::processDirectTelegram(int apci)
                 softSystemReset(); // perform a basic restart;
             }
             // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
-            sendTel = true;
+            *sendResponse = true;
             break;
 
         case APCI_AUTHORIZE_REQUEST_PDU:
@@ -577,7 +555,7 @@ void BCU::processDirectTelegram(int apci)
             sendTelegram[6] = 0x43;
             sendTelegram[7] = 0xd2;
             sendTelegram[8] = 0x00;
-            sendTel = true;
+            *sendResponse = true;
             break;
 
 #if BCU_TYPE != BCU1_TYPE
@@ -595,7 +573,7 @@ void BCU::processDirectTelegram(int apci)
                 found = propertyValueReadTelegram(index, (PropertyID) id, count, address);
             else found = propertyValueWriteTelegram(index, (PropertyID) id, count, address);
             if (!found) sendTelegram[10] = 0;
-            sendTel = true;
+            *sendResponse = true;
             break;
 
         case APCI_PROPERTY_DESCRIPTION_READ_PDU:
@@ -606,110 +584,30 @@ void BCU::processDirectTelegram(int apci)
             id = sendTelegram[9] = bus.telegram[9];
             address = (sendTelegram[10] = bus.telegram[10]);
             propertyDescReadTelegram(index, (PropertyID) id, address);
-            sendTel = true;
+            *sendResponse = true;
             break;
 #endif /*BCU_TYPE != BCU1_TYPE*/
 
         default:
-            sendAck = T_NACK_PDU;  // Command not supported
+            ///\todo this needs a check. On TL4 Style 1 rationalised only T_ACK is allowed
+            sendAckTpu = T_NACK_PDU;  // Command not supported
             break;
         }
         break;
     }
-
-    if (sendTel)
-        sendAck = T_ACK_PDU;
-
-    if (sendAck)
-        sendConControlTelegram(sendAck, senderSeqNo);
-    else sendCtrlTelegram[0] = 0;
-
-    if (sendTel)
-    {
-        sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-        // 1+2 contain the sender address, which is set by bus.sendTelegram()
-        sendTelegram[3] = connectedAddr >> 8;
-        sendTelegram[4] = connectedAddr;
-
-        if (sendTelegram[6] & 0x40) // Add the sequence number if applicable
-        {
-            sendTelegram[6] &= ~0x3c;
-            sendTelegram[6] |= connectedSeqNo;
-            incConnectedSeqNo = true;
-        }
-        else incConnectedSeqNo = false;
-
-        bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
-    }
-}
-
-void BCU::processConControlTelegram(int tpci)
-{
-    int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
-
-    if (tpci & 0x40)  // An acknowledgement
-    {
-        tpci &= 0xc3;
-        if (tpci == T_ACK_PDU) // A positive acknowledgement
-        {
-            int curSeqNo = bus.telegram[6] & 0x3c;
-            if (incConnectedSeqNo && connectedAddr == senderAddr && lastAckSeqNo !=  curSeqNo)
-            {
-                connectedSeqNo += 4;
-                connectedSeqNo &= 0x3c;
-                incConnectedSeqNo = false;
-                lastAckSeqNo = curSeqNo;
-            }
-        }
-        else if (tpci == T_NACK_PDU)  // A negative acknowledgement
-        {
-            if (connectedAddr == senderAddr)
-            {
-                sendConControlTelegram(T_DISCONNECT_PDU, 0);
-                connectedAddr = 0;
-            }
-        }
-
-        incConnectedSeqNo = true;
-    }
-    else  // A connect/disconnect command
-    {
-        if (tpci == T_CONNECT_PDU)  // Open a direct data connection
-        {
-            if (connectedAddr == 0)
-            {
-                connectedTime = systemTime;
-                connectedAddr = senderAddr;
-                connectedSeqNo = 0;
-                incConnectedSeqNo = false;
-                lastAckSeqNo = -1;
-                //bus.setSendAck (0); // todo check in spec if needed
-                // KNX 3/3/4 3.8 shall try to send the T_CONNECT_REQ_PDU to the remote Transport Layer
-            }
-        }
-        else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
-        {
-            if (connectedAddr == senderAddr)
-            {
-                connectedAddr = 0;
-                //bus.setSendAck (0);  // todo check in spec if needed
-                // KNX 3/3/4 3.8 The T_Disconnect service shall neither be acknowledged nor confirmed by the remote Transport Layer entity.
-            }
-        }
-    }
+    return (sendAckTpu);
 }
 
 bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber)
 {
     ///\todo the following code has been hacked together quick and dirty.
     ///      It needs a rework along with the redesign of processDirectTelegram(..)
-
-
     // create the APCI_MASTER_RESET_RESPONSE_PDU
+    int senderAddress = connectedTo();
     sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendTelegram[3] = connectedAddr >> 8;
-    sendTelegram[4] = connectedAddr;
+    sendTelegram[3] = senderAddress >> 8;
+    sendTelegram[4] = senderAddress;
     sendTelegram[5] = 0x64; // length of the telegram is 4 bytes
     sendTelegram[6] = 0x40 | (APCI_MASTER_RESET_RESPONSE_PDU >> 8); // set first byte of apci
     sendTelegram[7] = APCI_MASTER_RESET_RESPONSE_PDU & 0xff; // set second byte of apci
@@ -736,13 +634,12 @@ bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseC
 
         // Add the sequence number
         sendTelegram[6] &= ~0x3c;
-        sendTelegram[6] |= connectedSeqNo;
-        incConnectedSeqNo = true;
+        sendTelegram[6] |= sequenceNumberSend();
         // set no error
         sendTelegram[8] = T_RESTART_NO_ERROR;
 
         // send transport layer 4 ACK
-        sendConControlTelegram(T_ACK_PDU, senderSeqNo);
+        sendConControlTelegram(T_ACK_PDU, senderAddress, senderSeqNo);
         while (!bus.idle())
             ;
         // send APCI_MASTER_RESET_RESPONSE_PDU
@@ -750,7 +647,7 @@ bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseC
         while (!bus.idle())
                     ;
         // send disconnect
-        sendConControlTelegram(T_DISCONNECT_PDU, 0);
+        sendConControlTelegram(T_DISCONNECT_PDU, senderAddress, 0);
         while (!bus.idle())
             ;
         softSystemReset();

@@ -91,7 +91,7 @@ void setup()
 #endif
 
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
-    extern byte userEepromModified;
+    extern volatile byte userEepromModified;
     userEepromModified = 0;
     runModeTimeout.start(1);
 
@@ -169,10 +169,8 @@ void loop()
                 serial.println("disconnectCount ", disconnectCount);
 
                 ///\todo remove after fix and on release
-                serial.print("HOTFIX 1 applied ", hotfix_1_RepeatedControlTelegramCount);
-                serial.println(" times in bcu_layer4.cpp processConControlAcknowledgmentPDU");
-                serial.print("HOTFIX 2 applied ", hotfix_2_RepeatedDataTelegramCount);
-                serial.println(" times in bcu_layer4.cpp processDirectTelegram");
+                serial.println("repeated ", repeatedTelegramCount);
+                serial.println("ignored  ", repeatedIgnoredTelegramCount);
                 ///\todo end of remove after fix and on release
 
                 serial.println();serial.println();serial.println();

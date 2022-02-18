@@ -48,7 +48,7 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
     }
 #endif
 
-unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendTel, unsigned char * data)
+unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength)
 {
     unsigned char sendAckTpu = 0;
     int apciCommand = apci & APCI_GROUP_MASK;
@@ -56,12 +56,12 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
     {
         case APCI_MEMORY_READ_PDU:
         case APCI_MEMORY_WRITE_PDU:
-            sendAckTpu = handleMemoryRequests(apciCommand, sendTel, &bus.telegram[7]);
+            sendAckTpu = handleMemoryRequests(apciCommand, sendResponse, &telegram[7]); ///\todo this 7 is not consistent with other telegram handling in sblib
 #ifdef DEBUG
             if (checkCountToFail())
             {
                 sendConControlTelegram(T_DISCONNECT_PDU, senderAddr, 0);
-                *sendTel = false;
+                *sendResponse = false;
                 return (0);
             }
 #endif
@@ -78,12 +78,12 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
 
                 case APCI_MASTER_RESET_PDU:
                     dump2(serial.println("APCI_MASTER_RESET_PDU"));
-                    if (processApciMasterResetPDU(apci, senderSeqNo, bus.telegram[8], bus.telegram[9]))
+                    if (processApciMasterResetPDU(apci, senderSeqNo, telegram[8], telegram[9]))
                     {
                         restartRequest(RESET_DELAY_MS); // Software Reset
                     }
                     // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
-                    *sendTel = true;
+                    *sendResponse = true;
                     break;
                     sendAckTpu = T_ACK_PDU;
 
@@ -97,7 +97,7 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
 
 void BcuUpdate::resetConnection()
 {
-    BcuLayer4::resetConnection();
+    BcuBase::resetConnection();
 }
 
 bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber)
@@ -105,8 +105,8 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
     // create the APCI_MASTER_RESET_RESPONSE_PDU
     sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendTelegram[3] = connectedAddr >> 8;
-    sendTelegram[4] = connectedAddr;
+    sendTelegram[3] = connectedTo() >> 8;
+    sendTelegram[4] = connectedTo();
     sendTelegram[5] = 0x64; // length of the telegram is 4 bytes
     sendTelegram[6] = 0x40 | (APCI_MASTER_RESET_RESPONSE_PDU >> 8); // set first byte of apci
     sendTelegram[7] = APCI_MASTER_RESET_RESPONSE_PDU & 0xff; // set second byte of apci
@@ -133,12 +133,12 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
 
         // Add the sequence number
         sendTelegram[6] &= ~0x3c;
-        sendTelegram[6] |= connectedSeqNo;
+        sendTelegram[6] |= sequenceNumberSend();
         // set no error
         sendTelegram[8] = T_RESTART_NO_ERROR;
 
         // send transport layer 4 ACK
-        sendConControlTelegram(T_ACK_PDU, connectedAddr, senderSeqNo);
+        sendConControlTelegram(T_ACK_PDU, connectedTo(), sequenceNumberReceived());
         while (!bus.idle())
             ;
         // send APCI_MASTER_RESET_RESPONSE_PDU
@@ -146,13 +146,25 @@ bool BcuUpdate::processApciMasterResetPDU(int apci, const int senderSeqNo, byte 
         while (!bus.idle())
                     ;
         // send disconnect
-        sendConControlTelegram(T_DISCONNECT_PDU, connectedAddr, 0);
+        sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
         while (!bus.idle())
             ;
         NVIC_SystemReset();// Software Reset
     }
 
     return (false);
+}
+
+bool BcuUpdate::processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength)
+{
+    bus.discardReceivedTelegram();
+    return (true);
+}
+
+bool BcuUpdate::processBroadCastTelegram(unsigned char *telegram, unsigned short telLength)
+{
+    bus.discardReceivedTelegram();
+    return (true);
 }
 
 

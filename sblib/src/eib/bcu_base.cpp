@@ -16,6 +16,7 @@
 #include <sblib/internal/functions.h>
 #include <sblib/internal/variables.h>
 #include <sblib/internal/iap.h>
+#include <sblib/utils.h>
 #include <string.h>
 
 #if defined(INCLUDE_SERIAL)
@@ -25,7 +26,7 @@
 // The interrupt handler for the EIB bus access object
 BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, bus);
 
-extern unsigned int writeUserEepromTime;
+extern volatile unsigned int writeUserEepromTime;
 extern volatile unsigned int systemTime;
 
 BcuBase::BcuBase()
@@ -35,36 +36,6 @@ BcuBase::BcuBase()
     setFatalErrorPin(progPin);
     progPinInv = true;
     enabled = false;
-}
-
-/*
- * Creates a len_hash wide hash of the uid.
- * Hash will be generated in provided hash buffer
- */
-int BcuBase::hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
-{
-    const int MAX_HASH_WIDE = 16;
-    uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
-    uint64_t a, b;
-    unsigned int mid;
-
-    if ((len_uid <= 0) || (len_uid > MAX_HASH_WIDE))  // maximum of 16 bytes can be hashed by this function
-        return 0;
-    if ((len_hash <= 0) || (len_hash > len_uid))
-        return 0;
-
-    mid = len_uid/2;
-    memcpy (&a, &uid[0], mid);          // copy first half of uid-bytes to a
-    memcpy (&b, &uid[mid], len_uid-mid); // copy second half of uid-bytes to b
-
-    // do some modulo a big primenumber
-    a = a % BigPrime48;
-    b = b % BigPrime48;
-    a = a^b;
-    // copy the generated hash to provided buffer
-    for (int i = 0; i<len_hash; i++)
-        hash[i] = uint64_t(a >> (8*i)) & 0xFF;
-    return 1;
 }
 
 // The method begin_BCU() is renamed during compilation to indicate the BCU type.
@@ -135,17 +106,7 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 
 #endif
 
-    // set sending buffer to free
-    sendTelegram[0] = 0;
-    sendCtrlTelegram[0] = 0;
-
-    connectedSeqNo = 0;
-    incConnectedSeqNo = false;
-    lastAckSeqNo = -1;
-
-    connectedAddr = 0;
-
-    userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
+	userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
     userRam.deviceControl = 0;
     userRam.runState = 1;
 
@@ -228,7 +189,6 @@ void BcuBase::setOwnAddress(int addr)
     }
 #endif
     userEeprom.modified();
-
     bus.ownAddr = addr;
 }
 
@@ -558,9 +518,14 @@ void BcuBase::loop()
 	}
 #endif
 
+    TLayer4::loop();
 	if (bus.telegramReceived() && (!bus.sendingTelegram()) && (bus.state == Bus::IDLE) && (userRam.status & BCU_STATUS_TL))
 	{
-        processTelegram();
+        if (processTelegram(&bus.telegram[0], bus.telegramLen))
+        {
+            // If processed successfully: discard the received telegram
+            bus.discardReceivedTelegram();
+        }
 	}
 
 	if (progPin)
@@ -595,8 +560,4 @@ bool BcuBase::setProgrammingMode(bool newMode)
     pinMode(progPin, OUTPUT);
     digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
     return true;
-}
-
-void BcuBase::processTelegram()
-{
 }

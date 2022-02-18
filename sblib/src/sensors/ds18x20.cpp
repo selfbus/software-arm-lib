@@ -161,7 +161,7 @@ bool DS18x20::readResult(int deviceIdx)
     else if (cfg == 0x40) raw = raw & ~1;   // 11 bit res, 375 ms
     // default is 12 bit resolution, 750 ms conversion time
   }
-  sDev->current_temperature= (float)raw / 16.0;
+  sDev->current_temperature= (float)raw / 16.0f;
   sDev->lastReadOK= (sDev->current_temperature >=-55 && (sDev->current_temperature) <= 125);
   if( sDev->lastReadOK ) {
       sDev->last_temperature= sDev->current_temperature;
@@ -178,7 +178,7 @@ bool DS18x20::lastReadOk(int deviceIdx)
 
 float DS18x20::temperature(int deviceIdx)
 {
-  if (deviceIdx >= this->m_foundDevices) return -999.9;
+  if (deviceIdx >= this->m_foundDevices) return -999.9f;
   return this->m_dsDev[deviceIdx].last_temperature;
 }
 
