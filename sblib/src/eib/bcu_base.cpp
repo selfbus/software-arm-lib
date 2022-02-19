@@ -235,12 +235,6 @@ void BcuBase::loop()
 	//dump transmitting part
 	if (telTXEndTime) // we transmitted a tel
 	{
-/*		serial.print(" LTXE:");
-		serial.print(telLastTXEndTime, DEC, 9);
-		serial.print(", LRXE:");
-		serial.print(telLastRXEndTime, DEC, 9);
-		serial.println(") ");
-*/
 			serial.print("TX: (S");
 			serial.print(telTXStartTime, DEC, 6);
 			serial.print(" E");
@@ -255,21 +249,19 @@ void BcuBase::loop()
 			// print time in between last rx-tel and current tx-tel
 			serial.print(" dt RX-TX:");
 			serial.print(( telTXStartTime - telLastRXEndTime), DEC, 6);
-	//		serial.println(") ");
 			telLastRXEndTime = 0;
+
 		}else if(telLastTXEndTime)
 		{
 			// print time in between last tx-tel and current tx-tel
 			serial.print(" dt TX-TX:" );
 			serial.print(( telTXStartTime - telLastTXEndTime), DEC, 6);
-	//		serial.println(") ");
 			telLastTXEndTime = 0;
 		}
 		serial.print(" rep:");
 		serial.print(( tx_rep_count), DEC, 1);
 		serial.print(" brep:");
 		serial.print(( tx_busy_rep_count), DEC, 1);
-		//serial.print(" ");
 		serial.print(") ");
 
 		//dump tx tel data
