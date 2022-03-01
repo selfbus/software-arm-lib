@@ -23,6 +23,7 @@
 #include <string.h>
 #include <sblib/eib.h>
 #include <sblib/eib/bus.h>
+#include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 #include <sblib/timeout.h>
 #include <sblib/internal/iap.h>
@@ -52,7 +53,7 @@
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)     //!< magic number for device is locked and can't be flashed
 #define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< magic number for device is unlocked and flashing is allowed
 
-static unsigned char __attribute__ ((aligned (4))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
+static unsigned char __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
 
 
 Timeout mcuRestartRequestTimeout; //!< Timeout used to trigger a MCU Reset by NVIC_SystemReset()

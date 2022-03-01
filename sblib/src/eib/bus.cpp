@@ -279,6 +279,9 @@
     volatile unsigned int telRXTelBitTimingErrorL = 0; // Bit error - falling rx edge was not in the expected window -late >33us
     volatile unsigned int telRXTelBitTimingErrorE = 0; // Bit error - falling rx edge was not in the expected window -early -7us
     //volatile unsigned int db_state= 2000;
+#   define DB_TELEGRAM(x) x
+#else
+#   define DB_TELEGRAM(x)
 #endif
 
 // buffer to dump interrupt event data on the serial line
@@ -1517,11 +1520,13 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		if (sendAck){ // we send an ack for last received frame, wait for idle for next action
 			tb_h( SEND_END_OF_TX+200, tx_error, tb_in);
-		    txtelBuffer[0] = sendAck;
-		    txtelLength = 1;
-		    tx_rep_count = sendTries;
-		    tx_busy_rep_count = sendBusyTries;
-		    tx_telrxerror = tx_error;
+			DB_TELEGRAM(
+                txtelBuffer[0] = sendAck;
+                txtelLength = 1;
+                tx_rep_count = sendTries;
+                tx_busy_rep_count = sendBusyTries;
+                tx_telrxerror = tx_error;
+		    );
 
 		    sendAck = 0;
 			state= Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
@@ -1546,12 +1551,16 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			}
 			//}else wait_for_ack_from_remote = false;
 			// dump previous tx-telegram and repeat counter and busy retry
-		    for (int i =0; i< sendTelegramLen; i++)	txtelBuffer[i] = sendCurTelegram[i];
-		    txtelLength = sendTelegramLen;
-		    tx_rep_count = sendTries;
-		    tx_busy_rep_count = sendBusyTries;
-		    tx_telrxerror = tx_error;
-
+			DB_TELEGRAM(
+			    for (int i =0; i< sendTelegramLen; i++)
+                {
+                    txtelBuffer[i] = sendCurTelegram[i];
+                }
+                txtelLength = sendTelegramLen;
+                tx_rep_count = sendTries;
+                tx_busy_rep_count = sendBusyTries;
+                tx_telrxerror = tx_error;
+			);
 		}
 		tb_d( SEND_END_OF_TX+300, wait_for_ack_from_remote , tb_in);
 		tb_d( SEND_END_OF_TX+400, sendTries , tb_in);

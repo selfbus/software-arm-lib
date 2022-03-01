@@ -61,14 +61,11 @@ unsigned int* ioconPointer(int port, int pinNum);
 #endif
 #endif
 
-/**
- * The base address of the flash.
- */
-# define FLASH_BASE_ADDRESS ((unsigned char *)LPC_FLASH_BASE)
-/**
-* The size of a flash sector in bytes.
-*/
-#define FLASH_SECTOR_SIZE 0x1000
-#define FLASH_PAGE_SIZE 0x100
+#define FLASH_BASE_ADDRESS ((unsigned char *)LPC_FLASH_BASE) //!< The base address of the flash
+
+#define FLASH_SECTOR_SIZE    (0x1000)              //!< The size of a flash sector in bytes
+#define FLASH_PAGE_SIZE      (0x100)               //!< The size of a flash page in bytes
+#define FLASH_PAGE_ALIGNMENT (FLASH_PAGE_SIZE - 1) //!< Page alignment which is allowed to flash
+#define FLASH_RAM_BUFFER_ALIGNMENT (4)             //!< MCU's RAM buffer alignment which is allowed to flash
 
 #endif /*sblib_platform_h*/

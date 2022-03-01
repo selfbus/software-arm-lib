@@ -241,6 +241,7 @@ private:
     unsigned int connectedTime;         //!< System time of the last connection oriented telegram
 
     bool checkValidRepeatedTelegram(unsigned char *telegram, unsigned short telLength);  ///\todo remove after fix in Bus and on release
+    bool checksumValid(unsigned char *telegram, unsigned short telLength);  ///\todo remove after fix in Bus and on release
     void copyTelegram(unsigned char *telegram, unsigned short telLength);
     byte lastTelegram[Bus::TELEGRAM_SIZE];
     int lastTelegramLength = 0;

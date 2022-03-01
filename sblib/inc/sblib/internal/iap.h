@@ -12,8 +12,7 @@
 #include <sblib/platform.h>
 #include <sblib/types.h>
 
-#define IAP_UID_LENGTH (16)                  //!< number of bytes iapReadUID wants as buffer
-#define PAGE_ALIGNMENT (FLASH_PAGE_SIZE - 1) //!< page alignment which is allowed to flash
+#define IAP_UID_LENGTH (16)                  //!< Buffer size in bytes for @ref iapReadUID
 
 /**
  * Status code of IAP (In Application Programming (Flash)) commands
@@ -92,7 +91,7 @@ unsigned int iapAddressOfSector(const unsigned int sector);
 IAP_Status iapEraseSector(const unsigned int sector);
 
 /**
- * @brief Erase the specified sector range.
+ * Erase the specified sector range.
  *
  * @param startSector   first sector to be erased
  * @param endSector     last sector to be erased, must be equal or greater then startSector
@@ -110,7 +109,7 @@ IAP_Status iapEraseSectorRange(const unsigned int startSector, const unsigned in
 IAP_Status iapErasePage(const unsigned int pageNumber);
 
 /**
- * @brief Erase the specified page range.
+ * Erase the specified page range.
  *
  * @param startPageNumber first page to be erased
  * @param endPageNumber   last page to be erased, must be equal or greater then startPageNumber
@@ -120,14 +119,13 @@ IAP_Status iapErasePage(const unsigned int pageNumber);
 IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned int endPageNumber);
 
 /**
- * Programs the specified number of bytes from the RAM to the specified location
- * inside the FLASH.
+ * Programs the specified number of bytes from the RAM to the specified location inside the FLASH.
  * @param rom           start address of inside the FLASH
- * @param ram           start address of the buffer (must be word aligned, use __attribute__ ((aligned (4))) to force it)
+ * @param ram           start address of the ram buffer
  * @param size          number of bytes to program
  * @return              @ref IAP_Status status code
- * @note                Address of ram must be word aligned. Otherwise you'll run into a @ref IAP_SRC_ADDR_ERROR
- *                      Use '__attribute__ ((aligned (4)))' to force correct alignment even with compiler optimization -Ox
+ * @note                Address of @ref ram must be word aligned. Otherwise you'll run into a @ref IAP_SRC_ADDR_ERROR.
+ *                      Use '__attribute__ ((aligned (@ref FLASH_RAM_BUFFER_ALIGNMENT)))' to force correct alignment even with compiler optimization -Ox
  * @warning             The function calls no_interrupts().
  */
 IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size);
@@ -144,18 +142,20 @@ IAP_Status iapReadUID(byte* uid);
 
 /**
  * Read the 32 bit part identification number of the CPU.
- *
  * @param partId    will contain the 32 bit part identification number after the call.
  *
  * @return          @ref IAP_Status status code (0 == OK)
+ * @warning         The function calls no_interrupts().
  */
 IAP_Status iapReadPartID(unsigned int* partId);
 
 /**
- * Get the size of the flash memory. This is done by probing the flash sectors
- * until an error is encountered.
+ * Get the total size in bytes of the mcu's flash memory.
+ * @details This is done by probing the flash sectors starting @ref FLASH_SIZE_SEARCH_INC until an error is encountered.
+ *          The search will also stop at @ref MAX_FLASH_SIZE
  *
- * @return the size of the flash memory.
+ * @return  The size of the mcu's flash memory in bytes.
+ * @warning The function calls no_interrupts().
  */
 unsigned int iapFlashSize();
 

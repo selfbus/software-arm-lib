@@ -13,7 +13,7 @@
 #include <string.h>
 
 // The maximum memory that is tested when searching for the flash size, in bytes
-#define MAX_FLASH_SIZE 0x80000
+#define MAX_FLASH_SIZE 0x80000 // (524kB)
 
 // The increments when searching for the flash size
 #define FLASH_SIZE_SEARCH_INC 0x2000
@@ -167,7 +167,7 @@ IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned 
 IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
 {
     // IMPORTANT: Address of ram must be word aligned. Otherwise you'll run into a IAP_SRC_ADDR_ERROR
-    // Use '__attribute__ ((aligned (4)))' to force correct alignment even with compiler optimization -Ox
+    // Use '__attribute__ ((aligned (FLASH_PAGE_ALIGNMENT)))' to force correct alignment even with compiler optimization -Ox
 
     IAP_Parameter p;
     unsigned int sector = iapSectorOfAddress(rom);

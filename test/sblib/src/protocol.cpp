@@ -52,8 +52,20 @@ static void _handleBusSendingInterrupt()
     REQUIRE(((bus.state == Bus::IDLE) || (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)));
 }
 
+static void addChecksum(unsigned char * telegram, unsigned int telLength)
+{
+    unsigned char checksum = 0xff;
+    for (unsigned short i = 0; i < (telLength-1); i++)
+    {
+        checksum ^= telegram[i];
+    }
+    telegram[telLength-1] = checksum;
+}
+
 static void _handleRx(Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
+    tel->length++; // add one byte for checksum
+    addChecksum(tel->bytes, tel->length);
 	memcpy(bus.telegram, tel->bytes, tel->length);
 	bus.telegramLen = tel->length;
 	bcu.processTelegram(bus.telegram, bus.telegramLen);
@@ -150,12 +162,17 @@ static unsigned int _handleBreak (Test_Case * tc, Telegram * tel, unsigned int t
     return testStep - 1;
 }
 
-static void _handleLoop (Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _loop(const int loopCount)
 {
-    for (int i = 0; i < tel->length; i++)
+    for (int i = 0; i < loopCount; i++)
     {
         bcu.loop();
     }
+}
+
+static void _handleLoop (Test_Case * tc, Telegram * tel, unsigned int testStep)
+{
+    _loop(tel->loopCount);
 }
 
 void executeTest(Test_Case * tc)
@@ -217,6 +234,13 @@ void executeTest(Test_Case * tc)
 
         if (tel->stepFunction) tel->stepFunction(refState, tel->variable);
         if (tc->gatherState) tc->gatherState(stepState, refState);
+
+        // loopCount > 0 specifies to loop the bcu x times
+        if ((tel->loopCount > 0) && (tel->type != LOOP) && (tel->type != BREAK))
+        {
+            _loop(tel->loopCount);
+        }
+
         testStep++;
         tel++;
     }

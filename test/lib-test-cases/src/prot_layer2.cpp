@@ -85,23 +85,21 @@ static Telegram testCaseTelegrams_CustomCheckRepeatedFlag[] =
     // send the same telegram twice, second time with repeated flag set
     // second repeated telegram should be filtered by class TLayer4
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  7, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    {TEL_RX,  7, 0, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  8, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
-    // 3. Check T_ACK response for the DeviceDescriptorRead
-    {TEL_TX,  7, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU
-    // 4. bcu.loop() once, so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
-    {LOOP,  1, 0xA001, connectedOpenWait, {}},
-    // 5. Check DeviceDescriptorResponse Maskversion 0x0012
-    {TEL_TX,  10, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
-    // 6. Check for empty TX
-    {CHECK_TX_BUFFER,  0, 0, NULL, {}},
-    // 7. with repeated flag set DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  8, 0xA001, connectedOpenWait, {0x90, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
-    // 8. Check for empty TX-Response
-    {CHECK_TX_BUFFER,  0, 0, NULL, {}},
-    // 9. T_DISCONNECT_PDU (0x81) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  7, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x81}},
+    {TEL_RX,  8, 0, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    // 3. Check T_ACK response for the DeviceDescriptorRead, bcu.loop() once, so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
+    {TEL_TX,  7, 1, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU
+    // 4. Check DeviceDescriptorResponse Maskversion 0x0012
+    {TEL_TX,  10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
+    // 5. Check for empty TX
+    {CHECK_TX_BUFFER,  0, 0, 0, NULL, {}},
+    // 6. with repeated flag set DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  8, 0, 0xA001, connectedOpenWait, {0x90, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    // 7. Check for empty TX-Response
+    {CHECK_TX_BUFFER,  0, 0, 0, NULL, {}},
+    // 8. T_DISCONNECT_PDU (0x81) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x81}},
     {END}
 };
 

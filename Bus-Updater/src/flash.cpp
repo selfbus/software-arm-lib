@@ -38,7 +38,7 @@ static UDP_State eraseSector(unsigned int sector)
 
 bool addressAllowedToProgram(unsigned int start, unsigned int length, bool isBootDescriptor)
 {
-    if ((start & (FLASH_PAGE_SIZE - 1)) || !length) // not aligned to page or 0 length
+    if ((start & (FLASH_PAGE_ALIGNMENT)) || !length) // not aligned to page or 0 length
     {
         return (0);
     }

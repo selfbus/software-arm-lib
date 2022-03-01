@@ -3,10 +3,6 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
- *  last change: 10. April 2021 HoRa:
- *  	call to bus:setSendAck() in "connect/disconnect command at Layer4" removed- not needed, will lead to undefined effects when the
- *  	bus state machine is sending an ack in parallel due to asynchronous interrupt process
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -14,6 +10,7 @@
 
 #define INSIDE_BCU_CPP
 #include <sblib/eib/bcu.h>
+#include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 #include <sblib/internal/functions.h>
 #include <sblib/eib/com_objects.h>
@@ -298,11 +295,11 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 // start & end are in USER_EEPROM
                 if (readMem)
                 {
-                    memcpy(&payLoad[0], userEepromData + (addressStart - USER_EEPROM_START), addressEnd - addressStart + 1);
+                    memcpy(&payLoad[0], &userEeprom[addressStart], addressEnd - addressStart + 1);
                 }
                 else
                 {
-                    memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], addressEnd - addressStart + 1);
+                    memcpy(&userEeprom[addressStart], &payLoad[0], addressEnd - addressStart + 1);
                     userEeprom.modified();
                 }
                 DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
@@ -314,11 +311,11 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 const int copyCount = USER_EEPROM_END - addressStart;
                 if (readMem)
                 {
-                    memcpy(&payLoad[0], userEepromData + (addressStart - USER_EEPROM_START), copyCount);
+                    memcpy(&payLoad[0], &userEeprom[addressStart], copyCount);
                 }
                 else
                 {
-                    memcpy(userEepromData + (addressStart - USER_EEPROM_START), &payLoad[0], copyCount);
+                    memcpy(&userEeprom[addressStart], &payLoad[0], copyCount);
                     userEeprom.modified();
                 }
                 addressStart += copyCount;
@@ -473,7 +470,9 @@ unsigned char BCU::processApci(int apci, const int senderAddr, const int senderS
     int apciCommand = apci & APCI_GROUP_MASK;
     switch (apciCommand)
     {
-    case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI
+    case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI,
+                            //!> Estimation of the current bus via the AD-converter channel 1 and the AdcRead-service.
+                            //!  The value read can be converted to a voltage value by using the following formula: Voltage = ADC_Value * 0,15V
         index = bus.telegram[7] & 0x3f;  // ADC channel
         count = bus.telegram[8];         // number of samples
         sendTelegram[5] = 0x64;
