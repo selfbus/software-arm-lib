@@ -17,6 +17,14 @@ public class BootDescriptor {
 
     private BootDescriptor() {}
 
+    /**
+     * Create a @ref BootDescriptor instance from given start/end address, crc32 and application pointer address
+     * @param startAddress start address of the application firmware
+     * @param endAddress end address of the application firmware
+     * @param crc32 crc32 checksum from start to end address
+     * @param appVersionAddress AppVersionPointer address
+     * @throws UpdaterException Exception in case of invalid start or end address
+     */
     public BootDescriptor(long startAddress, long endAddress, int crc32, long appVersionAddress) throws UpdaterException {
         if (startAddress > endAddress) {
             throw new UpdaterException("startAddress beyond endAddress");
