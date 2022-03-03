@@ -160,6 +160,13 @@ bool BCU::processBroadCastTelegram(unsigned char *telegram, unsigned short telLe
             sendTelegram[5] = 0xe1;
             sendTelegram[6] = 0x01;  // APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU (0x0140)
             sendTelegram[7] = 0x40;
+
+            // on a productive bus without this delay, a lot of "more than one device is in programming mode" errors can occur
+            // 03.03.2022 tested 10 different licensed KNX-devices (MDT, Gira, Siemens, Merten), only one MDT line-coupler had also this problem
+            // other devices responded with a delay of 8-40 milliseconds, so we go for ~5ms + 2*4ms = ~13ms
+            // 4.000usec is max. we can delay with delayMicroseconds, so call it twice
+            delayMicroseconds(MAX_DELAY_MICROSECONDS);
+            delayMicroseconds(MAX_DELAY_MICROSECONDS);
             bus.sendTelegram(sendTelegram, 8);
         }
     }

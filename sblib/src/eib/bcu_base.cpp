@@ -328,20 +328,18 @@ void BcuBase::loop()
 */
 
 //dump receiving bit error stuff
-//rx bit timig errors
+//rx bit timing errors
 	if (telRXTelBitTimingErrorL)
 	{
-		serial.print(" ERL:");
-		serial.print(( telRXTelBitTimingErrorL ), DEC, 6);
-		telRXTelBitTimingErrorL =0;
+		serial.print(" ERL:", telRXTelBitTimingErrorL, DEC, 6);
 		serial.print(" ");
+		telRXTelBitTimingErrorL =0;
 	}
 	if (telRXTelBitTimingErrorE)
 	{
-		serial.print(" ERE:");
-		serial.print(( telRXTelBitTimingErrorE ), DEC, 6);
-		telRXTelBitTimingErrorE =0;
+		serial.print(" ERE:", telRXTelBitTimingErrorE, DEC, 6);
 		serial.print(" ");
+		telRXTelBitTimingErrorE =0;
 	}
 
 //dump  tel receiving part
