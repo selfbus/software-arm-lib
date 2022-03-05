@@ -317,15 +317,14 @@ public final class DeviceManagement {
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
 
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
-        if (result[3] != UPDCommand.RESPONSE_STATISTIC.id)
+        if (result[3] == UPDCommand.RESPONSE_STATISTIC.id)
         {
-            UPDProtocol.checkResult(result);
-            restartProgrammingDevice();
-            throw new UpdaterException(String.format("Requesting Bootloader statistic failed! result[3]=0x%02X", result[3]));
+            BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, 4, result.length));
+            logger.info("  {}{}{}", ConColors.BRIGHT_YELLOW, blStatistic, ConColors.RESET);
         }
-
-        BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, 4, result.length));
-        logger.info("  {}{}{}", ConColors.BRIGHT_YELLOW, blStatistic, ConColors.RESET);
+        else {
+            logger.warn("  {}{}{}", ConColors.RED, String.format("Requesting Bootloader statistic failed! result[3]=0x%02X", result[3]), ConColors.RESET);
+        }
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
