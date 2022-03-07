@@ -156,37 +156,30 @@ void loop()
     digitalWrite(PIN_RUN, blinky);
 #endif
 
-    if(bus.idle())
+    if(!bus.idle())
     {
-        // Check if restart request is pending
-        if (restartRequestExpired())
-        {
-            d3(
-                serial.print("systemTime: ", systemTime, DEC);
-                serial.println(" reset");
-                serial.println();serial.println();serial.println();
-                serial.println("telegramCount   ", telegramCount);
-                serial.println("disconnectCount ", disconnectCount);
+        return;
+    }
 
-                ///\todo remove after fix and on release
-                serial.println("repeated ", repeatedTelegramCount);
-                serial.println("ignored  ", repeatedIgnoredTelegramCount);
-                ///\todo end of remove after fix and on release
+    // Check if restart request is pending
+    if (restartRequestExpired())
+    {
+        d3(
+            serial.print("systemTime: ", systemTime, DEC);
+            serial.println(" reset");
+            serial.println();serial.println();serial.println();
+            serial.println("telegramCount   ", telegramCount);
+            serial.println("disconnectCount ", disconnectCount);
 
-                serial.println();serial.println();serial.println();
-                serial.flush();  // give time to send serial data
-            );
-            NVIC_SystemReset();
-        }
-        // Check if there is data to flash when bus is idle
-        // reverted to old method, because this leads to timeouts
-        // also on success we would need to send a response
-        // writing to flash may time out the PC_Updater_tool for around 5s
-        // because a bus timer interrupt may be canceled due to
-        // iapProgram->IAP_Call_InterruptSafe->noInterrupts();
-        // if (request_flashWrite(NULL, 0) == IAP_SUCCESS)
-    	// {
-    	// }
+            ///\todo remove after fix and on release
+            serial.println("repeated ", repeatedTelegramCount);
+            serial.println("ignored  ", repeatedIgnoredTelegramCount);
+            ///\todo end of remove after fix and on release
+
+            serial.println();serial.println();serial.println();
+            serial.flush();  // give time to send serial data
+        );
+        NVIC_SystemReset();
     }
 }
 

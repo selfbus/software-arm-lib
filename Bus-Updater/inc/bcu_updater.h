@@ -46,24 +46,8 @@ protected:
     virtual void resetConnection();
 
     unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength);
-
-
-     /**
-      * Process a APCI_MASTER_RESET_PDU
-      * see KNX Spec. 3/5/2 §3.7.1.2 p.64 A_Restart
-      *
-      * @param apci          APCI to process
-      * @param senderSeqNo   The TL layer 4 sequence number of the sender
-      * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
-      * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
-      * @note sendTelegram is accessed and changed inside the function to prepare a @ref APCI_MASTER_RESET_RESPONSE_PDU
-      *
-      * @return true if a restart shall happen, otherwise false
-      */
-     bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
-
-     bool processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength);
-     bool processBroadCastTelegram(unsigned char *telegram, unsigned short telLength);
+    bool processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength);
+    bool processBroadCastTelegram(unsigned char *telegram, unsigned short telLength);
 };
 
 #ifndef INSIDE_BCU_CPP

@@ -924,8 +924,8 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
 
 unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data)
 {
-    // only allowed for APCI_MEMORY_READ_PDU or APCI_MEMORY_WRITE_PDU
-    if ((apciCmd != APCI_MEMORY_READ_PDU) && (apciCmd != APCI_MEMORY_WRITE_PDU))
+    // only allowed for APCI_MEMORY_WRITE_PDU
+    if (apciCmd != APCI_MEMORY_WRITE_PDU)
     {
         dline("no memory command!");
         return (updUnkownCommand(sendTel));
