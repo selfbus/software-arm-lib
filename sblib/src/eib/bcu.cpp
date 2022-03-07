@@ -10,6 +10,7 @@
 
 #define INSIDE_BCU_CPP
 #include <sblib/eib/bcu.h>
+#include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 #include <sblib/internal/functions.h>
@@ -606,60 +607,52 @@ unsigned char BCU::processApci(int apci, const int senderAddr, const int senderS
 
 bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber)
 {
-    ///\todo the following code has been hacked together quick and dirty.
-    ///      It needs a rework along with the redesign of processDirectTelegram(..)
-    // create the APCI_MASTER_RESET_RESPONSE_PDU
-    int senderAddress = connectedTo();
-    sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendTelegram[3] = senderAddress >> 8;
-    sendTelegram[4] = senderAddress;
-    sendTelegram[5] = 0x64; // length of the telegram is 4 bytes
-    sendTelegram[6] = 0x40 | (APCI_MASTER_RESET_RESPONSE_PDU >> 8); // set first byte of apci
-    sendTelegram[7] = APCI_MASTER_RESET_RESPONSE_PDU & 0xff; // set second byte of apci
-    sendTelegram[7] |= 1; // set restart type to 1
-
-    sendTelegram[8] = T_RESTART_UNSUPPORTED_ERASE_CODE; // set no error response
-    // restart process time 2 byte unsigned integer value expressed in seconds
-    // DPT_TimePeriodSec / DPT7.005
-    sendTelegram[9] = 0; ///\todo set proper restart process time
-    sendTelegram[10] = 6; ///\todo set proper restart process time
-
     if (apci != APCI_MASTER_RESET_PDU)
     {
         return false;
     }
-    ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
 
-    if (checkApciForMagicWord(apci, eraseCode, channelNumber))
+    ///\todo the following code has been hacked together quick and dirty.
+    ///      It needs a rework along with the redesign of processDirectTelegram(..)
+    if (!checkApciForMagicWord(apci, eraseCode, channelNumber))
     {
-        // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
-        // set magicWord to start after reset in bootloader mode
-        unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
-        *magicWord = BOOTLOADER_MAGIC_WORD;
-
-        // Add the sequence number
-        sendTelegram[6] &= ~0x3c;
-        sendTelegram[6] |= sequenceNumberSend();
-        // set no error
-        sendTelegram[8] = T_RESTART_NO_ERROR;
-
-        // send transport layer 4 ACK
-        sendConControlTelegram(T_ACK_PDU, senderAddress, senderSeqNo);
-        while (!bus.idle())
-            ;
-        // send APCI_MASTER_RESET_RESPONSE_PDU
-        bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
-        while (!bus.idle())
-                    ;
-        // send disconnect
-        sendConControlTelegram(T_DISCONNECT_PDU, senderAddress, 0);
-        while (!bus.idle())
-            ;
-        softSystemReset();
+        ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+        return (false);
     }
 
-    return false;
+    // create the APCI_MASTER_RESET_RESPONSE_PDU
+    initLpdu(sendTelegram, priority(bus.telegram), false);
+    // sender address will be set by bus.sendTelegram()
+    setDestinationAddress(sendTelegram, connectedTo());
+
+    sendTelegram[5] = 0x64; // length of the telegram is 4 bytes
+    sendTelegram[6] = 0x40 | (APCI_MASTER_RESET_RESPONSE_PDU >> 8); // set first byte of apci
+    setSequenceNumber(sendTelegram, sequenceNumberSend());
+    sendTelegram[7] = APCI_MASTER_RESET_RESPONSE_PDU & 0xff; // set second byte of apci
+    sendTelegram[8] = T_RESTART_NO_ERROR;
+    sendTelegram[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
+    sendTelegram[10] = 1; ///\todo set proper restart process time
+
+    // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
+    // set magicWord to start after reset in bootloader mode
+    unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+    *magicWord = BOOTLOADER_MAGIC_WORD;
+
+    // send transport layer 4 ACK
+    sendConControlTelegram(T_ACK_PDU, connectedTo(), senderSeqNo);
+    while (!bus.idle())
+        ;
+    // send APCI_MASTER_RESET_RESPONSE_PDU
+    bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
+    while (!bus.idle())
+                ;
+    // send disconnect
+    sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
+    while (!bus.idle())
+        ;
+    softSystemReset();
+
+    return (true);
 }
 
 void BCU::softSystemReset()
