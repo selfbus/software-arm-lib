@@ -1299,11 +1299,11 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				   //tb_t( state*100+4, ttimer.value(), tb_in);
 				);
 
-				timer.match(timeChannel, PRE_SEND_TIME); // end of 50 bit waiting for idle
-				state = Bus::INIT; // we use init state for the timeout to set the bus to IDLE state
-				break;
-//				idleState();
+//				timer.match(timeChannel, PRE_SEND_TIME); // end of 50 bit waiting for idle
+//				state = Bus::INIT; // we use init state for the timeout to set the bus to IDLE state
 //				break;
+				idleState();
+				break;
 			}
 
 		tb_t( state+500, ttimer.value(), tb_in);
