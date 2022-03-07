@@ -35,7 +35,7 @@ enum NPDU
 enum Hop_count_type
 {
 
-}
+};
 
 
 

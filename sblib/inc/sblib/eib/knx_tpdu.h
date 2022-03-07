@@ -80,6 +80,7 @@ inline void setSequenceNumber(unsigned char *telegram, byte newSequenceNumber)
 {
     telegram[TPDU_LOW_BYTE] &= static_cast<byte>(~T_SEQUENCE_NUMBER_Msk);
     telegram[TPDU_LOW_BYTE] |= static_cast<byte>(newSequenceNumber << T_SEQUENCE_NUMBER_FIRST_BIT_Pos);
+    telegram[TPDU_LOW_BYTE] |= T_SEQUENCED_COMMAND; // set sequenced flag
 }
 
 
