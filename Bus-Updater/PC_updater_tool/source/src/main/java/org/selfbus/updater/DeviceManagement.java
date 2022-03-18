@@ -16,6 +16,8 @@ import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import java.time.Duration;
 import java.util.Arrays;
 
+import static org.selfbus.updater.Mcu.TL4_CONNECTION_TIMEOUT_MS;
+
 /**
  * Provides methods to send firmware update telegrams to the bootloader (MCU)
  */
@@ -328,7 +330,7 @@ public final class DeviceManagement {
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
-            throws UpdaterException {
+            throws UpdaterException, InterruptedException {
         ResponseResult result = new ResponseResult();
         while (true) {
             try {
@@ -339,10 +341,12 @@ public final class DeviceManagement {
             catch (KNXTimeoutException | KNXRemoteException e) {
                 logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incTimeoutCount();
+                Thread.sleep(TL4_CONNECTION_TIMEOUT_MS);
             }
             catch (KNXDisconnectException e) {
                 logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incDropCount();
+                Thread.sleep(TL4_CONNECTION_TIMEOUT_MS);
             }
             catch (KNXIllegalArgumentException e) {
                 throw new UpdaterException(String.format("%s failed.", command), e);
