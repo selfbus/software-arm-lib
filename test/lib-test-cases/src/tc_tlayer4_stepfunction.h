@@ -8,7 +8,7 @@
  *
  * @{
  *
- * @file   tc_stepfunction.h
+ * @file   tc_tlayer4_stepfunction.h
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/

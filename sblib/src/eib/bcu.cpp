@@ -635,6 +635,7 @@ bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseC
 
     // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
     // set magicWord to start after reset in bootloader mode
+#ifndef IAP_EMULATION
     unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
     *magicWord = BOOTLOADER_MAGIC_WORD;
 
@@ -651,7 +652,7 @@ bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseC
     while (!bus.idle())
         ;
     softSystemReset();
-
+#endif
     return (true);
 }
 
