@@ -621,7 +621,7 @@ bool BCU::processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseC
     }
 
     // create the APCI_MASTER_RESET_RESPONSE_PDU
-    initLpdu(sendTelegram, priority(bus.telegram), false);
+    initLpdu(sendTelegram, priority(bus.telegram), false, FRAME_STANDARD);
     // sender address will be set by bus.sendTelegram()
     setDestinationAddress(sendTelegram, connectedTo());
 

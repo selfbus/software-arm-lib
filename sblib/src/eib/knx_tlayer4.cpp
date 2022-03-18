@@ -554,7 +554,7 @@ void TLayer4::sendConControlTelegram(int cmd, unsigned int address, int senderSe
         serial.print("sendControl");
     );
 
-    initLpdu(sendCtrlTelegram, PRIORITY_SYSTEM, false); // connection control commands always in system priority
+    initLpdu(sendCtrlTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // connection control commands always in system priority
     // sender address will be set by bus.sendTelegram()
     setDestinationAddress(sendCtrlTelegram, address);
     sendCtrlTelegram[5] = (byte)0x60; ///\todo set correct routing counter
@@ -706,7 +706,7 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsig
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2
-        initLpdu(sendTelegram, priority(telegram), false); // same priority as received
+        initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
     }
     return sendResponse;
 }

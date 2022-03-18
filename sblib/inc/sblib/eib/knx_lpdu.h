@@ -30,6 +30,9 @@
 #define LPDU_DESTINATION_HIGH_BYTE  (3)
 #define LPDU_DESTINATION_LOW_BYTE   (4)
 
+#define MASK_REPEATED               (1 << 5)
+#define MASK_FRAMETYPE              (1 << 7)
+
 /**
  *  KNX Priority
  */
@@ -50,7 +53,7 @@ enum KNXFrameType
     FRAME_EXTENDED /**< FRAME_EXTENDED */
 };
 
-void initLpdu(unsigned char *telegram, KNXPriority newPriority, bool newRepeated);
+void initLpdu(unsigned char *telegram, KNXPriority newPriority, bool newRepeated, KNXFrameType newFrameType);
 byte controlByte(unsigned char *telegram);
 bool isRepeated(unsigned char *telegram);
 void setRepeated(unsigned char *telegram, bool repeated);
@@ -63,11 +66,12 @@ KNXFrameType frameType(unsigned char *telegram);
 void setFrameType(unsigned char *telegram, KNXFrameType newFrameType);
 
 
-inline void initLpdu(unsigned char *telegram, KNXPriority newPriority, bool newRepeated)
+inline void initLpdu(unsigned char *telegram, KNXPriority newPriority, bool newRepeated, KNXFrameType newFrameType)
 {
     telegram[LPDU_CONTROL_BYTE] = 0xB0;
     setRepeated(telegram, newRepeated);
     setPriority(telegram, newPriority);
+    setFrameType(telegram, newFrameType);
 }
 
 inline byte controlByte(unsigned char *telegram)
@@ -78,22 +82,19 @@ inline byte controlByte(unsigned char *telegram)
 inline bool isRepeated(unsigned char *telegram)
 {
     // 5.bit not set => repeated
-    byte cByte = controlByte(telegram);
-    return ((cByte & (1 << 5)) == 0);
+    return ((controlByte(telegram) & MASK_REPEATED) == 0);
 }
 
 inline void setRepeated(unsigned char *telegram, bool repeated)
 {
-    byte mask = (1 << 5);
     if (repeated)
     {
         // 5.bit not set => repeated
-        mask = ~mask;
-        telegram[LPDU_CONTROL_BYTE] &= mask;
+        telegram[LPDU_CONTROL_BYTE] &= ~MASK_REPEATED;
     }
     else
     {
-        telegram[LPDU_CONTROL_BYTE] |= mask;
+        telegram[LPDU_CONTROL_BYTE] |= MASK_REPEATED;
     }
 }
 
@@ -126,19 +127,27 @@ inline void setDestinationAddress(unsigned char *telegram, unsigned short newDes
 
 inline KNXFrameType frameType(unsigned char *telegram)
 {
-    if (controlByte(telegram) & 0x01)
+    if (controlByte(telegram) & MASK_FRAMETYPE)
     {
-        return FRAME_EXTENDED;
+        return FRAME_STANDARD;
     }
     else
     {
-        return FRAME_STANDARD;
+        return FRAME_EXTENDED;
     }
 }
 
 inline void setFrameType(unsigned char *telegram, KNXFrameType newFrameType)
 {
-///\todo implement this
+    if (newFrameType == FRAME_EXTENDED)
+    {
+        // 7.bit not set => extended
+        telegram[LPDU_CONTROL_BYTE] &= ~MASK_FRAMETYPE;
+    }
+    else
+    {
+        telegram[LPDU_CONTROL_BYTE] |= MASK_FRAMETYPE;
+    }
 }
 
 

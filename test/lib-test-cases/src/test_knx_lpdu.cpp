@@ -95,6 +95,26 @@ TEST_CASE("LPDU processing","[SBLIB][KNX][LPDU]")
         REQUIRE(testByte == testTelegram[0]);
         REQUIRE(PRIORITY_SYSTEM == priority(testTelegram));
 
+        // set extended frame type
+        testTelegram[0] = testTelegram[0] & 0b01111111; // 7.bit 0 = extended frame length
+        REQUIRE(frameType(testTelegram) == FRAME_EXTENDED);
+
+        // set standard frame type
+        testTelegram[0] |= 0b10000000; // 7.bit 1 = standard frame length
+        REQUIRE(frameType(testTelegram) == FRAME_STANDARD);
+
+        // check setting of standard frame type
+        testTelegram[0] = i;
+        testByte = testTelegram[0] | 0b10000000; // 7.bit 1 = standard frame length
+        setFrameType(testTelegram, FRAME_STANDARD);
+        REQUIRE(testByte == testTelegram[0]);
+
+        // check setting of extended frame type
+        testTelegram[0] = i;
+        testByte = testTelegram[0] & 0b01111111; // 7.bit 0 = extended frame length
+        setFrameType(testTelegram, FRAME_EXTENDED);
+        REQUIRE(testByte == testTelegram[0]);
+
     }
 }
 

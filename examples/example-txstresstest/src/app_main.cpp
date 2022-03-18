@@ -52,7 +52,7 @@ void initTestTelegram()
     int count = (testTelegramSize - 7);
     int memoryAddress = 0;
     memset(testTelegram, TEST_FILLBYTE, testTelegramSize);
-    initLpdu(testTelegram, PRIORITY_SYSTEM, false); // init control byte
+    initLpdu(testTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // init control byte
     setDestinationAddress(testTelegram, KNX_PHYS_ADDRESS - 1); // set destination address
     // send a APCI_MEMORY_RESPONSE_PDU response
     testTelegram[5] = 0x60 + count;
