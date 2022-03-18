@@ -232,6 +232,7 @@
  **/
 
 #include <sblib/eib/bus.h>
+#include <sblib/eib/knx_lpdu.h>
 
 #include <sblib/core.h>
 #include <sblib/interrupt.h>
@@ -586,15 +587,13 @@ void Bus::begin()
 void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
 {
 	unsigned char checksum = 0xff;
-	unsigned short i;
-
-	// Set the sender address
-	telegram[1] = ownAddr >> 8;
-	telegram[2] = ownAddr;
+	setSenderAddress(telegram, ownAddr);
 
 	// Calculate the checksum
-	for (i = 0; i < length; ++i)
+	for (unsigned short i = 0; i < length; ++i)
+	{
 		checksum ^= telegram[i];
+	}
 	telegram[length] = checksum;
 }
 

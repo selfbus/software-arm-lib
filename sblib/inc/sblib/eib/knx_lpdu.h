@@ -114,6 +114,13 @@ inline unsigned short senderAddress(unsigned char *telegram)
     return (unsigned short)((telegram[LPDU_SENDER_HIGH_BYTE] << 8) | telegram[LPDU_SENDER_LOW_BYTE]);
 }
 
+inline void setSenderAddress(unsigned char *telegram, unsigned short newSenderAddress)
+{
+    telegram[LPDU_SENDER_HIGH_BYTE] = (byte)(newSenderAddress >> 8);
+    telegram[LPDU_SENDER_LOW_BYTE] = (byte)newSenderAddress;
+}
+
+
 inline unsigned short destinationAddress(unsigned char *telegram)
 {
     return (unsigned short)((telegram[LPDU_DESTINATION_HIGH_BYTE] << 8) | telegram[LPDU_DESTINATION_LOW_BYTE]);
