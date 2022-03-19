@@ -1,8 +1,8 @@
 /**************************************************************************//**
  * @addtogroup SBLIB Selfbus library
- * @defgroup EIB protocol
- * @brief   Magic word check for Bootloader and BCU
- * @details checks a APCI_RESTART_RESPONSE_PDU for the magic
+ * @defgroup
+ * @brief
+ * @details
  *          
  * @{
  *
@@ -19,12 +19,32 @@
 
 #include <sblib/eib/apci.h>
 
-bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber)
+ApciCommand apciCommand(unsigned char *telegram)
 {
-    if (!(apci & APCI_MASTER_RESET_PDU))
+    unsigned short apci = (unsigned short)(((telegram[APCI_HIGH_BYTE] & 0x03) << 8) | telegram[APCI_LOW_BYTE]);
+    unsigned short shortCommand = apci & APCI_GROUP_MASK;
+    switch (shortCommand)
     {
-        return false;
+        case APCI_ADC_READ_PDU:
+        case APCI_MEMORY_READ_PDU:
+        case APCI_MEMORY_WRITE_PDU:
+        case APCI_DEVICEDESCRIPTOR_READ_PDU:
+            return ((ApciCommand) shortCommand);
+
+        default:
+            return ((ApciCommand) apci);
     }
+}
+
+void setApciCommand(unsigned char *telegram, ApciCommand newApciCommand, byte additionalData)
+{
+    telegram[APCI_HIGH_BYTE] = newApciCommand >> 8;
+    telegram[APCI_LOW_BYTE] = newApciCommand & 0xff;
+    telegram[APCI_LOW_BYTE] |= additionalData;
+}
+
+bool checkApciForMagicWord(byte eraseCode, byte channelNumber)
+{
     // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
     // restart with parameters, special meaning of erase=7 and channel=255 for bootloader mode
     return ((eraseCode == BOOTLOADER_MAGIC_ERASE) && (channelNumber == BOOTLOADER_MAGIC_CHANNEL));

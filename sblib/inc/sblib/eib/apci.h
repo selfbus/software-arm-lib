@@ -12,11 +12,16 @@
 
 #include <sblib/types.h>
 
-enum
-{
-    // Application commands (see KNX 3/3/7 p.8 Application Layer control field)
+#define APCI_HIGH_BYTE       (6)
+#define APCI_LOW_BYTE        (7)
 
-    APCI_GROUP_MASK = 0x3c0,
+/**
+ * Application Layer commands (APCI)
+ * @details <br>see KNX spec 2.1 3/3/7 page 8 ff.</b>
+ */
+enum ApciCommand
+{
+    APCI_GROUP_MASK = 0x3c0,                            /**< APCI_GROUP_MASK */
 
     APCI_GROUP_VALUE_READ_PDU                   = 0x000, //!< A_GroupValue_Read-PDU, multicast
     APCI_GROUP_VALUE_RESPONSE_PDU               = 0x040, //!< A_GroupValue_Response-PDU, multicast
@@ -51,18 +56,18 @@ enum
     APCI_FUNCTIONPROPERTY_STATE_READ_PDU        = 0x2C8, //!< A_FunctionPropertyState_Read-PDU, connectionless and connection-oriented
     APCI_FUNCTIONPROPERTY_STATE_RESPONSE_PDU    = 0x2C9, //!< A_FunctionPropertyState_Response-PDU, connectionless and connection-oriented
 
-    APCI_USERMSG_RESERVED_0                     = 0x2CA,
+    APCI_USERMSG_RESERVED_0                     = 0x2CA,/**< APCI_USERMSG_RESERVED_0 */
     // ... 0x2CA -> 0x2F7 reserved usermsg
-    APCI_USERMSG_RESERVED_45                    = 0x2F7,
+    APCI_USERMSG_RESERVED_45                    = 0x2F7,/**< APCI_USERMSG_RESERVED_45 */
 
     // 0x2F8 -> 0x2FE manufacturer specific area for usermsg
-    APCI_USERMSG_MANUFACTURER_0                 = 0x2F8,
-    APCI_USERMSG_MANUFACTURER_1                 = 0x2F9,
-    APCI_USERMSG_MANUFACTURER_2                 = 0x2FA,
-    APCI_USERMSG_MANUFACTURER_3                 = 0x2FB,
-    APCI_USERMSG_MANUFACTURER_4                 = 0x2FC,
-    APCI_USERMSG_MANUFACTURER_5                 = 0x2FD,
-    APCI_USERMSG_MANUFACTURER_6                 = 0x2FE,
+    APCI_USERMSG_MANUFACTURER_0                 = 0x2F8,/**< APCI_USERMSG_MANUFACTURER_0 */
+    APCI_USERMSG_MANUFACTURER_1                 = 0x2F9,/**< APCI_USERMSG_MANUFACTURER_1 */
+    APCI_USERMSG_MANUFACTURER_2                 = 0x2FA,/**< APCI_USERMSG_MANUFACTURER_2 */
+    APCI_USERMSG_MANUFACTURER_3                 = 0x2FB,/**< APCI_USERMSG_MANUFACTURER_3 */
+    APCI_USERMSG_MANUFACTURER_4                 = 0x2FC,/**< APCI_USERMSG_MANUFACTURER_4 */
+    APCI_USERMSG_MANUFACTURER_5                 = 0x2FD,/**< APCI_USERMSG_MANUFACTURER_5 */
+    APCI_USERMSG_MANUFACTURER_6                 = 0x2FE,/**< APCI_USERMSG_MANUFACTURER_6 */
 
     APCI_DEVICEDESCRIPTOR_READ_PDU              = 0x300, //!< A_DeviceDescriptor_Read-PDU, connection-oriented
     APCI_DEVICEDESCRIPTOR_RESPONSE_PDU          = 0x340, //!< A_DeviceDescriptor_Response-PDU, connection-oriented
@@ -100,8 +105,8 @@ enum
 };
 
 /**
- * @brief    A_Restart-PDU Master Reset Erase Code
- * @details  <br>see KNX spec 2.1 3/5/2 3.7.1.2.3.1 page 67</b>
+ * A_Restart-PDU Master Reset Erase Code
+ * @details <br>see KNX spec 2.1 3/5/2 3.7.1.2.3.1 page 67</b>
  */
 enum RestartPDUMasterReset
 {
@@ -115,8 +120,8 @@ enum RestartPDUMasterReset
 };
 
 /**
- * @brief    A_Restart_Response-PDU Code
- * @details  <br>see KNX spec 2.1 3/5/2 3.7.1.2.3.1 page 68</b>
+ * A_Restart_Response-PDU Code
+ * @details <br>see KNX spec 2.1 3/5/2 3.7.1.2.3.1 page 68</b>
  */
 enum RestartPDUErrorcode
 {
@@ -134,16 +139,19 @@ enum RestartPDUErrorcode
 #define BOOTLOADER_MAGIC_CHANNEL 255                           //!< bootloader magic channel
 
 /**
- * @brief Checks a APCI for the bus-updater Magic word
- *        This is a bus-updater/bootloader and BCU special function
- *        used for the flashing process to boot into bootloader mode
- * @param apci          APCI to check for the magic word
+ * @brief   Checks a APCI for the bus-updater Magic word
+ * @details This is a bus-updater/bootloader and BCU special function
+ *          used for the flashing process to boot into bootloader mode
+ *
  * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
  * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
  *
  * @return true if apci is a APCI_RESTART_TYPE1_PDU with magic word<br/>
  *         otherwise false
  */
-bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber);
+bool checkApciForMagicWord(byte eraseCode, byte channelNumber);
+
+ApciCommand apciCommand(unsigned char *telegram);
+void setApciCommand(unsigned char *telegram, ApciCommand newApciCommand, byte additionalData);
 
 #endif /*sblib_apci_h*/
