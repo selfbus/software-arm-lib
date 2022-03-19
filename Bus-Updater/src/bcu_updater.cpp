@@ -49,10 +49,9 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
     }
 #endif
 
-unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength)
+unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength)
 {
-    const unsigned short apciCommand = apci & APCI_GROUP_MASK;
-    switch(apciCommand)
+    switch(apciCmd)
     {
         case APCI_MEMORY_WRITE_PDU:
 #ifdef DEBUG
@@ -63,7 +62,7 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
                 return (0);
             }
 #endif
-            return (handleMemoryRequests(apciCommand, sendResponse, &telegram[7])); ///\todo this 7 is not consistent with other telegram handling in sblib
+            return (handleMemoryRequests(apciCmd, sendResponse, &telegram[7])); ///\todo this 7 is not consistent with other telegram handling in sblib
 
         case APCI_BASIC_RESTART_PDU:
             dump2(serial.println("APCI_BASIC_RESTART_PDU"));
@@ -75,18 +74,13 @@ unsigned char BcuUpdate::processApci(int apci, const int senderAddr, const int s
     }
 }
 
-void BcuUpdate::resetConnection()
-{
-    BcuBase::resetConnection();
-}
-
-bool BcuUpdate::processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength)
+bool BcuUpdate::processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength)
 {
     bus.discardReceivedTelegram();
     return (true);
 }
 
-bool BcuUpdate::processBroadCastTelegram(unsigned char *telegram, unsigned short telLength)
+bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength)
 {
     bus.discardReceivedTelegram();
     return (true);

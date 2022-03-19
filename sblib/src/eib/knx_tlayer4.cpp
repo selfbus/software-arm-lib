@@ -53,9 +53,9 @@
 
 dump2(
     unsigned int lastTick = 0;        //!< last systemtick a telegram was received or sent
+    unsigned short telegramCount = 0;   //!< number of telegrams since system reset
 );
 
-unsigned short telegramCount = 0;   //!< number of telegrams since system reset
 unsigned short disconnectCount = 0; //!< number of disconnects since system reset
 
 ///\todo remove after bugfix and on release
@@ -241,7 +241,7 @@ void TLayer4::_begin()
     sendCtrlTelegram[0] = 0;
 
     dumpLogHeader();
-    telegramCount = 0;
+    dump2(telegramCount = 0;);
     disconnectCount = 0;
 
     lastTelegramLength = 0;
@@ -269,28 +269,28 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, unsigned short te
     }
 
     unsigned short destAddr = destinationAddress(telegram);
+    ApciCommand apciCmd = apciCommand(telegram);
 
     if (destAddr == 0)
     {
         // a broadcast telegram
-        return (processBroadCastTelegram(telegram, telLength));
+        return (processBroadCastTelegram(apciCmd, telegram, telLength));
     }
     else if ((telegram[5] & T_GROUP_ADDRESS_FLAG_Msk))
     {
         // a group address telegram
-        return (processGroupAddressTelegram(telegram, telLength));
+        return (processGroupAddressTelegram(apciCmd, destAddr, telegram, telLength));
     }
-    else if (destAddr != bus.ownAddress())
+    else if (destAddr != ownAddress())
     {
         // not for us
         return (true);
     }
 
     unsigned char tpci = telegram[6] & 0b11000011; // Transport control field (see KNX 3/3/4 p.6 TPDU)
-    unsigned short apci = (unsigned short)(((telegram[6] & 3) << 8) | telegram[7]);
     unsigned int senderAddr = senderAddress(telegram);
-    telegramCount++;
 
+    dump2(telegramCount++;);
     dumpTelegramInfo(telegram, senderAddr, telegram[6], false, state);
 
     if (!checkValidRepeatedTelegram(telegram, telLength))
@@ -310,7 +310,7 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, unsigned short te
     }
     else
     {
-        processDirectTelegram(apci, telegram, telLength);
+        processDirectTelegram(apciCmd, telegram, telLength);
     }
     return (true);
 }
@@ -547,9 +547,8 @@ void TLayer4::sendConControlTelegram(int cmd, unsigned int address, int senderSe
         cmd |= (senderSeqNo << T_SEQUENCE_NUMBER_FIRST_BIT_Pos) & T_SEQUENCE_NUMBER_Msk;
     }
 
-    telegramCount++;
-
     dump2(
+        telegramCount++;
         dumpTelegramInfo(bus.telegram, address, cmd, true, state); ///\todo rewrite dumpTelegramInfo without using bus.telegram
         serial.print("sendControl");
     );
@@ -572,7 +571,7 @@ void TLayer4::sendConControlTelegram(int cmd, unsigned int address, int senderSe
     bus.sendTelegram(sendCtrlTelegram, 7);
 }
 
-void TLayer4::processDirectTelegram(int apci, unsigned char *telegram, unsigned short telLength)
+void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength)
 {
     dump2(
           serial.print("DirectTele");
@@ -619,7 +618,7 @@ void TLayer4::processDirectTelegram(int apci, unsigned char *telegram, unsigned 
     {
         ///\todo BUG event E04 needs more checks
         // event E04
-        telegramReadyToSend = actionA02sendAckPduAndProcessApci(apci, seqNo, telegram, telLength);
+        telegramReadyToSend = actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
         /*
         // this either does not work, it's even worse
         if (state == TLayer4::OPEN_IDLE)
@@ -662,7 +661,7 @@ void TLayer4::processDirectTelegram(int apci, unsigned char *telegram, unsigned 
     dumpTelegramBytes(false, telegram, telLength);
 }
 
-unsigned char TLayer4::processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendResponse, unsigned char * telegram, unsigned short telLength)
+unsigned char TLayer4::processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo, bool * sendResponse, unsigned char * telegram, unsigned short telLength)
 {
     dump2(
           serial.print("TLayer4::processApci");
@@ -693,11 +692,11 @@ void TLayer4::actionA01Connect(unsigned int address)
     dump2(lastTick = connectedTime;); // for debug logging
 }
 
-bool TLayer4::actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsigned char *telegram, unsigned short telLength)
+bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int seqNo, unsigned char *telegram, unsigned short telLength)
 {
     dump2(serial.print("actionA02 "));
     bool sendResponse = false;
-    processApci(apci, connectedAddr, seqNo, &sendResponse, telegram, telLength);
+    processApci(apciCmd, connectedAddr, seqNo, &sendResponse, telegram, telLength);
     dumpTelegramBytes(false,telegram, telLength);
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     seqNoRcv++;                 // increment sequence counter
@@ -759,9 +758,9 @@ void TLayer4::actionA07SendDirectTelegram()
     }
 
     setSequenceNumber(sendTelegram, seqNoSend);
-    telegramCount++;
 
     dump2(
+        telegramCount++;
         dumpTelegramInfo(sendTelegram, connectedAddr, sendTelegram[6], true, state);
         serial.print("sendDirectT");
         serial.print(LOG_SEP);

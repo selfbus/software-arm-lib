@@ -33,6 +33,9 @@
 
 TLayer4 *bcuTL42 = (TLayer4*) &bcu;
 
+#define MEM_ADDRESS_HIGH(x) ((USER_EEPROM_START + x) >> 8)
+#define MEM_ADDRESS_LOW(x) ((USER_EEPROM_START + x) & 0xFF)
+
 static void tc_setup(void)
 {
     bcuTL42->setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
@@ -56,12 +59,12 @@ static Telegram apciMemoryReadTelegrams[] =
 {
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
-    // 2. APCI_MEMORY_READ_PDU count = 2, address = 0x105 (UserEeprom.deviceTypeH and UserEeprom.deviceTypeL)
-    {TEL_RX, 10, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x64, 0x42, 0x02, 0x01, 0x05}},
+    // 2. APCI_MEMORY_READ_PDU count = 2, address = (BCU1: 0x105, BIM112: 0x3F05) (UserEeprom.deviceTypeH and UserEeprom.deviceTypeL)
+    {TEL_RX, 10, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x64, 0x42, 0x02, MEM_ADDRESS_HIGH(0x05), MEM_ADDRESS_LOW(0x05)}},
     // 3. Check T_ACK, loop() once so APCI_MEMORY_RESPONSE_PDU will be send
     {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
-    // 4. APCI_MEMORY_RESPONSE_PDU count = 2, address = 0x105, value = DEVICE = 0x2060
-    {TEL_TX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x65, 0x42, 0x42, 0x01, 0x05, 0x20, 0x60}},
+    // 4. APCI_MEMORY_RESPONSE_PDU count = 2, address = (BCU1: 0x105, BIM112: 0x3F05), value = DEVICE = 0x2060
+    {TEL_TX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x65, 0x42, 0x42, MEM_ADDRESS_HIGH(0x05), MEM_ADDRESS_LOW(0x05), 0x20, 0x60}},
     {END}
 };
 
@@ -69,16 +72,16 @@ static Telegram apciMemoryWriteTelegrams[] =
 {
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
-    // 2. APCI_MEMORY_WRITE_PDU count = 2, address = 0x105 value = 0xCDEF
-    {TEL_RX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x66, 0x42, 0x82, 0x01, 0x05, 0xCD, 0xEF}},
+    // 2. APCI_MEMORY_WRITE_PDU count = 2, address = (BCU1: 0x105, BIM112: 0x3F05), value = 0xCDEF
+    {TEL_RX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x66, 0x42, 0x82, MEM_ADDRESS_HIGH(0x05), MEM_ADDRESS_LOW(0x05), 0xCD, 0xEF}},
     // 3. Check T_ACK, loop() once
     {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
-    // 4. APCI_MEMORY_READ_PDU count = 2, address = 0x105 (UserEeprom.deviceTypeH and UserEeprom.deviceTypeL)
-    {TEL_RX, 10, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x64, 0x46, 0x02, 0x01, 0x05}},
+    // 4. APCI_MEMORY_READ_PDU count = 2, address = (BCU1: 0x105, BIM112: 0x3F05) (UserEeprom.deviceTypeH and UserEeprom.deviceTypeL)
+    {TEL_RX, 10, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x64, 0x46, 0x02, MEM_ADDRESS_HIGH(0x05), MEM_ADDRESS_LOW(0x05)}},
     // 5. Check T_ACK, loop() once so APCI_MEMORY_RESPONSE_PDU will be send
     {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC6}},
-    // 6. APCI_MEMORY_RESPONSE_PDU count = 2, address = 0x105, value = 0xCDEF
-    {TEL_TX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x65, 0x42, 0x42, 0x01, 0x05, 0xCD, 0xEF}},
+    // 6. APCI_MEMORY_RESPONSE_PDU count = 2, address = (BCU1: 0x105, BIM112: 0x3F05), value = 0xCDEF
+    {TEL_TX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x65, 0x42, 0x42, MEM_ADDRESS_HIGH(0x05), MEM_ADDRESS_LOW(0x05), 0xCD, 0xEF}},
     {END}
 };
 
@@ -129,6 +132,93 @@ static Telegram apciAuthorizeRequestTelegrams[] =
     {TEL_TX, 7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
     // 4. APCI_AUTHORIZE_RESPONSE_PDU
     {TEL_TX, 9, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x62, 0x43, 0xD2, 0x00}},
+    {END}
+};
+
+static Telegram apciPropertyDescriptionReadTelegrams[] =
+{
+    // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 2. APCI_PROPERTY_DESCRIPTION_READ_PDU, objIdx = 0x00 (deviceObjectProps) , propId = 0x0C (PID_MANUFACTURER_ID), index = 0x00
+    {TEL_RX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0xD8, 0x00, 0x0C, 0x00}},
+    // 3. Check T_ACK, loop() once so APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU will be send
+    {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
+#if BCU_TYPE != BCU1_TYPE
+    // 4. APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU
+    {TEL_TX, 15, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x68, 0x43, 0xD9, 0x00, 0x0C, 0x00, 0x12, 0x00, 0x01, 0x50}},
+    // 5. T_ACK for APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC2}},
+
+    // 6. APCI_PROPERTY_DESCRIPTION_READ_PDU, objIdx = 0x03 (appObjectProps) , propId = 0x0D (PID_PROG_VERSION), index = 0x00
+    {TEL_RX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x47, 0xD8, 0x03, 0x0D, 0x00}},
+    // 7. Check T_ACK, loop() once so APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU will be send
+    {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC6}},
+    // 8. APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU
+    {TEL_TX, 15, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x68, 0x47, 0xD9, 0x03, 0x0D, 0x00, 0x15, 0x00, 0x01, 0x50}},
+    // 9. T_ACK for APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC6}},
+#else
+    // 4. Check for empty TX-Response
+    {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
+#endif
+    {END}
+};
+
+static Telegram apciPropertyValueReadTelegrams[] =
+{
+    // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 2. APCI_PROPERTY_VALUE_READ_PDU, objIdx = 0x00 (deviceObjectProps) , propId = 0x0C (PID_MANUFACTURER_ID), count = 1, start = 1
+    {TEL_RX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0xD5, 0x00, 0x0C, 0x10, 0x01}},
+    // 3. Check T_ACK, loop() once so APCI_PROPERTY_VALUE_RESPONSE_PDU will be send
+    {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
+#if BCU_TYPE != BCU1_TYPE
+    // 4. APCI_PROPERTY_VALUE_RESPONSE_PDU (Manufacturer)
+    {TEL_TX, 14, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x67, 0x43, 0xD6, 0x00, 0x0C, 0x10, 0x01, (MANUFACTURER >> 8), (MANUFACTURER & 0xFF)}},
+    // 5. T_ACK for APCI_PROPERTY_VALUE_RESPONSE_PDU
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC2}},
+
+    // 6. APCI_PROPERTY_VALUE_READ_PDU, objIdx = 0x03 (appObjectProps) , propId = 0x0D (PID_PROG_VERSION), count = 1, start = 1
+    {TEL_RX, 12, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x47, 0xD5, 0x03, 0x0D, 0x10, 0x01}},
+    // 7. Check T_ACK, loop() once so APCI_PROPERTY_VALUE_RESPONSE_PDU will be send
+    {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC6}},
+    // 8. APCI_PROPERTY_VALUE_RESPONSE_PDU (Manufacturer, Device, Version)
+    {TEL_TX, 17, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x6A, 0x47, 0xD6, 0x03, 0x0D, 0x10, 0x01, (MANUFACTURER >> 8), (MANUFACTURER & 0xFF), (DEVICE >> 8), (DEVICE & 0xFF), VERSION}},
+    // 9. T_ACK for APCI_PROPERTY_VALUE_RESPONSE_PDU
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC6}},
+#else
+    // 4. Check for empty TX-Response
+    {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
+#endif
+    {END}
+};
+
+static Telegram apciPropertyValueWriteTelegrams[] =
+{
+    // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 2. APCI_PROPERTY_VALUE_WRITE_PDU, objIdx = 0x00 (deviceObjectProps) , propId = 0x4E (PID_HARDWARE_TYPE), count = 1, start = 1, length 6
+    {TEL_RX, 18, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0xD7, 0x00, 0x4E, 0x10, 0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06}},
+    // 3. Check T_ACK, loop() once so APCI_PROPERTY_VALUE_RESPONSE_PDU will be send
+    {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
+#if BCU_TYPE != BCU1_TYPE
+    // 4. APCI_PROPERTY_VALUE_RESPONSE_PDU objIdx = 0x00 (deviceObjectProps) , propId = 0x4E (PID_HARDWARE_TYPE)
+    {TEL_TX, 18, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x6B, 0x43, 0xD6, 0x00, 0x4E, 0x10, 0x01, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06}},
+    // 5. T_ACK for APCI_PROPERTY_VALUE_RESPONSE_PDU
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC2}},
+
+    // 6. APCI_PROPERTY_VALUE_WRITE_PDU, objIdx = 0x03 (appObjectProps) , propId = 0x1B (PID_MCB_TABLE), count = 1, start = 1, length 8
+    {TEL_RX, 20, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x47, 0xD7, 0x03, 0x1B, 0x10, 0x01, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80}},
+    // 7. Check T_ACK, loop() once so APCI_PROPERTY_VALUE_RESPONSE_PDU will be send
+    {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC6}},
+    // 8. APCI_PROPERTY_VALUE_RESPONSE_PDU objIdx = 0x03 (appObjectProps) , propId = 0x1B (PID_MCB_TABLE)
+    {TEL_TX, 20, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x6D, 0x47, 0xD6, 0x03, 0x1B, 0x10, 0x01, 0x10, 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80}},
+    // 9. T_ACK for APCI_PROPERTY_VALUE_RESPONSE_PDU
+    {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC6}},
+#else
+    // 4. Check for empty TX-Response
+    {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
+#endif
     {END}
 };
 
@@ -223,6 +313,45 @@ static Test_Case testCaseApciAuthorizeRequestPdu =
     apciAuthorizeRequestTelegrams
 };
 
+static Test_Case testCaseApciPropertyDescriptionReadPdu =
+{
+    "APCI_PROPERTY_DESCRIPTION_READ_PDU",
+    MANUFACTURER, DEVICE, VERSION,
+    0,    //powerOnDelay
+    NULL, // eePromSetup
+    tc_setup,
+    NULL,
+    NULL,
+    NULL,
+    apciPropertyDescriptionReadTelegrams
+};
+
+static Test_Case testCaseApciPropertyValueReadPdu =
+{
+    "APCI_PROPERTY_VALUE_READ_PDU",
+    MANUFACTURER, DEVICE, VERSION,
+    0,    //powerOnDelay
+    NULL, // eePromSetup
+    tc_setup,
+    NULL,
+    NULL,
+    NULL,
+    apciPropertyValueReadTelegrams
+};
+
+static Test_Case testCaseApciPropertyValueWritePdu =
+{
+    "APCI_PROPERTY_VALUE_WRITE_PDU",
+    MANUFACTURER, DEVICE, VERSION,
+    0,    //powerOnDelay
+    NULL, // eePromSetup
+    tc_setup,
+    NULL,
+    NULL,
+    NULL,
+    apciPropertyValueWriteTelegrams
+};
+
 TEST_CASE("APCI processing", "[protocol][APCI]")
 {
     executeTest(&testCaseApciAdcReadPdu);
@@ -232,5 +361,9 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
     executeTest(&testCaseApciBasicRestartPdu);
     executeTest(&testCaseApciMasterResetPdu);
     executeTest(&testCaseApciAuthorizeRequestPdu);
+    // tests should only work for Maskversion >= 0x07xx
+    executeTest(&testCaseApciPropertyDescriptionReadPdu);
+    executeTest(&testCaseApciPropertyValueReadPdu);
+    executeTest(&testCaseApciPropertyValueWritePdu);
 }
 

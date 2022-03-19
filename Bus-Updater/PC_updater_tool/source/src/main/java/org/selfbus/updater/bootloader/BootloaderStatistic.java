@@ -1,15 +1,15 @@
 package org.selfbus.updater.bootloader;
 
 public class BootloaderStatistic {
-    private final int telegramCount;
+    private final int dummy2;
     private final int disConnectCount;
     private final int repeatedTelegramCount;
     private final int repeatedIgnoredTelegramCount;
     private final int dummy;
 
 
-    public BootloaderStatistic(int telegramCount, int disConnectCount, int repeatedTelegramCount, int repeatedIgnoredTelegramCount, int dummy) {
-        this.telegramCount = telegramCount;
+    public BootloaderStatistic(int dummy2, int disConnectCount, int repeatedTelegramCount, int repeatedIgnoredTelegramCount, int dummy) {
+        this.dummy2 = dummy2;
         this.disConnectCount = disConnectCount;
         this.repeatedTelegramCount = repeatedTelegramCount;
         this.repeatedIgnoredTelegramCount = repeatedIgnoredTelegramCount;
@@ -17,23 +17,23 @@ public class BootloaderStatistic {
     }
 
     public static BootloaderStatistic fromArray(byte[] parse) {
-        int telegramCount = (parse[0] & 0xFF) + ((parse[1] & 0xFF) << 8);
+        int dummy2 = (parse[0] & 0xFF) + ((parse[1] & 0xFF) << 8);
         int disConnectCount = (parse[2] & 0xFF) + ((parse[3] & 0xFF) << 8);
         int repeatedTelegramCount = (parse[4] & 0xFF) + ((parse[5] & 0xFF) << 8);
         int repeatedIgnoredTelegramCount = (parse[6] & 0xFF) + ((parse[7] & 0xFF) << 8);;
         int dummy = (parse[8] & 0xFF) + ((parse[9] & 0xFF) << 8);;
-        return new BootloaderStatistic(telegramCount, disConnectCount, repeatedTelegramCount, repeatedIgnoredTelegramCount, dummy);
+        return new BootloaderStatistic(dummy2, disConnectCount, repeatedTelegramCount, repeatedIgnoredTelegramCount, dummy);
     }
 
     public String toString() {
         long diff = repeatedTelegramCount() - repeatedIgnoredTelegramCount();
-        return String.format("#Telegram: %d #Disconnect: %d #Repeated: %d #Ignored: %d #Diff: %d",
-                telegramCount(), disConnectCount(), repeatedTelegramCount(), repeatedIgnoredTelegramCount(), diff);
+        return String.format("#Disconnect: %d #Repeated: %d #Ignored: %d #Diff: %d",
+                              disConnectCount(), repeatedTelegramCount(), repeatedIgnoredTelegramCount(), diff);
     }
 
-    public long telegramCount()
+    public long dummy2()
     {
-        return telegramCount;
+        return dummy2;
     }
 
     public long disConnectCount()

@@ -37,32 +37,20 @@ class BCU : public BcuBase
 {
 public:
     /**
-     * @brief Process a group address (T_Data_Group) telegram.
-     */
-    virtual bool processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength);
-
-    /**
-     * @brief Process a broadcast telegram.
-     */
-    virtual bool processBroadCastTelegram(unsigned char *telegram, unsigned short telLength);
-
-    virtual unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength);
-
-    /**
      * The BCU's main processing loop. This is like the application's loop() function,
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
-    virtual void loop();
+    void loop() override;
 
     /**
      * Allow an user provided memory mapper to store parameter data via memory write / read
-     * @param mapper - a pointer to an instance of a MemMapper object
+     * @param mapper - a pointer to an instance of a @ref MemMapper object
      */
     void setMemMapper(MemMapper *mapper);
 
     /**
      * Returns a pointer to the instance of the MemMapper object of the BCU
-     * @return a pointer to the instance of the MemMapper object, in case of error return is nullptr
+     * @return Instance of the @ref MemMapper object, in case of error return is nullptr
      */
     MemMapper* getMemMapper();
 
@@ -74,7 +62,7 @@ public:
     /**
      * End using the EIB bus coupling unit.
      */
-    virtual void end();
+    void end() override;
 
     /**
      * Enable/Disable sending of group write or group response telegrams.
@@ -95,19 +83,23 @@ public:
     void setGroupTelRateLimit(unsigned int limit);
 
 protected:
-    /*
+    /**
      * Special initialization for the BCU
      */
-    virtual void _begin();
+    void _begin() override;
+
     /**
-     * Process a unicast telegram with our physical address as destination address.
-     * The telegram is stored in sbRecvTelegram[].
-     *
-     * When this function is called, the sender address is != 0 (not a broadcast).
-     *
-     * @param apci - the application control field
+     * Process a group address (T_Data_Group) telegram.
      */
-    void processDirectTelegram(int apci);
+    bool processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength) override;
+
+    /**
+     * Process a broadcast telegram.
+     */
+    bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength) override;
+
+    unsigned char processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo,
+                              bool *sendResponse, unsigned char *telegram, unsigned short telLength) override;
 
     /**
      * Process a device-descriptor-read request.
@@ -157,7 +149,6 @@ protected:
      * Process a APCI_MASTER_RESET_PDU
      * see KNX Spec. 3/5/2 §3.7.1.2 p.64 A_Restart
      *
-     * @param apci          APCI to process
      * @param senderSeqNo   The TL layer 4 sequence number of the sender
      * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
      * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
@@ -165,7 +156,7 @@ protected:
      *
      * @return true if a restart shall happen, otherwise false
      */
-    bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
+    bool processApciMasterResetPDU(unsigned char *telegram, const int senderSeqNo, byte eraseCode, byte channelNumber);
 
     /**
      * @brief Performs a system reset by calling @ref NVIC_SystemReset

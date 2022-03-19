@@ -342,20 +342,20 @@ static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * r
 
 static Test_Case testCase =
 {
-  "Group Adr Prog"
-, 0x0004, 0x2060, 0x01
-, 0
-, tc_eepromSetup
-, tc_setup
-, (StateFunction *) gatherProtocolState
-, (TestCaseState *) &protoState[0]
-, (TestCaseState *) &protoState[1]
-, testCaseTelegrams
+    "Group Adr Prog",
+    0x0004, 0x2060, 0x01,
+    0,
+    tc_eepromSetup,
+    tc_setup,
+    (StateFunction *) gatherProtocolState,
+    (TestCaseState *) &protoState[0],
+    (TestCaseState *) &protoState[1],
+    testCaseTelegrams
 };
 
 TEST_CASE("Programming of the group addresses", "[protocol][group]")
 {
-    executeTest(& testCase);
+    executeTest(&testCase);
 }
 
 

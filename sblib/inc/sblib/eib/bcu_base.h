@@ -131,7 +131,7 @@ public:
      *
      * @param addr - the physical address
      */
-    void setOwnAddress(int addr);
+    void setOwnAddress(int addr) override;
 
     /**
      * Test if the programming mode is active. This is also indicated
@@ -160,7 +160,7 @@ public:
      * The BCU's main processing loop. This is like the application's loop() function,
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
-    virtual void loop();
+    void loop() override;
 
     /**
      * Get the read-only CommObjectTable address, which can be set calling Begin(...)
@@ -188,7 +188,7 @@ protected:
     /*
      * Special initialization for the BCU
      */
-    virtual void _begin();
+    void _begin() override;
 
     /**
      * @brief Set or unset the programming mode of the bcu
@@ -201,7 +201,7 @@ protected:
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
 
 private:
-    word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
+    word commObjectTableAddressStatic ;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
 };
 
 
@@ -221,7 +221,6 @@ private:
 inline void BcuBase::begin(int manufacturer, int deviceType, int version)
 {
     begin_BCU(manufacturer, deviceType, version);
-    commObjectTableAddressStatic = 0;
 }
 #else
 

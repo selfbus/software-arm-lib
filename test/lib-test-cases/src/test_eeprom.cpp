@@ -21,7 +21,7 @@
 #include <iap_emu.h>
 #include <math.h>
 
-static const unsigned char pattern[] = {0xCA, 0xFF, 0xEE, 0xAF, 0xFE, 0xDE, 0xAD};
+static const unsigned char testPattern[] = {0xCA, 0xFF, 0xEE, 0xAF, 0xFE, 0xDE, 0xAD};
 extern unsigned char FLASH[];
 #define EEPROM_PAGE_SIZE FLASH_PAGE_SIZE
 
@@ -100,8 +100,6 @@ TEST_CASE("Test of the basic EEPROM functions","[EEPROM][SBLIB]")
 TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
 {
     int iap_save [5] ;
-    unsigned int i;
-    unsigned int ps = sizeof(pattern);
     int callsToIapProgram = getCallsToIapProgram(USER_EEPROM_SIZE);
     int userEepromStartInFlash = FLASH_SIZE - (trunc(USER_EEPROM_SIZE/FLASH_SECTOR_SIZE) + 1) * FLASH_SECTOR_SIZE; // userEepromData is flash sector aligned at the end of the real flash
     int additionalCalls = 1;
@@ -122,7 +120,10 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
         iapFlashSize();
         bcu.begin(0, 0, 0);
         memcpy(iap_save, iap_calls, sizeof (iap_calls));
-        for(i=0;i < ps;i++) userEeprom[USER_EEPROM_START + i] = pattern[i];
+        for(unsigned int i = 0; i < sizeof(testPattern); i++)
+        {
+            userEeprom[USER_EEPROM_START + i] = testPattern[i];
+        }
         userEeprom.modified();
         bcu.end();
         REQUIRE(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + callsToIapProgram));
@@ -137,7 +138,10 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
     {
         bcu.begin(0, 0, 0);
         memcpy(iap_save, iap_calls, sizeof (iap_calls));
-        for(i=0;i < ps;i++) userEeprom[USER_EEPROM_START + i] = pattern[ps - i];
+        for(unsigned int i = 0; i < sizeof(testPattern); i++)
+        {
+            userEeprom[USER_EEPROM_START + i] = testPattern[sizeof(testPattern) - i - 1];
+        }
         userEeprom.modified();
         bcu.end();
         CHECK(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + callsToIapProgram + additionalCalls));

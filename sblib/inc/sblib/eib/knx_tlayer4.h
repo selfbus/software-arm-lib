@@ -23,6 +23,7 @@
 #define TLAYER4_H_
 
 #include <sblib/eib/bus.h>
+#include <sblib/eib/apci.h>
 
 
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
@@ -60,7 +61,10 @@ public:
     TLayer4();
     virtual ~TLayer4() = default;
 
-    virtual void _begin();
+    /**
+     * Pre-processes the received telegram from bus.telegram. Called by main()
+     */
+    bool processTelegram(unsigned char *telegram, unsigned short telLength);
 
     /**
      * Test if a connection-oriented connection is open.
@@ -68,11 +72,6 @@ public:
      * @return True if a connection is open, otherwise false.
      */
     bool directConnection();
-
-    /**
-     * Pre-processes the received telegram from bus.telegram. Called by main()
-     */
-    bool processTelegram(unsigned char *telegram, unsigned short telLength);
 
     /**
      * The BCU's main processing loop. This is like the application's loop() function,
@@ -83,7 +82,7 @@ public:
     /**
      * Get our own physical address.
      */
-    virtual int ownAddress();
+    int ownAddress();
 
     /**
      * Set our own physical address. Normally the physical address is set by ETS when
@@ -91,7 +90,7 @@ public:
      *
      * @param addr - the physical address
      */
-    void setOwnAddress(int addr);
+    virtual void setOwnAddress(int addr);
 
     /**
      * Returns the physical knx-address of the connected partner.
@@ -108,17 +107,22 @@ public:
 
 protected:
     /**
-     * @brief Process a group address (T_Data_Group) telegram.
+     * Special initialization for the transport layer
      */
-    virtual bool processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength) = 0;
+    virtual void _begin();
 
     /**
-     * @brief Process a broadcast telegram.
+     * Process a group address (T_Data_Group) telegram.
      */
-    virtual bool processBroadCastTelegram(unsigned char *telegram, unsigned short telLength) = 0;
+    virtual bool processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength) = 0;
 
     /**
-     * @brief ///\todo check real functionality and if even needed
+     * Process a broadcast telegram.
+     */
+    virtual bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength) = 0;
+
+    /**
+     * ///\todo check real functionality and if even needed
      */
     virtual void resetConnection();
 
@@ -129,11 +133,12 @@ protected:
      * @param address - the knx address to send the telegram to
      * @param senderSeqNo - the sequence number of the sender, 0 if not required
      */
-    virtual void sendConControlTelegram(int cmd, unsigned int address, int senderSeqNo);
+    void sendConControlTelegram(int cmd, unsigned int address, int senderSeqNo);
 
-    virtual unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool * sendResponse, unsigned char * telegram, unsigned short telLength);
+    virtual unsigned char processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo,
+                                      bool * sendResponse, unsigned char * telegram, unsigned short telLength);
 
-    bool enabled;                  //!< The BCU is enabled. Set by bcu.begin().
+    bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
     byte sequenceNumberReceived();
     byte sequenceNumberSend();
 
@@ -194,13 +199,13 @@ private:
      *
      * When this function is called, the sender address is != 0 (not a broadcast).
      *
-     * @param apci - the application control field
+     * @param apciCmd - The application control field command (APCI)
      */
-    void processDirectTelegram(int apci, unsigned char *telegram, unsigned short telLength);
+    void processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength);
 
     void actionA00Nothing();
     void actionA01Connect(unsigned int address);
-    bool actionA02sendAckPduAndProcessApci(int apci, const int seqNo, unsigned char *telegram, unsigned short telLength);
+    bool actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int seqNo, unsigned char *telegram, unsigned short telLength);
     void actionA03sendAckPduAgain(const int seqNo);
 
     /**
@@ -234,11 +239,11 @@ private:
     byte sendCtrlTelegram[TL4_CTRL_TELEGRAM_SIZE];  //!< Short buffer for connection control telegrams.
 
     TLayer4::TL4State state = TLayer4::CLOSED;
-    int connectedAddr;                  //!< Remote address of the connected partner. //\todo check possibility of using short
+    int connectedAddr = -1;             //!< Remote address of the connected partner. //\todo check possibility of using short
     byte seqNoSend = -1;
     byte seqNoRcv = -1;
     bool telegramReadyToSend = false;
-    unsigned int connectedTime;         //!< System time of the last connection oriented telegram
+    unsigned int connectedTime = 0;     //!< System time of the last connection oriented telegram
 
     bool checkValidRepeatedTelegram(unsigned char *telegram, unsigned short telLength);  ///\todo remove after fix in Bus and on release
     bool checksumValid(unsigned char *telegram, unsigned short telLength);  ///\todo remove after fix in Bus and on release

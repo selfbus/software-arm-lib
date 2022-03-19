@@ -27,10 +27,10 @@
 BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, bus);
 
 extern volatile unsigned int writeUserEepromTime;
-extern volatile unsigned int systemTime;
 
 BcuBase::BcuBase()
-:progButtonDebouncer()
+:progButtonDebouncer(),
+ commObjectTableAddressStatic(0)
 {
     progPin = PIN_PROG;
     setFatalErrorPin(progPin);
@@ -165,13 +165,12 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
 
 void BcuBase::_begin()
 {
-
+    TLayer4::_begin();
 }
 
 void BcuBase::end()
 {
     enabled = false;
-
     bus.end();
 }
 

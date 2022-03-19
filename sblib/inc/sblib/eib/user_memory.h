@@ -17,7 +17,10 @@
 class UserRam;
 class UserEeprom;
 
-/** number of interface objects supported */
+/** UserRam address of the system state*/
+#define USER_RAM_SYSTEM_STATE_ADDRESS (0x60)
+
+/** Number of interface objects supported */
 #define INTERFACE_OBJECT_COUNT 8
 
 /**

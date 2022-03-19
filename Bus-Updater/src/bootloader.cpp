@@ -96,7 +96,7 @@ void setup()
     runModeTimeout.start(1);
 
 #ifdef DEBUG
-    int physicalAddress = bus.ownAddress();
+    int physicalAddress = bcu.ownAddress();
     serial.println("=========================================================");
     serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
     serial.println(", DEBUG MODE :-)");
@@ -124,7 +124,6 @@ void setup()
 
     // finally start the bcu
     bcu.begin(0, 0, 0); // we are nothing, because we don't answer to property reads
-    // bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION); // We are a "Jung 2138.10" device, version 0.1
 }
 
 
@@ -168,7 +167,7 @@ void loop()
             serial.print("systemTime: ", systemTime, DEC);
             serial.println(" reset");
             serial.println();serial.println();serial.println();
-            serial.println("telegramCount   ", telegramCount);
+            // serial.println("telegramCount   ", telegramCount);
             serial.println("disconnectCount ", disconnectCount);
 
             ///\todo remove after fix and on release

@@ -755,7 +755,7 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
     reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);
 #else
     {
-        if (propertyId == 7)
+        if (propertyId == PID_TABLE_REFERENCE)
         {
             bcu.sendTelegram[12] = 0;
             bcu.sendTelegram[13] = 0;
@@ -763,7 +763,9 @@ bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, 
             len += 2;
         }
         else
+        {
             reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);
+        }
     }
 #endif
     else memcpy(bcu.sendTelegram + 12, valuePtr + start * size, len);
@@ -809,7 +811,7 @@ bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count,
         reverseCopy(valuePtr + start * size, data, len);
         reverseCopy(bcu.sendTelegram + 12, valuePtr + start * size, len);
 #else
-        if (propertyId == 27)
+        if (propertyId == PID_MCB_TABLE)
         {
             memcpy(valuePtr + start * size, data, len);
             memcpy(bcu.sendTelegram + 12, valuePtr + start * size, len);

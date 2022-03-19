@@ -52,13 +52,12 @@ void initTestTelegram()
     int count = (testTelegramSize - 7);
     int memoryAddress = 0;
     memset(testTelegram, TEST_FILLBYTE, testTelegramSize);
+    // send a APCI_MEMORY_RESPONSE_PDU response
     initLpdu(testTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // init control byte
     setDestinationAddress(testTelegram, KNX_PHYS_ADDRESS - 1); // set destination address
-    // send a APCI_MEMORY_RESPONSE_PDU response
-    testTelegram[5] = 0x60 + count;
-    testTelegram[6] = (APCI_MEMORY_RESPONSE_PDU >> 8);
+    testTelegram[5] = 0x60 + count; // hopcount + length of payload
+    setApciCommand(testTelegram, APCI_MEMORY_RESPONSE_PDU, (count - 2));
     setSequenceNumber(testTelegram, 0);
-    testTelegram[7] = (APCI_MEMORY_RESPONSE_PDU & 0xff) | (count - 2);
     testTelegram[8] = memoryAddress >> 8;
     testTelegram[9] = memoryAddress;
 }

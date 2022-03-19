@@ -572,8 +572,10 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel, unsigned char 
 static unsigned char updRequestStatistic(bool * sendTel)
 {
     unsigned short dummy = 0;
+    unsigned short telCount = 0; // only in debug version telegrams are really counted and transmitted over serial
+
     byte *startPos = bcu.sendTelegram + 10;
-    byte sizeA = sizeof(telegramCount);
+    byte sizeA = sizeof(telCount);
     byte sizeB = sizeof(disconnectCount);
     byte sizeC = sizeof(repeatedTelegramCount);
     byte sizeD = sizeof(repeatedIgnoredTelegramCount);
@@ -582,7 +584,7 @@ static unsigned char updRequestStatistic(bool * sendTel)
     unsigned int sizeTotal = sizeA + sizeB + sizeC + sizeD + sizeE;
 
     *sendTel = prepareReturnTelegram(sizeTotal, UPD_RESPONSE_STATISTIC);
-    uShort16ToStream(startPos, telegramCount);
+    uShort16ToStream(startPos, telCount);
     startPos += sizeA;
     uShort16ToStream(startPos, disconnectCount);
     startPos += sizeB;
@@ -592,7 +594,7 @@ static unsigned char updRequestStatistic(bool * sendTel)
     startPos += sizeD;
     uShort16ToStream(startPos, dummy);
 
-    d3(serial.print("#tel ", telegramCount));
+    d3(serial.print("#tel ", telCount));
     d3(serial.print(" #DC ", disconnectCount));
     d3(serial.print(" #rep. ", repeatedTelegramCount));
     d3(serial.println(" #ignor ", repeatedIgnoredTelegramCount));

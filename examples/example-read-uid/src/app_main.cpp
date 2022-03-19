@@ -53,14 +53,13 @@
 
 #define UID_BYTES_FOR_BUSUPDATER 12     //!< number of byte the bus-updater needs for option -uid
 
+APP_VERSION("SBuid   ", "1", "01"); //!< Create APP_VERSION, its used in the bus updater magic string
+
+
 /// @cond DEVELOPER
 #define KNX_SERIAL_NUMBER_LENGTH 6      //!< length of a KNX serial number
-// hashUID is "borrowed" from BcuBase::hashUID(..) and can change anytime
-// so don't take a close look on me :)
-int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
-// some fancy stuff for the selfbus bootloader, just ignore me
-volatile const char * __attribute__((optimize("O0"))) getAppVersion();
 /// @endcond
+
 void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int length, char separator='\0');
 
 /**
@@ -204,45 +203,5 @@ void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int l
     }
     serialPort.println();
 }
-
-/// @cond DEVELOPER
-
-// create APP_VERSION, its used in the bus updater magic string is !AVP!@:
-// from Rauchmelder-bcu1 (app_main.cpp):
-volatile const char __attribute__((used)) APP_VERSION[20] = "!AVP!@:SBuid   1.00";
-// disable optimization seems to be the only way to ensure that this is not being removed by the linker
-// to keep the variable, we need to declare a function that uses it
-// alternatively, the link script may be modified by adding KEEP to the section
-volatile const char * __attribute__((optimize("O0"))) getAppVersion()
-{
-    return APP_VERSION;
-}
-
-int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
-{
-    const int MAX_HASH_WIDE = 16;
-    uint64_t BigPrime48 = 281474976710597u;  // FF FF FF FF FF C5
-    uint64_t a, b;
-    unsigned int mid;
-
-    if ((len_uid <= 0) || (len_uid > MAX_HASH_WIDE))  // maximum of 16 bytes can be hashed by this function
-        return 0;
-    if ((len_hash <= 0) || (len_hash > len_uid))
-        return 0;
-
-    mid = len_uid/2;
-    memcpy (&a, &uid[0], mid);          // copy first half of uid-bytes to a
-    memcpy (&b, &uid[mid], len_uid-mid); // copy second half of uid-bytes to b
-
-    // do some modulo a big primenumber
-    a = a % BigPrime48;
-    b = b % BigPrime48;
-    a = a^b;
-    // copy the generated hash to provided buffer
-    for (int i = 0; i<len_hash; i++)
-        hash[i] = uint64_t(a >> (8*i)) & 0xFF;
-    return 1;
-}
-/// @endcond
 
 /** @}*/

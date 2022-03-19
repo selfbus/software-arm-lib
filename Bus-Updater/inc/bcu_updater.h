@@ -39,15 +39,9 @@ public:
     using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
 
 protected:
-    /**
-     * @brief Reset the TP Layer 4 connection to CLOSED
-     *
-     */
-    virtual void resetConnection();
-
-    unsigned char processApci(int apci, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength);
-    bool processGroupAddressTelegram(unsigned char *telegram, unsigned short telLength);
-    bool processBroadCastTelegram(unsigned char *telegram, unsigned short telLength);
+    unsigned char processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength) override;
+    bool processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength) override;
+    bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength) override;
 };
 
 #ifndef INSIDE_BCU_CPP
