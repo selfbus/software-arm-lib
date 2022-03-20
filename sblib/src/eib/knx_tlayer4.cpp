@@ -698,7 +698,7 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int s
     bool sendResponse = false;
     processApci(apciCmd, connectedAddr, seqNo, &sendResponse, telegram, telLength);
     dumpTelegramBytes(false,telegram, telLength);
-    sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
+    sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo); // KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
     seqNoRcv++;                 // increment sequence counter
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
@@ -706,6 +706,16 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int s
     {
         ///\todo normally this has to be done in Layer 2
         initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        bus.discardReceivedTelegram();
+        sendResponse = false;
+        /* this will already be checked in bus.sendTelegram()
+        while ((bus.sendCurTelegram != 0) || (bus.sendNextTel != 0))
+               ;
+        */
+        telegramReadyToSend = true;
+        actionA07SendDirectTelegram();
+        //while (true)
+        //    waitForInterrupt();
     }
     return sendResponse;
 }
@@ -809,12 +819,14 @@ void TLayer4::loop()
         dump2(serial.println("direct connection timed out => disconnecting"));
     }
 
+/* This is now done in actionA02sendAckPduAndProcessApci
     if ((state == TLayer4::OPEN_IDLE) && (telegramReadyToSend) && (bus.idle())) ///\todo this is according to spec
     // if (telegramReadyToSend && bus.idle()) // but this worked better
     {
         // event E15
         actionA07SendDirectTelegram(); // this is event E15 to send our response
     }
+*/
 }
 
 void TLayer4::resetConnection()
