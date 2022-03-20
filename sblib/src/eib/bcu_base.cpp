@@ -303,6 +303,7 @@ void BcuBase::loop()
 		}
 		telRXWaitInitTime = 0;
 	}
+*/
 /*
 	if (telRXWaitIdleTime)
 	{
