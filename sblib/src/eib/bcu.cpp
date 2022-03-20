@@ -150,19 +150,7 @@ bool BCU::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram,
         }
         else if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
         {
-            sendTelegram[0] = 0xb0 | (telegram[0] & 0x0c); // Control byte
-            // 1+2 contain the sender address, which is set by bus.sendTelegram()
-            setDestinationAddress(sendTelegram, 0x0000);   // Zero target address, it's a broadcast
-            sendTelegram[5] = 0xe0 + 1; // address type & routing count in high nibble + response length in low nibble
-            setApciCommand(sendTelegram, APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU, 0);
-
-            // on a productive bus without this delay, a lot of "more than one device is in programming mode" errors can occur
-            // 03.03.2022 tested 10 different licensed KNX-devices (MDT, Gira, Siemens, Merten), only one MDT line-coupler had also this problem
-            // other devices responded with a delay of 8-40 milliseconds, so we go for ~5ms + 2*4ms = ~13ms
-            // 4.000usec is max. we can delay with delayMicroseconds, so call it twice
-            delayMicroseconds(MAX_DELAY_MICROSECONDS);
-            delayMicroseconds(MAX_DELAY_MICROSECONDS);
-            bus.sendTelegram(sendTelegram, 8);
+            sendApciIndividualAddressReadResponse();
         }
     }
     return (true);

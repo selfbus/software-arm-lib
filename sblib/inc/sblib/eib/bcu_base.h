@@ -198,6 +198,8 @@ protected:
      */
     bool setProgrammingMode(bool newMode);
 
+    void sendApciIndividualAddressReadResponse();
+
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
 
 private:

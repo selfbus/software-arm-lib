@@ -10,6 +10,7 @@
 
 #define INSIDE_BCU_CPP
 #include <sblib/io_pin_names.h>
+#include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/user_memory.h>
 #include <sblib/eib/addr_tables.h>
@@ -511,11 +512,7 @@ void BcuBase::loop()
     TLayer4::loop();
 	if (bus.telegramReceived() && (!bus.sendingTelegram()) && (bus.state == Bus::IDLE) && (userRam.status & BCU_STATUS_TL))
 	{
-        if (processTelegram(&bus.telegram[0], bus.telegramLen))
-        {
-            // If processed successfully: discard the received telegram
-            bus.discardReceivedTelegram();
-        }
+        processTelegram(&bus.telegram[0], bus.telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
 
 	if (progPin)
@@ -550,4 +547,22 @@ bool BcuBase::setProgrammingMode(bool newMode)
     pinMode(progPin, OUTPUT);
     digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
     return true;
+}
+
+void BcuBase::sendApciIndividualAddressReadResponse()
+{
+    initLpdu(sendTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD);
+    // 1+2 contain the sender address, which is set by bus.sendTelegram()
+    setDestinationAddress(sendTelegram, 0x0000); // Zero target address, it's a broadcast
+    sendTelegram[5] = 0xe0 + 1; // address type & routing count in high nibble + response length in low nibble
+    setApciCommand(sendTelegram, APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU, 0);
+
+    // on a productive bus without this delay, a lot of "more than one device is in programming mode" errors can occur
+    // 03.03.2022 tested 10 different licensed KNX-devices (MDT, Gira, Siemens, Merten), only one MDT line-coupler had also this problem
+    // other devices responded with a delay of 8-40 milliseconds, so we go for ~5ms + 2*4ms = ~13ms
+    // 4.000usec is max. we can delay with delayMicroseconds, so call it twice
+    delayMicroseconds(MAX_DELAY_MICROSECONDS);
+    delayMicroseconds(MAX_DELAY_MICROSECONDS);
+    delayMicroseconds(MAX_DELAY_MICROSECONDS - ((systemTime % (MAX_DELAY_MICROSECONDS/100)) * 10)); // "randomize response delay"
+    bus.sendTelegram(sendTelegram, 8);
 }
