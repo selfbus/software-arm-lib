@@ -52,16 +52,6 @@ public final class DeviceManagement {
         mc.restart(progDestination);
     }
 
-    public void customRestartProgrammingDevice()
-            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
-        logger.warn("restarting device {}", progDestination);
-        ResponseResult result = sendWithRetry(UPDCommand.RESET, new byte[]{0}, DeviceManagement.MAX_UPD_COMMAND_RETRY);  // Clean restart by application rather than lib
-        if (UPDProtocol.checkResult(result.data()) != 0) {
-            restartProgrammingDevice();
-            throw new UpdaterException("Restarting device failed.");
-        }
-    }
-
     private void waitRestartTime(int restartTimeMs) {
         try {
             while (restartTimeMs > 0) {

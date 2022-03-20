@@ -8,7 +8,7 @@ import java.util.Map;
  * see /Bus-Updater/inc/upd_protocol.h for details
  */
 public enum UPDCommand {
-    ERASE_SECTOR(0, "ERASE_SECTOR"),                            //!< Erase flash sector number (data[3]) @note device must be unlocked
+    // ERASE_SECTOR(0, "ERASE_SECTOR"),                            //!< Erase flash sector number (data[3]) @note device must be unlocked
                                                                 //!< @note deprecated, use ERASE_ADDRESSRANGE instead
     SEND_DATA(1, "SEND_DATA"),                                  //!< Copy ((data[0] & 0x0f)-1) bytes to ramBuffer starting from address data[3] @note device must be unlocked
     PROGRAM(2, "PROGRAM"),                                      //!< Copy count (data[3-6]) bytes from ramBuffer to address (data[7-10]) in flash buffer, crc in data[11-14] @note device must be unlocked
@@ -29,7 +29,7 @@ public enum UPDCommand {
     RESPONSE_UID(32, "RESPONSE_UID"),                           //!< Response for @ref REQUEST_UID containing the first 12 bytes of the UID
     APP_VERSION_REQUEST(33, "APP_VERSION_REQUEST"),             //!< Return address of AppVersion string
     APP_VERSION_RESPONSE(34, "APP_VERSION_RESPONSE"),           //!< Response for @ref APP_VERSION_REQUEST containing the application version string
-    RESET(35, "RESET"),                                         //!< Reset the device @note device must be unlocked
+    // RESET(35, "RESET"),                                         //!< Reset the device @note device must be unlocked
     REQUEST_BOOT_DESC(36, "REQUEST_BOOT_DESC"),                 //!< Return the application boot descriptor block @note device must be unlocked
     RESPONSE_BOOT_DESC(37, "RESPONSE_BOOT_DESC"),               //!< Response for @ref REQUEST_BOOT_DESC containing the application boot descriptor block
     REQUEST_BL_IDENTITY(40, "REQUEST_BL_IDENTITY"),             //!< Return the bootloader's identity @note device must be unlocked

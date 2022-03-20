@@ -67,7 +67,19 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const int senderAddr, 
 
         case APCI_BASIC_RESTART_PDU:
             dump2(serial.println("APCI_BASIC_RESTART_PDU"));
-            restartRequest(RESET_DELAY_MS); // Software Reset
+            d3(
+                serial.println();serial.println();serial.println();
+                serial.println("disconnectCount ", disconnectCount);
+
+                ///\todo remove after fix and on release
+                serial.println("repeated ", repeatedTelegramCount);
+                serial.println("ignored  ", repeatedIgnoredTelegramCount);
+                ///\todo end of remove after fix and on release
+
+                serial.println();serial.println();serial.println();
+                serial.flush();  // give time to send serial data
+            );
+            NVIC_SystemReset();
             return (T_ACK_PDU);
 
         default:

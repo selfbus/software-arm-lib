@@ -159,27 +159,6 @@ void loop()
     {
         return;
     }
-
-    // Check if restart request is pending
-    if (restartRequestExpired())
-    {
-        d3(
-            serial.print("systemTime: ", systemTime, DEC);
-            serial.println(" reset");
-            serial.println();serial.println();serial.println();
-            // serial.println("telegramCount   ", telegramCount);
-            serial.println("disconnectCount ", disconnectCount);
-
-            ///\todo remove after fix and on release
-            serial.println("repeated ", repeatedTelegramCount);
-            serial.println("ignored  ", repeatedIgnoredTelegramCount);
-            ///\todo end of remove after fix and on release
-
-            serial.println();serial.println();serial.println();
-            serial.flush();  // give time to send serial data
-        );
-        NVIC_SystemReset();
-    }
 }
 
 /**

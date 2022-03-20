@@ -25,7 +25,6 @@
 #include <sblib/eib/bus.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
-#include <sblib/timeout.h>
 #include <sblib/internal/iap.h>
 #include <sblib/io_pin_names.h>
 
@@ -54,9 +53,6 @@
 #define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< magic number for device is unlocked and flashing is allowed
 
 static unsigned char __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
-
-
-Timeout mcuRestartRequestTimeout; //!< Timeout used to trigger a MCU Reset by NVIC_SystemReset()
 
 // Try to avoid direct access to these global variables.
 // It's better to use their get, set and reset functions
@@ -107,19 +103,6 @@ void dumpFlashContent(unsigned int startAddress, unsigned int endAddress)
     dumpToSerialinIntelHex(&serial, (unsigned char *) startAddress, endAddress - startAddress + 1);
 }
 #endif
-
-void restartRequest (unsigned int msec)
-{
-    d3(
-        serial.println("Systime: ", systemTime, DEC);
-    );
-	mcuRestartRequestTimeout.start(msec);
-}
-
-bool restartRequestExpired(void)
-{
-	return (mcuRestartRequestTimeout.expired());
-}
 
 /**
  * @brief Converts a 4 byte long provided buffer into a unsigned integer
@@ -296,20 +279,6 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
         dline(" by UID");
         resetUPDProtocol();
     }
-    return (T_ACK_PDU);
-}
-
-/**
- * @brief Handles the @ref UPD_RESET command and calls @ref restartRequest to prepare a reset of the device.
- *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
- * @post          calls setLastErrror always with UDP_IAP_SUCCESS
- * @return        always T_ACK_PDU
- */
-static unsigned char updResetDevice(bool * sendTel)
-{
-    restartRequest(RESET_DELAY_MS); // request restart in RESET_DELAY_MS ms to allow transmission of ACK before
-    setLastError(UDP_IAP_SUCCESS, sendTel);
     return (T_ACK_PDU);
 }
 
@@ -979,7 +948,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
             return (updGetLastError(sendTel));
 
         case UPD_RESET:
-            return (updResetDevice(sendTel));
+            return (updUnkownCommand(sendTel)); // return (updResetDevice(sendTel));
 
         case UPD_ERASE_SECTOR:
             return (updUnkownCommand(sendTel)); // return (updEraseSector(sendTel, data));

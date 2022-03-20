@@ -416,7 +416,7 @@ public class Updater implements Runnable {
             logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
-            dm.customRestartProgrammingDevice();
+            dm.restartProgrammingDevice();
 
         } catch (final KNXException | UpdaterException | RuntimeException e) {
             thrown = e;

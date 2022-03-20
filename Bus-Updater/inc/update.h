@@ -32,18 +32,6 @@
 #define UID_LENGTH_USED 12                 //!< length of the mcu UID (guid) used by the PC Updater Tool
 
 /**
- * @brief Request a reset of the mcu in x milliseconds
- * @param msec time in millisecond to wait before resetting the mcu.
- */
-void restartRequest (unsigned int msec);
-
-/**
- * @brief Returns the state of the Timeout timer to reset the mcu
- * @return true if restart request is expired and mcu should be reset
- */
-bool restartRequestExpired(void);
-
-/**
  * @brief Handles KNX memory requests which encapsulate our UPD/UDP protocol
  *
  * @param apciCmd   not used

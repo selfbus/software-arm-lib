@@ -108,6 +108,7 @@ enum UPD_Command
     UPD_APP_VERSION_REQUEST = 33,       //!< Return address of AppVersion string
     UPD_APP_VERSION_RESPONSE = 34,      //!< Response for @ref UPD_APP_VERSION_REQUEST containing the application version string
     UPD_RESET = 35,                     //!< Reset the device @note device must be unlocked
+                                        //!< @note deprecated, use @ref APCI_BASIC_RESTART_PDU instead
     UPD_REQUEST_BOOT_DESC = 36,         //!< Return the application boot descriptor block @note device must be unlocked
     UPD_RESPONSE_BOOT_DESC = 37,        //!< Response for @ref UPD_REQUEST_BOOT_DESC containing the application boot descriptor block
 
