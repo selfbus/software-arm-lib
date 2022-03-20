@@ -12,6 +12,8 @@ import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
+import tuwien.auto.calimero.mgmt.ManagementProcedures;
+import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -364,6 +366,23 @@ public final class DeviceManagement {
             {
                 throw new UpdaterException(String.format("%s failed.", command));
             }
+        }
+    }
+
+    public void checkDeviceInProgrammingMode(IndividualAddress progDeviceAddr) throws UpdaterException {
+        try {
+            ManagementProcedures mgmt = new ManagementProceduresImpl(link);
+            IndividualAddress[] devices = mgmt.readAddress();
+            mgmt.detach();
+
+            boolean correctDeviceInProgMode = (devices.length == 1) && (progDeviceAddr.equals(devices[0]));
+            if (correctDeviceInProgMode || devices.length == 0) {
+                return;
+            }
+            logger.warn("{}Device(s) in bootloader/programming mode: {}{}", ConColors.BRIGHT_RED, Arrays.stream(devices).toArray(), ConColors.RESET);
+            throw new UpdaterException("checkDevicesInProgrammingMode finished.");
+        } catch (KNXException | InterruptedException e ) {
+            throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()));
         }
     }
 }

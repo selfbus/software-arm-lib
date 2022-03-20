@@ -1,9 +1,9 @@
-# Selfbus-Updater 0.66
+# Selfbus-Updater 0.67
 
 ## Requirements
 
 * JDK 11+
-* gradle >=7.2
+* gradle >=7.4
 * Selfbus device with flashed [bus-updater/bootloader](../) version 0.66 or higher
 
 ## Build

@@ -296,9 +296,11 @@ public class Updater implements Runnable {
             logger.info("Telegram priority: {}", cliOptions.priority());
 
             //for option -device restart the device in bootloader mode
-            if (cliOptions.device() != null) { //!< phys. knx address of the device in normal operation
+            if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
                 dm.restartDeviceToBootloader(link, cliOptions.device());
             }
+
+            dm.checkDeviceInProgrammingMode(cliOptions.progDevice());
 
             if (uid == null) {
                 uid = dm.requestUIDFromDevice();

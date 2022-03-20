@@ -20,6 +20,7 @@
  published by the Free Software Foundation.
  -----------------------------------------------------------------------------*/
 
+#include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 #include "bcu_updater.h"
@@ -74,17 +75,18 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const int senderAddr, 
     }
 }
 
-bool BcuUpdate::processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength)
-{
-    bus.discardReceivedTelegram();
-    return (true);
-}
-
 bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength)
 {
-    bus.discardReceivedTelegram();
+    if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
+    {
+        sendApciIndividualAddressReadResponse();
+    }
     return (true);
 }
 
+bool BcuUpdate::processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength)
+{
+    return (true);
+}
 
 /** @}*/
