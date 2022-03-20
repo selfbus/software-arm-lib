@@ -480,8 +480,6 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
     unsigned char sendAckTpu = 0;
     *sendResponse = false;
 
-    memset(sendTelegram, 0, sizeof(sendTelegram));
-
     switch (apciCmd)
     {
     case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI,
@@ -541,7 +539,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
         }
         else
         {
-            sendAckTpu = T_NACK_PDU; ///\todo this needs a check. On TL4 Style 1 rationalised only T_ACK is allowed
+            sendAckTpu = T_NACK_PDU; // KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
         }
         break;
 
@@ -604,8 +602,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
 #endif /*BCU_TYPE != BCU1_TYPE*/
 
     default:
-        ///\todo this needs a check. On TL4 Style 1 rationalised only T_ACK is allowed
-        sendAckTpu = T_NACK_PDU;  // Command not supported
+        sendAckTpu = T_NACK_PDU;  // Command not supported, KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
         break;
     }
     return (sendAckTpu);
