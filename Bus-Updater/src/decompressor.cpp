@@ -33,7 +33,7 @@
 Decompressor::Decompressor(AppDescriptionBlock* BaseAddress)
 {
     startAddrOfFlash = getFirmwareStartAddress(BaseAddress);
-	startAddrOfPageToBeFlashed = getFirmwareStartAddress(BaseAddress);
+	startAddrOfPageToBeFlashed = startAddrOfFlash;
 }
 
 int Decompressor::getLength()

@@ -58,7 +58,7 @@ __attribute__((unused)) unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_
  * @param start
  * @return
  */
-inline unsigned int checkVectorTable(unsigned int start)
+unsigned int checkVectorTable(unsigned int start)
 {
     unsigned int i;
     unsigned int * address;

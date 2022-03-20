@@ -75,7 +75,7 @@ static unsigned int bytesFlashed = 0;               //!< number of bytes flashed
  * @param val    the unsigned int to be converted
  * @warning function doesn't perform any sanity-checks on the provided buffer
  */
-ALWAYS_INLINE void uInt32ToStream(unsigned char * buffer, unsigned int val);
+void uInt32ToStream(unsigned char * buffer, unsigned int val);
 
 /**
  * @brief Send the flash content from startAddress to endAddress
@@ -130,14 +130,14 @@ bool restartRequestExpired(void)
  * @return to unsigned int converted value of the 4 first bytes of buffer
  * @warning function doesn't perform any sanity-checks on the provided buffer
  */
-ALWAYS_INLINE unsigned int streamToUIn32(unsigned char * buffer)
+unsigned int streamToUIn32(unsigned char * buffer)
 {
     return ((unsigned int)(buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0]));
 }
 
 ///\todo implement universal numberToStream by providing the size as parameter
 ///      and delete uInt32ToStream + uShort16ToStream
-ALWAYS_INLINE void uInt32ToStream(unsigned char * buffer, unsigned int val)
+void uInt32ToStream(unsigned char * buffer, unsigned int val)
 {
     buffer[3] = (byte)(val >> 24);
     buffer[2] = (byte)(val >> 16);
@@ -145,7 +145,7 @@ ALWAYS_INLINE void uInt32ToStream(unsigned char * buffer, unsigned int val)
     buffer[0] = (byte)(val & 0xff);
 }
 
-ALWAYS_INLINE void uShort16ToStream(unsigned char * buffer, unsigned int val)
+void uShort16ToStream(unsigned char * buffer, unsigned int val)
 {
     buffer[1] = (byte)(val >> 8);
     buffer[0] = (byte)(val & 0xff);
@@ -455,7 +455,6 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
     }
     d3(serial.print("at: ", ramLocation, DEC, 3));
     d3(serial.println(" #", nCount, DEC, 2));
-    // *sendTel = false; ///\todo delete on release
     return (T_ACK_PDU);
 }
 
@@ -649,7 +648,6 @@ static unsigned char udpRequestBootDescriptionBlock(bool * sendTel)
  */
 static unsigned char updRequestData(bool * sendTel)
 {
-    //XXX check and implement this
     /*
      memcpy(bcu.sendTelegram + 9, (void *)address, count);
      bcu.sendTelegram[5] = 0x63 + count;

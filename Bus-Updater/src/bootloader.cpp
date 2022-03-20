@@ -23,7 +23,7 @@
 #include <sblib/main.h>
 #include <sblib/digital_pin.h>
 #include <sblib/internal/iap.h> // for IAP_SUCCESS
-#include <sblib/eib/apci.h> ///\todo BOOTLOADER_MAGIC_ADDRESS & BOOTLOADER_MAGIC_WORD outside of apci.h to a separate header
+#include <sblib/eib/apci.h>
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 #include "dump.h"
@@ -55,7 +55,7 @@ bool blinky = false;
  * @brief Configures the system timer to call SysTick_Handler once every 1 msec.
  *
  */
-static inline void lib_setup()
+static void lib_setup()
 {
     SysTick_Config(SystemCoreClock / 1000);
     systemTime = 0;
@@ -188,9 +188,9 @@ void loop()
  * @param start Start address of application
  * @warning Explanation may be wrong,
  */
-static inline void jumpToApplication(unsigned int start)
+static void jumpToApplication(unsigned int start)
 {
-#ifndef IAP_EMULATION ///\todo use a new #define for unit-tests
+#ifndef IAP_EMULATION
     unsigned int StackTop = *(unsigned int *) (start);
     unsigned int ResetVector = *(unsigned int *) (start + 4);
     unsigned int * rom = (unsigned int *) start;
@@ -225,7 +225,7 @@ static inline void jumpToApplication(unsigned int start)
  *
  * @param programmingMode if true bootloader enables BCU programming mode active, otherwise not.
  */
-static inline void run_updater(bool programmingMode)
+static void run_updater(bool programmingMode)
 {
     lib_setup();
     setup();
