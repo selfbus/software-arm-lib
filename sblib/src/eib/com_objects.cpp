@@ -181,6 +181,7 @@
 #include <sblib/eib/com_objects.h>
 
 #include <sblib/eib/addr_tables.h>
+#include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/apci.h>
 #include <sblib/eib/property_types.h>
 #include <sblib/eib/user_memory.h>
@@ -229,7 +230,7 @@ int objectSize(int objno)
 #endif
 }
 
-/*
+/**
  * Get the size of the com-object in bytes, for sending/receiving telegrams.
  * 0 is returned if the object's size is <= 6 bit.
  */
@@ -430,22 +431,16 @@ int firstObjectAddr(int objno)
  */
 void sendGroupReadTelegram(int objno, int addr)
 {
-	while (bcu.sendTelegram[0]);  // wait for a free buffer
-
-    bcu.sendTelegram[0] = 0xbc; // Control byte
-    // todo, set routing cnt and prio according to the parameters set from ETS in the EPROM, add ID/objno for result association from bus-layer
+    while (bcu.sendTelegram[0]);  // wait for a free buffer
+    ///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
     // check of spec 3.7.4. : no additional search for associations to Grp Addr for local read and possible response
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    bcu.sendTelegram[3] = addr >> 8;
-    bcu.sendTelegram[4] = addr;
-    bcu.sendTelegram[5] = 0xe1;
-    bcu.sendTelegram[6] = 0;
-    bcu.sendTelegram[7] = 0x00;
-
+    initLpdu(bcu.sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
+    setDestinationAddress(bcu.sendTelegram, addr);
+    bcu.sendTelegram[5] = 0xe1; // routing count + length
+    setApciCommand(bcu.sendTelegram, APCI_GROUP_VALUE_READ_PDU, 0);
     bus.sendTelegram(bcu.sendTelegram, 8);
     transmitting_object_no = objno; //save transmitting object for status check
     bus.setBusRXStateValid(false);
-
 }
 
 /**
@@ -461,31 +456,36 @@ void sendGroupReadTelegram(int objno, int addr)
 void sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 {
     byte* valuePtr = objectValuePtr(objno);
-    int sz = telegramObjectSize(objno);
+    int objSize = telegramObjectSize(objno);
+    byte addData = 0;
+    ApciCommand cmd;
 
 	while (bcu.sendTelegram[0]);  // wait for a free buffer
+	///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
+	initLpdu(bcu.sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
+	setDestinationAddress(bcu.sendTelegram, addr);
+    bcu.sendTelegram[5] = 0xe0 | ((objSize + 1) & 0xff);
 
-    bcu.sendTelegram[0] = 0xbc; // Control byte
-    //todo, set routing cnt and prio according to the parameters set from ETS in the EPROM, add ID/objno for result association from bus-layer
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    bcu.sendTelegram[3] = addr >> 8;
-    bcu.sendTelegram[4] = addr;
-    bcu.sendTelegram[5] = 0xe0 | ((sz + 1) & 15);
-    bcu.sendTelegram[6] = 0;
-    bcu.sendTelegram[7] = isResponse ? 0x40 : 0x80;
+    isResponse ? cmd = APCI_GROUP_VALUE_RESPONSE_PDU : cmd = APCI_GROUP_VALUE_WRITE_PDU;
 
-    if (sz) reverseCopy(bcu.sendTelegram + 8, valuePtr, sz);
-    else bcu.sendTelegram[7] |= *valuePtr & 0x3f;
+    if (objSize)
+        reverseCopy(bcu.sendTelegram + 8, valuePtr, objSize);
+    else
+        addData = *valuePtr;
+
+    setApciCommand(bcu.sendTelegram, cmd, addData);
 
     // Process this telegram in the receive queue (if there is a local receiver of this group address)
-    processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, bcu.sendTelegram, objno );
+    processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, bcu.sendTelegram, objno);
 
-    bus.sendTelegram(bcu.sendTelegram, 8 + sz);
+    bus.sendTelegram(bcu.sendTelegram, 8 + objSize);
     transmitting_object_no = objno; //save transmitting object for status check
     bus.setBusTXStateValid(false);
 }
 
-/*
+int sndStartIdx = 0;
+
+/**
  *  Send next Group read/write Telegram based on RAM flag status and handle bus rx/tx status
  *  of previously transmitted telegram
  *
@@ -502,8 +502,6 @@ void sendGroupWriteTelegram(int objno, int addr, bool isResponse)
  *  @return true if a telegram was send, 0 if none found/send.
  *
  */
-int sndStartIdx = 0;
-
 bool sendNextGroupTelegram()
 {
     int addr, flags, objno, config, numObjs = objectCount();
@@ -581,13 +579,12 @@ bool sendNextGroupTelegram()
     return false;
 }
 
-/*
+/**
  * Get the ID of the next communication object that was updated
  * over the bus by a write-value-request or read-response telegram.
  *
  * @return The ID of the next updated com-object, -1 if none.
  */
-
 int nextUpdatedObject()
 {
     static int startIdx = 0;
@@ -661,9 +658,9 @@ void processGroupWriteTelegram(int objno, byte* tel)
 
 
 
-/*
+/**
  *  A Group read/write Telegram on the bus or a
- *  Telegram transmitt-request (object read/write)from the app was received
+ *  Telegram transmit-request (object read/write) from the app was received
  *
  *  From bus: Called from bus::ProcessTelegram function triggered by the BCUbase-loop function.
  *  From app: Called from sendGroupWriteTelegram or sendGroupReadTelegram
@@ -673,17 +670,12 @@ void processGroupWriteTelegram(int objno, byte* tel)
  *  In order to avoid an endless loop by updating we need to skip the triggering object from the app.
  *  In case of a received bus request the triggering objectnumber was set to an invalid value (-1).
  *
- *
  *  @return void
- *
  */
 void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno)
 {
 #if BCU_TYPE != SYSTEM_B_TYPE
-
-/**
- * Spec: Resources 4.11.2 Group Object Association Table - Realisation Type 1
- */
+    // Spec: Resources 4.11.2 Group Object Association Table - Realization Type 1
     const ComConfig* configTab = &objectConfig(0);
     const byte* assocTab = assocTable();
     const int endAssoc = 1 + (*assocTab) * 2;
