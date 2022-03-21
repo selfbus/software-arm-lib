@@ -154,6 +154,10 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
         userEeprom.serial[4] = HIGH_BYTE(SBLIB_VERSION);
         userEeprom.serial[5] = LOW_BYTE(SBLIB_VERSION);
     }
+
+    userEeprom.order[sizeof(userEeprom.order) - 2] = HIGH_BYTE(SBLIB_VERSION);
+    userEeprom.order[sizeof(userEeprom.order) - 1] = LOW_BYTE(SBLIB_VERSION);
+
     userRam.peiType = 0;     // PEI type: 0=no adapter connected to PEI.
     userEeprom.appType = 0;  // Set to BCU2 application. ETS reads this when programming.
 #endif

@@ -13,7 +13,7 @@
 /**
  * The version of the library. An integer value.
  */
-#define SBLIB_VERSION 0x02
+#define SBLIB_VERSION 0x0003
 
 /**
  * Macro for the name and version of the application using the library.
