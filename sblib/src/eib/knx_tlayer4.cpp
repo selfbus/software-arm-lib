@@ -260,11 +260,6 @@ bool TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
 
 bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength)
 {
-    if (!checksumValid(telegram, telLength))
-    {
-        return (true);
-    }
-
     uint16_t destAddr = destinationAddress(telegram);
     ApciCommand apciCmd = apciCommand(telegram);
 
@@ -912,28 +907,5 @@ bool TLayer4::checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLen
     return false;
 }
 
-///\todo remove on release
-bool TLayer4::checksumValid(unsigned char *telegram, uint8_t telLength)
-{
-    unsigned char checksum = 0xff;
-    // Calculate the checksum
-    for (uint8_t i = 0; i < (telLength-1); i++)
-    {
-        checksum ^= telegram[i];
-    }
-
-    if (telegram[telLength-1] == checksum)
-    {
-        return (true);
-    }
-
-    dump2(
-        invalidCheckSum++;
-        serial.print("ERROR CHECKSUM");
-        serial.print(LOG_SEP);
-        dumpTelegramBytes(false, telegram, telLength, true);
-    );
-    return (false);
-}
 
 /** @}*/

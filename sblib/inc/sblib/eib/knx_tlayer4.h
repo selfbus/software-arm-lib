@@ -251,7 +251,7 @@ private:
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
 
     bool checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLength);  ///\todo remove after fix in Bus and on release
-    bool checksumValid(unsigned char *telegram, uint8_t telLength);  ///\todo remove after fix in Bus and on release
+
     /**
      * Copies currently processed telegram to @ref lastTelegram
      * @param telegram  Current telegram processed
