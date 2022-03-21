@@ -587,7 +587,7 @@ void Bus::begin()
 void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
 {
 	unsigned char checksum = 0xff;
-	setSenderAddress(telegram, ownAddr);
+	setSenderAddress(telegram, (uint16_t)ownAddr);
 
 	// Calculate the checksum
 	for (unsigned short i = 0; i < length; ++i)
@@ -907,7 +907,7 @@ void Bus::handleTelegram(bool valid)
 void Bus::sendNextTelegram()
 {
     bus_tx_state = tx_error;
-    tx_error = 0;
+    tx_error = TX_OK;
     setBusTXStateValid(true);
 
     if (sendCurTelegram)
@@ -1217,7 +1217,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer after bit pulse end
 		timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
 		nextByteIndex = 0;
-		tx_error=0;
+		tx_error = TX_OK;
 		state = Bus::SEND_START_BIT;
 
 		break;
@@ -1313,7 +1313,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer after bit pulse end
 		timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
 		nextByteIndex = 0;
-		tx_error=0;
+		tx_error = TX_OK;
 		state = Bus::SEND_START_BIT;
 
 #ifdef DUMP_TELEGRAMS
