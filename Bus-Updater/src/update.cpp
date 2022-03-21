@@ -142,14 +142,13 @@ void uShort16ToStream(unsigned char * buffer, unsigned int val)
  * @param cmd   UPD/UDP command/response to set the return telegram
  * @return always true
  */
-static bool prepareReturnTelegram(unsigned int count, unsigned char cmd)
+static void prepareReturnTelegram(unsigned int count, unsigned char cmd)
 {
     bcu.sendTelegram[5] = 0x63 + (byte)count;
     bcu.sendTelegram[6] = 0x42;
     bcu.sendTelegram[7] = 0x40 | (byte)count;
     bcu.sendTelegram[8] = 0;
     bcu.sendTelegram[9] = cmd;
-    return (true);
 }
 
 
@@ -214,12 +213,11 @@ static bool getProgButtonState()
  * @brief Sets lastError and prepares the @ref UPD_SEND_LAST_ERROR response telegram
  *
  * @param errorToSet The error to set
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  */
-static void setLastError(UDP_State errorToSet, bool * sendTel)
+static void setLastError(UDP_State errorToSet)
 {
     lastError = errorToSet;
-    *sendTel = prepareReturnTelegram(4, UPD_SEND_LAST_ERROR);
+    prepareReturnTelegram(4, UPD_SEND_LAST_ERROR);
     uInt32ToStream(bcu.sendTelegram + 10, lastError);
 }
 
@@ -236,17 +234,16 @@ void resetUPDProtocol(void)
  * @brief Handles the @ref UPD_UNLOCK_DEVICE command.
  *        The device is unlocked if the programming mode is active or the provided UID (guid) is valid.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    Buffer for the UID
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if device is unlocked, otherwise @ref UDP_UID_MISMATCH or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  */
-static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
+static unsigned char updUnlockDevice(unsigned char * data)
 {
     if (getProgButtonState())
     { // the operator has physical access to the device -> we unlock it
         setDeviceLockState(DEVICE_UNLOCKED);
-        setLastError(UDP_IAP_SUCCESS, sendTel);
+        setLastError(UDP_IAP_SUCCESS);
         dline(" by Button");
     }
     else
@@ -259,7 +256,7 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
         if (lastError != UDP_IAP_SUCCESS)
         {
             // could not read UID of mcu
-            setLastError((UDP_State)lastError, sendTel);
+            setLastError((UDP_State)lastError);
             return (T_ACK_PDU);
         }
 
@@ -268,14 +265,14 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
             if (data[i + 3] != uid[i])
             {
                 // uid is not correct, decline access
-                setLastError(UDP_UID_MISMATCH, sendTel);
+                setLastError(UDP_UID_MISMATCH);
                 return (T_ACK_PDU);
             }
         }
 
         // we can now unlock the device
         setDeviceLockState(DEVICE_UNLOCKED);
-        setLastError(UDP_IAP_SUCCESS, sendTel);
+        setLastError(UDP_IAP_SUCCESS);
         dline(" by UID");
         resetUPDProtocol();
     }
@@ -286,17 +283,16 @@ static unsigned char updUnlockDevice(bool * sendTel, unsigned char * data)
  * @brief Handles the @ref UPD_APP_VERSION_REQUEST command and sends a @ref UPD_APP_VERSION_RESPONSE
  *        The response contains the address of the AppVersion string
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    Buffer to store the AppVersion string address
  * @post          sets lastError always to UDP_IAP_SUCCESS
  * @return        always T_ACK_PDU
  */
-static unsigned char updAppVersionRequest(bool * sendTel, unsigned char * data)
+static unsigned char updAppVersionRequest(unsigned char * data)
 {
     unsigned char* appversion;
     appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
     lastError = UDP_IAP_SUCCESS;
-    *sendTel = prepareReturnTelegram(BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
+    prepareReturnTelegram(BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
     memcpy(bcu.sendTelegram + 10, appversion, BL_ID_STRING_LENGTH - 1);
     d3(
         if (appversion != bl_id_string)
@@ -319,17 +315,16 @@ static unsigned char updAppVersionRequest(bool * sendTel, unsigned char * data)
 /**
  * @brief Handles the @ref UPD_ERASE_SECTOR command, erases if allowed the requested sector and resets @ref ramLocation
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3] should contain the sector number to be erased
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
 /*
-static unsigned char updEraseSector(bool * sendTel, unsigned char * data)
+static unsigned char updEraseSector(unsigned char * data)
 {
     resetProtocol();
-    setLastError(eraseSector(data[3]), sendTel);
+    setLastError(eraseSector(data[3]));
     return (T_ACK_PDU);
 }
 */
@@ -337,22 +332,20 @@ static unsigned char updEraseSector(bool * sendTel, unsigned char * data)
 /**
  * @brief Handles the @ref UPD_DUMP_FLASH command and dumps the given flash address range to the serial port in intel(R) hex
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3-6] contains startAddress, data[7-10] contains endAddress
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updDumpFlashRange(bool * sendTel, unsigned char * data)
+static unsigned char updDumpFlashRange(unsigned char * data)
 {
 #ifdef DEBUG
     unsigned int startAddress = streamToUIn32(&data[3]);
     unsigned int endAddress = streamToUIn32(&data[7]);
-    setLastError(UDP_IAP_SUCCESS, sendTel);
-    *sendTel = true;
+    setLastError(UDP_IAP_SUCCESS);
     dumpFlashContent(startAddress, endAddress);
 #else
-    setLastError(UDP_NOT_IMPLEMENTED, sendTel);
+    setLastError(UDP_NOT_IMPLEMENTED);
 #endif
     return (T_ACK_PDU);
 }
@@ -361,17 +354,16 @@ static unsigned char updDumpFlashRange(bool * sendTel, unsigned char * data)
 /**
  * @brief Handles the @ref UPD_ERASE_ADDRESSRANGE command and erases the requested flash address range
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3-6] contains startAddress, data[7-10] contains endAddress
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
+static unsigned char updEraseAddressRange(unsigned char * data)
 {
     unsigned int startAddress = streamToUIn32(&data[3]);
     unsigned int endAddress = streamToUIn32(&data[7]);
-    setLastError(eraseAddressRange(startAddress, endAddress), sendTel);
+    setLastError(eraseAddressRange(startAddress, endAddress));
     resetUPDProtocol();
     return (T_ACK_PDU);
 }
@@ -379,14 +371,13 @@ static unsigned char updEraseAddressRange(bool * sendTel, unsigned char * data)
 /**
  * @brief Handles the @ref UPD_ERASE_COMPLETE_FLASH command and erases the entire flash except from the bootloader itself
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updEraseFullFlash(bool * sendTel)
+static unsigned char updEraseFullFlash()
 {
-    setLastError(eraseFullFlash(), sendTel);
+    setLastError(eraseFullFlash());
     resetUPDProtocol();
     return (T_ACK_PDU);
 }
@@ -394,21 +385,20 @@ static unsigned char updEraseFullFlash(bool * sendTel)
 /**
  * @brief Handles the @ref UPD_SEND_DATA command and copies the received bytes from data to @ref ramBuffer
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3] must contain the ramBuffer location and data[4...] the bytes to copy to the ramBuffer
  * @param nCount  Number of bytes to copy
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_RAM_BUFFER_OVERFLOW or a @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned int nCount)
+static unsigned char updSendData(unsigned char * data, unsigned int nCount)
 {
     ramLocation = data[3];// * 11;  // Current Byte position as message number with 11 Bytes payload each
     nCount --;                      // 1 Bytes abziehen, da diese für die Nachrichtennummer verwendet wird
 
     if ((ramLocation + nCount) > sizeof(ramBuffer)/sizeof(ramBuffer[0])) // enough space left?
     {
-        setLastError(UDP_RAM_BUFFER_OVERFLOW, sendTel);
+        setLastError(UDP_RAM_BUFFER_OVERFLOW);
         dline("ramBuffer Full");
         return (T_ACK_PDU);
     }
@@ -416,7 +406,7 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
     bytesReceived += nCount;
 
     memcpy((void *) &ramBuffer[ramLocation], data + 4, nCount); //ab dem 4. Byte sind die Daten verfügbar
-    setLastError(UDP_IAP_SUCCESS, sendTel);
+    setLastError(UDP_IAP_SUCCESS);
     for(unsigned int i=0; i<nCount; i++)
     {
         d2(data[i+4],HEX,2);
@@ -430,14 +420,13 @@ static unsigned char updSendData(bool * sendTel, unsigned char * data, unsigned 
 /**
  * @brief Handles the @ref UPD_PROGRAM command and copies the bytes from ramBuffer to flash
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    the number of bytes to flash is in data[3-6] the flash address to program in data[7-10]
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State or a @ref IAP_Status
  * @return        T_ACK_PDU
  * @note          device must be unlocked
  * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updProgram(bool * sendTel, unsigned char * data)
+static unsigned char updProgram(unsigned char * data)
 {
     unsigned int crcRamBuffer;
     unsigned int flash_count = streamToUIn32(data + 3);
@@ -446,14 +435,14 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
     if (!addressAllowedToProgram(address, flash_count))
     {
         // invalid address
-        setLastError(UDP_ADDRESS_NOT_ALLOWED_TO_FLASH, sendTel);
+        setLastError(UDP_ADDRESS_NOT_ALLOWED_TO_FLASH);
         return (T_ACK_PDU);
     }
 
 
     if (flash_count > (sizeof(ramBuffer)/sizeof(ramBuffer[0])))
     {
-        setLastError(UDP_RAM_BUFFER_OVERFLOW, sendTel);
+        setLastError(UDP_RAM_BUFFER_OVERFLOW);
         return (T_ACK_PDU);
     }
 
@@ -461,7 +450,7 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
     if (crcRamBuffer != streamToUIn32(data + 3 + 4 + 4))
     {
         // invalid crcRamBuffer
-        setLastError(UDP_CRC_ERROR, sendTel);
+        setLastError(UDP_CRC_ERROR);
         return (T_ACK_PDU);
     }
 
@@ -481,7 +470,7 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
 
     bytesFlashed += flash_count;
     UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
-    setLastError(error, sendTel);
+    setLastError(error);
     return (T_ACK_PDU);
 }
 
@@ -490,12 +479,11 @@ static unsigned char updProgram(bool * sendTel, unsigned char * data)
  *        bootloader features (@ref BL_FEATURES) and applications first possible start address (@ref applicationFirstAddress())
  *        to the return telegram.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    the major version of Selfbus Updater in data[3-6],  the minor version of Selfbus Updater in data[7-10]
  *
  * @return always T_ACK_PDU
  */
-static unsigned char updRequestBootloaderIdentity(bool * sendTel, unsigned char * data)
+static unsigned char updRequestBootloaderIdentity(unsigned char * data)
 {
     unsigned int majorVersionUpdater = streamToUIn32(data + 3);
     unsigned int minorVersionUpdater = streamToUIn32(data + 3 + 4);
@@ -506,7 +494,7 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel, unsigned char 
         // version mismatch send the minimum requested major and minor version
         unsigned int minMajorVersionUpdater = UPDATER_MIN_MAJOR_VERSION;
         unsigned int minMinorVersionUpdater = UPDATER_MIN_MINOR_VERSION;
-        *sendTel = prepareReturnTelegram(sizeof(minMajorVersionUpdater) + sizeof(minMinorVersionUpdater), UPD_RESPONSE_BL_VERSION_MISMATCH);
+        prepareReturnTelegram(sizeof(minMajorVersionUpdater) + sizeof(minMinorVersionUpdater), UPD_RESPONSE_BL_VERSION_MISMATCH);
         uInt32ToStream(bcu.sendTelegram + 10, minMajorVersionUpdater);
         uInt32ToStream(bcu.sendTelegram + 10 + sizeof(minMajorVersionUpdater), minMinorVersionUpdater);
 
@@ -520,7 +508,7 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel, unsigned char 
     unsigned int bootloaderIdentity = BL_IDENTITY;
     unsigned int bootloaderFeatures = BL_FEATURES;
     unsigned int appFirstAddress = applicationFirstAddress();
-    *sendTel = prepareReturnTelegram(12, UPD_RESPONSE_BL_IDENTITY);
+    prepareReturnTelegram(12, UPD_RESPONSE_BL_IDENTITY);
     uInt32ToStream(bcu.sendTelegram + 10, bootloaderIdentity);  // Bootloader identity
     uInt32ToStream(bcu.sendTelegram + 14, bootloaderFeatures);  // Bootloader features
     uInt32ToStream(bcu.sendTelegram + 18, appFirstAddress);     // application first possible start address
@@ -534,10 +522,9 @@ static unsigned char updRequestBootloaderIdentity(bool * sendTel, unsigned char 
 /**
  * @brief Handles the @ref UPD_REQUEST_STATISTIC command.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @return always T_ACK_PDU
  */
-static unsigned char updRequestStatistic(bool * sendTel)
+static unsigned char updRequestStatistic()
 {
     unsigned short dummy = 0;
     unsigned short telCount = 0; // only in debug version telegrams are really counted and transmitted over serial
@@ -551,7 +538,7 @@ static unsigned char updRequestStatistic(bool * sendTel)
 
     unsigned int sizeTotal = sizeA + sizeB + sizeC + sizeD + sizeE;
 
-    *sendTel = prepareReturnTelegram(sizeTotal, UPD_RESPONSE_STATISTIC);
+    prepareReturnTelegram(sizeTotal, UPD_RESPONSE_STATISTIC);
     uShort16ToStream(startPos, telCount);
     startPos += sizeA;
     uShort16ToStream(startPos, disconnectCount);
@@ -573,10 +560,9 @@ static unsigned char updRequestStatistic(bool * sendTel)
  * @brief Handles the @ref UPD_REQUEST_BOOT_DESC command. Copies the application description block
  *        (@ref AppDescriptionBlock) to the return telegram.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @return always T_ACK_PDU
  */
-static unsigned char udpRequestBootDescriptionBlock(bool * sendTel)
+static unsigned char udpRequestBootDescriptionBlock()
 {
     AppDescriptionBlock* bootDescr = (AppDescriptionBlock *) bootDescriptorBlockAddress(); // Address of boot block descriptor
 
@@ -596,7 +582,7 @@ static unsigned char udpRequestBootDescriptionBlock(bool * sendTel)
         bootDescr->crc = bootDescr->startAddress;
     }
 
-    *sendTel = prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
+    prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
     memcpy(bcu.sendTelegram + 10, bootDescr, 12); // startAddress, endAddress, crc
 
     d3(serial.print("FW start@ 0x", bootDescr->startAddress , HEX, 8));   // Firmware start address
@@ -610,12 +596,11 @@ static unsigned char udpRequestBootDescriptionBlock(bool * sendTel)
  * @brief Function not implemented.
  * \todo Function not implemented
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @post          calls setLastErrror with @ref UDP_NOT_IMPLEMENTED
  * @return        always T_ACK_PDU
  * @warning function is not implemented, missing parameters address and count
  */
-static unsigned char updRequestData(bool * sendTel)
+static unsigned char updRequestData()
 {
     /*
      memcpy(bcu.sendTelegram + 9, (void *)address, count);
@@ -623,9 +608,8 @@ static unsigned char updRequestData(bool * sendTel)
      bcu.sendTelegram[6] = 0x42;
      bcu.sendTelegram[7] = 0x40 | count;
      bcu.sendTelegram[8] = UPD_SEND_DATA;
-     sendTel = true;
      */
-    setLastError(UDP_NOT_IMPLEMENTED, sendTel);
+    setLastError(UDP_NOT_IMPLEMENTED);
     return (T_ACK_PDU);
 }
 
@@ -633,17 +617,16 @@ static unsigned char updRequestData(bool * sendTel)
  * @brief Handles the @ref UPD_REQUEST_UID command. Copies @ref UID_LENGTH_USED bytes
  *        to the return telegram.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, if device is locked @ref UDP_DEVICE_LOCKED
  *                otherwise a @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updRequestUID(bool * sendTel)
+static unsigned char updRequestUID()
 {
     if (getProgButtonState() != true)
     {
-        setLastError(UDP_DEVICE_LOCKED, sendTel);
+        setLastError(UDP_DEVICE_LOCKED);
         return (T_ACK_PDU);
     }
 
@@ -653,10 +636,10 @@ static unsigned char updRequestUID(bool * sendTel)
     if (result != UDP_IAP_SUCCESS)
     {
         dline("iapReadUID error");
-        setLastError(result, sendTel);
+        setLastError(result);
         return (T_ACK_PDU);
     }
-    *sendTel = prepareReturnTelegram(UID_LENGTH_USED, UPD_RESPONSE_UID);
+    prepareReturnTelegram(UID_LENGTH_USED, UPD_RESPONSE_UID);
     memcpy(bcu.sendTelegram + 10, uid, UID_LENGTH_USED);
     dline(" OK");
     return (T_ACK_PDU);
@@ -665,12 +648,11 @@ static unsigned char updRequestUID(bool * sendTel)
 /**
  * @brief Handles the @ref UPD_GET_LAST_ERROR command. Copies the last error to the return telegram.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @return        always T_ACK_PDU
  */
-static unsigned char updGetLastError(bool * sendTel)
+static unsigned char updGetLastError()
 {
-    setLastError((UDP_State)lastError, sendTel);
+    setLastError((UDP_State)lastError);
     return (T_ACK_PDU);
 }
 
@@ -678,12 +660,11 @@ static unsigned char updGetLastError(bool * sendTel)
  * @brief Handles all unknown UPD/UDP commands.
  *
  * @post          calls setLastErrror with @ref UDP_UNKNOWN_COMMAND
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @return        always T_ACK_PDU
  */
-static unsigned char updUnkownCommand(bool * sendTel)
+static unsigned char updUnkownCommand()
 {
-    setLastError(UDP_UNKNOWN_COMMAND, sendTel); // set to any error
+    setLastError(UDP_UNKNOWN_COMMAND); // set to unknown error
     return (T_ACK_PDU);
 }
 
@@ -694,7 +675,6 @@ static unsigned char updUnkownCommand(bool * sendTel)
  *        - if the received application boot descriptor block differs from the one already in Flash (@ref BOOT_DSCR_ADDRESS),
  *          checks that the address is allowed to program, erases the flash page and flashes the new one.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    - data[7..4] contains the length of the application boot descriptor block received
  *                - data[11..8] contains the crc32 of the received bytes
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State or @ref IAP_Status
@@ -702,7 +682,7 @@ static unsigned char updUnkownCommand(bool * sendTel)
  * @note          device must be unlocked
  * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char * data)
+static unsigned char updUpdateBootDescriptorBlock(unsigned char * data)
 {
     unsigned int count = streamToUIn32(data + 3); // length of the descriptor
     unsigned int address;
@@ -712,7 +692,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
     // check for a possible ramBuffer overflow
     if (count > sizeof(ramBuffer)/sizeof(ramBuffer[0]))
     {
-        setLastError(UDP_RAM_BUFFER_OVERFLOW, sendTel);
+        setLastError(UDP_RAM_BUFFER_OVERFLOW);
         dline("ramBuffer Full");
         return (T_ACK_PDU);
     }
@@ -746,7 +726,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
         d3(serial.print(" data[7-4]:", streamToUIn32(data+4), HEX, 8));
         d3(serial.print(" data[11-8]:", streamToUIn32(data+8), HEX, 8));
         d3(serial.print(" data[15-12]:", streamToUIn32(data+12), HEX, 8));
-        setLastError(UDP_CRC_ERROR, sendTel);
+        setLastError(UDP_CRC_ERROR);
         return (T_ACK_PDU);
     }
 
@@ -764,7 +744,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
         result = erasePageRange(bootDescriptorBlockPage(), bootDescriptorBlockPage()); // - data[7]);
         if (result != UDP_IAP_SUCCESS)
         {
-            setLastError(result, sendTel);
+            setLastError(result);
             return (T_ACK_PDU);
         }
 
@@ -778,7 +758,7 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
 
         if (result != UDP_IAP_SUCCESS)
         {
-            setLastError(result, sendTel);
+            setLastError(result);
             if (result == UDP_ADDRESS_NOT_ALLOWED_TO_FLASH)
             {
                 return (T_ACK_PDU);
@@ -793,18 +773,17 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
             //DONE turn back on and remove above
             // dumpFlashContent(((AppDescriptionBlock *) ramBuffer)->startAddress, ((AppDescriptionBlock *) ramBuffer)->endAddress); // untested
         );
-        setLastError(UDP_APPLICATION_NOT_STARTABLE, sendTel);
+        setLastError(UDP_APPLICATION_NOT_STARTABLE);
         return (T_ACK_PDU);
     }
 
-    setLastError((UDP_State)result, sendTel);
+    setLastError((UDP_State)result);
     return (T_ACK_PDU);
 }
 
 /**
  * @brief Handles the @ref UPD_SEND_DATA_TO_DECOMPRESS command. "Copies" the bytes from data to the @ref Decompressor.
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[3..3+nCount] buffer containing the bytes to "copy" to the @ref Decompressor
  * @param nCount  Number of bytes to read from data
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_RAM_BUFFER_OVERFLOW or @ref UDP_NOT_IMPLEMENTED
@@ -812,15 +791,15 @@ static unsigned char updUpdateBootDescriptorBlock(bool * sendTel, unsigned char 
  * @note          device must be unlocked
  * @warning       The function calls @ref Decompressor.pageCompletedDoFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updSendDataToDecompress(bool * sendTel, unsigned char * data, unsigned int nCount)
+static unsigned char updSendDataToDecompress(unsigned char * data, unsigned int nCount)
 {
 #ifndef DECOMPRESSOR
     dline("-->not implemented")
-    setLastError(UDP_NOT_IMPLEMENTED, sendTel);
+    setLastError(UDP_NOT_IMPLEMENTED);
 #else
     if ((ramLocation + nCount) > (sizeof(ramBuffer)/sizeof(ramBuffer[0]))) // Check if this can be removed. Overflow protection should be in decompressor class instead!
     {
-        setLastError(UDP_RAM_BUFFER_OVERFLOW, sendTel);
+        setLastError(UDP_RAM_BUFFER_OVERFLOW);
         return (T_ACK_PDU);
     }
     dline("-->decompressor");
@@ -828,7 +807,7 @@ static unsigned char updSendDataToDecompress(bool * sendTel, unsigned char * dat
     {
         decompressor.putByte(data[i + 3]);
     }
-    setLastError(UDP_IAP_SUCCESS, sendTel);
+    setLastError(UDP_IAP_SUCCESS);
 #endif
     return (T_ACK_PDU);
 }
@@ -839,17 +818,16 @@ static unsigned char updSendDataToDecompress(bool * sendTel, unsigned char * dat
  *        - checks the crc32 received in data[11-14] with the one from the @ref Decompressor
  *        - calls @ref Decompressor.pageCompletedDoFlash to flash
  *
- * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @param data    data[11-14] contains the crc32 for the \todo check that this is correct
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State or a @ref IAP_Status
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  * @warning       The function calls @ref Decompressor.pageCompletedDoFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned char * data)
+static unsigned char updProgramDecompressedDataToFlash(unsigned char * data)
 {
 #ifndef DECOMPRESSOR
-    setLastError(UDP_NOT_IMPLEMENTED, sendTel);
+    setLastError(UDP_NOT_IMPLEMENTED);
 #else
     unsigned int count = decompressor.getBytesCountToBeFlashed();
     unsigned int address = decompressor.getStartAddrOfPageToBeFlashed();
@@ -863,7 +841,7 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
     if (!addressAllowedToProgram(address, count))
     {
         dline(" Address protected!");
-        setLastError(UDP_ADDRESS_NOT_ALLOWED_TO_FLASH, sendTel);
+        setLastError(UDP_ADDRESS_NOT_ALLOWED_TO_FLASH);
         return (T_ACK_PDU);
     }
 
@@ -872,18 +850,18 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
     if (crc != streamToUIn32(data + 3 + 4 + 4))
     {
         dline("CRC Error!");
-        setLastError(UDP_CRC_ERROR, sendTel);
+        setLastError(UDP_CRC_ERROR);
         return (T_ACK_PDU);
     }
 
     dline("CRC OK");
     if (decompressor.pageCompletedDoFlash())
     {
-        setLastError(UDP_FLASH_ERROR, sendTel);
+        setLastError(UDP_FLASH_ERROR);
     }
     else
     {
-        setLastError(UDP_IAP_SUCCESS, sendTel);
+        setLastError(UDP_IAP_SUCCESS);
     }
 
     resetUPDProtocol(); // we need this, otherwise updSendDataToDecompress will run into a buffer overflow
@@ -891,15 +869,8 @@ static unsigned char updProgramDecompressedDataToFlash(bool * sendTel, unsigned 
      return (T_ACK_PDU);
 }
 
-unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * data)
+unsigned char handleApciMemoryWriteRequest(unsigned char * data)
 {
-    // only allowed for APCI_MEMORY_WRITE_PDU
-    if (apciCmd != APCI_MEMORY_WRITE_PDU)
-    {
-        dline("no memory command!");
-        return (updUnkownCommand(sendTel));
-    }
-
     unsigned int count = data[0] & 0x0f;
     byte updCommand = data[2];
 
@@ -926,7 +897,7 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
                 // device is locked -> command not allowed, send lastError and return
                 if (!getDeviceUnlocked())
                 {
-                    setLastError(UDP_DEVICE_LOCKED, sendTel);
+                    setLastError(UDP_DEVICE_LOCKED);
                     return (T_ACK_PDU);
                 }
         }
@@ -936,61 +907,59 @@ unsigned char handleMemoryRequests(int apciCmd, bool * sendTel, unsigned char * 
     switch (updCommand)
     {
         case UPD_UNLOCK_DEVICE:
-            return (updUnlockDevice(sendTel, data));
+            return (updUnlockDevice(data));
 
         case UPD_REQUEST_UID:
-            return (updRequestUID(sendTel));
+            return (updRequestUID());
 
         case UPD_APP_VERSION_REQUEST:
-            return (updAppVersionRequest(sendTel, data));
+            return (updAppVersionRequest(data));
 
         case UPD_GET_LAST_ERROR:
-            return (updGetLastError(sendTel));
-
-        case UPD_RESET:
-            return (updUnkownCommand(sendTel)); // return (updResetDevice(sendTel));
-
-        case UPD_ERASE_SECTOR:
-            return (updUnkownCommand(sendTel)); // return (updEraseSector(sendTel, data));
+            return (updGetLastError());
 
         case UPD_SEND_DATA:
-            return (updSendData(sendTel, data, count));
+            return (updSendData(data, count));
 
         case UPD_PROGRAM:
-            return (updProgram(sendTel, data));
+            return (updProgram(data));
 
         case UPD_SEND_DATA_TO_DECOMPRESS:
-            return (updSendDataToDecompress(sendTel, data, count));
+            return (updSendDataToDecompress(data, count));
 
         case UPD_PROGRAM_DECOMPRESSED_DATA:
-            return (updProgramDecompressedDataToFlash(sendTel, data));
+            return (updProgramDecompressedDataToFlash(data));
 
         case UPD_ERASE_COMPLETE_FLASH:
-            return (updEraseFullFlash(sendTel));
+            return (updEraseFullFlash());
 
         case UPD_ERASE_ADDRESSRANGE:
-            return (updEraseAddressRange(sendTel, data));
+            return (updEraseAddressRange(data));
 
         case UPD_DUMP_FLASH:
-            return (updDumpFlashRange(sendTel, data));
+            return (updDumpFlashRange(data));
 
         case UPD_REQUEST_STATISTIC:
-            return (updRequestStatistic(sendTel));
+            return (updRequestStatistic());
 
         case UPD_UPDATE_BOOT_DESC:
-            return (updUpdateBootDescriptorBlock(sendTel, data));
+            return (updUpdateBootDescriptorBlock(data));
 
 		case UPD_REQUEST_BOOT_DESC:
-            return (udpRequestBootDescriptionBlock(sendTel));
+            return (udpRequestBootDescriptionBlock());
 
 		case UPD_REQUEST_BL_IDENTITY:
-		    return (updRequestBootloaderIdentity(sendTel, data));
+		    return (updRequestBootloaderIdentity(data));
 
 		case UPD_REQ_DATA:
-		    return (updRequestData(sendTel));
+		    return (updRequestData());
+
+		case UPD_RESET:
+        case UPD_ERASE_SECTOR:
+            return (updUnkownCommand());
 
         default:
-            return (updUnkownCommand(sendTel));
+            return (updUnkownCommand());
     }
     return (T_NACK_PDU); //we should never land here
 }

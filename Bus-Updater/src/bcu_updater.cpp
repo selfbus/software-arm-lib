@@ -64,7 +64,8 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderA
                 return (0);
             }
 #endif
-            return (handleMemoryRequests(apciCmd, sendResponse, &telegram[7])); ///\todo this 7 is not consistent with other telegram handling in sblib
+            *sendResponse = true;
+            return (handleApciMemoryWriteRequest(&telegram[7])); ///\todo this 7 is not consistent with other telegram handling in sblib
 
         case APCI_BASIC_RESTART_PDU:
             dump2(serial.println("APCI_BASIC_RESTART_PDU"));

@@ -135,7 +135,7 @@ void loop()
 {
     if (runModeTimeout.expired())
     {
-        if (_bcu.directConnection()) // _bcu is of class BcuUpdate
+        if (bcu.directConnection())
         {
             runModeTimeout.start(RUN_MODE_BLINK_CONNECTED);
         }
@@ -154,11 +154,6 @@ void loop()
 #if defined(DEBUG) && (!(defined(TS_ARM)))
     digitalWrite(PIN_RUN, blinky);
 #endif
-
-    if(!bus.idle())
-    {
-        return;
-    }
 }
 
 /**

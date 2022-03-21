@@ -75,7 +75,6 @@ unsigned int checkVectorTable(unsigned int start)
 
 unsigned int checkApplication(AppDescriptionBlock * block)
 {
-    // if ((block->startAddress < APPLICATION_FIRST_SECTOR) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
     if ((block->startAddress < applicationFirstAddress()) || (block->startAddress > flashLastAddress())) // we have just 64k of Flash
     {
         return (0);
@@ -110,7 +109,7 @@ unsigned char* getAppVersion(AppDescriptionBlock * block)
     }
     else
     {
-        return (&bl_id_string[0]); // Bootloader ID if invalid (address out of range)
+        return (&bl_id_string[0]); // Bootloader ID is invalid (address out of range)
     }
 }
 
