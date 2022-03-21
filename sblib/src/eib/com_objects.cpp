@@ -362,7 +362,7 @@ void _objectWrite(int objno, unsigned int value, int flags)
     byte* ptr = objectValuePtr(objno);
     int sz = objectSize(objno);
 
-    if(ptr == 0)
+    if ((ptr == 0) || (sz == 0xff)) ///\todo check maximum possible objectSize sz = objectTypeSizes[10] = 15? 0xff can indicate a corrupted Ram/EEPROM
         return;
 
     for (; sz > 0; --sz)
