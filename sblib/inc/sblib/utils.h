@@ -10,8 +10,12 @@
 #ifndef sblib_utils_h
 #define sblib_utils_h
 
+#include <stdint.h>
 #include <sblib/types.h>
 
+#define HIGH_BYTE(x) ((uint8_t)(x >> 8))
+#define LOW_BYTE(x) ((uint8_t)(x & 0xff))
+#define MAKE_WORD(highByte, lowByte) ((uint16_t)((highByte << 8) | lowByte))
 
 /**
  * Copy from src to dest with reversing the byte order.
