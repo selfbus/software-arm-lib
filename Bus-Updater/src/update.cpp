@@ -668,7 +668,7 @@ static unsigned char updRequestUID(bool * sendTel)
  * @param sendTel true if a @ref UPD_SEND_LAST_ERROR response telegram should be send, otherwise false
  * @return        always T_ACK_PDU
  */
-static unsigned updGetLastError(bool * sendTel)
+static unsigned char updGetLastError(bool * sendTel)
 {
     setLastError((UDP_State)lastError, sendTel);
     return (T_ACK_PDU);

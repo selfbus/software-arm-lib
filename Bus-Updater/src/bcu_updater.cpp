@@ -50,7 +50,8 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
     }
 #endif
 
-unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength)
+unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
+        bool * sendResponse, unsigned char * telegram, uint8_t telLength)
 {
     switch(apciCmd)
     {
@@ -87,7 +88,7 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const int senderAddr, 
     }
 }
 
-bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength)
+bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
 {
     if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
     {
@@ -96,7 +97,7 @@ bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *tel
     return (true);
 }
 
-bool BcuUpdate::processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength)
+bool BcuUpdate::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength)
 {
     return (true);
 }

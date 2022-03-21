@@ -91,15 +91,15 @@ protected:
     /**
      * Process a group address (T_Data_Group) telegram.
      */
-    bool processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength) override;
+    bool processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength) override;
 
     /**
      * Process a broadcast telegram.
      */
-    bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength) override;
+    bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) override;
 
-    unsigned char processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo,
-                              bool *sendResponse, unsigned char *telegram, unsigned short telLength) override;
+    unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
+                              bool *sendResponse, unsigned char *telegram, uint8_t telLength) override;
 
     /**
      * Process a device-descriptor-read request.
@@ -156,7 +156,7 @@ protected:
      *
      * @return true if a restart shall happen, otherwise false
      */
-    bool processApciMasterResetPDU(unsigned char *telegram, const int senderSeqNo, byte eraseCode, byte channelNumber);
+    bool processApciMasterResetPDU(unsigned char *telegram, const uint8_t senderSeqNo, uint8_t eraseCode, uint8_t channelNumber);
 
     /**
      * @brief Performs a system reset by calling @ref NVIC_SystemReset

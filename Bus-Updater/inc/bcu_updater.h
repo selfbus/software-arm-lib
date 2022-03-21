@@ -39,9 +39,9 @@ public:
     using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
 
 protected:
-    unsigned char processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength) override;
-    bool processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength) override;
-    bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength) override;
+    unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char * telegram, uint8_t telLength) override;
+    bool processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength) override;
+    bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) override;
 };
 
 #ifndef INSIDE_BCU_CPP

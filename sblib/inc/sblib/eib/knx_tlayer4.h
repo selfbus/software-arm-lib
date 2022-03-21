@@ -23,35 +23,35 @@
 #define TLAYER4_H_
 
 #include <sblib/eib/bus.h>
+#include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 
 
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
-#define TL4_ACK_TIMEOUT_MS        (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1
+#define TL4_ACK_TIMEOUT_MS        (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
 #define TL4_CTRL_TELEGRAM_SIZE    (8)    //!< The size of a connection control telegram
 
 #ifdef DEBUG
 #   define LONG_PAUSE_THRESHOLD_MS (500)
 #endif
 
-extern unsigned short telegramCount;   //!< number of telegrams since system reset
-extern unsigned short disconnectCount; //!< number of disconnects since system reset
+extern uint16_t telegramCount;   //!< number of telegrams since system reset
+extern uint16_t disconnectCount; //!< number of disconnects since system reset
 
 ///\todo remove after bugfix and on release
-extern unsigned short repeatedTelegramCount;
-extern unsigned short repeatedIgnoredTelegramCount;
+extern uint16_t repeatedTelegramCount;
+extern uint16_t repeatedIgnoredTelegramCount;
 ///\todo end of remove after bugfix and on release
 
 
 /**
- * @brief Implementation of the KNX transportation layer 4 Style 1 Rationalised
- *
+ * Implementation of the KNX transportation layer 4 Style 1 Rationalised
  */
 class TLayer4
 {
 public:
     /** The states of the transport layer 4 state machine Style 1 rationalised */
-    enum TL4State
+    enum TL4State ///\todo make it private after refactoring of TL4 dumping
     {
         CLOSED,
         OPEN_IDLE,
@@ -62,9 +62,13 @@ public:
     virtual ~TLayer4() = default;
 
     /**
-     * Pre-processes the received telegram from bus.telegram. Called by main()
+     * Pre-processes the received telegram from bus.telegram.
+     *
+     * @param telegram  The telegram to process
+     * @param telLength Length of the telegram
+     * @return True if telegram was processed successfully, otherwise false
      */
-    bool processTelegram(unsigned char *telegram, unsigned short telLength);
+    bool processTelegram(unsigned char *telegram, uint8_t telLength);
 
     /**
      * Test if a connection-oriented connection is open.
@@ -74,52 +78,53 @@ public:
     bool directConnection();
 
     /**
-     * The BCU's main processing loop. This is like the application's loop() function,
-     * and is called automatically by main() when the BCU is activated with bcu.begin().
+     * The transport layer 4 processing loop. This is like the application's loop() function,
+     * and is called automatically by the libraries main() when the BCU is activated with bcu.begin().
      */
     virtual void loop();
 
     /**
      * Get our own physical address.
+     *
+     * @return Physical KNX address.
      */
-    int ownAddress();
+    uint16_t ownAddress();
 
     /**
      * Set our own physical address. Normally the physical address is set by ETS when
      * programming the device.
      *
-     * @param addr - the physical address
+     * @param addr The new physical address
      */
-    virtual void setOwnAddress(int addr);
+    virtual void setOwnAddress(uint16_t addr);
 
     /**
      * Returns the physical knx-address of the connected partner.
      *
-     * @return remote address, -1 in case of no connection
+     * @return Remote's physical KNX address, 0 in case of no connection
      */
-    int connectedTo();
+    uint16_t connectedTo();
 
     /**
-     * A buffer for sending telegrams.
+     * A buffer for the telegram to send.
      * @warning This buffer is considered library private and should rather not be used by the application program.
      */
     byte sendTelegram[Bus::TELEGRAM_SIZE];
-
 protected:
     /**
-     * Special initialization for the transport layer
+     * Special initialization for the transport layer.
      */
     virtual void _begin();
 
     /**
      * Process a group address (T_Data_Group) telegram.
      */
-    virtual bool processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength) = 0;
+    virtual bool processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength) = 0;
 
     /**
      * Process a broadcast telegram.
      */
-    virtual bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength) = 0;
+    virtual bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) = 0;
 
     /**
      * ///\todo check real functionality and if even needed
@@ -127,26 +132,24 @@ protected:
     virtual void resetConnection();
 
     /**
-     * Send a connection control telegram.
+     * Send a connection control telegram @ref TPDU.
      *
-     * @param cmd - the transport command, see SB_T_xx defines
-     * @param address - the knx address to send the telegram to
-     * @param senderSeqNo - the sequence number of the sender, 0 if not required
+     * @param cmd           The transport command @ref TPDU
+     * @param address       The KNX address to send the telegram to
+     * @param senderSeqNo   The sequence number of the sender, 0 if not required
      */
-    void sendConControlTelegram(int cmd, unsigned int address, int senderSeqNo);
+    void sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo);
 
-    virtual unsigned char processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo,
-                                      bool * sendResponse, unsigned char * telegram, unsigned short telLength);
+    virtual unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
+                                      bool * sendResponse, unsigned char * telegram, uint8_t telLength);
 
     bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
-    byte sequenceNumberReceived();
-    byte sequenceNumberSend();
-
+    int8_t sequenceNumberSend();
 private:
     /**
      * Internal processing of the received telegram from bus.telegram. Called by processTelegram
      */
-    bool processTelegramInternal(unsigned char *telegram, unsigned short telLength);
+    bool processTelegramInternal(unsigned char *telegram, uint8_t telLength);
 
     /** Sets a new state @ref TL4State for the transport layer state machine
      *
@@ -163,7 +166,7 @@ private:
      *
      * @param tpci - the transport control field
      */
-    void processConControlTelegram(const unsigned int senderAddr, const unsigned int tpci, unsigned char *telegram, unsigned short telLength);
+    void processConControlTelegram(const uint16_t& senderAddr, const TPDU& tpci, unsigned char *telegram, const uint8_t& telLength);
 
     /**
      * @brief Process a TP Layer 4 @ref T_CONNECT_PDU
@@ -172,7 +175,7 @@ private:
      * @param senderAddr physical KNX address of the sender
      * @return true if successful, otherwise false
      */
-    bool processConControlConnectPDU(int senderAddr);
+    bool processConControlConnectPDU(uint16_t senderAddr);
 
     /**
      * @brief Process a TP Layer 4 @ref T_DISCONNECT_PDU
@@ -181,7 +184,7 @@ private:
      * @param senderAddr physical KNX address of the sender
      * @return true if successful, otherwise false
      */
-    bool processConControlDisconnectPDU(int senderAddr);
+    bool processConControlDisconnectPDU(uint16_t senderAddr);
 
     /**
      * @brief Process a TP Layer 4 @ref T_ACK_PDU and @ref T_NACK_PDU
@@ -191,7 +194,7 @@ private:
      * @param tpci the TPCI to process
      * @return true if successful, otherwise false
      */
-    bool processConControlAcknowledgmentPDU(int senderAddr, int tpci, unsigned char *telegram, unsigned short telLength);
+    bool processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU& tpci, unsigned char *telegram, uint8_t telLength);
 
     /**
      * Process a unicast telegram with our physical address as destination address.
@@ -201,12 +204,12 @@ private:
      *
      * @param apciCmd - The application control field command (APCI)
      */
-    void processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength);
+    void processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength);
 
     void actionA00Nothing();
-    void actionA01Connect(unsigned int address);
-    bool actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int seqNo, unsigned char *telegram, unsigned short telLength);
-    void actionA03sendAckPduAgain(const int seqNo);
+    void actionA01Connect(uint16_t address);
+    bool actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
+    void actionA03sendAckPduAgain(const int8_t seqNo);
 
     /**
      * @brief Performs action A5 as described in the KNX Spec.
@@ -234,22 +237,29 @@ private:
      *
      * @param address KNX address to send the @ref T_DISCONNECT_PDU
      */
-    void actionA10Disconnect(unsigned int address);
+    void actionA10Disconnect(uint16_t address);
+
+    int8_t sequenceNumberReceived();
 
     byte sendCtrlTelegram[TL4_CTRL_TELEGRAM_SIZE];  //!< Short buffer for connection control telegrams.
 
-    TLayer4::TL4State state = TLayer4::CLOSED;
-    int connectedAddr = -1;             //!< Remote address of the connected partner. //\todo check possibility of using short
-    byte seqNoSend = -1;
-    byte seqNoRcv = -1;
-    bool telegramReadyToSend = false;
-    unsigned int connectedTime = 0;     //!< System time of the last connection oriented telegram
+    TLayer4::TL4State state = TLayer4::CLOSED;  //!< Current state of the TL4 state machine
+    uint16_t connectedAddr = 0;                 //!< Remote address of the connected partner
+    int8_t seqNoSend = -1;                      //!< Sequence number for the next telegram we send
+    int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
+    bool telegramReadyToSend = false;           //!< True if a response is ready to be sent after our @ref T_ACK is confirmed
+    uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
 
-    bool checkValidRepeatedTelegram(unsigned char *telegram, unsigned short telLength);  ///\todo remove after fix in Bus and on release
-    bool checksumValid(unsigned char *telegram, unsigned short telLength);  ///\todo remove after fix in Bus and on release
-    void copyTelegram(unsigned char *telegram, unsigned short telLength);
-    byte lastTelegram[Bus::TELEGRAM_SIZE];
-    int lastTelegramLength = 0;
+    bool checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLength);  ///\todo remove after fix in Bus and on release
+    bool checksumValid(unsigned char *telegram, uint8_t telLength);  ///\todo remove after fix in Bus and on release
+    /**
+     * Copies currently processed telegram to @ref lastTelegram
+     * @param telegram  Current telegram processed
+     * @param telLength Length of current telegram
+     */
+    void copyTelegram(unsigned char *telegram, uint8_t telLength);
+    byte lastTelegram[Bus::TELEGRAM_SIZE];  //!< Buffer to store the last telegram received to compare with telegram currently processed
+    uint8_t lastTelegramLength = 0;         //!< Length of the last Telegram received
 };
 
 inline bool TLayer4::directConnection()
@@ -257,17 +267,18 @@ inline bool TLayer4::directConnection()
     return (state != TLayer4::CLOSED);
 }
 
-inline int TLayer4::ownAddress()
+inline uint16_t TLayer4::ownAddress()
 {
-    return (bus.ownAddress());
+    ///\todo bus.ownAddress should also only return uint16_t
+    return ((uint16_t)bus.ownAddress());
 }
 
-inline void TLayer4::setOwnAddress(int addr)
+inline void TLayer4::setOwnAddress(uint16_t addr)
 {
     bus.ownAddr = addr;
 }
 
-inline int TLayer4::connectedTo()
+inline uint16_t TLayer4::connectedTo()
 {
     if (directConnection())
     {
@@ -275,16 +286,16 @@ inline int TLayer4::connectedTo()
     }
     else
     {
-        return (-1);
+        return (0);
     }
 }
 
-inline byte TLayer4::sequenceNumberReceived()
+inline int8_t TLayer4::sequenceNumberReceived()
 {
     return (seqNoRcv);
 }
 
-inline byte TLayer4::sequenceNumberSend()
+inline int8_t TLayer4::sequenceNumberSend()
 {
     return (seqNoSend);
 }

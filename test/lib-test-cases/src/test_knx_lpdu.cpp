@@ -21,6 +21,7 @@
 
 #include "catch.hpp"
 #include <sblib/eib/knx_lpdu.h>
+#include <string.h>
 
 const int testTelLength = 24;
 unsigned char testTelegram[testTelLength];
@@ -142,6 +143,14 @@ TEST_CASE("LPDU sender/destination address processing","[SBLIB][KNX][LPDU]")
             REQUIRE(addr == senderAddress(testTelegram));
         }
     }
+}
+
+TEST_CASE("LPDU initialization","[SBLIB][KNX][LPDU]")
+{
+    unsigned char testTelegram[24];
+    memset(testTelegram, 0, sizeof(testTelegram));
+    initLpdu(testTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
+    REQUIRE(testTelegram[0] ==  0xbc);
 }
 
 

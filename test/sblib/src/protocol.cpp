@@ -39,14 +39,7 @@ static void _handleBusSendingInterrupt()
             bus.timerInterruptHandler ();
             bus.telegramLen = 0;
             LPC_TMR16B1->IR = 0x00;
-            bus.state       = Bus::IDLE; ///\todo bus is in WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, need something better to get it into idle
-            // bcu.loop();
         }
-    }
-
-    if (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)
-    {
-//        bus.state == Bus::IDLE;
     }
 
     REQUIRE(((bus.state == Bus::IDLE) || (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)));
@@ -70,10 +63,9 @@ static void _handleRx(Test_Case * tc, Telegram * tel, unsigned int testStep)
 	bus.telegramLen = tel->length;
 	bcu.processTelegram(bus.telegram, bus.telegramLen);
 	REQUIRE(bus.telegramLen == 0);
-	// _handleBusSendingInterrupt();
 }
 
-static void _handleTx(Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _checkSendTelegram(Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
     int i;
     int mismatches = 0;
@@ -83,7 +75,6 @@ static void _handleTx(Test_Case * tc, Telegram * tel, unsigned int testStep)
     char expected[23 * 3 + 1] = { 0 };
     char temp[1025];
 
-    bus.timerInterruptHandler();
     snprintf(msg, 1024, "%s: Number of bytes in send telegram %d expected %d, sent %d", tc->name, testStep,
         tel->length, bus.sendTelegramLen - 1);
     INFO(msg);
@@ -110,6 +101,16 @@ static void _handleTx(Test_Case * tc, Telegram * tel, unsigned int testStep)
     strcat(msg, temp);
     INFO(msg);
     REQUIRE(mismatches == 0);
+}
+
+static void _handleTx(Test_Case * tc, Telegram * tel, unsigned int testStep)
+{
+    if (bus.state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)
+    {
+        bus.timerInterruptHandler();
+    }
+
+    _checkSendTelegram(tc, tel, testStep);
 
     _handleBusSendingInterrupt();
 

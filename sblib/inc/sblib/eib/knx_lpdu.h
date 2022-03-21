@@ -22,7 +22,9 @@
 #ifndef SBLIB_KNX_LPDU_H_
 #define SBLIB_KNX_LPDU_H_
 
+#include <stdint.h>
 #include <sblib/types.h>
+#include <sblib/utils.h>
 
 #define LPDU_CONTROL_BYTE           (0)
 #define LPDU_SENDER_HIGH_BYTE       (1)
@@ -36,7 +38,7 @@
 /**
  *  KNX Priority
  */
-enum KNXPriority : byte
+enum KNXPriority : uint8_t
 {
     PRIORITY_SYSTEM = 0,/**< PRIORITY_SYSTEM */
     PRIORITY_HIGH = 1,  /**< PRIORITY_HIGH */
@@ -59,9 +61,10 @@ bool isRepeated(unsigned char *telegram);
 void setRepeated(unsigned char *telegram, bool repeated);
 KNXPriority priority(unsigned char *telegram);
 void setPriority(unsigned char *telegram, KNXPriority newPriority);
-unsigned short senderAddress(unsigned char *telegram);
-unsigned short destinationAddress(unsigned char *telegram);
-void setDestinationAddress(unsigned char *telegram, unsigned short newDestinationAddress);
+uint16_t senderAddress(unsigned char *telegram);
+void setSenderAddress(unsigned char *telegram, uint16_t newSenderAddress);
+uint16_t destinationAddress(unsigned char *telegram);
+void setDestinationAddress(unsigned char *telegram, uint16_t newDestinationAddress);
 KNXFrameType frameType(unsigned char *telegram);
 void setFrameType(unsigned char *telegram, KNXFrameType newFrameType);
 
@@ -90,7 +93,7 @@ inline void setRepeated(unsigned char *telegram, bool repeated)
     if (repeated)
     {
         // 5.bit not set => repeated
-        telegram[LPDU_CONTROL_BYTE] &= ~MASK_REPEATED;
+        telegram[LPDU_CONTROL_BYTE] &= (uint8_t)~MASK_REPEATED;
     }
     else
     {
@@ -106,30 +109,30 @@ inline KNXPriority priority(unsigned char *telegram)
 
 inline void setPriority(unsigned char *telegram, KNXPriority newPriority)
 {
-    telegram[LPDU_CONTROL_BYTE] =  (newPriority << 2) | (telegram[LPDU_CONTROL_BYTE] & 0xF3);
+    telegram[LPDU_CONTROL_BYTE] =  (uint8_t)(newPriority << 2) | (telegram[LPDU_CONTROL_BYTE] & 0xF3);
 }
 
-inline unsigned short senderAddress(unsigned char *telegram)
+inline uint16_t senderAddress(unsigned char *telegram)
 {
     return (unsigned short)((telegram[LPDU_SENDER_HIGH_BYTE] << 8) | telegram[LPDU_SENDER_LOW_BYTE]);
 }
 
-inline void setSenderAddress(unsigned char *telegram, unsigned short newSenderAddress)
+inline void setSenderAddress(unsigned char *telegram, uint16_t newSenderAddress)
 {
-    telegram[LPDU_SENDER_HIGH_BYTE] = (byte)(newSenderAddress >> 8);
-    telegram[LPDU_SENDER_LOW_BYTE] = (byte)newSenderAddress;
+    telegram[LPDU_SENDER_HIGH_BYTE] = HIGH_BYTE(newSenderAddress);
+    telegram[LPDU_SENDER_LOW_BYTE] = LOW_BYTE(newSenderAddress);
 }
 
 
-inline unsigned short destinationAddress(unsigned char *telegram)
+inline uint16_t destinationAddress(unsigned char *telegram)
 {
-    return (unsigned short)((telegram[LPDU_DESTINATION_HIGH_BYTE] << 8) | telegram[LPDU_DESTINATION_LOW_BYTE]);
+    return (MAKE_WORD(telegram[LPDU_DESTINATION_HIGH_BYTE], telegram[LPDU_DESTINATION_LOW_BYTE]));
 }
 
-inline void setDestinationAddress(unsigned char *telegram, unsigned short newDestinationAddress)
+inline void setDestinationAddress(unsigned char *telegram, uint16_t newDestinationAddress)
 {
-    telegram[LPDU_DESTINATION_HIGH_BYTE] = (byte)(newDestinationAddress >> 8);
-    telegram[LPDU_DESTINATION_LOW_BYTE] = (byte)newDestinationAddress;
+    telegram[LPDU_DESTINATION_HIGH_BYTE] = HIGH_BYTE(newDestinationAddress);
+    telegram[LPDU_DESTINATION_LOW_BYTE] = LOW_BYTE(newDestinationAddress);
 }
 
 inline KNXFrameType frameType(unsigned char *telegram)
@@ -149,7 +152,7 @@ inline void setFrameType(unsigned char *telegram, KNXFrameType newFrameType)
     if (newFrameType == FRAME_EXTENDED)
     {
         // 7.bit not set => extended
-        telegram[LPDU_CONTROL_BYTE] &= ~MASK_FRAMETYPE;
+        telegram[LPDU_CONTROL_BYTE] &= (uint8_t)~MASK_FRAMETYPE;
     }
     else
     {

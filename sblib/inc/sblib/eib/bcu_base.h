@@ -131,7 +131,7 @@ public:
      *
      * @param addr - the physical address
      */
-    void setOwnAddress(int addr) override;
+    void setOwnAddress(uint16_t addr) override;
 
     /**
      * Test if the programming mode is active. This is also indicated
@@ -154,7 +154,7 @@ public:
      * Get the mask version.
      * Usually 0x0012 for BCU1, 0x0020 for BCU2.
      */
-    unsigned short maskVersion();
+    uint16_t maskVersion();
 
     /**
      * The BCU's main processing loop. This is like the application's loop() function,
@@ -279,7 +279,7 @@ inline bool BcuBase::applicationRunning() const
 #endif
 }
 
-inline unsigned short BcuBase::maskVersion()
+inline uint16_t BcuBase::maskVersion()
 {
     return MASK_VERSION;
 }

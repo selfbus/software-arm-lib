@@ -114,13 +114,13 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
     userEeprom.runError = 0xff;
     userEeprom.portADDR = 0;
 
-    userEeprom.manufacturerH = manufacturer >> 8;
-    userEeprom.manufacturerL = manufacturer;
+    userEeprom.manufacturerH = HIGH_BYTE(manufacturer);
+    userEeprom.manufacturerL = LOW_BYTE(manufacturer);
 
-    userEeprom.deviceTypeH = deviceType >> 8;
-    userEeprom.deviceTypeL = deviceType;
+    userEeprom.deviceTypeH = HIGH_BYTE(deviceType);
+    userEeprom.deviceTypeL = LOW_BYTE(deviceType);
 
-    userEeprom.version = version;
+    userEeprom.version = (uint8_t)version;
 
 #if BCU_TYPE != BCU1_TYPE
     unsigned int partID;
@@ -151,8 +151,8 @@ void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
     {
         iapReadPartID(&partID);
         memcpy (userEeprom.serial, &partID, 4);
-        userEeprom.serial[4] = SBLIB_VERSION >> 8;
-        userEeprom.serial[5] = SBLIB_VERSION;
+        userEeprom.serial[4] = HIGH_BYTE(SBLIB_VERSION);
+        userEeprom.serial[5] = LOW_BYTE(SBLIB_VERSION);
     }
     userRam.peiType = 0;     // PEI type: 0=no adapter connected to PEI.
     userEeprom.appType = 0;  // Set to BCU2 application. ETS reads this when programming.
@@ -175,21 +175,21 @@ void BcuBase::end()
     bus.end();
 }
 
-void BcuBase::setOwnAddress(int addr)
+void BcuBase::setOwnAddress(uint16_t addr)
 {
-    userEeprom.addrTab[0] = addr >> 8;
-    userEeprom.addrTab[1] = addr;
+    userEeprom.addrTab[0] = HIGH_BYTE(addr);
+    userEeprom.addrTab[1] = LOW_BYTE(addr);
 #if BCU_TYPE != BCU1_TYPE
     if (userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADING)
     {
         byte * addrTab =  addrTable() + 1;
 
-        * (addrTab + 0)  = addr >> 8;
-        * (addrTab + 1)  = addr;
+        * (addrTab + 0)  = HIGH_BYTE(addr);
+        * (addrTab + 1)  = LOW_BYTE(addr);
     }
 #endif
     userEeprom.modified();
-    bus.ownAddr = addr;
+    TLayer4::setOwnAddress(addr);
 }
 
 void BcuBase::loop()
@@ -512,7 +512,7 @@ void BcuBase::loop()
     TLayer4::loop();
 	if (bus.telegramReceived() && (!bus.sendingTelegram()) && (bus.state == Bus::IDLE) && (userRam.status & BCU_STATUS_TL))
 	{
-        processTelegram(&bus.telegram[0], bus.telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
+        processTelegram(&bus.telegram[0], (uint8_t)bus.telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
 
 	if (progPin)

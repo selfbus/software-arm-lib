@@ -47,6 +47,17 @@ static void connect(void * state, unsigned int param)
     VaS(state)->telegramReadyToSend = false;
 }
 
+/**
+ * \todo when L2->L4 callback L2_ACK sent is implemented
+ *       delete this function and replace in with telegrams with connectedOpenIdle
+ */
+static void connectedOpenIdleOrWait(void * state, unsigned int param)
+{
+    REQUIRE(param > 0);
+    VaS(state)->connectedAddr = param;
+    VaS(state)->machineState = TLayer4::OPEN_WAIT;
+}
+
 static void connectedOpenIdle(void * state, unsigned int param)
 {
     REQUIRE(param > 0);
@@ -63,7 +74,7 @@ static void connectedOpenWait(void * state, unsigned int param)
 
 static void disconnectClosed(void * state, unsigned int param)
 {
-    VaS(state)->connectedAddr = -1;
+    VaS(state)->connectedAddr = 0;
     VaS(state)->machineState = TLayer4::CLOSED;
 }
 
@@ -87,9 +98,9 @@ static Telegram testCaseTelegrams_CustomCheckRepeatedFlag[] =
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  8, 0, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    {TEL_RX,  8, 0, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
     // 3. Check T_ACK response for the DeviceDescriptorRead, bcu.loop() once, so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
-    {TEL_TX,  7, 1, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU
+    {TEL_TX,  7, 1, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU
     // 4. Check DeviceDescriptorResponse Maskversion 0x0012
     {TEL_TX,  10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
     // 5. Check for empty TX

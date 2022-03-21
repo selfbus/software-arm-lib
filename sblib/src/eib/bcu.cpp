@@ -17,6 +17,7 @@
 #include <sblib/eib/com_objects.h>
 #include <sblib/internal/variables.h>
 #include <sblib/mem_mapper.h>
+#include <sblib/utils.h>
 
 #include <string.h>
 
@@ -128,7 +129,7 @@ void BCU::loop()
 /**
  * todo check for RX status and inform upper layer if needed
  */
-bool BCU::processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupAddress, unsigned char *telegram, unsigned short telLength)
+bool BCU::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength)
 {
     DB_COM_OBJ(
         serial.println();
@@ -140,13 +141,13 @@ bool BCU::processGroupAddressTelegram(ApciCommand apciCmd, unsigned short groupA
     return (true);
 }
 
-bool BCU::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, unsigned short telLength)
+bool BCU::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
 {
     if (programmingMode()) // we are in programming mode
     {
         if (apciCmd == APCI_INDIVIDUAL_ADDRESS_WRITE_PDU)
         {
-            setOwnAddress((telegram[8] << 8) | telegram[9]);
+            setOwnAddress(MAKE_WORD(telegram[8], telegram[9]));
         }
         else if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
         {
@@ -163,11 +164,10 @@ bool BCU::processDeviceDescriptorReadTelegram(int id)
         return (false); // unknown device descriptor
     }
 
-    unsigned short version = maskVersion();
     sendTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
     setApciCommand(sendTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
-    sendTelegram[8] = version >> 8;
-    sendTelegram[9] = version;
+    sendTelegram[8] = HIGH_BYTE(maskVersion());
+    sendTelegram[9] = LOW_BYTE(maskVersion());
     return (true);
 }
 
@@ -405,7 +405,7 @@ bool BCU::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthP
         DB_PROPERTIES(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
         if (objectIdx < INTERFACE_OBJECT_COUNT)
         {
-            userEeprom.loadState[objectIdx] = loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
+            userEeprom.loadState[objectIdx] = (uint8_t)loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
             userEeprom.modified();
             DB_PROPERTIES(serial.println());
             return true;
@@ -456,14 +456,14 @@ bool BCU::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPa
     return result;
 }
 
-unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const int senderSeqNo, bool *sendResponse, unsigned char *telegram, unsigned short telLength)
+unsigned char BCU::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char *telegram, uint8_t telLength)
 {
-    int count;
-    int address;
-    int index;
+    uint8_t count;
+    uint16_t address;
+    uint8_t index;
 #if BCU_TYPE != BCU1_TYPE
     bool found;
-    int id;
+    uint8_t id;
 #endif
     unsigned char sendAckTpu = 0;
     *sendResponse = false;
@@ -486,7 +486,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
         count = telegram[7] & 0x0f; // number of data bytes
-        address = (telegram[8] << 8) | telegram[9]; // address of the data block
+        address = MAKE_WORD(telegram[8], telegram[9]); // address of the data block
 
         if (apciCmd == APCI_MEMORY_WRITE_PDU)
         {
@@ -514,8 +514,8 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
             // send a APCI_MEMORY_RESPONSE_PDU response
             sendTelegram[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
             setApciCommand(sendTelegram, APCI_MEMORY_RESPONSE_PDU, count);
-            sendTelegram[8] = address >> 8;
-            sendTelegram[9] = address;
+            sendTelegram[8] = HIGH_BYTE(address);
+            sendTelegram[9] = LOW_BYTE(address);
             *sendResponse = true;
         }
         break;
@@ -558,7 +558,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
         id = telegram[9];
         count = telegram[10] >> 4;
         address = ((telegram[10] & 0x0f) << 4);
-        address |= telegram[11];
+        address = (uint16_t)(address | (telegram[11]));
 
         sendTelegram[5] = 0x60 + 5; // routing count in high nibble + response length in low nibble
         setApciCommand(sendTelegram, APCI_PROPERTY_VALUE_RESPONSE_PDU, 0);
@@ -583,7 +583,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
         setApciCommand(sendTelegram, APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU, 0);
         sendTelegram[8] = index;
         sendTelegram[9] = id;
-        sendTelegram[10] = address;
+        sendTelegram[10] = (uint8_t)address;
         propertyDescReadTelegram(index, (PropertyID) id, address);
         *sendResponse = true;
         break;
@@ -596,7 +596,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const int senderAddr, const 
     return (sendAckTpu);
 }
 
-bool BCU::processApciMasterResetPDU(unsigned char *telegram, const int senderSeqNo, byte eraseCode, byte channelNumber)
+bool BCU::processApciMasterResetPDU(unsigned char *telegram, const uint8_t senderSeqNo, uint8_t eraseCode, uint8_t channelNumber)
 {
     if (!checkApciForMagicWord(eraseCode, channelNumber))
     {
