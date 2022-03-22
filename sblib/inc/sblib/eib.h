@@ -39,6 +39,8 @@
 	extern BCU1 bcu;
 #endif
 
+#define _bcu bcu
+
 #define objectWrite(x, y) bcu.comObjects->objectWrite(x, y)
 #define objectSetValue(x, y) bcu.comObjects->objectSetValue(x, y)
 #define objectRead(x) bcu.comObjects->objectRead(x)
@@ -46,11 +48,14 @@
 #define nextUpdatedObject() bcu.comObjects->nextUpdatedObject()
 #define objectUpdate(x, y) bcu.comObjects->objectUpdate(x, y)
 #define objectWritten(x) bcu.comObjects->objectWritten(x)
+#define objectEndian(x) bcu.comObjects->objectEndian(x)
 
 #define userEepromData userEeprom.userEepromData
 #define userRamData userRam.userRamData
 #define userEeprom (*(bcu.userEeprom))
 #define userRam (*(bcu.userRam))
+#define userMemoryPtr bcu.userMemoryPtr
+#define setUserRamStart userRam.setUserRamStart
 
 #define USER_EEPROM_START userEeprom.userEepromStart
 #define USER_EEPROM_SIZE userEeprom.userEepromSize
