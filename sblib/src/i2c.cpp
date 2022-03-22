@@ -103,7 +103,7 @@ static void i2c_app_init(I2C_ID_T id, int speed)
 	Chip_I2C_SetClockRate(id, speed);
 
 	/* Set default mode to interrupt */
-	i2c_set_mode(id, 0);
+	i2c_set_mode(id, true);
 }
 
 

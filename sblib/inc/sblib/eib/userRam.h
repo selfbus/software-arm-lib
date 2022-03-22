@@ -54,9 +54,11 @@ public:
 	virtual byte& deviceControl() const = 0;
 	virtual byte& peiType() const = 0;
 
-	const unsigned int userRamStart;
+	unsigned int userRamStart;
     const unsigned int userRamSize;
-    const unsigned int userRamEnd;
+    unsigned int userRamEnd;
+
+    void setUserRamStart(const unsigned int ramStart) { userRamStart = ramStart; userRamEnd = ramStart + userRamSize; }
 };
 
 inline byte& UserRam::operator[](unsigned int idx)
