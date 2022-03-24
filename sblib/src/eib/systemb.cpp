@@ -107,40 +107,17 @@ void SYSTEMB::processDirectTelegram(int apci)
     default:
         switch (apci)
         {
-        case APCI_RESTART_PDU:
-        case APCI_RESTART_RESPONSE_PDU:
-            if (checkApciForMagicWord(apci, bus->telegram[8], bus->telegram[9]))
+        case APCI_BASIC_RESTART_PDU:
+            softSystemReset();
+            break; // we should never land on this break
+
+        case APCI_MASTER_RESET_PDU:
+            if (processApciMasterResetPDU(apci, senderSeqNo, bus->telegram[8], bus->telegram[9]))
             {
-                // special version of APCI_RESTART_TYPE1_PDU  used by Selfbus bootloader
-                // restart with parameters, we need to start in flashmode
-                // this is only allowed with programming mode on, otherwise it will result in a simple reset
-                unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
-                *magicWord = BOOTLOADER_MAGIC_WORD;
-                /* if (programmingMode())
-                {
-                    *magicWord = BOOTLOADER_MAGIC_WORD;
-                }
-                else
-                {
-                    *magicWord = 0;
-                }
-                */
+                softSystemReset(); // perform a basic restart;
             }
-
-            if (usrCallback)
-            {
-                usrCallback->Notify(USR_CALLBACK_RESET);
-            }
-
-            userEeprom->writeUserEeprom();   // Flush the EEPROM before resetting
-
-            if (memMapper)
-            {
-                memMapper->doFlash();
-            }
-            //FIXME 3/5/3 KNX spec 3.7 (page 63) says send an appropriate LM_Reset.ind message through the EMI interface
-
-            NVIC_SystemReset();  // Software Reset
+            // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
+            sendTel = true;
             break;
 
         case APCI_AUTHORIZE_REQUEST_PDU:

@@ -21,13 +21,13 @@
 
 bool checkApciForMagicWord(const int apci, byte eraseCode, byte channelNumber)
 {
-    if (!(apci & APCI_RESTART_RESPONSE_PDU))
+    if (!(apci & APCI_MASTER_RESET_PDU))
     {
         return false;
     }
 
-    // special version of APCI_RESTART_RESPONSE_PDU used by Selfbus bootloader
-    // restart with parameters, special meaning of erase=0 and channel=255 for update mode
+    // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
+    // restart with parameters, special meaning of erase=7 and channel=255 for bootloader mode
     return ((eraseCode == BOOTLOADER_MAGIC_ERASE) && (channelNumber == BOOTLOADER_MAGIC_CHANNEL));
 }
 

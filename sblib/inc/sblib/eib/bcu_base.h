@@ -167,6 +167,28 @@ public:
      */
     bool processApciMemoryOperation(unsigned int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem);
 
+    /**
+      * Process a APCI_MASTER_RESET_PDU
+      * see KNX Spec. 3/5/2 §3.7.1.2 p.64 A_Restart
+      *
+      * @param apci          APCI to process
+      * @param senderSeqNo   The TL layer 4 sequence number of the sender
+      * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
+      * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
+      * @note sendTelegram is accessed and changed inside the function to prepare a @ref APCI_MASTER_RESET_RESPONSE_PDU
+      *
+      * @return true if a restart shall happen, otherwise false
+      */
+     bool processApciMasterResetPDU(int apci, const int senderSeqNo, byte eraseCode, byte channelNumber);
+
+     /**
+      * @brief Performs a system reset by calling @ref NVIC_SystemReset
+      * @details Before the reset a USR_CALLBACK_RESET is send to the application,
+      *          the UserEprom and memMapper are written to flash.
+      * @warning This function will never return.
+      */
+     void softSystemReset();
+
     UserEeprom* userEeprom;
     UserRam* userRam;
     ComObjects* comObjects;
@@ -182,7 +204,37 @@ public:
      */
     MemMapper* getMemMapper();
 
+    /**
+     * Allow an user provided memory mapper to store parameter data via memory write / read
+     * @param mapper - a pointer to an instance of a MemMapper object
+     */
+    void setMemMapper(MemMapper *mapper);
+
     Bus* bus;
+
+
+    /**
+     * Set a callback class to notify the user program of some events
+     */
+    void setUsrCallback(UsrCallback *callback);
+
+    /**
+     * Enable/Disable sending of group write or group response telegrams.
+     * Useful if the device wants to implement transmission delays
+     * after bus voltage recovery.
+     * Transmission is enabled by default.
+     */
+    void enableGroupTelSend(bool enable);
+
+    /**
+     * Set a limit for group telegram transmissions per second.
+     * If the parameter is not zero, there is a minimum delay
+     * of 1/limit (in seconds) between subsequent group telegram
+     * transmissions.
+     *
+     * @param limit - the maximum number of telegrams per second.
+     */
+    void setGroupTelRateLimit(unsigned int limit);
 
 protected:
     // The method begin_BCU() is renamed during compilation to indicate the BCU type.
@@ -260,35 +312,6 @@ protected:
     bool processDeviceDescriptorReadTelegram(int id);
 
     int connectedTo();
-
-    /**
-     * Allow an user provided memory mapper to store parameter data via memory write / read
-     * @param mapper - a pointer to an instance of a MemMapper object
-     */
-    void setMemMapper(MemMapper *mapper);
-
-    /**
-     * Set a callback class to notify the user program of some events
-     */
-    void setUsrCallback(UsrCallback *callback);
-
-    /**
-     * Enable/Disable sending of group write or group response telegrams.
-     * Useful if the device wants to implement transmission delays
-     * after bus voltage recovery.
-     * Transmission is enabled by default.
-     */
-    void enableGroupTelSend(bool enable);
-
-    /**
-     * Set a limit for group telegram transmissions per second.
-     * If the parameter is not zero, there is a minimum delay
-     * of 1/limit (in seconds) between subsequent group telegram
-     * transmissions.
-     *
-     * @param limit - the maximum number of telegrams per second.
-     */
-    void setGroupTelRateLimit(unsigned int limit);
 
     void cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigned int count);
     void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count);
