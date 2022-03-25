@@ -297,6 +297,7 @@ public class Updater implements Runnable {
 
             //for option -device restart the device in bootloader mode
             if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
+                dm.checkDeviceInProgrammingMode(null); // check that before no device is in programming mode
                 dm.restartDeviceToBootloader(link, cliOptions.device());
             }
 

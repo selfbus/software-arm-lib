@@ -85,9 +85,7 @@ public class BinImage {
 
     public static BinImage readFromBin(String filename, long startAddress) {
         try {
-            FileInputStream hexFis = new FileInputStream(filename);
             byte[] binData = Files.readAllBytes(new File(filename).toPath());
-
             return new BinImage(binData, startAddress);
         } catch (Exception e) {
             throw new RuntimeException(e);

@@ -66,7 +66,7 @@ public final class DeviceManagement {
     }
 
     /**
-     * Restarts the <code>device</code> in normal or Bootloader mode
+     * Restarts the <code>device</code> running in normal into the Bootloader mode
      * @param link
      *          the KNX network link  to communicate with the device
      * @param device
@@ -95,6 +95,7 @@ public final class DeviceManagement {
             waitRestartTime(restartProcessTime);
         } finally {
             mcDevice.detach();
+            mcDevice.close();
         }
         return false;
     }
@@ -364,13 +365,15 @@ public final class DeviceManagement {
             ManagementProcedures mgmt = new ManagementProceduresImpl(link);
             IndividualAddress[] devices = mgmt.readAddress();
             mgmt.detach();
-
-            boolean correctDeviceInProgMode = (devices.length == 1) && (progDeviceAddr.equals(devices[0]));
-            if (correctDeviceInProgMode || devices.length == 0) {
-                return;
+            mgmt.close();
+            if ((devices.length == 0) && (progDeviceAddr == null)) { // no device in prog mode
+            	return;
+            }
+            else if ((devices.length == 1) && (progDeviceAddr != null) && (progDeviceAddr.equals(devices[0]))) { // correct device in prog mode
+            	return;
             }
             logger.warn("{}Device(s) in bootloader/programming mode: {}{}", ConColors.BRIGHT_RED, Arrays.stream(devices).toArray(), ConColors.RESET);
-            throw new UpdaterException("checkDevicesInProgrammingMode finished.");
+            throw new UpdaterException("The wrong device or more than one device are already in programming mode.");
         } catch (KNXException | InterruptedException e ) {
             throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()));
         }
