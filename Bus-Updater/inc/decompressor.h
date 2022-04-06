@@ -53,7 +53,7 @@ class Decompressor
         int bytesToFlash = 0;
         int rawLength = 0;
         State state = State::EXPECT_COMMAND_BYTE;
-        uint8_t* startAddrOfPageToBeFlashed = 0;
+        __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) uint8_t* startAddrOfPageToBeFlashed = 0;
         uint8_t* startAddrOfFlash = 0;
 
 	public:

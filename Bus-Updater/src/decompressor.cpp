@@ -19,21 +19,10 @@
  -----------------------------------------------------------------------------*/
 
 #include <string.h>
-#include <sblib/internal/iap.h>
+#include "flash.h"
 #include "crc.h"
 #include "decompressor.h"
-
-#ifdef DUMP_TELEGRAMS_LVL1
-#    include <sblib/serial.h>
-#    define d1(x) {serial.print(x);}
-#    define dline(x) {serial.println(x);}
-#    define d2(u,v,w) {serial.print(u,v,w);}
-#else
-#    define d1(x)
-#    define d2(u,v,w)
-#    define dline(x)
-#endif
-
+#include "dump.h"
 
 #define CMD_RAW 0
 #define CMD_COPY 0b10000000
@@ -44,7 +33,7 @@
 Decompressor::Decompressor(AppDescriptionBlock* BaseAddress)
 {
     startAddrOfFlash = getFirmwareStartAddress(BaseAddress);
-	startAddrOfPageToBeFlashed = getFirmwareStartAddress(BaseAddress);
+	startAddrOfPageToBeFlashed = startAddrOfFlash;
 }
 
 int Decompressor::getLength()
@@ -111,29 +100,15 @@ int Decompressor::pageCompletedDoFlash()
 		d1(" different, Erase Page");
 		//d2(getFlashPageNumberToBeFlashed(), DEC,2);
 
-		lastError = iapErasePage(getFlashPageNumberToBeFlashed());
-		//lastError = IAP_SUCCESS; // Dry RUN! for debug
-		if (lastError)
-		{
-		    dline(" Failed!")
-			return (lastError);
-		}
-		else
-		    dline(" OK");
+		lastError = erasePageRange(getFlashPageNumberToBeFlashed(), getFlashPageNumberToBeFlashed());
+		//lastError = UDP_IAP_SUCCESS; // Dry RUN! for debug
 
 		// proceed to flash the decompressed page stored in the scratchpad RAM
 		d1("Diff - Program Page at Address 0x");
 		d2((unsigned int)startAddrOfPageToBeFlashed, HEX,4);
-		lastError = iapProgram(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
-		//lastError = IAP_SUCCESS; // Dry RUN! for debug
-		if(lastError)
-		{
-		    dline(" Failed!");
-		}
-		else
-		{
-		    dline(" OK");
-		}
+		lastError = executeProgramFlash(*startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
+		//lastError = iapProgram(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
+		//lastError = UDP_IAP_SUCCESS; // Dry RUN! for debug
 	}
 	else
 	{

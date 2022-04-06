@@ -16,14 +16,18 @@
 
 #define private   public
 #define protected public
-#include "sblib/eib/bus.h"
+#   include <sblib/eib/bus.h>
+#   include <sblib/eib/bcu.h>
+// #   include <sblib/eib/knx_tlayer4.h>
 #undef private
 #undef protected
-#include "sblib/eib/bcu.h"
 #include "iap_emu.h"
 
 #include <string.h>
 #include <stdio.h>
+
+#define MASK_VERSION_LOW (MASK_VERSION & 0xFF)
+#define MASK_VERSION_HIGH ((MASK_VERSION >> 8) & 0xFF)
 
 typedef void (TestCaseSetup) (void);
 
@@ -32,10 +36,11 @@ typedef void (StepFunction)  (void * state, unsigned int var);
 
 typedef enum
 {
-  TEL_RX            //!> simulated telegram received from the bus
-, TEL_TX            //!> simulated telegram to transmit to the bus
+  TEL_RX            //!> simulated telegram received from the bus, at least the length must be specified, loopCount can be used to call bcu.loop() after stepFunction is evaluated
+, TEL_TX            //!> simulated telegram to transmit to the bus, at least the length must be specified
 , TIMER_TICK        //!> simulated timer tick by increasing system time
 , CHECK_TX_BUFFER
+, LOOP              //!> simulates bcu.loop()
 , BREAK
 , END               //!> test case end
 } TelegramType;
@@ -44,9 +49,10 @@ typedef struct
 {
     TelegramType     type;
     int              length;
+    unsigned int     loopCount;
     unsigned int     variable;
     StepFunction   * stepFunction;
-    unsigned char    bytes[23];
+    unsigned char    bytes[24]; ///\todo more space for extended frames
 } Telegram;
 
 typedef struct

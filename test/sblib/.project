@@ -4,6 +4,7 @@
 	<comment></comment>
 	<projects>
 		<project>Catch</project>
+		<project>sblib</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

@@ -34,14 +34,19 @@
  ******************************************************************************/
 
 #if defined (__LPC11XX__)
-#   define SERIAL_RX_PIN PIO1_6 //!< on a 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
-#   define SERIAL_TX_PIN PIO1_7 //!< on a 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
+// #   define SERIAL_RX_PIN PIO3_1 //!< on a TS_ARM Controller
+// #   define SERIAL_TX_PIN PIO3_0 //!< on a TS_ARM Controller
+#   define SERIAL_RX_PIN PIO2_7 //!< on a 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
+#   define SERIAL_TX_PIN PIO2_8 //!< on a 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
 #endif
 
-// #define SERIAL_SPEED 115200 //!< baudrate e.g. 115200, 230400, 576000 serial port should run for debugging
-// #define INCLUDE_SERIAL      //!< library should open serial for us
+//#define SERIAL_SPEED 115200 //!< baudrate e.g. 115200, 230400, 576000 serial port should run for debugging
+//#define SERIAL_SPEED 576000
+//#define SERIAL_SPEED 1500000
 
-// #define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
+//#define INCLUDE_SERIAL      //!< library should open serial for us
+
+//#define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
 
 
 
@@ -59,10 +64,12 @@
 //#define DEBUG_BUS_BITLEVEL  //!< extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow of the trace buffer
 //#define BUSMONITOR				//!< enables bus monitoring: dump of all bus traffic incl timing info, no sending, no processing of rx-telegrams
 //to avoid trace buffer overflow DUMP_TELEGRAMS should not be used in parallel with DEBUG_BUS or DEBUG_BUS_BITLEVEL"
-//#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack over serial interface
+//#define DUMP_TELEGRAMS  //!< dump rx and tx telegrams, incl received ack and timing info over serial interface
+//#define USEPIO_FOR_TEL_END_IND //<! toggle PIN PIO1_4 at end of a received telegram
 //#define DUMP_COM_OBJ    //!< dump object handling information on app-server level over serial interface
 //#define DUMP_MEM_OPS    //!< dump APCI_MEMORY_WRITE_PDU and APCI_MEMORY_READ_PDU over serial interface
 //#define DUMP_PROPERTIES //!< dump interface object and property handling over serial interface
+//#define DUMP_TL4        //!< dump transport layer 4 protocol handling over serial interface
 
 /// \todo following #defines should be moved to this libconfig.h file
 // IAP_EMULATION        /// \todo from platform.h & analog_pin.cpp (used for catch-unit tests of the sblib)
@@ -93,13 +100,14 @@
 // remove any debugging and dumping stuff from release versions
 #ifndef DEBUG
 #   undef DEBUG_BUS
-#	undef BUSMONITOR
 #   undef DEBUG_BUS_BITLEVEL
+#   undef BUSMONITOR
 #   undef DUMP_TELEGRAMS
+#	undef USEPIO_FOR_TEL_END_IND
 #   undef DUMP_COM_OBJ
 #   undef DUMP_MEM_OPS
-#   undef DUMP_SERIAL
 #   undef DUMP_PROPERTIES
+#   undef DUMP_TL4
 #   undef LOGGING
 #   undef BH1750_DEBUG
 #   undef DEBUG_ACTIVE
@@ -124,7 +132,7 @@
 
 // list here all defines which need the serial port
 #if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined(DUMP_TELEGRAMS) || defined(DUMP_COM_OBJ) || \
-    defined(DUMP_MEM_OPS) || defined(DUMP_PROPERTIES)
+    defined(DUMP_MEM_OPS) || defined(DUMP_PROPERTIES) || defined(DUMP_TL4)
 #   define INCLUDE_SERIAL
 #endif
 

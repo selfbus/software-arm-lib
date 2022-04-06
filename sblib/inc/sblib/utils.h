@@ -10,8 +10,12 @@
 #ifndef sblib_utils_h
 #define sblib_utils_h
 
+#include <stdint.h>
 #include <sblib/types.h>
 
+#define HIGH_BYTE(x) ((uint8_t)(x >> 8))
+#define LOW_BYTE(x) ((uint8_t)(x & 0xff))
+#define MAKE_WORD(highByte, lowByte) ((uint16_t)((highByte << 8) | lowByte))
 
 /**
  * Copy from src to dest with reversing the byte order.
@@ -33,6 +37,18 @@ void fatalError();
  * @param newPin - the new Pin
  */
 void setFatalErrorPin(int newPin);
+
+/**
+ * Creates a len_hash wide hash of the uid.
+ * Hash will be generated in provided hash buffer
+ *
+ * @param uid - LPC-serial (128bit GUID) returned by iapReadUID() which will be hashed
+ * @param len_uid - size of uid  (normally 16 byte)
+ * @param hash - buffer for generated hash
+ * @param len_hash - size of provided hash buffer (normally 6byte/48bit for EIB)
+ * @return True if hash successfully created, false if not.
+ */
+int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
 
 /**
  * Get the offset of a field in a class, structure or type.
