@@ -34,22 +34,39 @@
 
 class SHT2xClass
 {
-private:
-  uint16_t readSensor(uint8_t command);
-
 public:
-  void Init(void);
-  /*
-   * get Humidity from SHT2x sensor
-   * returns the humidity with factor 100 (2045 = 20,45%RH)
-   */
-  int GetHumidity(void);
-  /*
-   * get Temperature from SHT2x sensor
-   * returns the temperature with factor 100 (2045 = 20,45°C)
-   */
-  int GetTemperature(void);
-  float GetDewPoint(void);
+    /**
+     * Create the SHT2xClass
+     */
+    SHT2xClass() = default;
+    ~SHT2xClass() = default;
+
+    /**
+     * Initialize the SHTxx sensor
+     */
+    void Init(void);
+
+    /**
+     * Get humidity from SHT2x sensor
+     * @return The humidity with factor 100 (2045 = 20,45%rH)
+     */
+    int GetHumidity(void);
+
+    /**
+    * Get temperature from SHT2x sensor
+    * @return Temperature with factor 100 (2045 = 20,45°C)
+    */
+    int GetTemperature(void);
+
+    /**
+     * Get the current dew point based on the current humidity and temperature
+     * @return The dew point in °C 
+     */
+    float GetDewPoint(void);
+
+private:
+    uint16_t readSensor(uint8_t command);
+
 };
 
 #endif

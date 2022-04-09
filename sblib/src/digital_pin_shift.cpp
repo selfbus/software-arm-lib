@@ -36,8 +36,9 @@ void shiftOut(int dataPin, int clockPin, BitOrder bitOrder, byte val)
         if (bitOrder == LSBFIRST)
             digitalWrite(dataPin, value & (1 << i));
         else digitalWrite(dataPin, value & (1 << (7 - i)));
-
+        __NOP();
         digitalWrite(clockPin, 1);
+        __NOP();
         digitalWrite(clockPin, 0);
     }
 }

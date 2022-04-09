@@ -22,7 +22,8 @@
  * License along with SHT2x.  If not, see
  * <http://www.gnu.org/licenses/>.
  *
- *  Adapted to Selfbus Library by Oliver Stefan (2019)
+ * Adapted to Selfbus Library by Oliver Stefan (2019)
+ * Adapted to lpcopen I2C functions by Oliver Stefan (2021)
  */
 
 #include <stdint.h>
@@ -46,51 +47,16 @@ typedef enum {
   eRHumidityNoHoldCmd = 0xF5,
 } HUM_MEASUREMENT_CMD_T;
 
-
-/******************************************************************************
- * Global Functions
- ******************************************************************************/
-
-/*****************************************************************************
-** Function name:  Init
-**
-** Descriptions:   Initialize the SHT21
-**
-** parameters:     none
-**
-** Returned value: true on success, false on failure
-**
-*****************************************************************************/
 void SHT2xClass::Init(void)
 {
   i2c_lpcopen_init();
-  /*
-  i2c_sht2x= I2C::Instance();
-  if(!i2c_sht2x->bI2CIsInitialized) {
-      i2c_sht2x->I2CInit();
-  }
-  return (i2c_sht2x ? true:false);*/
 }
 
-/**********************************************************
- * GetHumidity
- *  Gets the current humidity from the sensor.
- *
- * @return float - The relative humidity in %RH
- **********************************************************/
-//float SHT2xClass::GetHumidity(void)
-//{
-//    float value = readSensor(eRHumidityHoldCmd);
-//    if (value == 0) {
-//        return 0;                       // Some unrealistic value
-//    }
-//    return -6.0 + 125.0 / 65536.0 * value;
-//}
 int SHT2xClass::GetHumidity(void)
 {
   unsigned int value = readSensor(eRHumidityHoldCmd);
   if (value == 0) {
-    return 0;                       // Some unrealistic value
+    return 0; // Some unrealistic value
   }
   value = 12500 * value;
   value = value / 65536;
@@ -98,20 +64,6 @@ int SHT2xClass::GetHumidity(void)
   return value; //-600 + 12500 / 65536 * value;  //changed to int and factor 100
 }
 
-/**********************************************************
- * GetTemperature
- *  Gets the current temperature from the sensor.
- *
- * @return float - The temperature in Deg C
- **********************************************************/
-//float SHT2xClass::GetTemperature(void)
-//{
-//    float value = readSensor(eTempHoldCmd);
-//    if (value == 0) {
-//        return -273;                    // Roughly Zero Kelvin indicates an error
-//    }
-//    return -46.85 + 175.72 / 65536.0 * value;
-//}
 int SHT2xClass::GetTemperature(void)
 {
   unsigned int value = readSensor(eTempHoldCmd);
@@ -124,12 +76,6 @@ int SHT2xClass::GetTemperature(void)
   return value; //-4700 + 17600 / 65536 * value;	//changed to int and factor 100
 }
 
-/**********************************************************
- * GetDewPoint
- *  Gets the current dew point based on the current humidity and temperature
- *
- * @return float - The dew point in Deg C
- **********************************************************/
 float SHT2xClass::GetDewPoint(void)
 {
   float humidity = GetHumidity();
@@ -143,31 +89,20 @@ float SHT2xClass::GetDewPoint(void)
   return dewPoint;
 }
 
-/******************************************************************************
- * Private Functions
- ******************************************************************************/
-
 uint16_t SHT2xClass::readSensor(uint8_t command)
 {
   uint8_t result[3];
-  //result[0] = command;
-  //if( i2c_sht2x->Write(eSHT2xAddress, (const char*) &command, sizeof(command)) == false){
-
   // wenn kein Byte versendet werden konnte
   if(Chip_I2C_MasterSend(I2C0, eSHT2xAddress, &command, sizeof(command)) == 0){
     i2c_lpcopen_init();
-    //i2c_sht2x->I2CInit();
     return 0;
   }
 
-  uint32_t timeout = millis() + 300;       // Don't hang here for more than 300ms
+  uint32_t timeout = millis() + 300; // Don't hang here for more than 300ms
 
-
-  //while (i2c_sht2x->Read(eSHT2xAddress, (char*) result, 3, 0) == false) {
-  // so lange, wei kein Byte empfangen wurde
+  // so lange, kein Byte empfangen wurde
   while (Chip_I2C_MasterCmdRead(I2C0, eSHT2xAddress, command, result, 3) == 0){
     if ((millis() - timeout) > 0) {
-      //i2c_sht2x->I2CInit();
       i2c_lpcopen_init();
       return 0;
     }
@@ -175,5 +110,3 @@ uint16_t SHT2xClass::readSensor(uint8_t command)
 
   return ((result[0] << 8) | (result[1] << 0));
 }
-
-//SHT2xClass SHT2x;
