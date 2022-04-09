@@ -44,7 +44,7 @@ protected:
 		    /**
 		     * 0x0060: BCU1 system status. See enum BcuStatus below.
 		     *         In some modes (BCU2 as BCU1) this part of the RAM
-		     *         is sued for com objects as well. Therefor the real
+		     *         is sued for com objects as well. Therefore the real
 		     *         status is at the end of the user ram.
 		     */
 			byte _status;
@@ -58,7 +58,7 @@ protected:
 		     * 3 = the program is terminated
 		     *
 		     *         In some modes (BCU2 as BCU1) this part of the RAM
-		     *         is sued for com objects as well. Therefor the real
+		     *         is sued for com objects as well. Therefore the real
 		     *         runState is at the end of the user ram.
 		     */
 			byte _runState;
@@ -93,4 +93,4 @@ protected:
 #endif
 };
 
-#endif /* SBLIB_EIB_USERRAM_H_ */
+#endif /* SBLIB_EIB_USERRAM_BCU1_H_ */

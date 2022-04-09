@@ -31,4 +31,4 @@ struct ComConfigBCU2
     ComConfig baseConfig;
 };
 
-#endif /*sblib_eib_types_h*/
+#endif /*sblib_eib_types_bcu2_h*/

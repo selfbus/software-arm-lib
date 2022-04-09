@@ -59,7 +59,7 @@ LoadState PropertiesMASK0701::handleAllocAbsDataSegment(const int objectIdx, con
     unsigned int absDataSegmentEndAddress = absDataSegmentStartAddress + absDataSegmentLength - 1;
     MemoryType memType = MemoryType(payLoad[5] & 0x07); // take only bits 0..2
 
-    IF_DUMP_PROPERTIES(
+    DB_PROPERTIES(
             serial.print("handleAllocAbsDataSegment only partly implemented! ");
             printObjectIdx(objectIdx);
             serial.print(" ");
@@ -109,15 +109,15 @@ LoadState PropertiesMASK0701::handleAllocAbsDataSegment(const int objectIdx, con
 
     if (!memStartValid)
     {
-        IF_DUMP_PROPERTIES(serial.println("  ------> invalid start: 0x", absDataSegmentStartAddress, HEX, 4);serial.println(););
+        DB_PROPERTIES(serial.println("  ------> invalid start: 0x", absDataSegmentStartAddress, HEX, 4);serial.println(););
         newLoadState = LS_ERROR;
     }
     if ( !memEndValid)
     {
-        IF_DUMP_PROPERTIES(serial.println("  ------> invalid end: 0x", absDataSegmentEndAddress, HEX, 4);serial.println(););
+        DB_PROPERTIES(serial.println("  ------> invalid end: 0x", absDataSegmentEndAddress, HEX, 4);serial.println(););
         newLoadState = LS_ERROR;
     }
-    IF_DUMP_PROPERTIES(serial.println(););
+    DB_PROPERTIES(serial.println(););
     return newLoadState;
 }
 
@@ -144,7 +144,7 @@ LoadState PropertiesMASK0701::handleAllocAbsTaskSegment(const int objectIdx, con
     if (len < DMP_LOADSTATE_MACHINE_WRITE_RCO_PAYLOAD_LENGTH)
         return LS_ERROR;
 
-    IF_DUMP_PROPERTIES(
+    DB_PROPERTIES(
             serial.print("handleAllocAbsTaskSegment: ");
             printObjectIdx(objectIdx);
             serial.print(" ");
@@ -155,6 +155,7 @@ LoadState PropertiesMASK0701::handleAllocAbsTaskSegment(const int objectIdx, con
             serial.print(" Manufacturer: 0x", makeWord(payLoad[3], payLoad[4]), HEX, 4);
             serial.print(" AppID: 0x", makeWord(payLoad[5], payLoad[6]), HEX, 4);
             serial.println(" Vers.: 0x", payLoad[7], HEX, 2);
+            serial.flush();
     );
 
     int addr = makeWord(payLoad[0], payLoad[1]);
@@ -164,13 +165,13 @@ LoadState PropertiesMASK0701::handleAllocAbsTaskSegment(const int objectIdx, con
         case OT_ADDR_TABLE:
         {
         	bcu->userEeprom->addrTabAddr() = addr;
-            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom->addrTabAddr=0x", bcu->userEeprom->addrTabAddr(), HEX, 4); serial.println(););
+        	DB_PROPERTIES(serial.println("  ----> userEeprom->addrTabAddr=0x", bcu->userEeprom->addrTabAddr(), HEX, 4); serial.println(););
             break;
         }
         case OT_ASSOC_TABLE:
         {
         	bcu->userEeprom->assocTabAddr() = addr;
-            IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom->assocTabAddr=0x", bcu->userEeprom->assocTabAddr(), HEX, 4); serial.println(););
+        	DB_PROPERTIES(serial.println("  ----> userEeprom->assocTabAddr=0x", bcu->userEeprom->assocTabAddr(), HEX, 4); serial.println(););
             break;
         }
         case OT_APPLICATION:
@@ -185,16 +186,16 @@ LoadState PropertiesMASK0701::handleAllocAbsTaskSegment(const int objectIdx, con
 			bcu->userEeprom->commsTabAddr() = newAddress;
 
 			if (bcu->userEeprom->commsTabAddr() != addr)
-				IF_DUMP_PROPERTIES(serial.println();serial.println("  ----> userEeprom->commsTabAddr MARKED AS READ-ONLY, WON'T CHANGE TO 0x", addr, HEX, 4);serial.println(););
+			    DB_PROPERTIES(serial.println();serial.println("  ----> userEeprom->commsTabAddr MARKED AS READ-ONLY, WON'T CHANGE TO 0x", addr, HEX, 4);serial.println(););
 
-			IF_DUMP_PROPERTIES(serial.println("  ----> userEeprom->commsTabAddr = 0x", bcu->userEeprom->commsTabAddr(), HEX, 4););
+			DB_PROPERTIES(serial.println("  ----> userEeprom->commsTabAddr = 0x", bcu->userEeprom->commsTabAddr(), HEX, 4););
             bcu->userEeprom->appPeiType() = payLoad[2];
             bcu->userEeprom->manufacturerH() = payLoad[3];
             bcu->userEeprom->manufacturerL() = payLoad[4];
             bcu->userEeprom->deviceTypeH() = payLoad[5];
             bcu->userEeprom->deviceTypeL() = payLoad[6];
             bcu->userEeprom->version() = payLoad[7];
-            IF_DUMP_PROPERTIES(
+            DB_PROPERTIES(
                     serial.println("  ----> userEeprom->appPeiType = 0x", bcu->userEeprom->appPeiType(), HEX, 2);
                     serial.println("  ----> userEeprom->manufacturerH & L = 0x", makeWord(bcu->userEeprom->manufacturerH(), bcu->userEeprom->manufacturerL()), HEX, 4);
                     serial.println("  ----> userEeprom->deviceTypeH & L = 0x", makeWord(bcu->userEeprom->deviceTypeH(), bcu->userEeprom->deviceTypeL()), HEX, 4);
@@ -205,7 +206,7 @@ LoadState PropertiesMASK0701::handleAllocAbsTaskSegment(const int objectIdx, con
         }
         default:
         {
-            IF_DUMP_PROPERTIES(serial.println("  ----> unknown objectIdx");serial.println(););
+            DB_PROPERTIES(serial.println("  ----> unknown objectIdx");serial.println(););
             return LS_ERROR;
         }
 

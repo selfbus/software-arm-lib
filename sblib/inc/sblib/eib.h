@@ -10,12 +10,15 @@
 #ifndef sblib_eib_h
 #define sblib_eib_h
 
+#ifndef NO_OOP_MACROS
+
 #include <sblib/core.h>
 
 #include <sblib/eib/bus.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/bcu_base.h>
 #include <sblib/types.h>
+
 
 #if defined(BCU2) || BCU_TYPE == 0x20 || BCU_TYPE == 20
 	#include <sblib/eib/bcu2.h>
@@ -35,7 +38,14 @@
 	extern SYSTEMB bcu;
 #elif defined(BCU1) || defined(BCU1_12) || BCU_TYPE == 0x10 || BCU_TYPE == 10 || !defined(BCU_TYPE)
 	#include <sblib/eib/bcu1.h>
-	#define setup() innerSetup(); BCU1 bcu = BCU1(); BcuBase* setup() { innerSetup(); return &bcu; } void innerSetup()
+	#define setup() innerSetup();    \
+                BCU1 bcu = BCU1();   \
+                BcuBase* setup()     \
+                {                    \
+                    innerSetup();    \
+                    return &bcu;     \
+                }                    \
+                void innerSetup()
 	extern BCU1 bcu;
 #endif
 
@@ -63,4 +73,6 @@
 
 #define bus (*(bcu.bus))
 
+
+#endif /* NO_OOP_MACROS */
 #endif /*sblib_eib_h*/

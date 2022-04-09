@@ -7,8 +7,8 @@
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
  */
-#ifndef sblib_eib_h
-#define sblib_eib_h
+#ifndef sblib_eibMASK0701_h
+#define sblib_eibMASK0701_h
 
 #include <sblib/core.h>
 
@@ -17,4 +17,4 @@
 #include <sblib/eib/mask0701.h>
 #include <sblib/eib/com_objectsMASK0701.h>
 
-#endif /*sblib_eib_h*/
+#endif /*sblib_eibMASK0701_h*/

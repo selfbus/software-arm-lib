@@ -1,5 +1,5 @@
 /*
- *  bcu_type.h - BCU type definitions.
+ *  bcu_type.h - replaced by classes BCU1, BCU2, MASK0701, MASK0705, SYSTEMB
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -10,7 +10,8 @@
 #ifndef sblib_bcu_type_h
 #define sblib_bcu_type_h
 
-
+//replaced by classes BCU1, BCU2, MASK0701, MASK0705, SYSTEMB
+#if 0
 //
 // Set the BCU_TYPE from compiler defines
 //
@@ -159,5 +160,6 @@
 /** End address of the user EEPROM +1, when ETS talks with us. */
 #define USER_EEPROM_END (USER_EEPROM_START + USER_EEPROM_SIZE)
 
+#endif
 
 #endif /*sblib_bcu_type_h*/

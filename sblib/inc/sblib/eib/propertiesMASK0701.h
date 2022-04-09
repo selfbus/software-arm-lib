@@ -68,8 +68,8 @@ private:
 	     */
 	    { PID_MANUFACTURER_ID, PDT_GENERIC_02|PC_POINTER, PD_USER_EEPROM_OFFSET(manufacturerHOffset) },
 
-	    /** Order number: 10 byte data, stored in userEeprom.serial */
-	    { PID_ORDER_INFO, PDT_GENERIC_10|PC_POINTER, PD_USER_EEPROM_OFFSET(serialOffset) },
+	    /** Order number: 10 byte data, stored in userEeprom.order, last two bytes represent sblib version in hex */
+	    { PID_ORDER_INFO, PDT_GENERIC_10|PC_POINTER, PD_USER_EEPROM_OFFSET(orderInfoOffset) },
 
 	    /** PEI type: 1 byte */
 	    { PID_PEI_TYPE, PDT_UNSIGNED_CHAR|PC_POINTER, PD_USER_RAM_OFFSET(peiTypeOffset) },
@@ -233,4 +233,4 @@ inline const PropertyDef* const* PropertiesMASK0701::propertiesTab() const
 	return propertiesTabInstance;
 }
 
-#endif /*sblib_properties_h*/
+#endif /*sblib_properties_systemb_h*/

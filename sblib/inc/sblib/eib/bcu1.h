@@ -33,15 +33,13 @@ public:
 	~BCU1() = default;
 
     /**
-     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
-     * program version and a optional read-only CommObjectTable address which
-     * can't be changed by ETS/KNX telegrams
+     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type, program version
      *
      * @param manufacturer - the manufacturer ID (16 bit)
      * @param deviceType - the device type (16 bit)
      * @param version - the version of the application program (8 bit)
      */
-    void begin(int manufacturer, int deviceType, int version);
+	virtual void begin(int manufacturer, int deviceType, int version) override;
 
     bool applicationRunning() const;
 
@@ -51,11 +49,11 @@ public:
      *
      * @param addr - the physical address
      */
-    void setOwnAddress(int addr);
+    void setOwnAddress(uint16_t addr) override;
 
     //  BCU 1, mask version 1.2
-    const char* getBcuType() const { return "BCU1"; }
-    const unsigned short getMaskVersion() const { return  0x12; }
+    const char* getBcuType() const override { return "BCU1"; }
+    uint16_t getMaskVersion() const override { return  0x12; }
 
     /** Start address of the user RAM when ETS talks with us. */
     const int userRamStartDefault = 0;
@@ -79,12 +77,10 @@ protected:
     // The method begin_BCU() is renamed during compilation to indicate the BCU type.
     // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
     void begin_BCU(int manufacturer, int deviceType, int version);
-
-    void processDirectTelegram(int apci);
 };
 
 #ifndef INSIDE_BCU_CPP
 #   undef begin_BCU
 #endif
 
-#endif /*sblib_bcu_h*/
+#endif /*sblib_bcu1_h*/

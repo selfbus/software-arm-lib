@@ -43,19 +43,19 @@ public:
 	ComObjectsBCU1(BcuBase* bcuInstance) : ComObjects(bcuInstance) {}
 	~ComObjectsBCU1() = default;
 
-	virtual const ComConfig& objectConfig(int objno);
-	virtual int objectSize(int objno);
-	virtual byte* objectValuePtr(int objno);
-	virtual void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno);
-	virtual byte* objectConfigTable();
-	virtual byte* objectFlagsTable();
+	virtual const ComConfig& objectConfig(int objno) override;
+	virtual int objectSize(int objno) override;
+	virtual byte* objectValuePtr(int objno) override;
+	virtual void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno) override;
+	virtual byte* objectConfigTable() override;
+	virtual byte* objectFlagsTable() override;
 
 protected:
 	const ComConfigBCU1* objectConfigBCU1(int objno);
 	// The size of the object types BIT_7...VARDATA in bytes
 	const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 15 };
 
-	virtual const byte* getObjectTypeSizes();
+	virtual const byte* getObjectTypeSizes() override;
 };
 
-#endif /*sblib_com_objects_h*/
+#endif /*sblib_com_objects_BCU1_h*/

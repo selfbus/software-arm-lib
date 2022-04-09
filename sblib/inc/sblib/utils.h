@@ -12,10 +12,11 @@
 
 #include <stdint.h>
 #include <sblib/types.h>
+#include <sblib/libconfig.h>
 
-#define HIGH_BYTE(x) ((uint8_t)(x >> 8))
-#define LOW_BYTE(x) ((uint8_t)(x & 0xff))
-#define MAKE_WORD(highByte, lowByte) ((uint16_t)((highByte << 8) | lowByte))
+#define HIGH_BYTE(x) ((uint8_t)(x >> 8))  ///\todo create new macro "secondByte" in bits.h
+#define LOW_BYTE(x) ((uint8_t)(x & 0xff)) ///\todo replace with macro "lowByte" from bits.h
+#define MAKE_WORD(highByte, lowByte) ((uint16_t)((highByte << 8) | lowByte)) ///\todo replace with macro "makeWord" from bits.h
 
 /**
  * Copy from src to dest with reversing the byte order.
@@ -37,6 +38,12 @@ void fatalError();
  * @param newPin - the new Pin
  */
 void setFatalErrorPin(int newPin);
+
+/**
+ * Set the KNX Tx-Pin for fatalError() and a hardware fault
+ * @param newTxPin - the new KNX-Tx Pin
+ */
+void setKNX_TX_Pin(int newTxPin);
 
 /**
  * Creates a len_hash wide hash of the uid.
@@ -83,7 +90,49 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
 #  define IF_DEBUG(code)
 #endif
 
+// Enable informational debug statements
+#if defined(DUMP_MEM_OPS)
+#   define DB_MEM_OPS(x) IF_DEBUG(x)
+#else
+#   define DB_MEM_OPS(x)
+#endif
 
+/**
+ * Include the C++ code snippet if DUMP_PROPERTIES is defined, do not include the code
+ * if DUMP_PROPERTIES is not defined.
+ *
+ * @param code - the C++ code to include
+ *
+ * @brief Example:  IF_DUMP_PROPERTIES(fatalError())
+ */
+#if defined(DUMP_PROPERTIES)
+#   define DB_PROPERTIES(code) IF_DEBUG(code)
+#else
+#   define DB_PROPERTIES(code)
+#endif
+
+#if defined(DUMP_COM_OBJ)
+#   define DB_COM_OBJ(x) x
+#else
+#   define DB_COM_OBJ(x)
+#endif
+
+#if !defined(INCLUDE_SERIAL)
+#   undef DB_MEM_OPS
+#   define DB_MEM_OPS(x)
+#   undef DB_PROPERTIES
+#   define DB_PROPERTIES(x)
+#   undef DB_COM_OBJ
+#   define DB_COM_OBJ(x)
+#endif
+
+/*
+#ifdef DUMP_PROPERTIES
+#  define IF_DUMP_PROPERTIES(code) code
+#else
+#  define IF_DUMP_PROPERTIES(code)
+#endif
+*/
 /**
  * Concatenate two strings.
  * C preprocessor macros are not expanded.

@@ -7,8 +7,8 @@
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
  */
-#ifndef sblib_eib_h
-#define sblib_eib_h
+#ifndef sblib_BCU1_h
+#define sblib_BCU1_h
 
 #include <sblib/core.h>
 
@@ -17,4 +17,4 @@
 #include <sblib/eib/bcu1.h>
 #include <sblib/eib/com_objectsBCU1.h>
 
-#endif /*sblib_eib_h*/
+#endif /*sblib_BCU1_h*/

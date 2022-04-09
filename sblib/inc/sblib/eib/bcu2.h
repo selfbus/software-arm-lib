@@ -53,7 +53,18 @@ public:
      *                                         in case HHHH != WWWW ,
      *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
      */
-    virtual void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress = 0);
+	virtual void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress);
+
+    /**
+     * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
+     * program version and a optional read-only CommObjectTable address which
+     * can't be changed by ETS/KNX telegrams
+     *
+     * @param manufacturer - the manufacturer ID (16 bit)
+     * @param deviceType - the device type (16 bit)
+     * @param version - the version of the application program (8 bit)
+     */
+    virtual void begin(int manufacturer, int deviceType, int version) override;
 
     virtual bool applicationRunning() const;
 
@@ -63,11 +74,17 @@ public:
      *
      * @param addr - the physical address
      */
-    void setOwnAddress(int addr);
+    void setOwnAddress(uint16_t addr) override;
 
     //  BCU 2, mask version 2.0
-    virtual const char* getBcuType() const { return "BCU2"; }
-    virtual const unsigned short getMaskVersion() const { return 0x20; }
+    virtual const char* getBcuType() const override { return "BCU2"; }
+    virtual unsigned short getMaskVersion() const override { return 0x20; }
+
+    /**
+     * Get the read-only CommObjectTable address, which can be set calling Begin(...)
+     * @return The read-only CommObjectTable address which can't be changed by KNX telegrams
+     */
+    word getCommObjectTableAddressStatic() const;
 
     /** Start address of the user RAM when ETS talks with us. */
     const int userRamStartDefault = 0;
@@ -96,7 +113,10 @@ protected:
     // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
     virtual void begin_BCU(int manufacturer, int deviceType, int version);
 
-    virtual void processDirectTelegram(int apci);
+    unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
+            bool *sendResponse, unsigned char *telegram, uint8_t telLength) override;
+
+    word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
 };
 
 
@@ -104,4 +124,4 @@ protected:
 #   undef begin_BCU
 #endif
 
-#endif /*sblib_bcu_h*/
+#endif /*sblib_bcu2_h*/

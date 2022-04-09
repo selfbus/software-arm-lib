@@ -56,4 +56,4 @@ int main()
 void loop_noapp()
 {
     waitForInterrupt();
-};
+}

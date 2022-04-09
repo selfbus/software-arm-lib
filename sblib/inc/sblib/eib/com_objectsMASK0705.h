@@ -43,4 +43,4 @@ public:
 	~ComObjectsMASK0705() = default;
 };
 
-#endif /*sblib_com_objects_h*/
+#endif /*sblib_com_objects_MASK0705_h*/

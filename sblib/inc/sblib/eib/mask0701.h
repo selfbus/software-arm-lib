@@ -33,11 +33,11 @@ public:
 	MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsMASK0701* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties);
 	~MASK0701() = default;
 
-    virtual const char* getBcuType() const { return "BIM112"; }
-    virtual const unsigned short getMaskVersion() const { return 0x701; }
+    virtual const char* getBcuType() const override { return "BIM112"; }
+    virtual uint16_t getMaskVersion() const override { return 0x701; }
 
-    virtual bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad);
-    virtual bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad);
+    virtual bool processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad) override;
+    virtual bool processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad) override;
 
     /** Start address of the user RAM when ETS talks with us. */
     const int userRamStartDefault = 0x5FC;
@@ -46,20 +46,16 @@ public:
 
     /** The size of the user RAM in bytes. */
     const int userRamSize = (0x304 + extraUserRamSize);
-    /** How many bytes have to be allocated at the end of the RAM
-    	for shadowed values
-    */
+    /** How many bytes have to be allocated at the end of the RAM for shadowed values */
     const int userRamShadowSize = 3;
 
-/** Address for load control */
-//#   define LOAD_CONTROL_ADDR 0x104
-
-/** Address for load state */
-//#   define LOAD_STATE_ADDR 0xb6e9
+private:
+    static const uint16_t LOAD_CONTROL_ADDR = 0x104; /** Address for load control */
+    static const uint16_t LOAD_STATE_ADDR = 0xb6e9; /** Address for load state */
 };
 
 #ifndef INSIDE_BCU_CPP
 #   undef begin_BCU
 #endif
 
-#endif /*sblib_bcu_h*/
+#endif /*sblib_mask0701_h*/

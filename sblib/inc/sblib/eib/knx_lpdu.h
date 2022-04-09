@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <sblib/types.h>
+#include <sblib/bits.h>
 #include <sblib/utils.h>
 
 #define LPDU_CONTROL_BYTE           (0)
@@ -126,7 +127,7 @@ inline void setSenderAddress(unsigned char *telegram, uint16_t newSenderAddress)
 
 inline uint16_t destinationAddress(unsigned char *telegram)
 {
-    return (MAKE_WORD(telegram[LPDU_DESTINATION_HIGH_BYTE], telegram[LPDU_DESTINATION_LOW_BYTE]));
+    return (makeWord(telegram[LPDU_DESTINATION_HIGH_BYTE], telegram[LPDU_DESTINATION_LOW_BYTE]));
 }
 
 inline void setDestinationAddress(unsigned char *telegram, uint16_t newDestinationAddress)

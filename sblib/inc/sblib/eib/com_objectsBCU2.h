@@ -44,13 +44,13 @@ public:
 	~ComObjectsBCU2() = default;
 
 protected:
-	virtual byte* objectValuePtr(int objno);
-	virtual byte* objectConfigTable();
-	virtual byte* objectFlagsTable();
-	const ComConfig& objectConfig(int objno) { return objectConfigBCU2(objno)->baseConfig; }
+	virtual byte* objectValuePtr(int objno) override;
+	virtual byte* objectConfigTable() override;
+	virtual byte* objectFlagsTable() override;
+	const ComConfig& objectConfig(int objno) override { return objectConfigBCU2(objno)->baseConfig; }
 
 private:
 	const ComConfigBCU2* objectConfigBCU2(int objno);
 };
 
-#endif /*sblib_com_objects_h*/
+#endif /*sblib_com_objects_BCU2_h*/

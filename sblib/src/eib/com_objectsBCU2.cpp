@@ -1,5 +1,5 @@
 /*
- * com_objectsBCU1.cpp
+ * com_objectsBCU2.cpp
  *
  *  Created on: 19.11.2021
  *      Author: dridders

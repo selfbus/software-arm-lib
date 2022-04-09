@@ -1,5 +1,5 @@
 /*
- *  bcu.h - BCU specific stuff.
+ *  bcu.h - replaced by classes BCU1, BCU2, MASK0701, MASK0705, SYSTEMB
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -13,10 +13,11 @@
 #ifndef sblib_bcu_h
 #define sblib_bcu_h
 
+// replaced by classes BCU1, BCU2, MASK0701, MASK0705, SYSTEMB
+#if 0
+
 #include <sblib/eib/bcu_base.h>
 #include <sblib/types.h>
-#include <sblib/eib/bcu_type.h>
-#include <sblib/eib/properties.h>
 #include <sblib/eib/user_memory.h>
 #include <sblib/utils.h>
 #include <sblib/mem_mapper.h>
@@ -223,6 +224,8 @@ inline void BCU::setGroupTelRateLimit(unsigned int limit)
 
 #ifndef INSIDE_BCU_CPP
 #   undef begin_BCU
+#endif
+
 #endif
 
 #endif /*sblib_bcu_h*/

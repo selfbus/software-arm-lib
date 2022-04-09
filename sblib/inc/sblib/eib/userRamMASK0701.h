@@ -85,4 +85,4 @@ protected:
 #endif
 };
 
-#endif /* SBLIB_EIB_USERRAM_H_ */
+#endif /* SBLIB_EIB_USERRAM_MASK0701_H_ */

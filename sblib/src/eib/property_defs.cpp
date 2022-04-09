@@ -1,5 +1,5 @@
 /*
- *  property_defs.cpp - Definitions of BCU2, BIM112 (or newer) EIB interface objects with their properties.
+ *  property_defs.cpp - replaced by classes PropertiesBCU2, PropertiesMASK0701, PropertiesSYSTEMB
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -12,7 +12,9 @@
 #include <sblib/eib/user_memory.h>
 #include <sblib/internal/variables.h>
 
-#if BCU_TYPE != BCU1_TYPE
+
+// Replaced by classes PropertiesBCU2, PropertiesMASK0701, PropertiesSYSTEMB
+#if 0
 
 /**
  * The properties of the device object
@@ -206,4 +208,4 @@ const PropertyDef* const propertiesTab[NUM_PROP_OBJECTS] =
 	knxAssocTabObjectProps //!> Interface Object 5, some newer MASK_VERSIONs (>= 0x0701) use this to set the address of the communication object table
 };
 
-#endif /*BCU_TYPE != BCU1_TYPE*/
+#endif /* 0 */

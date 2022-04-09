@@ -1,5 +1,5 @@
 /*
- *  bcu.cpp - EIB bus coupling unit.
+ *  bcu.cpp - replaced by classes BCU1, BCU2, MASK0701, MASK0705, SYSTEMB
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -8,12 +8,13 @@
  *  published by the Free Software Foundation.
  */
 
+// replaced by classes BCU1, BCU2, MASK0701, MASK0705, SYSTEMB
+#if 0
 #define INSIDE_BCU_CPP
 #include <sblib/eib/bcu.h>
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
-#include <sblib/internal/functions.h>
 #include <sblib/eib/com_objects.h>
 #include <sblib/internal/variables.h>
 #include <sblib/mem_mapper.h>
@@ -166,12 +167,12 @@ bool BCU::processDeviceDescriptorReadTelegram(int id)
 
     sendTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
     setApciCommand(sendTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
-    sendTelegram[8] = HIGH_BYTE(maskVersion());
-    sendTelegram[9] = LOW_BYTE(maskVersion());
+    sendTelegram[8] = HIGH_BYTE(getMaskVersion());
+    sendTelegram[9] = LOW_BYTE(getMaskVersion());
     return (true);
 }
 
-static void cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
+static void BCU::cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
 {
     if ((address == USER_RAM_SYSTEM_STATE_ADDRESS) && (count == 1))
     {
@@ -292,7 +293,7 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
         // check if payLoad is in USER_EEPROM
         if (addressStart <= addressEnd)
         {
-            if ((addressStart >= USER_EEPROM_START) &&  (addressEnd < USER_EEPROM_END))
+            if ((addressStart >= userEeprom->userEepromStart) &&  (addressEnd < userEeprom->userEepromEnd))
             {
                 // start & end are in USER_EEPROM
                 if (readMem)
@@ -307,10 +308,10 @@ bool BCU::processApciMemoryOperation(int addressStart, byte *payLoad, int length
                 DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
                 return true;
             }
-            else if ((addressStart >= USER_EEPROM_START) && (addressStart < USER_EEPROM_END))
+            else if ((addressStart >= userEeprom->userEepromStart) && (addressStart < userEeprom->userEepromEnd))
             {
                 // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
-                const int copyCount = USER_EEPROM_END - addressStart;
+                const int copyCount = userEeprom->userEepromEnd - addressStart;
                 if (readMem)
                 {
                     memcpy(&payLoad[0], &userEeprom[addressStart], copyCount);
@@ -654,3 +655,4 @@ void BCU::softSystemReset()
     }
     NVIC_SystemReset();
 }
+#endif

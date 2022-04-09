@@ -26,9 +26,6 @@ inline byte* UserEeprom::flashSectorAddress() const
 	return (FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE);
 }
 
-/*
- * Find the last valid page in the flash sector
- */
 byte* UserEeprom::findValidPage()
 {
     byte* firstPage = FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE;
@@ -36,13 +33,13 @@ byte* UserEeprom::findValidPage()
 
     while (page >= firstPage)
     {
-        if (page[userEepromSize - 1] != 0xff)
+        if (page[userEepromSize - 1] != 0xff)  ///\todo check more then  only one byte for 0xff (empty flash)
             return page;
 
         page -= userEepromFlashSize;
     }
 
-    return 0;
+    return 0; // no valid page found
 }
 
 void UserEeprom::readUserEeprom()
@@ -112,7 +109,14 @@ void UserEeprom::writeUserEeprom()
 }
 
 UserEeprom::UserEeprom(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) :
-		userEepromData(new byte[size]), bcu(bcu), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size), userEepromFlashSize(flashSize)
+		userEepromData(new byte[size]), bcu(bcu), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size-1), userEepromFlashSize(flashSize)
 {
     readUserEeprom();
-};
+}
+
+byte& UserEeprom::operator[](unsigned int idx)
+{
+    idx -= userEepromStart;
+    return userEepromData[idx];
+}
+

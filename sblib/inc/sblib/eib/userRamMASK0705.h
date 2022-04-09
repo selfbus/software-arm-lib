@@ -8,7 +8,7 @@
 #ifndef SBLIB_EIB_USERRAM_MASK0705_H_
 #define SBLIB_EIB_USERRAM_MASK0705_H_
 
-#include <sblib/eib/userRam.h>
+#include <sblib/eib/userRamMASK0701.h>
 
 /**
  * The user RAM.
@@ -25,4 +25,4 @@ protected:
 	UserRamMASK0705(unsigned int start, unsigned int size, unsigned int shadowSize) : UserRamMASK0701(start, size, shadowSize) {}
 };
 
-#endif /* SBLIB_EIB_USERRAM_H_ */
+#endif /* SBLIB_EIB_USERRAM_MASK0705_H_ */

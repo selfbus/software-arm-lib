@@ -8,6 +8,9 @@
 #ifndef SBLIB_EIB_USERRAM_H_
 #define SBLIB_EIB_USERRAM_H_
 
+/** UserRam address of the system state */
+#define USER_RAM_SYSTEM_STATE_ADDRESS (0x60)
+
 /**
  * BCU status bits for userRam.status (at 0x0060).
  * See BCU1 / BCU2 help for detailed description.
@@ -37,13 +40,13 @@ enum DeviceControl
 /**
  * The user RAM.
  *
- * The user RAM can be accessed by name, like userRam.status and as an array, like
+ * The user RAM can be accessed by name, like userRam.status() and as an array, like
  * userRam[addr]. Please note that the start address of the RAM is subtracted.
  */
 class UserRam
 {
 public:
-	UserRam(unsigned int start, unsigned int size, unsigned int shadowSize) : userRamData(new byte[size + shadowSize]), userRamStart(start), userRamSize(size), userRamEnd(start+size) {};
+	UserRam(unsigned int start, unsigned int size, unsigned int shadowSize) : userRamData(new byte[size + shadowSize]), userRamStart(start), userRamSize(size), userRamEnd(start+size-1) {};
 
     byte status; // real status 0x0100
     byte runState; // 0x0101
@@ -58,7 +61,7 @@ public:
     const unsigned int userRamSize;
     unsigned int userRamEnd;
 
-    void setUserRamStart(const unsigned int ramStart) { userRamStart = ramStart; userRamEnd = ramStart + userRamSize; }
+    void setUserRamStart(const unsigned int ramStart) { userRamStart = ramStart; userRamEnd = ramStart + userRamSize - 1; }
 };
 
 inline byte& UserRam::operator[](unsigned int idx)

@@ -1,33 +1,30 @@
 #ifndef sblib_usereeprom_systemb_h
 #define sblib_usereeprom_systemb_h
 
-#include <sblib/eib/userEeprom.h>
+#include <sblib/eib/userEepromMASK0701.h>
 
 /**
- * The user EEPROM.
- *
- * The user EEPROM can be accessed by name, like userEeprom.status and as an array, like
- * userEeprom[addr]. Please note that the start address of the EEPROM is subtracted. That means
- * userEeprom[0x107] is the correct address for userEeprom.version; not userEeprom[0x07].
+ * The BCU SYSTEM B user EEPROM
  */
-class UserEepromSYSTEMB : public UserEepromBCU2
+class UserEepromSYSTEMB : public UserEepromMASK0701
 {
 public:
-	UserEepromSYSTEMB(BcuBase* bcu) : UserEepromBCU2(bcu, 0x3300, 3072, 4096) {};
+	UserEepromSYSTEMB(BcuBase* bcu) : UserEepromMASK0701(bcu, 0x3300, 3072, 4096) {};
 	~UserEepromSYSTEMB() = default;
 
-    virtual int userEepromFlashSize() const;
+	static const int addrTabAddrOffset = 33;    //!< 0x3321-0x3322
+	static const int assocTabAddrOffset = 35;   //!< 0x3323-0x3324
 
-	static const int addrTabAddrOffset = 33;
-	static const int assocTabAddrOffset = 35;
-	static const int addrTabMcbOffset = 77;
-	static const int assocTabMcbOffset = 85;
-	static const int commsTabMcbOffset = 93;
-	static const int commsSeg0McbOffset = 109;
-	static const int eibObjMcbOffset = 101;
+	static const int addrTabMcbOffset = 77;     //!< 0x334D-0x3354
+	static const int assocTabMcbOffset = 85;    //!< 0x3355-0x335C
+	static const int commsTabMcbOffset = 93;    //!< 0x335D-0x3364
+	static const int eibObjMcbOffset = 101;     //!< 0x3365-0x336C
+	static const int commsSeg0McbOffset = 109;  //!< 0x336D-0x3374
+    static const int eibObjVerOffset = 0x75;    //!< 0x3375-0x3379 Application program 1 version
+    static const int commsSeg0VerOffset = 0x7A; //!< 0x337A-0x337E Application program 2 version
 
-	virtual word& addrTabAddr() const { return *(word*)&userEepromData[addrTabAddrOffset]; }
-	virtual word& assocTabAddr() const { return *(word*)&userEepromData[assocTabAddrOffset]; }
+	virtual word& addrTabAddr() const override { return *(word*)&userEepromData[addrTabAddrOffset]; }
+	virtual word& assocTabAddr() const override { return *(word*)&userEepromData[assocTabAddrOffset]; }
 	virtual byte* addrTabMcb() const { return &userEepromData[addrTabMcbOffset]; }
 	virtual byte* assocTabMcb() const { return &userEepromData[assocTabMcbOffset]; }
 	virtual byte* commsTabMcb() const { return &userEepromData[commsTabMcbOffset]; }
@@ -35,7 +32,7 @@ public:
 	virtual byte* eibObjMcb() const { return &userEepromData[eibObjMcbOffset]; }
 
 protected:
-	UserEepromSYSTEMB(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromBCU2(bcu, start, size, flashSize) {};
+	UserEepromSYSTEMB(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromMASK0701(bcu, start, size, flashSize) {};
 };
 
-#endif
+#endif /*sblib_usereeprom_systemb_h*/

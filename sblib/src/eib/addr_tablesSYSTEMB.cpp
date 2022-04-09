@@ -29,15 +29,3 @@ int AddrTablesSYSTEMB::indexOfAddr(int addr)
 
     return -1;
 }
-
-byte* AddrTablesSYSTEMB::addrTable()
-{
-    byte * addr = (byte* ) & bcu->userEeprom->addrTabAddr();
-    return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
-}
-
-byte* AddrTablesSYSTEMB::assocTable()
-{
-    byte * addr = (byte* ) & bcu->userEeprom->assocTabAddr();
-    return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
-}

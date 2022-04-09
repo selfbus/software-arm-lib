@@ -22,4 +22,4 @@ public:
 	~AddrTablesMASK0701() = default;
 };
 
-#endif /*sblib_addr_tables_h*/
+#endif /*sblib_addr_tables_MASK0701_h*/

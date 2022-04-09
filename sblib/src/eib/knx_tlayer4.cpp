@@ -20,8 +20,12 @@
 
 
 #include <sblib/timeout.h>
+#include <sblib/timer.h>
 #include <sblib/eib/knx_tlayer4.h>
 #include <sblib/eib/knx_lpdu.h>
+#include <sblib/eib/knx_npdu.h>
+#include <sblib/libconfig.h>
+
 
 ///\todo implement better debugging
 #if defined(DUMP_TL4)
@@ -52,7 +56,7 @@
 dump2(
     uint32_t lastTick = 0;  //!< last systemtick a telegram was received or sent
     uint16_t telegramCount = 0; //!< number of telegrams since system reset
-);
+)
 
 uint16_t disconnectCount = 0; //!< number of disconnects since system reset
 
@@ -226,22 +230,33 @@ void dumpLogHeader()
     );
 }
 
-TLayer4::TLayer4()
+TLayer4::TLayer4(uint8_t maxTelegramLength):
+    sendTelegram(new byte[maxTelegramLength]),
+    lastTelegram(new byte[maxTelegramLength])
 {
 
 }
 
-void TLayer4::_begin()
+void TLayer4::begin()
 {
+#if defined(INCLUDE_SERIAL)
+    IF_DEBUG(serial.begin(SERIAL_SPEED));
+#endif
     state = TLayer4::CLOSED;
     // set sending buffer to free
     sendTelegram[0] = 0;
     sendCtrlTelegram[0] = 0;
+    telegramReadyToSend = false;
+    connectedAddr = 0;
+    seqNoSend = -1;
+    seqNoRcv = -1;
+    connectedTime = 0;
+    enabled = true;
 
     dumpLogHeader();
     dump2(telegramCount = 0;);
     disconnectCount = 0;
-
+    lastTelegram[0] = 0;
     lastTelegramLength = 0;
     repeatedTelegramCount = 0;
     repeatedIgnoredTelegramCount = 0;
@@ -253,7 +268,7 @@ bool TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
     bool telegramProcessed = processTelegramInternal(telegram, telLength);
     if (telegramProcessed)
     {
-        bus.discardReceivedTelegram();
+        discardReceivedTelegram();
     }
     return (telegramProcessed);
 }
@@ -280,7 +295,7 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength
     }
 
     ///\todo function to get tpciCommand in knx_tpdu.h
-    unsigned char tpci = telegram[6] & 0b11000011; // Transport control field (see KNX 3/3/4 p.6 TPDU)
+    unsigned char tpci = telegram[6] & 0xc3; //0b11000011 Transport control field (see KNX 3/3/4 p.6 TPDU)
     uint16_t senderAddr = senderAddress(telegram);
 
     dump2(telegramCount++;);
@@ -562,7 +577,7 @@ void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSe
         dumpTelegramBytes(true, &sendCtrlTelegram[0], lengthCtrlTelegram);
     );
 
-    bus.sendTelegram(sendCtrlTelegram, 7);
+    send(sendCtrlTelegram, 7);
 }
 
 void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
@@ -702,7 +717,7 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
         initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
 
         ///todo get callback from L2 of successfully sent T_ACK and then execute below steps
-        bus.discardReceivedTelegram();
+        discardReceivedTelegram();
         sendResponse = false;
         telegramReadyToSend = true;
         actionA07SendDirectTelegram();
@@ -787,7 +802,7 @@ void TLayer4::actionA07SendDirectTelegram()
         dumpTelegramBytes(true, &sendTelegram[0], telegramSize(sendTelegram), true);
     );
     telegramReadyToSend = false;
-    bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
+    send(sendTelegram, telegramSizeNpdu(sendTelegram));
     connectedTime = systemTime;
 }
 

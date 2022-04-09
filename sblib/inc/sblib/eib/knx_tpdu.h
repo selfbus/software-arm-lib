@@ -46,15 +46,15 @@ enum
     T_CONNECTION_CTRL_COMMAND_Pos   = 7,                                        //!< Position of the control command bit
     T_CONNECTION_CTRL_COMMAND_Msk   = (1UL << T_CONNECTION_CTRL_COMMAND_Pos),   //!< Bitmask to check for an connection control command
 
-    T_ACKNOWLEDGE_Msk               = 0b11000010,                               //!< Bitmask to check for an @ref T_ACK_PDU or @ref T_NACK_PDU
+    T_ACKNOWLEDGE_Msk               = 0xC2,                                     //!< Bitmask to check for an @ref T_ACK_PDU or @ref T_NACK_PDU
     T_NACK_Pos                      = 0,                                        //!< Position of the @ref T_NACK_PDU bit
     T_NACK_Msk                      = (1UL << T_NACK_Pos),                      //!< Bitmask to check for an  @ref T_NACK_PDU bit
 
     T_IS_SEQUENCED_Pos              = 6,                                        //!< Position of the TPDU has sequence number bit
     T_IS_SEQUENCED_Msk              = (1UL << T_IS_SEQUENCED_Pos),              //!< Bitmask to check TPDU has a sequence number
 
-    T_SEQUENCE_NUMBER_Msk           = 0b00111100,                               //!< Bitmask to get the sequence number of an TPDU
-    T_SEQUENCED_COMMAND             = 0b01000000,                               //!< T_SEQUENCED_COMMAND
+    T_SEQUENCE_NUMBER_Msk           = 0x3c,                                     //!< Bitmask to get the sequence number of an TPDU
+    T_SEQUENCED_COMMAND             = 0x40,                                     //!< T_SEQUENCED_COMMAND
     T_SEQUENCE_NUMBER_FIRST_BIT_Pos = 2,                                        //!< Position of first bit of the sequence number
     T_SEQUENCE_NUMBER_FIRST_BIT_Msk = (1UL << T_SEQUENCE_NUMBER_FIRST_BIT_Pos), //!< Bitmask to get the first bit of the sequence number
 

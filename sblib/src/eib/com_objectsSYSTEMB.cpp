@@ -1,5 +1,5 @@
 /*
- * com_objectsBCU1.cpp
+ * com_objectsSYSTEMB.cpp
  *
  *  Created on: 19.11.2021
  *      Author: dridders
@@ -49,7 +49,7 @@ byte* ComObjectsSYSTEMB::objectValuePtr(int objno)
 void ComObjectsSYSTEMB::processGroupTelegram(int addr, int apci, byte* tel, int trg_objno)
 {
     //
-    // Spec: Resources 4.11.4 Group Object Association Table - Realisation Type 6
+    // Spec: Resources 4.11.4 Group Object Association Table - Realization Type 6
     //
     const ComConfig* configTab = &objectConfig(0);
     const byte* assocTab = bcu->addrTables->assocTable();

@@ -48,7 +48,7 @@
 
 //#define ROUTER /// \todo ROUTER not implemented, Lib will be compiled for usage in a router- Phy Addr 0.0.0 is allowed
 
-
+//#define HELPER_MACROS_OFF //!< disable the compatibility macros for old application (used in sblib/eib.h)
 
 
 

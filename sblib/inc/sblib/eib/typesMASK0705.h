@@ -19,4 +19,4 @@ struct ComConfigMASK0705 : public ComConfigMASK0701
 {
 };
 
-#endif /*sblib_eib_types_h*/
+#endif /*sblib_eib_types_mask0705_h*/

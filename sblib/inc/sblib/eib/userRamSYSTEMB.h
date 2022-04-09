@@ -25,4 +25,4 @@ protected:
 	UserRamSYSTEMB(unsigned int start, unsigned int size, unsigned int shadowSize) : UserRamMASK0701(start, size, shadowSize) {}
 };
 
-#endif /* SBLIB_EIB_USERRAM_H_ */
+#endif /* SBLIB_EIB_USERRAM_SYSTEMB_H_ */

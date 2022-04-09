@@ -19,4 +19,4 @@ struct ComConfigMASK0701 : public ComConfigBCU2
 {
 };
 
-#endif /*sblib_eib_types_h*/
+#endif /*sblib_eib_types_mask0701_h*/

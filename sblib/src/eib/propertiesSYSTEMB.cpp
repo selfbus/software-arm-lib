@@ -59,7 +59,7 @@ LoadState PropertiesSYSTEMB::handleAllocAbsDataSegment(const int objectIdx, cons
     unsigned int absDataSegmentEndAddress = absDataSegmentStartAddress + absDataSegmentLength - 1;
     MemoryType memType = MemoryType(payLoad[5] & 0x07); // take only bits 0..2
 
-    IF_DUMP_PROPERTIES(
+    DB_PROPERTIES(
             serial.print("handleAllocAbsDataSegment only partly implemented! ");
             printObjectIdx(objectIdx);
             serial.print(" ");
@@ -109,15 +109,15 @@ LoadState PropertiesSYSTEMB::handleAllocAbsDataSegment(const int objectIdx, cons
 
     if (!memStartValid)
     {
-        IF_DUMP_PROPERTIES(serial.println("  ------> invalid start: 0x", absDataSegmentStartAddress, HEX, 4);serial.println(););
+        DB_PROPERTIES(serial.println("  ------> invalid start: 0x", absDataSegmentStartAddress, HEX, 4);serial.println(););
         newLoadState = LS_ERROR;
     }
     if ( !memEndValid)
     {
-        IF_DUMP_PROPERTIES(serial.println("  ------> invalid end: 0x", absDataSegmentEndAddress, HEX, 4);serial.println(););
+        DB_PROPERTIES(serial.println("  ------> invalid end: 0x", absDataSegmentEndAddress, HEX, 4);serial.println(););
         newLoadState = LS_ERROR;
     }
-    IF_DUMP_PROPERTIES(serial.println(););
+    DB_PROPERTIES(serial.println(););
     return newLoadState;
 }
 
@@ -140,7 +140,7 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
     // payLoad[4]    : mode (0x00)
     // payLoad[5]    : fill (0x00)
     // payLoad[6..7] : reserved
-    IF_DUMP_PROPERTIES(
+    DB_PROPERTIES(
             serial.print("handleDataRelativeAllocation PARTIALLY IMPLEMENTED for System_B! ");
             printObjectIdx(objectIdx);
             serial.print(" ");
@@ -159,7 +159,7 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
     byte* tableSize[] = {&bcu->userEeprom->addrTabMcb()[0], &bcu->userEeprom->assocTabMcb()[0], &bcu->userEeprom->commsTabMcb()[0],
                          &bcu->userEeprom->eibObjMcb()[0], &bcu->userEeprom->commsSeg0Mcb()[0]};
 
-    word virtMemAddr = 0x3A9E; // USER_EEPROM_START + USER_EEPROM_SIZE
+    word virtMemAddr = 0x3A9E; ///\todo get rid of magic number USER_EEPROM_START + USER_EEPROM_SIZE
     for (int i = 0; i < 5; i++)
     {
         if ((*tableAddress[i] != 0) && (*tableAddress[i] < virtMemAddr))
@@ -216,7 +216,7 @@ int PropertiesSYSTEMB::loadProperty(int objectIdx, const byte* data, int len)
     // DMP_LoadStateMachineWrite_RCo_Mem length of data must be 11 (APCI_MEMORY_WRITE_PDU) See KNX Spec. 3/5/2 3.28.2 p.109  (deprecated)
     if ((len > DMP_LOADSTATE_MACHINE_WRITE_RCO_MEM_LENGTH) || (len < DMP_LOADSTATE_MACHINE_WRITE_RCO_IO_LENGTH))
     {
-        IF_DUMP_PROPERTIES(serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" invalid ");printData(data, len););
+        DB_PROPERTIES(serial.print("loadProperty: "); printObjectIdx(objectIdx); serial.print(" invalid ");printData(data, len););
         return LS_ERROR;
     }
 
@@ -295,7 +295,7 @@ int PropertiesSYSTEMB::loadProperty(int objectIdx, const byte* data, int len)
             return handleDataRelativeAllocation(objectIdx, payload, len);
 
         default:
-            IF_DUMP_PROPERTIES(serial.println(" FATAL ERROR."););
+            DB_PROPERTIES(serial.println(" FATAL ERROR."););
             IF_DEBUG(fatalError());
             return LS_ERROR; // reply: Error
     }
@@ -318,7 +318,7 @@ bool PropertiesSYSTEMB::propertyValueReadTelegram(int objectIdx, PropertyID prop
 
     if (type < PDT_CHAR_BLOCK)
     {
-        if (propertyId == 7)
+        if (propertyId == PID_TABLE_REFERENCE)
         {
             bcu->sendTelegram[12] = 0;
             bcu->sendTelegram[13] = 0;
@@ -343,7 +343,7 @@ bool PropertiesSYSTEMB::propertyValueWriteTelegram(int objectIdx, PropertyID pro
 
     if (!(def->control & PC_WRITABLE))
     {
-        IF_DUMP_PROPERTIES(printObjectIdx(objectIdx); serial.println(" "); printPropertyID(propertyId); serial.println(" not writable!"););
+        DB_PROPERTIES(printObjectIdx(objectIdx); serial.println(" "); printPropertyID(propertyId); serial.println(" not writable!"););
         return false; // not writable
     }
 
@@ -366,8 +366,8 @@ bool PropertiesSYSTEMB::propertyValueWriteTelegram(int objectIdx, PropertyID pro
         --start;
         int size = def->size();
         len = count * size;
-        IF_DUMP_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
-        if (propertyId == 27)
+        DB_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
+        if (propertyId == PID_MCB_TABLE)
         {
             memcpy(valuePtr + start * size, data, len);
             memcpy(bcu->sendTelegram + 12, valuePtr + start * size, len);

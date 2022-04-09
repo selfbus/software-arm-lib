@@ -1,5 +1,5 @@
 /*
- *  user_memory.h - BCU user RAM and user EEPROM.
+ *  user_memory.h - Replaced by classes userEeprom and userRam.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -9,6 +9,11 @@
  */
 #ifndef sblib_user_memory_h
 #define sblib_user_memory_h
+
+#include <sblib/eib.h>
+
+// Replaced by classes userEeprom and userRam.
+#if 0
 
 #include <sblib/types.h>
 #include <sblib/eib/bcu_type.h>
@@ -181,10 +186,10 @@ public:
     word addrTabAddr;    //!< 0x0478: Address of the address table
     word assocTabAddr;   //!< 0x047a: Address of the association table
     word commsTabAddr;   //!< 0x047c: Address of the communication object table
-    word commsSeg0Addr;  //!< 0x047e: Address of communication object memory segment 0 // TODO needs implementation, see handleTaskCtrl2(...) in properties.cpp
-    word commsSeg1Addr;  //!< 0x0480: Address of communication object memory segment 1 // TODO needs implementation, see handleTaskCtrl2(...) in properties.cpp
-    word eibObjAddr;     //!< 0x047c: Address of the application program EIB objects, 0 if unused. // TODO needs implementation, see handleTaskCtrl1(...) in properties.cpp
-    byte eibObjCount;    //!< 0x047e: Number of application program EIB objects. // TODO needs implementation, see handleTaskCtrl1(...) in properties.cpp
+    word commsSeg0Addr;  //!< 0x047e: Address of communication object memory segment 0
+    word commsSeg1Addr;  //!< 0x0480: Address of communication object memory segment 1
+    word eibObjAddr;     //!< 0x047c: Address of the application program EIB objects, 0 if unused.
+    byte eibObjCount;    //!< 0x047e: Number of application program EIB objects.
     byte padding1;       //!< 0x047f: Padding
     word serviceControl; //!< 0x0480: Service control
     word padding2;       //!< 0x0482: Padding
@@ -333,5 +338,7 @@ inline int getUserRamEnd(void)
 
     return (userRamStart + USER_RAM_SIZE - 1);
 }
+
+#endif
 
 #endif /*sblib_user_memory_h*/

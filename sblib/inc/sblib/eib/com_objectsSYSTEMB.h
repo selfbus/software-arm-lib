@@ -32,30 +32,30 @@
 #ifndef sblib_com_objects_SYSTEMB_h
 #define sblib_com_objects_SYSTEMB_h
 
-#include <sblib/eib/com_objectsBCU2.h>
+#include <sblib/eib/com_objectsMASK0701.h>
 
 class BcuBase;
 
-class ComObjectsSYSTEMB : public ComObjectsBCU2
+class ComObjectsSYSTEMB : public ComObjectsMASK0701
 {
 public:
-	ComObjectsSYSTEMB(BcuBase* bcuInstance) : ComObjectsBCU2(bcuInstance) {}
+	ComObjectsSYSTEMB(BcuBase* bcuInstance) : ComObjectsMASK0701(bcuInstance) {}
 	~ComObjectsSYSTEMB() = default;
 
-	virtual inline const ComConfig& objectConfig(int objno);
+	virtual inline const ComConfig& objectConfig(int objno) override;
 
 protected:
 	// The size of the object types BIT_7...VARDATA in bytes
 	const byte objectTypeSizes[15] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 5, 7, 9, 11, 12, 13};
 
-	virtual const byte* getObjectTypeSizes();
+	virtual const byte* getObjectTypeSizes() override;
 
-	virtual int objectSize(int objno);
-	virtual byte* objectValuePtr(int objno);
-	virtual void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno);
-	virtual byte* objectConfigTable();
-	virtual byte* objectFlagsTable();
+	virtual int objectSize(int objno) override;
+	virtual byte* objectValuePtr(int objno) override;
+	virtual void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno) override;
+	virtual byte* objectConfigTable() override;
+	virtual byte* objectFlagsTable() override;
 
 };
 
-#endif /*sblib_com_objects_h*/
+#endif /*sblib_com_objects_SYSTEMB_h*/

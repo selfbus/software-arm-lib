@@ -30,7 +30,7 @@ public:
 	 * own physical address. This function skips the own physical address and
 	 * only scans the group addresses.
 	 */
-	int indexOfAddr(int addr);
+	int indexOfAddr(int addr) override;
 
 	/**
 	 * Get the address table. The address table contains the configured group addresses
@@ -41,7 +41,7 @@ public:
 	 * @brief The first byte of the table contains the number of entries. The rest of
 	 * the table consists of the addresses: 2 bytes per address.
 	 */
-	byte* addrTable();
+	byte* addrTable() override;
 
 	/**
 	 * Get the association table. The association table connects group addresses
@@ -53,10 +53,10 @@ public:
 	 * the table consists of the associations - 2 bytes per association:
 	 * 1 byte addr-table index, 1 byte com-object number.
 	 */
-	byte* assocTable();
+	byte* assocTable() override;
 
 private:
 	BCU1* bcu;
 };
 
-#endif /*sblib_addr_tables_h*/
+#endif /*sblib_addr_tables_BCU1_h*/

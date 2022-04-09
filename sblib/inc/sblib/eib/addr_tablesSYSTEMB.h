@@ -10,14 +10,14 @@
 #ifndef sblib_addr_tables_SYSTEMB_h
 #define sblib_addr_tables_SYSTEMB_h
 
-#include <sblib/eib/addr_tablesBCU2.h>
+#include <sblib/eib/addr_tablesMASK0701.h>
 
 class SYSTEMB;
 
-class AddrTablesSYSTEMB : public AddrTablesBCU2
+class AddrTablesSYSTEMB : public AddrTablesMASK0701
 {
 public:
-	AddrTablesSYSTEMB(SYSTEMB* bcuInstance) : AddrTablesBCU2((BCU2*)bcuInstance), bcu(bcuInstance) {};
+	AddrTablesSYSTEMB(SYSTEMB* bcuInstance) : AddrTablesMASK0701((MASK0701*)bcuInstance), bcu(bcuInstance) {};
 	~AddrTablesSYSTEMB() = default;
 
 	/**
@@ -30,33 +30,9 @@ public:
 	 * own physical address. This function skips the own physical address and
 	 * only scans the group addresses.
 	 */
-	int indexOfAddr(int addr);
-
-	/**
-	 * Get the address table. The address table contains the configured group addresses
-	 * and our own physical address.
-	 *
-	 * @return The pointer to the address table.
-	 *
-	 * @brief The first byte of the table contains the number of entries. The rest of
-	 * the table consists of the addresses: 2 bytes per address.
-	 */
-	byte* addrTable();
-
-	/**
-	 * Get the association table. The association table connects group addresses
-	 * with communication objects.
-	 *
-	 * @return The pointer to the association table.
-	 *
-	 * @brief The first byte of the table contains the number of entries. The rest of
-	 * the table consists of the associations - 2 bytes per association:
-	 * 1 byte addr-table index, 1 byte com-object number.
-	 */
-	byte* assocTable();
-
+	int indexOfAddr(int addr) override;
 private:
 	SYSTEMB* bcu;
 };
 
-#endif /*sblib_addr_tables_h*/
+#endif /*sblib_addr_tables_SYSTEMB_h*/

@@ -22,7 +22,7 @@
 #ifndef TLAYER4_H_
 #define TLAYER4_H_
 
-#include <sblib/eib/bus.h>
+#include <stdint.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
 
@@ -43,7 +43,6 @@ extern uint16_t repeatedTelegramCount;
 extern uint16_t repeatedIgnoredTelegramCount;
 ///\todo end of remove after bugfix and on release
 
-
 /**
  * Implementation of the KNX transportation layer 4 Style 1 Rationalised
  */
@@ -57,8 +56,8 @@ public:
         OPEN_IDLE,
         OPEN_WAIT
     };
-
-    TLayer4();
+    TLayer4(uint8_t maxTelegramLength);
+    TLayer4() = delete;
     virtual ~TLayer4() = default;
 
     /**
@@ -109,12 +108,12 @@ public:
      * A buffer for the telegram to send.
      * @warning This buffer is considered library private and should rather not be used by the application program.
      */
-    byte sendTelegram[Bus::TELEGRAM_SIZE];
+    byte *sendTelegram;
 protected:
     /**
      * Special initialization for the transport layer.
      */
-    virtual void _begin();
+    virtual void begin();
 
     /**
      * Process a group address (T_Data_Group) telegram.
@@ -145,6 +144,11 @@ protected:
 
     bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
     int8_t sequenceNumberSend();
+
+
+    virtual void discardReceivedTelegram() = 0;
+    virtual void send(unsigned char* telegram, unsigned short length) = 0;
+
 private:
     /**
      * Internal processing of the received telegram from bus.telegram. Called by processTelegram
@@ -258,8 +262,11 @@ private:
      * @param telLength Length of current telegram
      */
     void copyTelegram(unsigned char *telegram, uint8_t telLength);
-    byte lastTelegram[Bus::TELEGRAM_SIZE];  //!< Buffer to store the last telegram received to compare with telegram currently processed
+
+    byte *lastTelegram;  //!< Buffer to store the last telegram received to compare with telegram currently processed
     uint8_t lastTelegramLength = 0;         //!< Length of the last Telegram received
+
+    volatile uint16_t ownAddr;                 //!< Our own physical address on the bus
 };
 
 inline bool TLayer4::directConnection()
@@ -270,12 +277,12 @@ inline bool TLayer4::directConnection()
 inline uint16_t TLayer4::ownAddress()
 {
     ///\todo bus.ownAddress should also only return uint16_t
-    return ((uint16_t)bus.ownAddress());
+    return (ownAddr);
 }
 
 inline void TLayer4::setOwnAddress(uint16_t addr)
 {
-    bus.ownAddr = addr;
+    ownAddr = addr;
 }
 
 inline uint16_t TLayer4::connectedTo()

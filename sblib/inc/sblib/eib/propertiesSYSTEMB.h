@@ -10,15 +10,15 @@
 #ifndef sblib_properties_bcu0701_h
 #define sblib_properties_bcu0701_h
 
-#include <sblib/eib/propertiesBCU2.h>
+#include <sblib/eib/propertiesMASK0701.h>
 
-class BCU2;
+class MASK0701;
 class SYSTEMB;
 
-class PropertiesSYSTEMB : public PropertiesBCU2
+class PropertiesSYSTEMB : public PropertiesMASK0701
 {
 public:
-	PropertiesSYSTEMB(SYSTEMB* bcuInstance) : PropertiesBCU2((BCU2*)bcuInstance), bcu(bcuInstance) {};
+	PropertiesSYSTEMB(SYSTEMB* bcuInstance) : PropertiesMASK0701((MASK0701*)bcuInstance), bcu(bcuInstance) {};
 	~PropertiesSYSTEMB() = default;
 
 	virtual LoadState handleAllocAbsDataSegment(const int objectIdx, const byte* payLoad, const int len);
@@ -31,4 +31,4 @@ public:
 private:
 	SYSTEMB* bcu;
 };
-#endif /*sblib_properties_h*/
+#endif /*sblib_properties_bcu0701_h*/

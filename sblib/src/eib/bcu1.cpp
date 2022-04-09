@@ -21,153 +21,39 @@
 #include <sblib/mem_mapper.h>
 #include <sblib/eib/bus.h>
 
-void BCU1::processDirectTelegram(int apci)
+void BCU1::setOwnAddress (uint16_t addr)
 {
-    const int senderAddr = (bus->telegram[1] << 8) | bus->telegram[2];
-    const int senderSeqNo = bus->telegram[6] & 0x3c;
-    int count, address, index;
-    unsigned char sendAck = 0;
-    bool sendTel = false;
-
-    if (connectedAddr != senderAddr) // ensure that the sender is correct
-        return;
-
-    connectedTime = systemTime;
-    sendTelegram[6] = 0;
-
-    int apciCommand = apci & APCI_GROUP_MASK;
-    switch (apciCommand)  // ADC / memory commands use the low bits for data
+    if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
     {
-    case APCI_ADC_READ_PDU: // todo adc service  to be implemented for bus voltage and PEI
-        index = bus->telegram[7] & 0x3f;  // ADC channel
-        count = bus->telegram[8];         // number of samples
-        sendTelegram[5] = 0x64;
-        sendTelegram[6] = 0x41;
-        sendTelegram[7] = 0xc0 | (index & 0x3f);   // channel
-        sendTelegram[8] = count;                   // read count
-        sendTelegram[9] = 0;                       // FIXME dummy - ADC value high byte
-        sendTelegram[10] = 0;                      // FIXME dummy - ADC value low byte
-        sendTel = true;
-        break;
-
-    case APCI_MEMORY_READ_PDU:
-    case APCI_MEMORY_WRITE_PDU:
-        count = bus->telegram[7] & 0x0f; // number of data bytes
-        address = (bus->telegram[8] << 8) | bus->telegram[9]; // address of the data block
-
-        if (apciCommand == APCI_MEMORY_WRITE_PDU)
-        {
-            if (processApciMemoryWritePDU(address, &bus->telegram[10], count))
-            {
-            }
-            sendAck = T_ACK_PDU;
-        }
-
-        if (apciCommand == APCI_MEMORY_READ_PDU)
-        {
-            if (!processApciMemoryReadPDU(address, &sendTelegram[10], count))
-            {
-                // address space unreachable, need to respond with count 0
-                count = 0;
-            }
-
-            // send a APCI_MEMORY_RESPONSE_PDU response
-            sendTelegram[5] = 0x63 + count;
-            sendTelegram[6] = 0x42;
-            sendTelegram[7] = 0x40 | count;
-            sendTelegram[8] = address >> 8;
-            sendTelegram[9] = address;
-            sendTel = true;
-        }
-        break;
-
-    case APCI_DEVICEDESCRIPTOR_READ_PDU:
-        if (processDeviceDescriptorReadTelegram(apci & 0x3f))
-            sendTel = true;
-        else sendAck = T_NACK_PDU;
-        break;
-
-    default:
-        switch (apci)
-        {
-        case APCI_BASIC_RESTART_PDU:
-            softSystemReset();
-            break; // we should never land on this break
-
-        case APCI_MASTER_RESET_PDU:
-            if (processApciMasterResetPDU(apci, senderSeqNo, bus->telegram[8], bus->telegram[9]))
-            {
-                softSystemReset(); // perform a basic restart;
-            }
-            // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
-            sendTel = true;
-            break;
-
-        case APCI_AUTHORIZE_REQUEST_PDU:
-            sendTelegram[5] = 0x62;
-            sendTelegram[6] = 0x43;
-            sendTelegram[7] = 0xd2;
-            sendTelegram[8] = 0x00;
-            sendTel = true;
-            break;
-
-        default:
-            sendAck = T_NACK_PDU;  // Command not supported
-            break;
-        }
-        break;
+        userEeprom->addrTab()[0] = HIGH_BYTE(addr);
+        userEeprom->addrTab()[1] = LOW_BYTE(addr);
+        userEeprom->modified();
     }
-
-    if (sendTel)
-        sendAck = T_ACK_PDU;
-
-    if (sendAck)
-        sendConControlTelegram(sendAck, senderSeqNo);
-    else sendCtrlTelegram[0] = 0;
-
-    if (sendTel)
-    {
-        sendTelegram[0] = 0xb0 | (bus->telegram[0] & 0x0c); // Control byte
-        // 1+2 contain the sender address, which is set by bus->sendTelegram()
-        sendTelegram[3] = connectedAddr >> 8;
-        sendTelegram[4] = connectedAddr;
-
-        if (sendTelegram[6] & 0x40) // Add the sequence number if applicable
-        {
-            sendTelegram[6] &= ~0x3c;
-            sendTelegram[6] |= connectedSeqNo;
-            incConnectedSeqNo = true;
-        }
-        else incConnectedSeqNo = false;
-
-        bus->sendTelegram(sendTelegram, telegramSize(sendTelegram));
-    }
+    BcuBase::setOwnAddress(addr);
 }
 
-void BCU1::setOwnAddress (int addr)
-{
-    userEeprom->addrTab()[0] = addr >> 8;
-    userEeprom->addrTab()[1] = addr;
-    userEeprom->modified();
-
-    ownAddr = addr;
-}
-
-/**
- * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
- * program version and a optional read-only CommObjectTable address which
- * can't be changed by ETS/KNX telegrams
- *
- * @param manufacturer - the manufacturer ID (16 bit)
- * @param deviceType - the device type (16 bit)
- * @param version - the version of the application program (8 bit)
- */
 inline void BCU1::begin(int manufacturer, int deviceType, int version)
 {
-	ownAddr = (userEeprom->addrTab()[0] << 8) | userEeprom->addrTab()[1];
+    setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
+    userRam->status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
+    userRam->deviceControl() = 0;
+    userRam->runState = 1;
+
+    userEeprom->runError() = 0xff;
+    userEeprom->portADDR() = 0;
+
+    userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
+    userEeprom->manufacturerL() = LOW_BYTE(manufacturer);
+
+    userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
+    userEeprom->deviceTypeL() = LOW_BYTE(deviceType);
+
+    userEeprom->version() = version;
+
+    userEeprom->writeUserEepromTime = 0;
 
 	begin_BCU(manufacturer, deviceType, version);
-	commObjectTableAddressStatic = 0;
+    BcuBase::begin();
 }
 
 inline bool BCU1::applicationRunning() const
@@ -194,22 +80,5 @@ BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* com
 // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
 void BCU1::begin_BCU(int manufacturer, int deviceType, int version)
 {
-    userRam->status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
-    userRam->deviceControl() = 0;
-    userRam->runState = 1;
-
-    userEeprom->runError() = 0xff;
-    userEeprom->portADDR() = 0;
-
-    userEeprom->manufacturerH() = manufacturer >> 8;
-    userEeprom->manufacturerL() = manufacturer;
-
-    userEeprom->deviceTypeH() = deviceType >> 8;
-    userEeprom->deviceTypeL() = deviceType;
-
-    userEeprom->version() = version;
-
-    userEeprom->writeUserEepromTime = 0;
-
     BcuBase::begin_BCU(manufacturer, deviceType, version);
 }

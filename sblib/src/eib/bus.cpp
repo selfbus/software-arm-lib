@@ -43,7 +43,7 @@
  * Interface to upper layers (see bus.h for details)
  *
  *  For interfacing to higher layers there are data buffer for sending and receiving of telegrams:
- *   tx: bcu.sendTelegram[]  - send buffer
+ *   tx: bcu->sendTelegram[]  - send buffer
  *   	 sendTelegram(char* telegram,..)  - send a new telegram (pointer to tel to be sent),
  *   	                                    is blocking if no buffer is available (current transmit ongoing).
  *       sendTelegramState() - state of the last send process
@@ -238,11 +238,9 @@
 #include <sblib/interrupt.h>
 #include <sblib/platform.h>
 #include <sblib/eib/addr_tables.h>
-#include <sblib/eib/user_memory.h>
-#include <sblib/eib/properties.h>
+#include <sblib/eib/bcu_base.h>
 
 #include <sblib/timer.h>
-
 
 // Enable informational debug statements
 #if defined(INCLUDE_SERIAL)
@@ -372,7 +370,7 @@
 
 #define PHY_ADDR_HI_DEFAULT 0xff    //!> default physical address high byte for 15.15.255
 #define PHY_ADDR_LO_DEFAULT 0xff    //!> default physical address low byte for 15.15.255 c/f knxspec 3/05/01
-#define PHY_ADDR_DEFAULT ((PHY_ADDR_HI_DEFAULT << 8) | PHY_ADDR_LO_DEFAULT); //!> default physical address 15.15.255
+#define PHY_ADDR_DEFAULT ((PHY_ADDR_HI_DEFAULT << 8) | PHY_ADDR_LO_DEFAULT) //!> default physical address 15.15.255
 #define PHY_ADDR_AREA(address) ((address >> 12) & 0x0f) //!> return the area number of a given physical KNX address
 #define PHY_ADDR_LINE(address) ((address >> 8) & 0x0f)  //!> return the line number of a given physical KNX address
 #define PHY_ADDR_DEVICE(address) (address & 0xff)       //!> return device number of a given physical KNX address
@@ -450,13 +448,13 @@
 
 
 // constructor for Bus object. Initialize basic interface parameter to bus and set SM to IDLE
-Bus::Bus(Timer& aTimer, int aRxPin, int aTxPin, TimerCapture aCaptureChannel, TimerMatch aPwmChannel)
-:timer(aTimer)
+Bus::Bus(BcuBase* bcuInstance, Timer& aTimer, int aRxPin, int aTxPin, TimerCapture aCaptureChannel, TimerMatch aPwmChannel)
+:bcu(bcuInstance)
+,timer(aTimer)
 ,rxPin(aRxPin)
 ,txPin(aTxPin)
 ,captureChannel(aCaptureChannel)
 ,pwmChannel(aPwmChannel)
-
 
 {
 	timeChannel = (TimerMatch) ((pwmChannel + 2) & 3);  // +2 to be compatible to old code during refactoring
@@ -478,21 +476,15 @@ Bus::Bus(Timer& aTimer, int aRxPin, int aTxPin, TimerCapture aCaptureChannel, Ti
  */
 void Bus::begin()
 {
-	ownAddr = (userEeprom.addrTab[0] << 8) | userEeprom.addrTab[1];
-#if BCU_TYPE != BCU1_TYPE
-	if (userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADING)
-	{
-		byte * addrTab = addrTable() + 1;
-		ownAddr = (*(addrTab) << 8) | *(addrTab + 1);
-	}
-#endif
-
 	//check own addr - are we a router then 0 is allowed
 	//0.0.0 is not allowed for normal devices
 	//set default addr  15.15.255 in case we have PhyAdr of 0.0.0
 
 #ifndef ROUTER
-	if (ownAddr == 0) ownAddr = PHY_ADDR_DEFAULT;
+	if (bcu->ownAddress() == 0)
+	{
+		bcu->setOwnAddress(PHY_ADDR_DEFAULT);
+	}
 #endif
 
 	//todo load send-retries from eprom
@@ -546,10 +538,10 @@ void Bus::begin()
 	DB(serial.println(" ttimer value: ", ttimer.value(), DEC, 6));
 	DB(serial.print("nak retries: ", sendTriesMax, DEC, 6));
 	DB(serial.print(" busy retries: ", sendBusyTriesMax, DEC, 6));
-	DB(serial.print(" phy addr: ", PHY_ADDR_AREA(ownAddr), DEC));
-	DB(serial.print(".", PHY_ADDR_LINE(ownAddr), DEC));
-	DB(serial.print(".", PHY_ADDR_DEVICE(ownAddr), DEC));
-	DB(serial.print(" (0x",  ownAddr, HEX, 4));
+	DB(serial.print(" phy addr: ", PHY_ADDR_AREA(bcu->ownAddress()), DEC));
+	DB(serial.print(".", PHY_ADDR_LINE(bcu->ownAddress()), DEC));
+	DB(serial.print(".", PHY_ADDR_DEVICE(bcu->ownAddress()), DEC));
+	DB(serial.print(" (0x",  bcu->ownAddress(), HEX, 4));
 	DB(serial.println(")"));
 
 #ifdef USEPIO_FOR_TEL_END_IND
@@ -586,10 +578,10 @@ void Bus::begin()
 
 void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
 {
-	unsigned char checksum = 0xff;
-	setSenderAddress(telegram, (uint16_t)ownAddr);
+	setSenderAddress(telegram, (uint16_t)bcu->ownAddress());
 
 	// Calculate the checksum
+	unsigned char checksum = 0xff;
 	for (unsigned short i = 0; i < length; ++i)
 	{
 		checksum ^= telegram[i];
@@ -761,7 +753,7 @@ void Bus::handleTelegram(bool valid)
 	// Received a valid telegram with correct checksum and valid control byte ( normal data frame with preamble bits)?
 	//todo extended tel, check tel len, give upper layer error info
 	if ( nextByteIndex >= 8 && valid  &&  (( rx_telegram[0] & VALID_DATA_FRAME_TYPE_MASK) == VALID_DATA_FRAME_TYPE_VALUE)
-			&& nextByteIndex< TELEGRAM_SIZE  )
+			&& nextByteIndex< bcu->maxTelegramSize()  )
 	{
 		int destAddr = (rx_telegram[3] << 8) | rx_telegram[4];
 		bool processTel = false;
@@ -769,22 +761,26 @@ void Bus::handleTelegram(bool valid)
 		// We ACK the telegram only if it's for us
 		if (rx_telegram[5] & 0x80) // groupr addr or phy addr
 		{
-			if (destAddr == 0 || indexOfAddr(destAddr) >= 0)
+			if (destAddr == 0 || bcu->addrTables->indexOfAddr(destAddr) >= 0)
 			{
 				processTel = true; // broadcast or known group addr
 			}
 		}
-		else if (destAddr == ownAddr)
+		else if (destAddr == bcu->ownAddress())
 		{
 			processTel = true;
 		}
+		else
+		{
+			DB(serial.println(" not processed: ", destAddr, HEX));
+		}
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
-		if (!(userRam.status & BCU_STATUS_TL))
+		if (!(bcu->userRam->status & BCU_STATUS_TL))
 		{ // TL is disabled we might process the telegram
 			processTel = true;
 			// if LL is in normal mode (not busmonitor mode) we send ack back
-			if (userRam.status & BCU_STATUS_LL)
+			if (bcu->userRam->status & BCU_STATUS_LL)
 				if (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG )
 				{
 					sendAck = SB_BUS_ACK;

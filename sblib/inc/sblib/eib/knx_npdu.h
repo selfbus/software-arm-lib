@@ -22,7 +22,7 @@
 #ifndef SBLIB_KNX_NPDU_H_
 #define SBLIB_KNX_NPDU_H_
 
-#define NPDU_CONTROL_BYTE           (0)
+#define NPDU_CONTROL_BYTE           (5)
 
 enum NPDU
 {
@@ -36,6 +36,17 @@ enum Hop_count_type
 {
 
 };
+
+/**
+ * Get the size of a telegram, including the protocol header but excluding
+ * the checksum byte. The size is calculated by getting the length from byte 5 of the
+ * telegram and adding 7 for the protocol overhead.
+ *
+ * @param tel - the telegram to get the size
+ *
+ * @return The size of the telegram, excluding the checksum byte.
+ */
+#define telegramSizeNpdu(tel) (7 + (tel[5] & 15)) //FIXME telegramSize accesses tel[5] without any check
 
 
 

@@ -12,187 +12,117 @@
 #include <sblib/io_pin_names.h>
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/bcu_base.h>
-#include <sblib/eib/user_memory.h>
 #include <sblib/eib/addr_tables.h>
-#include <sblib/internal/functions.h>
 #include <sblib/internal/variables.h>
 #include <sblib/internal/iap.h>
+#include <sblib/eib/userEeprom.h>
+#include <sblib/eib/userRam.h>
+#include <sblib/eib/apci.h>
 #include <sblib/utils.h>
 #include <string.h>
+#include <sblib/eib/bus.h>
+
+static Bus* timerBusObj;
+// The interrupt handler for the EIB bus access object
+BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, (*timerBusObj))
 
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
 #endif
 
-// The interrupt handler for the EIB bus access object
-BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, bus);
+extern volatile unsigned int systemTime;
 
-extern volatile unsigned int writeUserEepromTime;
-
-BcuBase::BcuBase()
-:progButtonDebouncer(),
- commObjectTableAddressStatic(0)
+BcuBase::BcuBase(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables) :
+        TLayer4(maxTelegramSize()),
+        bus(new Bus(this, timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0)),
+        progPin(PIN_PROG),
+        progPinInv(true),
+        userEeprom(userEeprom),
+		userRam(userRam),
+		comObjects(comObjects),
+		addrTables(addrTables),
+        progButtonDebouncer(),
+        memMapper(nullptr),
+		usrCallback(nullptr),
+		sendGrpTelEnabled(false),
+		groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
+		groupTelSent(millis())
 {
-    progPin = PIN_PROG;
+	timerBusObj = bus;
     setFatalErrorPin(progPin);
-    progPinInv = true;
-    enabled = false;
+    setKNX_TX_Pin(bus->txPin);
 }
-
-// The method begin_BCU() is renamed during compilation to indicate the BCU type.
-// If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
+/*
+BcuBase::BcuBase() : BcuBase(nullptr, nullptr, nullptr, nullptr)
+{}
+*/
+void BcuBase::begin()
 {
-    _begin();
-#if defined(INCLUDE_SERIAL)
-    IF_DEBUG(
-                if (!serial.enabled())
-                {
-                    serial.begin(SERIAL_SPEED);
-                }
-            );
-#endif
+    TLayer4::begin();
 
-#ifdef DUMP_TELEGRAMS
+#ifdef DUMP_TELEGRAMS ///\todo move to Bus::begin()
     IF_DEBUG(serial.println("Telegram dump enabled."));
 #endif
 
-#ifdef DUMP_PROPERTIES
+#ifdef DUMP_PROPERTIES ///\todo move to BCU2::begin(...)
     IF_DEBUG(serial.println("Properties dump enabled."));
 #endif
 
-#ifdef DEBUG_BUS
+#ifdef DEBUG_BUS ///\todo move to Bus::begin()
     IF_DEBUG(serial.println("DEBUG_BUS dump enabled."));
 #endif
 
-#ifdef DEBUG_BUS_BITLEVEL
+#ifdef DEBUG_BUS_BITLEVEL ///\todo move to Bus::begin()
     IF_DEBUG(serial.println("DEBUG_BUS_BITLEVEL dump enabled."));
 #endif
 
-#if defined(DUMP_TELEGRAMS) || defined (DUMP_PROPERTIES)
-    IF_DEBUG(serial.println("BCU_TYPE: 0x", BCU_TYPE, HEX, 2));
-    IF_DEBUG(serial.println("MASK_VERSION: 0x", MASK_VERSION, HEX, 2));
+#if defined(DUMP_TELEGRAMS) || defined (DUMP_PROPERTIES)  || defined (DUMP_MEM_OPS)
+    IF_DEBUG(serial.print("BCU Name: "););
+    IF_DEBUG(serial.print(getBcuType()); serial.print(" "););
+    IF_DEBUG(serial.println(" MaskVersion: 0x", getMaskVersion(), HEX, 4));
 #   ifdef LOAD_CONTROL_ADDR
         IF_DEBUG(serial.println("LOAD_CONTROL_ADDR: 0x", LOAD_CONTROL_ADDR, HEX, 4));
 #   endif
 #   ifdef LOAD_STATE_ADDR
         IF_DEBUG(serial.println("LOAD_STATE_ADDR: 0x", LOAD_STATE_ADDR, HEX, 4));
 #   endif
-#   ifdef USER_RAM_START_DEFAULT
-        IF_DEBUG(serial.println("USER_RAM_START_DEFAULT: 0x", USER_RAM_START_DEFAULT, HEX, 4));
-#   endif
 #   ifdef EXTRA_USER_RAM_SIZE
         IF_DEBUG(serial.println("EXTRA_USER_RAM_SIZE: 0x", EXTRA_USER_RAM_SIZE, HEX, 4));
 #   endif
-#   ifdef USER_RAM_SIZE
-        IF_DEBUG(serial.println("USER_RAM_SIZE: 0x", USER_RAM_SIZE, HEX, 4));
-#   endif
+
 #   ifdef USER_RAM_SHADOW_SIZE
         IF_DEBUG(serial.println("USER_RAM_SHADOW_SIZE: 0x", USER_RAM_SHADOW_SIZE, HEX, 4));
 #   endif
-#   ifdef USER_EEPROM_START
-        IF_DEBUG(serial.println("USER_EEPROM_START: 0x", USER_EEPROM_START, HEX, 4));
-#   endif
-#   ifdef USER_EEPROM_SIZE
-        IF_DEBUG(serial.println("USER_EEPROM_SIZE: 0x", USER_EEPROM_SIZE, HEX, 4));
-#   endif
-#   ifdef USER_EEPROM_END
-        IF_DEBUG(serial.println("USER_EEPROM_END: 0x", USER_EEPROM_END, HEX, 4));
-#   endif
+    if (userRam != nullptr)
+    {
+        IF_DEBUG(serial.print("userRam    start: 0x", userRam->userRamStart, HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.print("end: 0x", userRam->userRamEnd, HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.println("size: 0x", userRam->userRamSize, HEX, 4));
+    }
+    if (userEeprom != nullptr)
+    {
+        IF_DEBUG(serial.print("userEeprom start: 0x", userEeprom->userEepromStart, HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.print("end: 0x", userEeprom->userEepromEnd, HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.print("size: 0x", userEeprom->userEepromSize, HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.println("flashSize: 0x", userEeprom->userEepromFlashSize, HEX, 4););
+    }
 #   ifdef USER_EEPROM_FLASH_SIZE
-        IF_DEBUG(serial.println("USER_EEPROM_FLASH_SIZE: 0x", USER_EEPROM_FLASH_SIZE, HEX, 4));
+
 #   endif
     IF_DEBUG(serial.println());
-	_begin(); // load flash/rom data to usereeprom, init bcu
-
 #endif
+    sendGrpTelEnabled = true;
+    groupTelSent = millis();
 
-	userRam.status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
-    userRam.deviceControl = 0;
-    userRam.runState = 1;
-
-    userEeprom.runError = 0xff;
-    userEeprom.portADDR = 0;
-
-    userEeprom.manufacturerH = HIGH_BYTE(manufacturer);
-    userEeprom.manufacturerL = LOW_BYTE(manufacturer);
-
-    userEeprom.deviceTypeH = HIGH_BYTE(deviceType);
-    userEeprom.deviceTypeL = LOW_BYTE(deviceType);
-
-    userEeprom.version = (uint8_t)version;
-
-#if BCU_TYPE != BCU1_TYPE
-    unsigned int partID;
-    unsigned int useOldSerialStyle;
-    byte uniqueID[IAP_UID_LENGTH];
-
-    useOldSerialStyle = 1;
-    if (iapReadUID(&uniqueID[0]) == IAP_SUCCESS)
-    {
-        // https://community.nxp.com/t5/LPC-Microcontrollers/IAP-C-code-example-query/m-p/596139/highlight/true#M22963
-        // Unfortunately the details of what go into the 128-bit GUID cannot be disclosed.
-        // It can be said, however, that the 128-bit GUIDs are not random, nor are they sequential.
-        // Thus to ensure there are no collisions with other devices, the full 128 bits should be used.
-
-        // create a 48bit serial/hash from the 128bit Guid
-        useOldSerialStyle = !hashUID(&uniqueID[0], sizeof(uniqueID), &userEeprom.serial[0], sizeof(userEeprom.serial));
-
-        /** //TODO this could be a alternative for ETS checking the serial number
-         *         it seems that the first two bytes are the Manufacturer-ID
-         *         and setting the last 4 bytes to 0xFF the ETS doesn't check the serial number at all
-         *         memset (userEeprom.serial, 0xFF, 6);             // set serial to 0xFFFFFFFFFFFF
-         *         userEeprom.serial[0] = userEeprom.manufacturerH; // set Manufacturer-ID
-         *         userEeprom.serial[1] = userEeprom.manufacturerL;
-         */
-    }
-
-    if (useOldSerialStyle)
-    {
-        iapReadPartID(&partID);
-        memcpy (userEeprom.serial, &partID, 4);
-        userEeprom.serial[4] = HIGH_BYTE(SBLIB_VERSION);
-        userEeprom.serial[5] = LOW_BYTE(SBLIB_VERSION);
-    }
-
-    userEeprom.order[sizeof(userEeprom.order) - 2] = HIGH_BYTE(SBLIB_VERSION);
-    userEeprom.order[sizeof(userEeprom.order) - 1] = LOW_BYTE(SBLIB_VERSION);
-
-    userRam.peiType = 0;     // PEI type: 0=no adapter connected to PEI.
-    userEeprom.appType = 0;  // Set to BCU2 application. ETS reads this when programming.
-#endif
-
-    writeUserEepromTime = 0;
-    enabled = true;
-    bus.begin();
+    // set limit to max of 28 telegrams per second (wait 35ms) -  to avoid risk of thermal destruction of the sending circuit
+    groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
+    bus->begin();
     progButtonDebouncer.init(1);
-}
-
-void BcuBase::_begin()
-{
-    TLayer4::_begin();
-}
-
-void BcuBase::end()
-{
-    enabled = false;
-    bus.end();
+    enabled = true;
 }
 
 void BcuBase::setOwnAddress(uint16_t addr)
 {
-    userEeprom.addrTab[0] = HIGH_BYTE(addr);
-    userEeprom.addrTab[1] = LOW_BYTE(addr);
-#if BCU_TYPE != BCU1_TYPE
-    if (userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADING)
-    {
-        byte * addrTab =  addrTable() + 1;
-
-        * (addrTab + 0)  = HIGH_BYTE(addr);
-        * (addrTab + 1)  = LOW_BYTE(addr);
-    }
-#endif
-    userEeprom.modified();
     TLayer4::setOwnAddress(addr);
 }
 
@@ -514,9 +444,9 @@ void BcuBase::loop()
 #endif
 
     TLayer4::loop();
-	if (bus.telegramReceived() && (!bus.sendingTelegram()) && (bus.state == Bus::IDLE) && (userRam.status & BCU_STATUS_TL))
+	if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE) && (userRam->status & BCU_STATUS_TL))
 	{
-        processTelegram(&bus.telegram[0], (uint8_t)bus.telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
+        processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
 
 	if (progPin)
@@ -526,11 +456,48 @@ void BcuBase::loop()
 		int oldValue = progButtonDebouncer.value();
 		if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
 		{
-			userRam.status ^= 0x81;  // toggle programming mode and checksum bit
+			userRam->status ^= 0x81;  // toggle programming mode and checksum bit
 		}
 		pinMode(progPin, OUTPUT);
-		digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
+		digitalWrite(progPin, (userRam->status & BCU_STATUS_PROG) ^ progPinInv);
 	}
+
+    // if bus is not sending (telegram buffer is empty) check for next telegram to be send
+    if (sendGrpTelEnabled && !bus->sendingTelegram())
+    {
+        // Send group telegram if group telegram rate limit not exceeded
+        if (elapsed(groupTelSent) >= groupTelWaitMillis)
+        {
+        	// check in com_objects method for waiting objects from user app and store in telegrambuffer
+        	// and call bus->sendTelegram
+         if (comObjects->sendNextGroupTelegram())
+             groupTelSent = millis();
+
+        }
+        // To prevent overflows if no telegrams are sent for a long time - todo: better reload with systemTime - groupTelWaitMillis
+        if (elapsed(groupTelSent) >= 2000)
+        {
+            groupTelSent += 1000;
+        }
+    }
+
+    if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && connectedTo() == 0)
+    {
+        if (userEeprom->writeUserEepromTime)
+        {
+            if ((int)millis() - (int)userEeprom->writeUserEepromTime > 0)
+            {
+                if (usrCallback)
+                    usrCallback->Notify(USR_CALLBACK_FLASH);
+                userEeprom->writeUserEeprom();
+                if (memMapper)
+                {
+                    memMapper->doFlash();
+                }
+            }
+        }
+        else userEeprom->writeUserEepromTime = millis() + 50;
+    }
 }
 
 bool BcuBase::setProgrammingMode(bool newMode)
@@ -542,14 +509,14 @@ bool BcuBase::setProgrammingMode(bool newMode)
 
     if (newMode)
     {
-        userRam.status |= 0x81;  // set programming mode and checksum bit
+        userRam->status |= 0x81;  // set programming mode and checksum bit
     }
     else
     {
-        userRam.status &= 0x81;  // clear programming mode and checksum bit
+        userRam->status &= 0x81;  // clear programming mode and checksum bit
     }
     pinMode(progPin, OUTPUT);
-    digitalWrite(progPin, (userRam.status & BCU_STATUS_PROG) ^ progPinInv);
+    digitalWrite(progPin, (userRam->status & BCU_STATUS_PROG) ^ progPinInv);
     return true;
 }
 
@@ -568,5 +535,567 @@ void BcuBase::sendApciIndividualAddressReadResponse()
     delayMicroseconds(MAX_DELAY_MICROSECONDS);
     delayMicroseconds(MAX_DELAY_MICROSECONDS);
     delayMicroseconds(MAX_DELAY_MICROSECONDS - ((systemTime % (MAX_DELAY_MICROSECONDS/100)) * 10)); // "randomize response delay"
-    bus.sendTelegram(sendTelegram, 8);
+    bus->sendTelegram(sendTelegram, 8);
 }
+
+void BcuBase::end()
+{
+    if (usrCallback)
+        usrCallback->Notify(USR_CALLBACK_BCU_END);
+
+    enabled = false;
+
+    bus->end();
+
+    userEeprom->writeUserEeprom();
+    if (memMapper)
+    {
+        memMapper->doFlash();
+    }
+}
+
+///\todo move to class userRam
+void BcuBase::cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
+{
+    if ((address == USER_RAM_SYSTEM_STATE_ADDRESS) && (count == 1))
+    {
+        userRam->status = *buffer;
+        return;
+    }
+
+    address -= userRam->userRamStart;
+    if ((address > USER_RAM_SYSTEM_STATE_ADDRESS) || ((address + count) < USER_RAM_SYSTEM_STATE_ADDRESS))
+    {
+        memcpy((void*)(userRam->userRamData + address), buffer, count);
+    }
+    else
+    {
+        while (count--)
+        {
+            if (address == USER_RAM_SYSTEM_STATE_ADDRESS)
+                userRam->status = * buffer;
+            else
+                userRam->userRamData[address] = * buffer;
+            buffer++;
+            address++;
+        }
+    }
+}
+
+///\todo move to class userRam
+void BcuBase::cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
+{
+    if ((address == USER_RAM_SYSTEM_STATE_ADDRESS) && (count == 1))
+    {
+        *buffer = userRam->status;
+        return;
+    }
+
+    address -= userRam->userRamStart;
+    if ((address > USER_RAM_SYSTEM_STATE_ADDRESS) || ((address + count) < USER_RAM_SYSTEM_STATE_ADDRESS))
+    {
+        memcpy(buffer, (const void*)(userRam->userRamData + address), count);
+    }
+    else
+    {
+        while (count--)
+        {
+            if (address == USER_RAM_SYSTEM_STATE_ADDRESS)
+                * buffer = userRam->status;
+            else
+                * buffer = userRam->userRamData[address];
+            buffer++;
+            address++;
+        }
+    }
+}
+
+byte* BcuBase::userMemoryPtr(unsigned int addr)
+{
+    if (addr >= userEeprom->userEepromStart && addr < userEeprom->userEepromEnd)
+        return &(*userEeprom)[addr];
+    else if (addr >= userRam->userRamStart && addr < (userRam->userRamStart + userRam->userRamSize))
+        return &(*userRam)[addr];
+    return 0;
+}
+
+// The method begin_BCU() is renamed during compilation to indicate the BCU type.
+// If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
+void BcuBase::begin_BCU(int manufacturer, int deviceType, int version)
+{
+
+}
+
+bool BcuBase::programmingMode() const
+{
+    return (userRam->status & BCU_STATUS_PROG) == BCU_STATUS_PROG;
+}
+
+void BcuBase::setMemMapper(MemMapper *mapper)
+{
+    memMapper = mapper;
+}
+
+MemMapper* BcuBase::getMemMapper()
+{
+    return memMapper;
+}
+
+void BcuBase::setUsrCallback(UsrCallback *callback)
+{
+    usrCallback = callback;
+}
+
+void BcuBase::enableGroupTelSend(bool enable)
+{
+    sendGrpTelEnabled = enable;
+}
+
+void BcuBase::setGroupTelRateLimit(unsigned int limit)
+{
+ if ((limit > 0) && (limit <= MAX_GROUP_TEL_PER_SECOND))
+     groupTelWaitMillis = 1000/limit;
+ else
+     groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
+}
+
+int BcuBase::maxTelegramSize()
+{
+	return 24;
+}
+
+void BcuBase::setRxPin(int rxPin) {
+    bus->rxPin=rxPin;
+}
+
+void BcuBase::setTxPin(int txPin) {
+    bus->txPin=txPin;
+    setKNX_TX_Pin(bus->txPin);
+}
+
+void BcuBase::setTimer(Timer& timer) {
+    bus->timer=timer;
+}
+
+void BcuBase::setCaptureChannel(TimerCapture captureChannel) {
+    bus->captureChannel=captureChannel;
+}
+
+void BcuBase::setProgPin(int prgPin) {
+    progPin=prgPin;
+    setFatalErrorPin(progPin);
+}
+
+void BcuBase::setProgPinInverted(int prgPinInv) {
+    progPinInv=prgPinInv;
+}
+
+void BcuBase::discardReceivedTelegram()
+{
+    bus->discardReceivedTelegram();
+}
+
+void BcuBase::send(unsigned char* telegram, unsigned short length)
+{
+    bus->sendTelegram(telegram, length);
+}
+
+/**
+ * todo check for RX status and inform upper layer if needed
+ */
+bool BcuBase::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength)
+{
+    DB_COM_OBJ(
+        serial.println();
+        serial.print("BCU grp addr: 0x", (unsigned int)destAddr, HEX, 4);
+        serial.println(" error state:  0x",(unsigned int)bus.receivedTelegramState(), HEX, 4);
+    );
+
+    comObjects->processGroupTelegram(groupAddress, apciCmd & APCI_GROUP_MASK, telegram);
+    return (true);
+}
+
+bool BcuBase::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
+{
+    if (programmingMode()) // we are in programming mode
+    {
+        if (apciCmd == APCI_INDIVIDUAL_ADDRESS_WRITE_PDU)
+        {
+            setOwnAddress(MAKE_WORD(telegram[8], telegram[9]));
+        }
+        else if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
+        {
+            sendApciIndividualAddressReadResponse();
+        }
+    }
+    return (true);
+}
+
+bool BcuBase::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad)
+{
+    DB_MEM_OPS(
+       serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
+       serial.print(" Data:");
+       for(int i=0; i<lengthPayLoad ; i++)
+       {
+           serial.print(" ", payLoad[i], HEX, 2);
+       }
+       serial.print(" count: ", lengthPayLoad, DEC);
+    );
+    return processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, false);
+}
+
+bool BcuBase::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
+{
+    DB_MEM_OPS(
+       serial.print("ApciMemoryReadPDU :", addressStart, HEX, 4);
+       serial.print(" count: ", lengthPayLoad, DEC);
+    );
+
+    bool result = processApciMemoryOperation(addressStart, payLoad, lengthPayLoad, true);
+
+    DB_MEM_OPS(
+       if (result)
+       {
+           serial.print("           result :", addressStart, HEX, 4);
+           serial.print(" Data:");
+           for(int i=0; i<lengthPayLoad ; i++)
+           {
+               serial.print(" ", payLoad[i], HEX, 2);
+           }
+           serial.println(" count: ", lengthPayLoad, DEC);
+       }
+    );
+    return result;
+}
+
+bool BcuBase::processApciMemoryOperation(unsigned int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem)
+{
+    const unsigned int addressEnd = addressStart + lengthPayLoad - 1;
+    bool startNotFound = false; // we need this as a exit condition, in case memory range is no where found
+
+    if (lengthPayLoad == 0)
+    {
+        DB_MEM_OPS(serial.println(" Error processApciMemoryOperation : lengthPayLoad: 0x", lengthPayLoad , HEX, 2));
+        return false;
+    }
+
+    while ((!startNotFound) && (addressStart <= addressEnd))
+    {
+        startNotFound = true;
+        // check if we have a memMapper and if payLoad is handled by it
+        if (memMapper != nullptr)
+        {
+            if (memMapper->isMappedRange(addressStart, addressEnd))
+            {
+                // start & end fit into memMapper
+                bool operationResult = false;
+                if (readMem)
+                    operationResult = memMapper->readMemPtr(addressStart, &payLoad[0], lengthPayLoad) == MEM_MAPPER_SUCCESS;
+                else
+                    operationResult = memMapper->writeMemPtr(addressStart, &payLoad[0], lengthPayLoad) == MEM_MAPPER_SUCCESS;
+
+                if (operationResult)
+                {
+                    DB_MEM_OPS(serial.println(" -> memmapped ", lengthPayLoad, DEC));
+                    return true;
+                }
+                else
+                    return false;
+            }
+            else if (memMapper->isMapped(addressStart))
+            {
+                // we only know that start is mapped so lets do memory operation byte by byte
+                for (int i = 0; i < lengthPayLoad; i++)
+                {
+                    bool operationResult = memMapper->isMapped(addressStart);
+                    if (operationResult)
+                    {
+                        if (readMem)
+                            operationResult = memMapper->readMemPtr(addressStart, &payLoad[0], 1) == MEM_MAPPER_SUCCESS;
+                        else
+                            operationResult = memMapper->writeMemPtr(addressStart, &payLoad[0], 1) == MEM_MAPPER_SUCCESS;
+                    }
+
+                    if (operationResult)
+                    {
+                        // address is mapped and memory operation was successful
+                        addressStart++;
+                        payLoad++;
+                        startNotFound = false;
+                    }
+                    else
+                    {
+                        DB_MEM_OPS(serial.println(" -> memmapped processed : ", i , DEC));
+                        break;
+                    }
+                }
+            }
+        }
+
+        // check if payLoad is in USER_EEPROM
+        if (addressStart <= addressEnd)
+        {
+            if ((addressStart >= userEeprom->userEepromStart) &&  (addressEnd < userEeprom->userEepromEnd))
+            {
+                // start & end are in USER_EEPROM
+                if (readMem)
+                {
+                    memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), addressEnd - addressStart + 1);
+                }
+                else
+                {
+                    memcpy(userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), &payLoad[0], addressEnd - addressStart + 1);
+                    userEeprom->modified();
+                }
+                DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
+                return true;
+            }
+            else if ((addressStart >= userEeprom->userEepromStart) && (addressStart < userEeprom->userEepromEnd))
+            {
+                // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
+                const int copyCount = userEeprom->userEepromEnd - addressStart;
+                if (readMem)
+                {
+                    memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), copyCount);
+                }
+                else
+                {
+                    memcpy(userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), &payLoad[0], copyCount);
+                    userEeprom->modified();
+                }
+                addressStart += copyCount;
+                payLoad += copyCount;
+                startNotFound = false;
+                DB_MEM_OPS(serial.println(" -> EEPROM processed: ", copyCount, DEC));
+            }
+        }
+
+        // check if payLoad is in UserRam
+        if (addressStart <= addressEnd)
+        {
+            if (((addressStart >= userRam->userRamStart) && (addressEnd <= userRam->userRamEnd)) ||
+                 ((addressStart == USER_RAM_SYSTEM_STATE_ADDRESS) && (addressEnd == USER_RAM_SYSTEM_STATE_ADDRESS))) // USER_RAM_STATUS_ADDRESS (0x60) is system state specific
+            {
+                // start & end are in UserRAM
+                if (readMem)
+                    cpyFromUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
+                else
+                    cpyToUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
+                DB_MEM_OPS(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC));
+                return true;
+            }
+            else if ((addressStart >= userRam->userRamStart) && (addressStart <= userRam->userRamEnd))
+            {
+                // start is in UserRAM, but payLoad is too long, we need to cut it down to fit
+                const int copyCount = userRam->userRamEnd - addressStart + 1;
+                if (readMem)
+                    cpyFromUserRam(addressStart, &payLoad[0], copyCount);
+                else
+                    cpyToUserRam(addressStart, &payLoad[0], copyCount);
+                addressStart += copyCount;
+                payLoad += copyCount;
+                startNotFound = false;
+                DB_MEM_OPS(serial.println(" -> UserRAM processed: ", copyCount, DEC));
+            }
+        }
+
+        // ok, lets prepare for another try, maybe we find the remaining bytes in another memory
+        lengthPayLoad = addressEnd - addressStart + 1;
+        if (!startNotFound)
+        {
+            DB_MEM_OPS(
+                (readMem) ? serial.print(" -> MemoryRead :", addressStart, HEX, 4) : serial.print(" -> MemoryWrite:", addressStart, HEX, 4);
+                serial.print(" Data:");
+                for(int i=0; i<lengthPayLoad ; i++)
+                {
+                    serial.print(" ", payLoad[i], HEX, 2);
+                }
+                serial.println(" count: ", lengthPayLoad, DEC);
+            );
+        }
+    }
+
+    DB_MEM_OPS(
+       if (lengthPayLoad != 0)
+       {
+           serial.print(" not found start: 0x", addressStart, HEX, 4);
+           serial.print(" end: 0x", addressEnd, HEX, 4);
+           serial.println(" lengthPayLoad:", lengthPayLoad);
+       }
+    );
+
+    return (lengthPayLoad == 0);
+}
+
+unsigned char BcuBase::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char *telegram, uint8_t telLength)
+{
+    uint8_t count;
+    uint16_t address;
+    uint8_t index;
+
+    unsigned char sendAckTpu = 0;
+    *sendResponse = false;
+
+    switch (apciCmd)
+    {
+    case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI,
+                            //!> Estimation of the current bus via the AD-converter channel 1 and the AdcRead-service.
+                            //!  The value read can be converted to a voltage value by using the following formula: Voltage = ADC_Value * 0,15V
+        index = telegram[7] & 0x3f;  // ADC channel
+        count = telegram[8];         // number of samples
+        sendTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+        setApciCommand(sendTelegram, APCI_ADC_RESPONSE_PDU, index);
+        sendTelegram[8] = count;     // read count
+        sendTelegram[9] = 0;         // ADC value high byte
+        sendTelegram[10] = 0;        // ADC value low byte
+        *sendResponse = true;
+        break;
+
+    case APCI_MEMORY_READ_PDU:
+    case APCI_MEMORY_WRITE_PDU:
+        count = telegram[7] & 0x0f; // number of data bytes
+        address = makeWord(telegram[8], telegram[9]); // address of the data block
+
+        if (apciCmd == APCI_MEMORY_WRITE_PDU)
+        {
+            if (processApciMemoryWritePDU(address, &telegram[10], count))
+            {
+                ///\todo dirty workaround, should be done in subclasses BCU1, MASKVERSION701, MASKVERSION705...
+                if ((getMaskVersion() > 0x1F) && (userRam->deviceControl() & DEVCTRL_MEM_AUTO_RESPONSE))
+                {
+                    // autorespond only on successful write
+                    apciCmd = APCI_MEMORY_READ_PDU;
+                }
+            }
+            sendAckTpu = T_ACK_PDU;
+        }
+
+        if (apciCmd == APCI_MEMORY_READ_PDU)
+        {
+            if (!processApciMemoryReadPDU(address, &sendTelegram[10], count))
+            {
+                // address space unreachable, need to respond with count 0
+                count = 0;
+            }
+
+            // send a APCI_MEMORY_RESPONSE_PDU response
+            sendTelegram[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
+            setApciCommand(sendTelegram, APCI_MEMORY_RESPONSE_PDU, count);
+            sendTelegram[8] = HIGH_BYTE(address);
+            sendTelegram[9] = LOW_BYTE(address);
+            *sendResponse = true;
+        }
+        break;
+
+    case APCI_DEVICEDESCRIPTOR_READ_PDU:
+        if (processDeviceDescriptorReadTelegram(telegram[7] & 0x3f))
+        {
+            *sendResponse = true;
+        }
+        else
+        {
+            sendAckTpu = T_NACK_PDU; // KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
+        }
+        break;
+
+    case APCI_BASIC_RESTART_PDU:
+        softSystemReset();
+        break; // we should never land on this break
+
+    case APCI_MASTER_RESET_PDU:
+        if (processApciMasterResetPDU(telegram, senderSeqNo, telegram[8], telegram[9]))
+        {
+            softSystemReset(); // perform a basic restart;
+        }
+        // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
+        *sendResponse = true;
+        break;
+
+    case APCI_AUTHORIZE_REQUEST_PDU:
+        sendTelegram[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
+        setApciCommand(sendTelegram, APCI_AUTHORIZE_RESPONSE_PDU, 0);
+        sendTelegram[8] = 0x00;
+        *sendResponse = true;
+        break;
+
+    default:
+        sendAckTpu = T_NACK_PDU;  // Command not supported, KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
+        break;
+    }
+    return (sendAckTpu);
+}
+
+bool BcuBase::processDeviceDescriptorReadTelegram(int id)
+{
+    if (id != 0)
+    {
+        return (false); // unknown device descriptor
+    }
+
+    sendTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
+    setApciCommand(sendTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
+    sendTelegram[8] = HIGH_BYTE(getMaskVersion());
+    sendTelegram[9] = LOW_BYTE(getMaskVersion());
+    return (true);
+}
+
+bool BcuBase::processApciMasterResetPDU(unsigned char *telegram, const uint8_t senderSeqNo, uint8_t eraseCode, uint8_t channelNumber)
+{
+    if (!checkApciForMagicWord(eraseCode, channelNumber))
+    {
+        ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+        return (false);
+    }
+
+    // create the APCI_MASTER_RESET_RESPONSE_PDU
+    initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD);
+    // sender address will be set by bus.sendTelegram()
+    setDestinationAddress(sendTelegram, connectedTo());
+
+    sendTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+    setApciCommand(sendTelegram, APCI_MASTER_RESET_RESPONSE_PDU, 0);
+    setSequenceNumber(sendTelegram, sequenceNumberSend());
+    sendTelegram[8] = T_RESTART_NO_ERROR;
+    sendTelegram[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
+    sendTelegram[10] = 1; // 1 second
+
+    // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
+    // set magicWord to start after reset in bootloader mode
+#ifndef IAP_EMULATION
+    unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+    *magicWord = BOOTLOADER_MAGIC_WORD;
+
+    // send transport layer 4 ACK
+    sendConControlTelegram(T_ACK_PDU, connectedTo(), senderSeqNo);
+    while (!bus->idle())
+        ;
+    // send APCI_MASTER_RESET_RESPONSE_PDU
+    bus->sendTelegram(sendTelegram, telegramSize(sendTelegram));
+    while (!bus->idle())
+                ;
+    // send disconnect
+    sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
+    while (!bus->idle())
+        ;
+    softSystemReset();
+#endif
+    return (true);
+}
+
+void BcuBase::softSystemReset()
+{
+    if (usrCallback)
+    {
+        usrCallback->Notify(USR_CALLBACK_RESET);
+    }
+
+    userEeprom->writeUserEeprom(); // Flush the EEPROM before resetting
+
+    if (memMapper)
+    {
+        memMapper->doFlash();
+    }
+    NVIC_SystemReset();
+}
+

@@ -4,11 +4,7 @@
 #include <sblib/eib/userEepromMASK0701.h>
 
 /**
- * The user EEPROM.
- *
- * The user EEPROM can be accessed by name, like userEeprom.status and as an array, like
- * userEeprom[addr]. Please note that the start address of the EEPROM is subtracted. That means
- * userEeprom[0x107] is the correct address for userEeprom.version; not userEeprom[0x07].
+ * The BCU BIM112 MaskVersion 0x0705 user EEPROM
  */
 class UserEepromMASK0705 : public UserEepromMASK0701
 {
@@ -20,4 +16,4 @@ protected:
 	UserEepromMASK0705(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromMASK0701(bcu, start, size, flashSize) {};
 };
 
-#endif
+#endif /*sblib_usereeprom_mask0705_h*/

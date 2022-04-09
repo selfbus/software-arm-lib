@@ -20,4 +20,4 @@ struct ComConfigSYSTEMB
 	ComConfig baseConfig;
 };
 
-#endif /*sblib_eib_types_h*/
+#endif /*sblib_eib_types_systemb_h*/
