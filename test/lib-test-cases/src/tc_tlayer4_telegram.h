@@ -58,7 +58,7 @@ static Telegram testCaseTelegrams_03[] =
     // 3. Check T_ACK 10.0.0->10.0.1, loop() once so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
     {TEL_TX,  7, 1, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
     // 4. remove DeviceDescriptorResponse, not in Spec. but we need it to clear sendTelegram
-    {TEL_TX,  10, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}},
+    {TEL_TX,  10, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
     // 5. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 6. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
@@ -193,7 +193,7 @@ static Telegram testCaseTelegrams_20a[] =
     // 2. T_DATA_CONNECTED_REQ from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 8, 0, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}}, // MaskVersionRead()
     // 3. Check T_ACK response for the T_DATA_CONNECTED_REQ
-    // Spec. says check for IDLE, but bcu.loop already sent the DeviceDescriptorResponse, so we are in WAIT
+    // Spec. says check for IDLE, but bcuUnderTest->loop already sent the DeviceDescriptorResponse, so we are in WAIT
     {TEL_TX, 7, 1, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU
     // 4. Check for empty TX-Response
     // {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
@@ -211,7 +211,7 @@ static Telegram testCaseTelegrams_20b[] =
     // 3. Check T_ACK response for the DeviceDescriptorRead, loop bcu once
     {TEL_TX, 7, 1, 0xAFFE, connectedOpenIdle, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0xC2}}, // T_ACK_PDU
     // 4. Check DeviceDescriptorResponse Maskversion 0x0012
-    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
+    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
     // 5. simulate 3500 milliseconds passing
     {TIMER_TICK, 3500, 0, 0, connectedOpenWait, {}},
     // 6. MemoryRead(Count=1, Addr=0x01FE) from sourceAddr=10.15.254 to destAddr=1.0.1
@@ -219,7 +219,7 @@ static Telegram testCaseTelegrams_20b[] =
     // 7. Check T_ACK response for the MemoryRead, loop bcu once
     {TEL_TX, 7, 1, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0xC6}}, // T_ACK_PDU
     // 8. Check second try of DeviceDescriptorResponse Maskversion 0x0012
-    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
+    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
 
 
     // x. Check for empty TX-Response
@@ -261,7 +261,7 @@ static Telegram testCaseTelegrams_22[] =
 
     ///\todo not sure if this is correct, test sequence 22 repeated T_DATA_CONNECTED
     // 4. Read the DeviceDescriptorRead response
-    {TEL_TX, 10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}},
+    {TEL_TX, 10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
 
     // 5. Check T_ACK response for the DeviceDescriptorRead
     {TEL_TX,  7, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU Seq=0

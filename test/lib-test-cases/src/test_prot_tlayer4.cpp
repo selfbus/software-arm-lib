@@ -32,51 +32,49 @@
 
 #define OWN_KNX_ADDRESS (0xA000) // own address 10.0.0
 
-TLayer4 *bcuTL4 = (TLayer4*) &bcu;
-
-static void tc_setup(void)
+static void tc_setup(Telegram* tel, uint16_t telCount)
 {
-    bcuTL4->setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
-    bcuTL4->setOwnAddress(OWN_KNX_ADDRESS);
+    bcuUnderTest->setOwnAddress(OWN_KNX_ADDRESS);
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
-static void tc_setup_1001(void)
+static void tc_setup_1001(Telegram* tel, uint16_t telCount)
 {
-    bcuTL4->state = TLayer4::CLOSED; // to "reset" connection for next test
-    bcuTL4->setOwnAddress(0x1001);
+    bcuUnderTest->state = TLayer4::CLOSED; // to "reset" connection for next test
+    bcuUnderTest->setOwnAddress(0x1001);
 }
 
-static void tc_setup_OpenWait(void)
+static void tc_setup_OpenWait(Telegram* tel, uint16_t telCount)
 {
-    tc_setup();
-    bcuTL4->connectedTime = millis(); // "start connection timeout timer"
-    bcuTL4->state = TLayer4::OPEN_WAIT;
-    bcuTL4->seqNoRcv = 0;
-    bcuTL4->seqNoSend = 0;
+    tc_setup(tel, telCount);
+    bcuUnderTest->connectedTime = millis(); // "start connection timeout timer"
+    bcuUnderTest->state = TLayer4::OPEN_WAIT;
+    bcuUnderTest->seqNoRcv = 0;
+    bcuUnderTest->seqNoSend = 0;
 }
 
-static void tc_setup_OpenWait_A007(void)
+static void tc_setup_OpenWait_A007(Telegram* tel, uint16_t telCount)
 {
-    tc_setup_OpenWait();
-    bcuTL4->connectedAddr = 0xA007;
+    tc_setup_OpenWait(tel, telCount);
+    bcuUnderTest->connectedAddr = 0xA007;
 }
 
-static void tc_setup_OpenWait_A001(void)
+static void tc_setup_OpenWait_A001(Telegram* tel, uint16_t telCount)
 {
-    tc_setup_OpenWait();
-    bcuTL4->connectedAddr = 0xA001;
+    tc_setup_OpenWait(tel, telCount);
+    bcuUnderTest->connectedAddr = 0xA001;
 }
 
 static void gatherProtocolState_01(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->connected  = bcuTL4->directConnection();
-    state->ownAddress = bcuTL4->ownAddress();
+    state->connected  = bcuUnderTest->directConnection();
+    state->ownAddress = bcuUnderTest->ownAddress();
 
-    state->connectedAddrNew = bcuTL4->connectedTo();
-    state->machineState = bcuTL4->state;
-    state->seqNoSend = bcuTL4->seqNoSend;
-    state->seqNoRcv = bcuTL4->seqNoRcv;
-    state->telegramReadyToSend = bcuTL4->telegramReadyToSend;
+    state->connectedAddrNew = bcuUnderTest->connectedTo();
+    state->machineState = bcuUnderTest->state;
+    state->seqNoSend = bcuUnderTest->seqNoSend;
+    state->seqNoRcv = bcuUnderTest->seqNoRcv;
+    state->telegramReadyToSend = bcuUnderTest->telegramReadyToSend;
 
     if(refState)
     {
@@ -91,8 +89,8 @@ static void gatherProtocolState_01(ProtocolTestState * state, ProtocolTestState 
 
 static void gatherProtocolState_02(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = bcuTL4->ownAddress();
-    state->machineState = bcuTL4->state;
+    state->ownAddress = bcuUnderTest->ownAddress();
+    state->machineState = bcuUnderTest->state;
 
     if(refState)
     {
@@ -103,8 +101,8 @@ static void gatherProtocolState_02(ProtocolTestState * state, ProtocolTestState 
 
 static void gatherProtocolState_03(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = bcuTL4->ownAddress();
-    state->machineState = bcuTL4->state;
+    state->ownAddress = bcuUnderTest->ownAddress();
+    state->machineState = bcuUnderTest->state;
 
     if(refState)
     {
@@ -115,9 +113,9 @@ static void gatherProtocolState_03(ProtocolTestState * state, ProtocolTestState 
 
 static void gatherProtocolState_04(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = bcuTL4->ownAddress();
-    state->machineState = bcuTL4->state;
-    state->connectedAddrNew = bcuTL4->connectedTo();
+    state->ownAddress = bcuUnderTest->ownAddress();
+    state->machineState = bcuUnderTest->state;
+    state->connectedAddrNew = bcuUnderTest->connectedTo();
 
     if(refState)
     {
@@ -129,9 +127,9 @@ static void gatherProtocolState_04(ProtocolTestState * state, ProtocolTestState 
 
 static void gatherProtocolState_stillConnected(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->ownAddress = bcuTL4->ownAddress();
-    state->machineState = bcuTL4->state;
-    state->connectedAddrNew = bcuTL4->connectedTo();
+    state->ownAddress = bcuUnderTest->ownAddress();
+    state->machineState = bcuUnderTest->state;
+    state->connectedAddrNew = bcuUnderTest->connectedTo();
 
     if(refState)
     {
@@ -143,7 +141,7 @@ static void gatherProtocolState_stillConnected(ProtocolTestState * state, Protoc
 
 static void gatherProtocolState_machineState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->machineState = bcuTL4->state;
+    state->machineState = bcuUnderTest->state;
 
     if(refState)
     {
@@ -567,46 +565,58 @@ static Test_Case testCaseTelegramSequence_42 =
     testCaseTelegrams_42
 };
 
+
+void runTL4TestsOnBcu(BcuType testBcuType, std::string sectionName)
+{
+    SECTION(sectionName) {
+        // See KNX Spec. 2.1 8/3/4 for all test details
+        executeTest(testBcuType, &testCaseTelegramSequence_01);
+        executeTest(testBcuType, &testCaseTelegramSequence_02);
+        executeTest(testBcuType, &testCaseTelegramSequence_03);
+        executeTest(testBcuType, &testCaseTelegramSequence_04);
+        executeTest(testBcuType, &testCaseTelegramSequence_05);
+        executeTest(testBcuType, &testCaseTelegramSequence_06);
+        executeTest(testBcuType, &testCaseTelegramSequence_07);
+        executeTest(testBcuType, &testCaseTelegramSequence_08);
+        executeTest(testBcuType, &testCaseTelegramSequence_09);
+        executeTest(testBcuType, &testCaseTelegramSequence_10);
+
+        // test cases 11-17 not implemented, they are for client only, (connect/disconnect from the local user)
+        executeTest(testBcuType, &testCaseTelegramSequence_18);
+        executeTest(testBcuType, &testCaseTelegramSequence_19);
+        executeTest(testBcuType, &testCaseTelegramSequence_20a);
+
+        ///\todo implement test case 20b correctly
+        // executeTest(testBcuType, &testCaseTelegramSequence_20b);
+
+        executeTest(testBcuType, &testCaseTelegramSequence_21);
+        executeTest(testBcuType, &testCaseTelegramSequence_22);
+        executeTest(testBcuType, &testCaseTelegramSequence_23);
+        executeTest(testBcuType, &testCaseTelegramSequence_24);
+        executeTest(testBcuType, &testCaseTelegramSequence_25);
+        executeTest(testBcuType, &testCaseTelegramSequence_26);
+        // test cases 27-30 not implemented, they are for client only, (T_DATA_CONNECTED from the local user)
+        executeTest(testBcuType, &testCaseTelegramSequence_31); // from KNX Spec note: "Current System 1 implementations (see volume 6) transmit faulty telegrams. This is not allowed for updated versions or new developed system 1 implementations."
+        executeTest(testBcuType, &testCaseTelegramSequence_32);
+        executeTest(testBcuType, &testCaseTelegramSequence_33);
+        executeTest(testBcuType, &testCaseTelegramSequence_34);
+        executeTest(testBcuType, &testCaseTelegramSequence_35);
+        executeTest(testBcuType, &testCaseTelegramSequence_36);
+        executeTest(testBcuType, &testCaseTelegramSequence_37);
+        executeTest(testBcuType, &testCaseTelegramSequence_38);
+        executeTest(testBcuType, &testCaseTelegramSequence_39);
+        executeTest(testBcuType, &testCaseTelegramSequence_40);
+        executeTest(testBcuType, &testCaseTelegramSequence_41);
+        executeTest(testBcuType, &testCaseTelegramSequence_42);
+    }
+}
+
 TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
 {
-    // See KNX Spec. 2.1 8/3/4 for all test details
-    executeTest(& testCaseTelegramSequence_01);
-    executeTest(& testCaseTelegramSequence_02);
-    executeTest(& testCaseTelegramSequence_03);
-    executeTest(& testCaseTelegramSequence_04);
-    executeTest(& testCaseTelegramSequence_05);
-    executeTest(& testCaseTelegramSequence_06);
-    executeTest(& testCaseTelegramSequence_07);
-    executeTest(& testCaseTelegramSequence_08);
-    executeTest(& testCaseTelegramSequence_09);
-    executeTest(& testCaseTelegramSequence_10);
-
-    // test cases 11-17 not implemented, they are for client only, (connect/disconnect from the local user)
-    executeTest(& testCaseTelegramSequence_18);
-    executeTest(& testCaseTelegramSequence_19);
-    executeTest(& testCaseTelegramSequence_20a);
-
-    ///\todo implement test case 20b correctly
-    // executeTest(& testCaseTelegramSequence_20b);
-
-    executeTest(& testCaseTelegramSequence_21);
-    executeTest(& testCaseTelegramSequence_22);
-    executeTest(& testCaseTelegramSequence_23);
-    executeTest(& testCaseTelegramSequence_24);
-    executeTest(& testCaseTelegramSequence_25);
-    executeTest(& testCaseTelegramSequence_26);
-    // test cases 27-30 not implemented, they are for client only, (T_DATA_CONNECTED from the local user)
-    executeTest(& testCaseTelegramSequence_31); // from KNX Spec note: "Current System 1 implementations (see volume 6) transmit faulty telegrams. This is not allowed for updated versions or new developed system 1 implementations."
-    executeTest(& testCaseTelegramSequence_32);
-    executeTest(& testCaseTelegramSequence_33);
-    executeTest(& testCaseTelegramSequence_34);
-    executeTest(& testCaseTelegramSequence_35);
-    executeTest(& testCaseTelegramSequence_36);
-    executeTest(& testCaseTelegramSequence_37);
-    executeTest(& testCaseTelegramSequence_38);
-    executeTest(& testCaseTelegramSequence_39);
-    executeTest(& testCaseTelegramSequence_40);
-    executeTest(& testCaseTelegramSequence_41);
-    executeTest(& testCaseTelegramSequence_42);
+    runTL4TestsOnBcu(BCU_1, "BCU 1");
+    runTL4TestsOnBcu(BCU_2, "BCU 2");
+    runTL4TestsOnBcu(BCU_0701, "BCU 0x0701 (BIM112)");
+    runTL4TestsOnBcu(BCU_0705, "BCU 0x0705 (BIM112)");
+    runTL4TestsOnBcu(BCU_07B0, "BCU 0x07B0");
 }
 

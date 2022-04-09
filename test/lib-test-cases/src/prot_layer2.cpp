@@ -14,8 +14,6 @@
 #define DEVICE       (0x2060)
 #define VERSION      (0x01)
 
-TLayer4* bcuUnderTest = (TLayer4*) &bcu;
-
 typedef struct
 {
     unsigned char  state;
@@ -31,10 +29,10 @@ static ProtocolTestState protoState[2];
 
 #define VaS(s) ((ProtocolTestState *) (s))
 
-static void tc_setup(void)
+static void tc_setup(Telegram* tel, uint16_t telCount)
 {
-    bcu.setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
-    bcu.setOwnAddress(0xA000); // set own address to 10.00.000
+    bcuUnderTest->setOwnAddress(0xA000); // set own address to 10.00.000
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
 static void connect(void * state, unsigned int param)
@@ -99,10 +97,10 @@ static Telegram testCaseTelegrams_CustomCheckRepeatedFlag[] =
     {TEL_RX,  7, 0, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  8, 0, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
-    // 3. Check T_ACK response for the DeviceDescriptorRead, bcu.loop() once, so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
+    // 3. Check T_ACK response for the DeviceDescriptorRead, bcuUnderTest->loop() once, so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
     {TEL_TX,  7, 1, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU
     // 4. Check DeviceDescriptorResponse Maskversion 0x0012
-    {TEL_TX,  10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
+    {TEL_TX,  10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}}, // DeviceDescriptorResponse(DescType=00, Descriptor=0x0012)
     // 5. Check for empty TX
     {CHECK_TX_BUFFER,  0, 0, 0, NULL, {}},
     // 6. with repeated flag set DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
@@ -129,5 +127,23 @@ static Test_Case testCaseTelegramSequence_CustomCheckRepeatedFlag =
 
 TEST_CASE("Layer 2 protocol", "[protocol][L2]")
 {
-   executeTest(& testCaseTelegramSequence_CustomCheckRepeatedFlag);
+   SECTION("BCU 1") {
+       executeTest(BCU_1, &testCaseTelegramSequence_CustomCheckRepeatedFlag);
+   }
+
+   SECTION("BCU 2") {
+       executeTest(BCU_2, &testCaseTelegramSequence_CustomCheckRepeatedFlag);
+   }
+
+   SECTION("BCU 0x0701 (BIM112)") {
+       executeTest(BCU_0701, &testCaseTelegramSequence_CustomCheckRepeatedFlag);
+   }
+
+   SECTION("BCU 0x0705 (BIM112)") {
+       executeTest(BCU_0705, &testCaseTelegramSequence_CustomCheckRepeatedFlag);
+   }
+
+   SECTION("BCU 0x07B0") {
+       executeTest(BCU_07B0, &testCaseTelegramSequence_CustomCheckRepeatedFlag);
+   }
 }

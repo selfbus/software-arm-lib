@@ -40,37 +40,56 @@ static void _check_time_wrap(void * refState, unsigned int param)
 }
 
 static Telegram testCaseTelegrams[] =
-{ {TIMER_TICK,  6,  0, 0, _start_to_20,       {}}
-, {TIMER_TICK,  18, 0, 0, _check_expired_no,  {}}
-, {TIMER_TICK,   1, 0, 0, _check_expired_no,  {}}
-, {TIMER_TICK,   1, 0, 0, _check_expired_yes, {}}
-// force a wrap-around of the systemTime
-, {TIMER_TICK, (int)((unsigned int) -38), 0, 0, _start_to_20, {}}
-, {TIMER_TICK,  18, 0, 0, _check_expired_no,  {}}
-, {TIMER_TICK,   1, 0, 0, _check_time_wrap,   {}}
-, {TIMER_TICK,   1, 0, 0, _check_expired_yes, {}}
-, {END}
+{
+    {TIMER_TICK,  6,  0, 0, _start_to_20,       {}},
+    {TIMER_TICK,  18, 0, 0, _check_expired_no,  {}},
+    {TIMER_TICK,   1, 0, 0, _check_expired_no,  {}},
+    {TIMER_TICK,   1, 0, 0, _check_expired_yes, {}},
+    // force a wrap-around of the systemTime
+    {TIMER_TICK, (int)((unsigned int) -38), 0, 0, _start_to_20, {}},
+    {TIMER_TICK,  18, 0, 0, _check_expired_no,  {}},
+    {TIMER_TICK,   1, 0, 0, _check_time_wrap,   {}},
+    {TIMER_TICK,   1, 0, 0, _check_expired_yes, {}},
+    {END},
 };
 
-static void tc_setup(void)
+static void tc_setup(Telegram* tel, uint16_t telCount)
 {
     REQUIRE(to.started() == false);
 }
 
 static Test_Case testCase =
 {
-  "Timeout Test"
-, 0x0004, 0x2060, 0x01
-, 0
-, NULL
-, tc_setup
-, NULL
-, NULL
-, NULL
-, testCaseTelegrams
+    "Timeout Test",
+    0x0004, 0x2060, 0x01,
+    0,
+    NULL,
+    tc_setup,
+    NULL,
+    NULL,
+    NULL,
+    testCaseTelegrams,
 };
 
 TEST_CASE("Test of the timeout primitives","[TIMEOUT][SBLIB]")
 {
-    executeTest(& testCase);
+    SECTION("BCU 1") {
+        executeTest(BCU_1, &testCase);
+    }
+
+    SECTION("BCU 2") {
+        executeTest(BCU_2, &testCase);
+    }
+
+    SECTION("BCU 0x0701 (BIM112)") {
+        executeTest(BCU_0701, &testCase);
+    }
+
+    SECTION("BCU 0x0705 (BIM112)") {
+        executeTest(BCU_0705, &testCase);
+    }
+
+    SECTION("BCU 0x07B0") {
+        executeTest(BCU_07B0, &testCase);
+    }
 }

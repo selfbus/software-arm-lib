@@ -32,7 +32,8 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1770185234" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-m32 -c -fmessage-length=0" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.1182788315" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="BCU_TYPE=10"/>
+									<listOptionValue builtIn="false" value="NO_OOP_MACROS"/>
+									<listOptionValue builtIn="false" value="BCU_TYPE=BCU1_TYPE"/>
 									<listOptionValue builtIn="false" value="__LPC11XX__"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.dialect.std.657638467" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.c++11" valueType="enumerated"/>
@@ -65,6 +66,11 @@
 							</tool>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="cdt.managedbuild.config.gnu.exe.debug.706358466.61576633" name="tc_tlayer4_stepfunction.h" rcbsApplicability="disable" resourcePath="src/tc_tlayer4_stepfunction.h" toolsToInvoke=""/>
+					<fileInfo id="cdt.managedbuild.config.gnu.exe.debug.706358466.1721844663" name="tc_tlayer4_telegram.h" rcbsApplicability="disable" resourcePath="src/tc_tlayer4_telegram.h" toolsToInvoke=""/>
+					<sourceEntries>
+						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>
+					</sourceEntries>
 				</configuration>
 			</storageModule>
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
@@ -100,7 +106,8 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.490033461" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-m32 -c -fmessage-length=0" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.849278849" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="BIM112"/>
+									<listOptionValue builtIn="false" value="NO_OOP_MACROS"/>
+									<listOptionValue builtIn="false" value="BCU_TYPE=0x701"/>
 									<listOptionValue builtIn="false" value="__LPC11XX__"/>
 								</option>
 								<option id="gnu.cpp.compiler.option.dialect.std.642256242" name="Language standard" superClass="gnu.cpp.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.cpp.compiler.dialect.c++11" valueType="enumerated"/>
@@ -167,6 +174,7 @@
 								</option>
 								<option id="gnu.cpp.compiler.option.other.other.1532902393" name="Other flags" superClass="gnu.cpp.compiler.option.other.other" useByScannerDiscovery="false" value="-m32 -c -fmessage-length=0" valueType="string"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.1372070031" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
+									<listOptionValue builtIn="false" value="NO_OOP_MACROS"/>
 									<listOptionValue builtIn="false" value="BCU_TYPE=20"/>
 									<listOptionValue builtIn="false" value="__LPC11XX__"/>
 								</option>
@@ -210,6 +218,15 @@
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
+		<configuration configurationName="Debug BIM112 0x0701">
+			<resource resourceType="PROJECT" workspacePath="/lib-test-cases"/>
+		</configuration>
+		<configuration configurationName="Debug BCU2">
+			<resource resourceType="PROJECT" workspacePath="/lib-test-cases"/>
+		</configuration>
+		<configuration configurationName="Debug BCU1">
+			<resource resourceType="PROJECT" workspacePath="/lib-test-cases"/>
+		</configuration>
 		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/lib-tests"/>
 		</configuration>

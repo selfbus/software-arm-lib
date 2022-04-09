@@ -21,11 +21,11 @@ static ProtocolTestState protoState[2];
 
 #define VaS(s) ((ProtocolTestState *) (s))
 
-static void tc_setup(void)
+static void tc_setup(Telegram* tel, uint16_t telCount)
 {
-    bcu.setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
-    bcu.setOwnAddress(0x11C9); // set own address to 1.1.102
-    userRam.status ^= 0x81; // set the programming mode
+    bcuUnderTest->setOwnAddress(0x11C9); // set own address to 1.1.102
+    bcuUnderTest->userRam->status ^= 0x81; // set the programming mode
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
 static void connect(void * state, unsigned int param)
@@ -40,15 +40,15 @@ static void disconnect(void * state, unsigned int param)
 
 static void phy_addr_changed(void * state, unsigned int param)
 {
-    VaS(state)->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    VaS(state)->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 }
 
 static void clearProgMode(void * state, unsigned int param)
 {
-    if (userRam.status & BCU_STATUS_PROG)
+    if (bcuUnderTest->userRam->status & BCU_STATUS_PROG)
     {
-        userRam.status   ^= 0x81; // clear the programming mode
-        VaS(state)->state = userRam.status;
+        bcuUnderTest->userRam->status   ^= 0x81; // clear the programming mode
+        VaS(state)->state = bcuUnderTest->userRam->status;
     }
 }
 
@@ -78,7 +78,7 @@ static Telegram testCaseTelegrams[] =
         // 11.  1.1.12 -> 0.0.1 T_ACK
         {TEL_TX,  7, 1, 0, NULL, {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC2}},
         // 12.
-        {TEL_TX, 10, 0, 0, NULL, {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}},
+        {TEL_TX, 10, 0, 0, NULL, {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
         // 13.
         {TEL_RX,  7, 0, 0, NULL, {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0xC2}},
         // 14.
@@ -93,9 +93,9 @@ static Telegram testCaseTelegrams[] =
 
 static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->state      = userRam.status;
-    state->connected  = bcu.directConnection();
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->state      = bcuUnderTest->userRam->status;
+    state->connected  = bcuUnderTest->directConnection();
+    state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 
     if(refState)
     {
@@ -107,20 +107,38 @@ static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * r
 
 static Test_Case testCase =
 {
-  "Phy Addr Prog"
-, 0x0004, 0x2060, 0x01
-, 0
-, NULL
-, tc_setup
-, (StateFunction *) gatherProtocolState
-, (TestCaseState *) &protoState[0]
-, (TestCaseState *) &protoState[1]
-, testCaseTelegrams
+    "Phy Addr Prog",
+    0x0004, 0x2060, 0x01,
+    0,
+    NULL,
+    tc_setup,
+    (StateFunction *) gatherProtocolState,
+    (TestCaseState *) &protoState[0],
+    (TestCaseState *) &protoState[1],
+    testCaseTelegrams,
 };
 
 TEST_CASE("Programming of the physical address", "[protocol][address]")
 {
-    executeTest(& testCase);
+    SECTION("BCU 1") {
+        executeTest(BCU_1, &testCase);
+    }
+
+    SECTION("BCU 2") {
+        executeTest(BCU_2, &testCase);
+    }
+
+    SECTION("BCU 0x0701 (BIM112)") {
+        executeTest(BCU_0701, &testCase);
+    }
+
+    SECTION("BCU 0x0705 (BIM112)") {
+        executeTest(BCU_0705, &testCase);
+    }
+
+    SECTION("BCU 0x07B0") {
+        executeTest(BCU_07B0, &testCase);
+    }
 }
 
 

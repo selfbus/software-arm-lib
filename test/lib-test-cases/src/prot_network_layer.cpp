@@ -34,115 +34,114 @@ static ProtocolTestState protoState[2];
 
 static void tc_eepromSetup(void)
 {
-    userEeprom.commsTabPtr = 0x9A;
-    userEeprom.addrTabSize = 0x02;
-    userEeprom.assocTabPtr = 0x1B;
+    bcuUnderTest->userEeprom->commsTabPtr() = 0x9A;
+    bcuUnderTest->userEeprom->addrTabSize() = 0x02;
+    bcuUnderTest->userEeprom->assocTabPtr() = 0x1B;
 
+    bcuUnderTest->userEeprom->userEepromData[0x119 - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x11A - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x11B - EEPROM_START] = 0x14; // <<--- assocTabPtr
+    bcuUnderTest->userEeprom->userEepromData[0x11C - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x11D - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x11E - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x11F - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x120 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x121 - EEPROM_START] = 0x02;
+    bcuUnderTest->userEeprom->userEepromData[0x122 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x123 - EEPROM_START] = 0x03;
+    bcuUnderTest->userEeprom->userEepromData[0x124 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x125 - EEPROM_START] = 0x04;
+    bcuUnderTest->userEeprom->userEepromData[0x126 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x127 - EEPROM_START] = 0x05;
+    bcuUnderTest->userEeprom->userEepromData[0x128 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x129 - EEPROM_START] = 0x06;
+    bcuUnderTest->userEeprom->userEepromData[0x12A - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x12B - EEPROM_START] = 0x07;
+    bcuUnderTest->userEeprom->userEepromData[0x12C - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x12D - EEPROM_START] = 0x08;
+    bcuUnderTest->userEeprom->userEepromData[0x12E - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x12F - EEPROM_START] = 0x09;
+    bcuUnderTest->userEeprom->userEepromData[0x130 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x131 - EEPROM_START] = 0x0A;
+    bcuUnderTest->userEeprom->userEepromData[0x132 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x133 - EEPROM_START] = 0x0B;
+    bcuUnderTest->userEeprom->userEepromData[0x134 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x135 - EEPROM_START] = 0x0C;
+    bcuUnderTest->userEeprom->userEepromData[0x136 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x137 - EEPROM_START] = 0x0D;
+    bcuUnderTest->userEeprom->userEepromData[0x138 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x139 - EEPROM_START] = 0x0E;
+    bcuUnderTest->userEeprom->userEepromData[0x13A - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x13B - EEPROM_START] = 0x0F;
+    bcuUnderTest->userEeprom->userEepromData[0x13C - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x13D - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x13E - EEPROM_START] = 0x01; // <<---
+    bcuUnderTest->userEeprom->userEepromData[0x13F - EEPROM_START] = 0x11;
+    bcuUnderTest->userEeprom->userEepromData[0x140 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x141 - EEPROM_START] = 0x12;
+    bcuUnderTest->userEeprom->userEepromData[0x142 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x143 - EEPROM_START] = 0x13;
 
-    userEeprom[0x119] = 0x10;
-    userEeprom[0x11A] = 0x01;
-    userEeprom[0x11B] = 0x14; // <<--- assocTabPtr
-    userEeprom[0x11C] = 0xFE;
-    userEeprom[0x11D] = 0x00;
-    userEeprom[0x11E] = 0xFE;
-    userEeprom[0x11F] = 0x01;
-    userEeprom[0x120] = 0xFE;
-    userEeprom[0x121] = 0x02;
-    userEeprom[0x122] = 0xFE;
-    userEeprom[0x123] = 0x03;
-    userEeprom[0x124] = 0xFE;
-    userEeprom[0x125] = 0x04;
-    userEeprom[0x126] = 0xFE;
-    userEeprom[0x127] = 0x05;
-    userEeprom[0x128] = 0xFE;
-    userEeprom[0x129] = 0x06;
-    userEeprom[0x12A] = 0xFE;
-    userEeprom[0x12B] = 0x07;
-    userEeprom[0x12C] = 0xFE;
-    userEeprom[0x12D] = 0x08;
-    userEeprom[0x12E] = 0xFE;
-    userEeprom[0x12F] = 0x09;
-    userEeprom[0x130] = 0xFE;
-    userEeprom[0x131] = 0x0A;
-    userEeprom[0x132] = 0xFE;
-    userEeprom[0x133] = 0x0B;
-    userEeprom[0x134] = 0xFE;
-    userEeprom[0x135] = 0x0C;
-    userEeprom[0x136] = 0xFE;
-    userEeprom[0x137] = 0x0D;
-    userEeprom[0x138] = 0xFE;
-    userEeprom[0x139] = 0x0E;
-    userEeprom[0x13A] = 0xFE;
-    userEeprom[0x13B] = 0x0F;
-    userEeprom[0x13C] = 0xFE;
-    userEeprom[0x13D] = 0x10;
-    userEeprom[0x13E] = 0x01; // <<---
-    userEeprom[0x13F] = 0x11;
-    userEeprom[0x140] = 0xFE;
-    userEeprom[0x141] = 0x12;
-    userEeprom[0x142] = 0xFE;
-    userEeprom[0x143] = 0x13;
-
-    userEeprom[0x19A] = 0x14; // <<--- commsTabPtr
-    userEeprom[0x19B] = 0xD6;
-    userEeprom[0x19C] = 0x54;
-    userEeprom[0x19D] = 0x93;
-    userEeprom[0x19E] = 0x00;
-    userEeprom[0x19F] = 0x55;
-    userEeprom[0x1A0] = 0x93;
-    userEeprom[0x1A1] = 0x00;
-    userEeprom[0x1A2] = 0x56;
-    userEeprom[0x1A3] = 0x93;
-    userEeprom[0x1A4] = 0x00;
-    userEeprom[0x1A5] = 0x57;
-    userEeprom[0x1A6] = 0x93;
-    userEeprom[0x1A7] = 0x00;
-    userEeprom[0x1A8] = 0x58;
-    userEeprom[0x1A9] = 0x93;
-    userEeprom[0x1AA] = 0x00;
-    userEeprom[0x1AB] = 0x59;
-    userEeprom[0x1AC] = 0x93;
-    userEeprom[0x1AD] = 0x00;
-    userEeprom[0x1AE] = 0x5A;
-    userEeprom[0x1AF] = 0x93;
-    userEeprom[0x1B0] = 0x00;
-    userEeprom[0x1B1] = 0x5B;
-    userEeprom[0x1B2] = 0x93;
-    userEeprom[0x1B3] = 0x00;
-    userEeprom[0x1B4] = 0x5C;
-    userEeprom[0x1B5] = 0x93;
-    userEeprom[0x1B6] = 0x01;
-    userEeprom[0x1B7] = 0x5D;
-    userEeprom[0x1B8] = 0x93;
-    userEeprom[0x1B9] = 0x01;
-    userEeprom[0x1BA] = 0x5E;
-    userEeprom[0x1BB] = 0x93;
-    userEeprom[0x1BC] = 0x01;
-    userEeprom[0x1BD] = 0x5F;
-    userEeprom[0x1BE] = 0x93;
-    userEeprom[0x1BF] = 0x01;
-    userEeprom[0x1C0] = 0x60;
-    userEeprom[0x1C1] = 0xCB;
-    userEeprom[0x1C2] = 0x00;
-    userEeprom[0x1C3] = 0x61;
-    userEeprom[0x1C4] = 0xCB;
-    userEeprom[0x1C5] = 0x00;
-    userEeprom[0x1C6] = 0x62;
-    userEeprom[0x1C7] = 0xCB;
-    userEeprom[0x1C8] = 0x00;
-    userEeprom[0x1C9] = 0x63;
-    userEeprom[0x1CA] = 0xCB;
-    userEeprom[0x1CB] = 0x00;
-    userEeprom[0x1CC] = 0x64;
-    userEeprom[0x1CD] = 0xCB;
-    userEeprom[0x1CE] = 0x00;
-    userEeprom[0x1CF] = 0x65; // <--
-    userEeprom[0x1D0] = 0x9F;
-    userEeprom[0x1D1] = 0x00;
-    userEeprom[0x1D2] = 0x66;
-    userEeprom[0x1D3] = 0xCB;
-    userEeprom[0x1D4] = 0x00;
-    userEeprom[0x1D5] = 0x67;
+    bcuUnderTest->userEeprom->userEepromData[0x19A - EEPROM_START] = 0x14; // <<--- commsTabPtr
+    bcuUnderTest->userEeprom->userEepromData[0x19B - EEPROM_START] = 0xD6;
+    bcuUnderTest->userEeprom->userEepromData[0x19C - EEPROM_START] = 0x54;
+    bcuUnderTest->userEeprom->userEepromData[0x19D - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x19E - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x19F - EEPROM_START] = 0x55;
+    bcuUnderTest->userEeprom->userEepromData[0x1A0 - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1A1 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1A2 - EEPROM_START] = 0x56;
+    bcuUnderTest->userEeprom->userEepromData[0x1A3 - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1A4 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1A5 - EEPROM_START] = 0x57;
+    bcuUnderTest->userEeprom->userEepromData[0x1A6 - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1A7 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1A8 - EEPROM_START] = 0x58;
+    bcuUnderTest->userEeprom->userEepromData[0x1A9 - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1AA - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1AB - EEPROM_START] = 0x59;
+    bcuUnderTest->userEeprom->userEepromData[0x1AC - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1AD - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1AE - EEPROM_START] = 0x5A;
+    bcuUnderTest->userEeprom->userEepromData[0x1AF - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1B0 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1B1 - EEPROM_START] = 0x5B;
+    bcuUnderTest->userEeprom->userEepromData[0x1B2 - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1B3 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1B4 - EEPROM_START] = 0x5C;
+    bcuUnderTest->userEeprom->userEepromData[0x1B5 - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1B6 - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x1B7 - EEPROM_START] = 0x5D;
+    bcuUnderTest->userEeprom->userEepromData[0x1B8 - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1B9 - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x1BA - EEPROM_START] = 0x5E;
+    bcuUnderTest->userEeprom->userEepromData[0x1BB - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1BC - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x1BD - EEPROM_START] = 0x5F;
+    bcuUnderTest->userEeprom->userEepromData[0x1BE - EEPROM_START] = 0x93;
+    bcuUnderTest->userEeprom->userEepromData[0x1BF - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x1C0 - EEPROM_START] = 0x60;
+    bcuUnderTest->userEeprom->userEepromData[0x1C1 - EEPROM_START] = 0xCB;
+    bcuUnderTest->userEeprom->userEepromData[0x1C2 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1C3 - EEPROM_START] = 0x61;
+    bcuUnderTest->userEeprom->userEepromData[0x1C4 - EEPROM_START] = 0xCB;
+    bcuUnderTest->userEeprom->userEepromData[0x1C5 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1C6 - EEPROM_START] = 0x62;
+    bcuUnderTest->userEeprom->userEepromData[0x1C7 - EEPROM_START] = 0xCB;
+    bcuUnderTest->userEeprom->userEepromData[0x1C8 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1C9 - EEPROM_START] = 0x63;
+    bcuUnderTest->userEeprom->userEepromData[0x1CA - EEPROM_START] = 0xCB;
+    bcuUnderTest->userEeprom->userEepromData[0x1CB - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1CC - EEPROM_START] = 0x64;
+    bcuUnderTest->userEeprom->userEepromData[0x1CD - EEPROM_START] = 0xCB;
+    bcuUnderTest->userEeprom->userEepromData[0x1CE - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1CF - EEPROM_START] = 0x65; // <--
+    bcuUnderTest->userEeprom->userEepromData[0x1D0 - EEPROM_START] = 0x9F;
+    bcuUnderTest->userEeprom->userEepromData[0x1D1 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1D2 - EEPROM_START] = 0x66;
+    bcuUnderTest->userEeprom->userEepromData[0x1D3 - EEPROM_START] = 0xCB;
+    bcuUnderTest->userEeprom->userEepromData[0x1D4 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x1D5 - EEPROM_START] = 0x67;
 }
 
 static Telegram testCaseTelegrams_GroupOriented[] =
@@ -244,16 +243,16 @@ static Telegram testCaseTelegrams_ConnectionLess[] =
     {END}
 };
 
-static void tc_setup(void)
+static void tc_setup(Telegram* tel, uint16_t telCount)
 {
-    bcu.setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
-    bcu.setOwnAddress(0x1001); // set own address to 1.0.1
+    bcuUnderTest->setOwnAddress(0x1001); // set own address to 1.0.1
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
 static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->state      = userRam.status;
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->state      = bcuUnderTest->userRam->status;
+    state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 
     if(refState)
     {
@@ -302,13 +301,40 @@ static Test_Case testCaseConnectionLess =
   testCaseTelegrams_ConnectionLess
 };
 
-
+///\todo TEST doesn't work at all
+/*
 TEST_CASE("Network Layer", "[protocol][L3]")
 {
-    ///\todo works with -t [L3] but not with -t [protocol]
-    // executeTest(& testCaseGroupOriented);
-    // executeTest(& testCaseConnectionOriented);
-    // executeTest(& testCaseConnectionLess);
-}
 
+    SECTION("BCU 1") {
+        executeTest(BCU_1, &testCaseGroupOriented);
+        executeTest(BCU_1, &testCaseConnectionOriented);
+        executeTest(BCU_1, &testCaseConnectionLess);
+    }
+
+    SECTION("BCU 2") {
+        executeTest(BCU_2, &testCaseGroupOriented);
+        executeTest(BCU_2, &testCaseConnectionOriented);
+        executeTest(BCU_2, &testCaseConnectionLess);
+    }
+
+    SECTION("BCU 0x0701 (BIM112)") {
+        executeTest(BCU_0701, &testCaseGroupOriented);
+        executeTest(BCU_0701, &testCaseConnectionOriented);
+        executeTest(BCU_0701, &testCaseConnectionLess);
+    }
+
+    SECTION("BCU 0x0705 (BIM112)") {
+        executeTest(BCU_0705, &testCaseGroupOriented);
+        executeTest(BCU_0705, &testCaseConnectionOriented);
+        executeTest(BCU_0705, &testCaseConnectionLess);
+    }
+
+    SECTION("BCU 0x07B0 (BIM112)") {
+        // executeTest(BCU_07B0, &testCaseGroupOriented);
+        // executeTest(BCU_07B0, &testCaseConnectionOriented);
+        // executeTest(BCU_07B0, &testCaseConnectionLess);
+    }
+}
+*/
 /** @}*/

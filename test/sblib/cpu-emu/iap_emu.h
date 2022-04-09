@@ -22,10 +22,11 @@ enum IAP_Function
     I_ERASE = 1,
     I_BLANK_CHECK = 2,
     I_RAM2FLASH = 3,
-    I_COMPARE = 4
+    I_COMPARE = 4,
+    I_READ_UID = 5
 };
 
-extern int iap_calls[5];
+extern int iap_calls[6];
 void IAP_Init_Flash(unsigned char value);
 
 

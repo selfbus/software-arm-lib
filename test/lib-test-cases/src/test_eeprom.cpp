@@ -12,19 +12,24 @@
 
 #include <string.h>
 #include <stdio.h>
-
-#include <sblib/eib/user_memory.h>
-#include <sblib/eib/bcu.h>
 #include <sblib/internal/iap.h>
 #include <sblib/platform.h>
-#include <sblib/eib/sblib_default_objects.h>
 #include <iap_emu.h>
 #include <math.h>
+
+#include <sblib/eibBCU1.h>
+#include <sblib/eibBCU2.h>
+#include <sblib/eibMASK0701.h>
+#include <sblib/eibMASK0705.h>
+#include <sblib/eibSYSTEMB.h>
+
 
 static const unsigned char testPattern[] = {0xCA, 0xFF, 0xEE, 0xAF, 0xFE, 0xDE, 0xAD};
 extern unsigned char FLASH[];
 #define EEPROM_PAGE_SIZE FLASH_PAGE_SIZE
 
+///\todo implement propper tests for flash/eeprom/ram
+#if 0
 static int getCallsToIapProgram(unsigned int eepromSize)
 {
     if (eepromSize < 1024)
@@ -37,17 +42,25 @@ static int getCallsToIapProgram(unsigned int eepromSize)
     }
 }
 
-static void checkFlash(byte* address)
+static void checkFlash(BcuBase* bcuToTest, byte* address, uint16_t userEepromStart)
 {
     for (int i = 0; i < EEPROM_PAGE_SIZE; ++i)
     {
         char c1[4];
         char c2[4];
 
-        sprintf(c1, "%02X", userEeprom[USER_EEPROM_START + i]);
+        sprintf(c1, "%02X", bcuToTest->userEeprom[userEepromStart + i]);
         sprintf(c2, "%02X", address[i]);
         INFO("Byte mismatch at byte position " << i << ": 0x" << c1 << " != 0x" << c2);
-        REQUIRE(userEeprom[USER_EEPROM_START + i] == address[i]);
+        REQUIRE(bcuToTest->userEeprom[userEepromStart + i] == address[i]);
+    }
+}
+
+static void basicRAMTests(BcuBase* bcuToTest, std::string sectionName, uint16_t ramStart, uint16_t ramEnd, uint16_t ramSize)
+{
+    SECTION(sectionName) {
+        REQUIRE(sizeof(bcuToTest->userRam->userRamData) == USER_RAM_SIZE + USER_RAM_SHADOW_SIZE); // user ram matches the defined size
+        CHECK(sizeof(userRamData) >= sizeof(UserRam)); // userRam fields allocated in userRamData
     }
 }
 
@@ -70,11 +83,11 @@ TEST_CASE("Test of the basic EEPROM functions","[EEPROM][SBLIB]")
     }
 
     int iap_save [5] ;
-    SECTION("Test bcu.begin()")  // checks that the eeprom stays "untouched" on bcu.begin()
+    SECTION("Test bcuUnderTest->begin()")  // checks that the eeprom stays "untouched" on bcuUnderTest->begin()
     {
         IAP_Init_Flash(0xFF);
         memcpy(iap_save, iap_calls, sizeof (iap_calls));
-        bcu.begin(0, 0, 0);
+        bcuUnderTest->begin(0, 0, 0);
         REQUIRE(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + 0));
         REQUIRE(iap_calls [I_ERASE]       == (iap_save [I_ERASE]       + 0));
         REQUIRE(iap_calls [I_BLANK_CHECK] == (iap_save [I_BLANK_CHECK] + 0));
@@ -82,13 +95,13 @@ TEST_CASE("Test of the basic EEPROM functions","[EEPROM][SBLIB]")
         REQUIRE(iap_calls [I_COMPARE]     == (iap_save [I_COMPARE]     + 0));
     }
 
-    SECTION("Test bcu.end()")
+    SECTION("Test bcuUnderTest->end()")
     {
         memcpy(iap_save, iap_calls, sizeof (iap_calls));
         userEeprom.modified();
         int callsToIapProgram = getCallsToIapProgram(USER_EEPROM_SIZE);
 
-        bcu.end();
+        bcuUnderTest->end();
         REQUIRE(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + callsToIapProgram));
         REQUIRE(iap_calls [I_ERASE]       == (iap_save [I_ERASE]       + 0));
         REQUIRE(iap_calls [I_BLANK_CHECK] == (iap_save [I_BLANK_CHECK] + 0));
@@ -118,14 +131,14 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
     {
         IAP_Init_Flash(0xFF);
         iapFlashSize();
-        bcu.begin(0, 0, 0);
+        bcuUnderTest->begin(0, 0, 0);
         memcpy(iap_save, iap_calls, sizeof (iap_calls));
         for(unsigned int i = 0; i < sizeof(testPattern); i++)
         {
             userEeprom[USER_EEPROM_START + i] = testPattern[i];
         }
         userEeprom.modified();
-        bcu.end();
+        bcuUnderTest->end();
         REQUIRE(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + callsToIapProgram));
         REQUIRE(iap_calls [I_ERASE]       == (iap_save [I_ERASE]       + 0));
         REQUIRE(iap_calls [I_BLANK_CHECK] == (iap_save [I_BLANK_CHECK] + 0));
@@ -136,14 +149,14 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
 
     SECTION("Test when first page is valid")
     {
-        bcu.begin(0, 0, 0);
+        bcuUnderTest->begin(0, 0, 0);
         memcpy(iap_save, iap_calls, sizeof (iap_calls));
         for(unsigned int i = 0; i < sizeof(testPattern); i++)
         {
             userEeprom[USER_EEPROM_START + i] = testPattern[sizeof(testPattern) - i - 1];
         }
         userEeprom.modified();
-        bcu.end();
+        bcuUnderTest->end();
         CHECK(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + callsToIapProgram + additionalCalls));
         CHECK(iap_calls [I_ERASE]       == (iap_save [I_ERASE]       + additionalCalls));
         CHECK(iap_calls [I_BLANK_CHECK] == (iap_save [I_BLANK_CHECK] + additionalCalls));
@@ -158,9 +171,9 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
         for(i = 0; i < 14; i++)
         {
             memcpy(iap_save, iap_calls, sizeof (iap_calls));
-            bcu.begin(0, 0, 0);
+            bcuUnderTest->begin(0, 0, 0);
             userEeprom.modified();
-            bcu.end();
+            bcuUnderTest->end();
             CHECK(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + callsToIapProgram + additionalCalls));
             CHECK(iap_calls [I_ERASE]       == (iap_save [I_ERASE]       + additionalCalls));
             CHECK(iap_calls [I_BLANK_CHECK] == (iap_save [I_BLANK_CHECK] + additionalCalls));
@@ -168,9 +181,9 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
             CHECK(iap_calls [I_COMPARE]     == (iap_save [I_COMPARE]     + callsToIapProgram));
         }
         memcpy(iap_save, iap_calls, sizeof (iap_calls));
-        bcu.begin(0, 0, 0);
+        bcuUnderTest->begin(0, 0, 0);
         userEeprom.modified();
-        bcu.end();
+        bcuUnderTest->end();
         CHECK(iap_calls [I_PREPARE]     == (iap_save [I_PREPARE]     + 2 * additionalCalls + 2));
         CHECK(iap_calls [I_ERASE]       == (iap_save [I_ERASE]       + 1));
         CHECK(iap_calls [I_BLANK_CHECK] == (iap_save [I_BLANK_CHECK] + 1));
@@ -178,3 +191,5 @@ TEST_CASE("Enhanced EEPROM tests","[EEPROM][SBLIB][ERASE]")
         CHECK(iap_calls [I_COMPARE]     == (iap_save [I_COMPARE]     + 2 * additionalCalls + 1));
     }
 }
+
+#endif

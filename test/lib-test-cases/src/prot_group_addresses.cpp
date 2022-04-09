@@ -23,56 +23,57 @@ static ProtocolTestState protoState[2];
 
 static void tc_eepromSetup(void)
 {
-    userEeprom.assocTabPtr   = 0x19;
-    userEeprom[0x119] = 0x14;
-    userEeprom[0x11A] = 0xFE;
-    userEeprom[0x11B] = 0x00;
-    userEeprom[0x11C] = 0xFE;
-    userEeprom[0x11D] = 0x01;
-    userEeprom[0x11E] = 0xFE;
-    userEeprom[0x11F] = 0x02;
-    userEeprom[0x120] = 0xFE;
-    userEeprom[0x121] = 0x03;
-    userEeprom[0x122] = 0xFE;
-    userEeprom[0x123] = 0x04;
-    userEeprom[0x124] = 0xFE;
-    userEeprom[0x125] = 0x05;
-    userEeprom[0x126] = 0xFE;
-    userEeprom[0x127] = 0x06;
-    userEeprom[0x128] = 0xFE;
-    userEeprom[0x129] = 0x07;
-    userEeprom[0x12A] = 0xFE;
-    userEeprom[0x12B] = 0x08;
-    userEeprom[0x12C] = 0xFE;
-    userEeprom[0x12D] = 0x09;
-    userEeprom[0x12E] = 0xFE;
-    userEeprom[0x12F] = 0x0A;
-    userEeprom[0x130] = 0xFE;
-    userEeprom[0x131] = 0x0B;
-    userEeprom[0x132] = 0xFE;
-    userEeprom[0x133] = 0x0C;
-    userEeprom[0x134] = 0xFE;
-    userEeprom[0x135] = 0x0D;
-    userEeprom[0x136] = 0xFE;
-    userEeprom[0x137] = 0x0E;
-    userEeprom[0x138] = 0xFE;
-    userEeprom[0x139] = 0x0F;
-    userEeprom[0x13A] = 0xFE;
-    userEeprom[0x13B] = 0x10;
-    userEeprom[0x13C] = 0xFE;
-    userEeprom[0x13D] = 0x11;
-    userEeprom[0x13E] = 0xFE;
-    userEeprom[0x13F] = 0x12;
-    userEeprom[0x140] = 0xFE;
-    userEeprom[0x141] = 0x13;
-    userEeprom[0x142] = 0x01;
-    userEeprom[0x143] = 0x00;
+    bcuUnderTest->userEeprom->assocTabPtr() = 0x19;
+    //bcuUnderTest->userEeprom[0x119] = 0x14;
+    bcuUnderTest->userEeprom->userEepromData[0x119 - EEPROM_START] = 0x14;
+    bcuUnderTest->userEeprom->userEepromData[0x11A - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x11B - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x11C - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x11D - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x11E - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x11F - EEPROM_START] = 0x02;
+    bcuUnderTest->userEeprom->userEepromData[0x120 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x121 - EEPROM_START] = 0x03;
+    bcuUnderTest->userEeprom->userEepromData[0x122 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x123 - EEPROM_START] = 0x04;
+    bcuUnderTest->userEeprom->userEepromData[0x124 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x125 - EEPROM_START] = 0x05;
+    bcuUnderTest->userEeprom->userEepromData[0x126 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x127 - EEPROM_START] = 0x06;
+    bcuUnderTest->userEeprom->userEepromData[0x128 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x129 - EEPROM_START] = 0x07;
+    bcuUnderTest->userEeprom->userEepromData[0x12A - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x12B - EEPROM_START] = 0x08;
+    bcuUnderTest->userEeprom->userEepromData[0x12C - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x12D - EEPROM_START] = 0x09;
+    bcuUnderTest->userEeprom->userEepromData[0x12E - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x12F - EEPROM_START] = 0x0A;
+    bcuUnderTest->userEeprom->userEepromData[0x130 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x131 - EEPROM_START] = 0x0B;
+    bcuUnderTest->userEeprom->userEepromData[0x132 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x133 - EEPROM_START] = 0x0C;
+    bcuUnderTest->userEeprom->userEepromData[0x134 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x135 - EEPROM_START] = 0x0D;
+    bcuUnderTest->userEeprom->userEepromData[0x136 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x137 - EEPROM_START] = 0x0E;
+    bcuUnderTest->userEeprom->userEepromData[0x138 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x139 - EEPROM_START] = 0x0F;
+    bcuUnderTest->userEeprom->userEepromData[0x13A - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x13B - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x13C - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x13D - EEPROM_START] = 0x11;
+    bcuUnderTest->userEeprom->userEepromData[0x13E - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x13F - EEPROM_START] = 0x12;
+    bcuUnderTest->userEeprom->userEepromData[0x140 - EEPROM_START] = 0xFE;
+    bcuUnderTest->userEeprom->userEepromData[0x141 - EEPROM_START] = 0x13;
+    bcuUnderTest->userEeprom->userEepromData[0x142 - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x143 - EEPROM_START] = 0x00;
 }
 
-static void tc_setup(void)
+static void tc_setup(Telegram* tel, uint16_t telCount)
 {
-    bcu.setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
-    bcu.setOwnAddress(0x1112); // set own address to 1.1.18
+    bcuUnderTest->setOwnAddress(0x1112); // set own address to 1.1.18
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
 static void connect(void * state, unsigned int param)
@@ -89,7 +90,7 @@ static Telegram testCaseTelegrams[] =
 { {TEL_RX,  7, 0, 0, connect             , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0x80}} //   1 T_CONNECT
 , {TEL_RX,  8, 0, 2, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x61, 0x43, 0x00}} //   2 APCI_DEVICEDESCRIPTOR_READ
 , {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC2}} //   3 T_ACK
-, {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}} // 4 APCI_DEVICEDESCRIPTOR_RESPONSE
+, {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}} // 4 APCI_DEVICEDESCRIPTOR_RESPONSE
 , {TEL_RX,  7, 0, 0, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0xC2}} //   5 T_ACK
 , {TEL_RX, 10, 0, 2, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x63, 0x46, 0x01, 0x01, 0x04}} //   6 APCI_MEMORY_READ_PDU
 , {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC6}} //   7 T_ACK
@@ -103,7 +104,7 @@ static Telegram testCaseTelegrams[] =
 , {TEL_RX,  7, 0, 0, connect             , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0x80}} //  15 T_CONNECT
 , {TEL_RX,  8, 0, 2, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x61, 0x43, 0x00}} //  16 APCI_DEVICEDESCRIPTOR_READ
 , {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC2}} //  17 T_ACK
-, {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}} //  18
+, {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}} //  18
 , {TEL_RX,  7, 0, 0, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0xC2}} //  19 T_ACK
 , {TEL_RX, 11, 0, 1, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x64, 0x46, 0x81, 0x01, 0x0D, 0x00}} //  20
 , {TEL_TX,  7, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC6}} //  21 T_ACK
@@ -328,9 +329,9 @@ static Telegram testCaseTelegrams[] =
 
 static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->state      = userRam.status;
-    state->connected  = bcu.directConnection();
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->state      = bcuUnderTest->userRam->status;
+    state->connected  = bcuUnderTest->directConnection();
+    state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 
     if(refState)
     {
@@ -355,7 +356,27 @@ static Test_Case testCase =
 
 TEST_CASE("Programming of the group addresses", "[protocol][group]")
 {
-    executeTest(&testCase);
+    SECTION("BCU 1") {
+        executeTest(BCU_1, &testCase);
+    }
+
+    SECTION("BCU 2") {
+        executeTest(BCU_2, &testCase);
+    }
+///\todo implement TEST for 0x07xx masks
+/*
+    SECTION("BCU 0x0701 (BIM112)") {
+        executeTest(BCU_0701, &testCase);
+    }
+
+    SECTION("BCU 0x0705 (BIM112)") {
+        executeTest(BCU_0705, &testCase);
+    }
+
+    SECTION("BCU 0x07B0") {
+        executeTest(BCU_07B0, &testCase);
+    }
+*/
 }
 
 

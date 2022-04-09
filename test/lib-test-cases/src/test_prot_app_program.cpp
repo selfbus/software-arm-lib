@@ -23,67 +23,63 @@ static ProtocolTestState protoState[2];
 
 static void tc_eepromSetup(void)
 {
-    userEeprom.optionReg     = 0xFF;
-    userEeprom.checkLimit    = 0xFF;
-    userEeprom.routeCnt      = 0x60;
-    userEeprom.maxRetransmit = 0x63;
-    userEeprom.confDesc      = 0xEF;
-    userEeprom.assocTabPtr   = 0x41;
-    userEeprom.commsTabPtr   = 0x9A;
-    userEeprom.usrInitPtr    = 0x00;
-    userEeprom.usrProgPtr    = 0x00; // 0x0114
-#if BCU_TYPE == BCU1_TYPE
-    userEeprom.usrSavePtr    = 0x00; // 0x0115
-#else
-    userEeprom.appType       = 0x00; // 0x0115
-#endif
-    userEeprom[0x119] = 0x10;
-    userEeprom[0x11A] = 0x00;
-    userEeprom[0x11B] = 0x10;
-    userEeprom[0x11C] = 0x01;
-    userEeprom[0x11D] = 0x10;
-    userEeprom[0x11E] = 0x02;
-    userEeprom[0x11F] = 0x10;
-    userEeprom[0x120] = 0x03;
-    userEeprom[0x121] = 0x10;
-    userEeprom[0x122] = 0x04;
-    userEeprom[0x123] = 0x10;
-    userEeprom[0x124] = 0x05;
-    userEeprom[0x125] = 0x10;
-    userEeprom[0x126] = 0x06;
-    userEeprom[0x127] = 0x00;
-    userEeprom[0x128] = 0x00;
-    userEeprom[0x129] = 0x00;
-    userEeprom[0x12A] = 0x00;
-    userEeprom[0x12B] = 0x00;
-    userEeprom[0x12C] = 0x00;
-    userEeprom[0x12D] = 0x00;
-    userEeprom[0x12E] = 0x00;
-    userEeprom[0x12F] = 0x00;
-    userEeprom[0x130] = 0x00;
-    userEeprom[0x131] = 0x00;
-    userEeprom[0x132] = 0x00;
-    userEeprom[0x133] = 0x00;
-    userEeprom[0x134] = 0x00;
-    userEeprom[0x135] = 0x00;
-    userEeprom[0x136] = 0x00;
-    userEeprom[0x137] = 0x00;
-    userEeprom[0x138] = 0x00;
-    userEeprom[0x139] = 0x00;
-    userEeprom[0x13A] = 0x00;
-    userEeprom[0x13B] = 0x00;
-    userEeprom[0x13C] = 0x00;
-    userEeprom[0x13D] = 0x00;
-    userEeprom[0x13E] = 0x00;
-    userEeprom[0x13F] = 0x00;
-    userEeprom[0x140] = 0x00;
-    userEeprom[0x141] = 0x07;
+    bcuUnderTest->userEeprom->optionReg()     = 0xFF;
+    bcuUnderTest->userEeprom->checkLimit()    = 0xFF;
+    bcuUnderTest->userEeprom->routeCnt()      = 0x60;
+    bcuUnderTest->userEeprom->maxRetransmit() = 0x63;
+    bcuUnderTest->userEeprom->confDesc()      = 0xEF;
+    bcuUnderTest->userEeprom->assocTabPtr()   = 0x41;
+    bcuUnderTest->userEeprom->commsTabPtr()   = 0x9A;
+    bcuUnderTest->userEeprom->usrInitPtr()    = 0x00;
+    bcuUnderTest->userEeprom->usrProgPtr()    = 0x00; // 0x0114
+    bcuUnderTest->userEeprom->userEepromData[0x115 - EEPROM_START] = 0x00; // BCU1 -> usrSavePtr(), BCU2 -> appType()
+    bcuUnderTest->userEeprom->userEepromData[0x119 - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x11A - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x11B - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x11C - EEPROM_START] = 0x01;
+    bcuUnderTest->userEeprom->userEepromData[0x11D - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x11E - EEPROM_START] = 0x02;
+    bcuUnderTest->userEeprom->userEepromData[0x11F - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x120 - EEPROM_START] = 0x03;
+    bcuUnderTest->userEeprom->userEepromData[0x121 - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x122 - EEPROM_START] = 0x04;
+    bcuUnderTest->userEeprom->userEepromData[0x123 - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x124 - EEPROM_START] = 0x05;
+    bcuUnderTest->userEeprom->userEepromData[0x125 - EEPROM_START] = 0x10;
+    bcuUnderTest->userEeprom->userEepromData[0x126 - EEPROM_START] = 0x06;
+    bcuUnderTest->userEeprom->userEepromData[0x127 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x128 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x129 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x12A - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x12B - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x12C - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x12D - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x12E - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x12F - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x130 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x131 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x132 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x133 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x134 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x135 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x136 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x137 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x138 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x139 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x13A - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x13B - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x13C - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x13D - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x13E - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x13F - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x140 - EEPROM_START] = 0x00;
+    bcuUnderTest->userEeprom->userEepromData[0x141 - EEPROM_START] = 0x07;
 }
 
-static void tc_setup(void)
+static void tc_setup(Telegram* tel, uint16_t telCount)
 {
-    bcu.setTL4State(TLayer4::CLOSED); // to "reset" connection for next test
-    bcu.setOwnAddress(0x1112); // set own address to 1.1.18
+    bcuUnderTest->setOwnAddress(0x1112); // set own address to 1.1.18
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
 static void connect(void * state, unsigned int param)
@@ -102,7 +98,7 @@ static Telegram testCaseTelegrams[] =
     {TEL_RX,  7, 0, 0, connect             , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0x80}}, // 1. T_CONNECT 0.0.1->1.1.18
     {TEL_RX,  8, 0, 2, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x61, 0x43, 0x00}}, // 2. DeviceDescriptorRead (MaskVersion)
     {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC2}}, // 3. T_ACK 1.1.18->0.0.1
-    {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // 4.DeviceDescriptorResponse 1.1.18->0.0.1
+    {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}}, // 4.DeviceDescriptorResponse 1.1.18->0.0.1
     {TEL_RX,  7, 0, 0, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0xC2}}, // 5. T_ACK 0.0.1->1.1.18
     {TEL_RX, 10, 2, 0, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x63, 0x46, 0x01, 0x01, 0x04}}, // 6. APCI_MEMORY_READ_PDU count=1 address=0x104
     {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC6}}, // 7. T_ACK 1.1.18->0.0.1
@@ -116,7 +112,7 @@ static Telegram testCaseTelegrams[] =
     {TEL_RX,  7, 0, 0, connect             , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0x80}}, // 15
     {TEL_RX,  8, 0, 2, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x61, 0x43, 0x00}}, // 16. DeviceDescriptorRead (MaskVersion)
     {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC2}}, // 17.
-    {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, MASK_VERSION_HIGH, MASK_VERSION_LOW}}, // 18. DeviceDescriptorResponse 1.1.18->0.0.1 Mask=0x0012
+    {TEL_TX, 10, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}}, // 18. DeviceDescriptorResponse 1.1.18->0.0.1 Mask=0x0012
     {TEL_RX,  7, 0, 0, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0xC2}}, // 19.
     {TEL_RX, 11, 0, 1, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x64, 0x46, 0x81, 0x01, 0x0D, 0x00}}, // 20. APCI_MEMORY_WRITE_PDU count=1 address=0x10D
     {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xC6}}, // 21.
@@ -138,7 +134,7 @@ static Telegram testCaseTelegrams[] =
     {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xDA}},// 37.
     {TEL_TX, 19, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x6C, 0x52, 0x49, 0x01, 0x04, 0x04, 0x20, 0x60, 0x01, 0xFF, 0x00, 0x00, 0x00, 0x00}}, // 38.
     {TEL_RX,  7, 0, 0, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x60, 0xD2}}, // 39
-    {TEL_RX, 13, 0, 1, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x66, 0x5E, 0x83, 0x01, 0x08, 0xFE, 0x11, 0x40}}, // 40
+    {TEL_RX, 13, 0, 1, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x66, 0x5E, 0x83, 0x01, 0x08, 0xFE, 0x11, 0x40}}, // 40. APCI_MEMORY_WRITE_PDU count=3 address=0x108 ?
     {TEL_TX,  7, 0, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xDE}},// 41
     {TEL_RX, 10, 0, 2, NULL                , {0xB0, 0x00, 0x01, 0x11, 0x12, 0x63, 0x62, 0x03, 0x01, 0x08}}, // 42
     {TEL_TX,  7, 1, 0, NULL                , {0xB0, 0x11, 0x12, 0x00, 0x01, 0x60, 0xE2}}, // 43
@@ -283,9 +279,9 @@ static Telegram testCaseTelegrams[] =
 
 static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->state      = userRam.status;
-    state->connected  = bcu.directConnection();
-    state->ownAddress = userEeprom.addrTab[0] << 8 | userEeprom.addrTab[1];
+    state->state      = bcuUnderTest->userRam->status;
+    state->connected  = bcuUnderTest->directConnection();
+    state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 
     if(refState)
     {
@@ -297,20 +293,40 @@ static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * r
 
 static Test_Case testCase =
 {
-  "App Prog"
-, 0x0004, 0x2060, 0x01
-, 0
-, tc_eepromSetup
-, tc_setup
-, (StateFunction *) gatherProtocolState
-, (TestCaseState *) &protoState[0]
-, (TestCaseState *) &protoState[1]
-, testCaseTelegrams
+    "App Prog",
+    0x0004, 0x2060, 0x01,
+    0,
+    tc_eepromSetup,
+    tc_setup,
+    (StateFunction *) gatherProtocolState,
+    (TestCaseState *) &protoState[0],
+    (TestCaseState *) &protoState[1],
+    testCaseTelegrams,
 };
 
 TEST_CASE("Programming of the application", "[protocol][application]")
 {
-    executeTest(& testCase);
+    SECTION("BCU 1") {
+        executeTest(BCU_1, &testCase);
+    }
+
+    SECTION("BCU 2") {
+        executeTest(BCU_2, &testCase);
+    }
+///\todo implement TEST for 0x07xx masks
+/*
+    SECTION("BCU 0x0701 (BIM112)") {
+        executeTest(BCU_0701, &testCase);
+    }
+
+    SECTION("BCU 0x0705 (BIM112)") {
+        executeTest(BCU_0705, &testCase);
+    }
+
+    SECTION("BCU 0x07B0") {
+        executeTest(BCU_07B0, &testCase);
+    }
+*/
 }
 
 
