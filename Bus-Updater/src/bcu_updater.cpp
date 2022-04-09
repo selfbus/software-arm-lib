@@ -23,12 +23,13 @@
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
+#include <sblib/digital_pin.h>
 #include "bcu_updater.h"
 #include "dump.h"
 
 
 // The EIB bus access object
-Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
+// Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
 
 #ifdef DEBUG
 #   define DEFAULT_COUNT_TO_FAIL (30)
@@ -49,6 +50,15 @@ Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
         return (true);
     }
 #endif
+
+BcuUpdate::BcuUpdate() : BcuUpdate(new UserRamUpdater())
+{
+}
+
+BcuUpdate::BcuUpdate(UserRamUpdater* userRamUpdater) :
+    BcuBase(userRamUpdater, nullptr, nullptr, nullptr)
+{
+}
 
 unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
         bool * sendResponse, unsigned char * telegram, uint8_t telLength)
@@ -87,6 +97,63 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderA
         default:
             return (T_NACK_PDU);
     }
+}
+/*
+void BcuUpdate::loop()
+{
+    if (!enabled)
+        return;
+    //TLayer4::loop();
+    BcuBase::loop();
+    ///\todo MERGE
+*/
+/* partly already done in BcuBase::loop
+    if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE))
+    {
+        processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
+    }
+
+    if (progPin)
+    {
+        // Detect the falling edge of pressing the prog button
+        pinMode(progPin, INPUT|PULL_UP);
+        int oldValue = progButtonDebouncer.value();
+        if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
+        {
+            userRam->status ^= 0x81;  // toggle programming mode and checksum bit
+        }
+        pinMode(progPin, OUTPUT);
+        digitalWrite(progPin, (userRam->status & BCU_STATUS_PROG) ^ progPinInv);
+    }
+    */
+//}
+
+bool BcuUpdate::applicationRunning() const
+{
+    return true;
+}
+
+uint16_t BcuUpdate::getMaskVersion() const
+{
+    return 0x12;
+}
+
+const char* BcuUpdate::getBcuType() const
+{
+    return "BCU1";
+}
+
+void BcuUpdate::begin_BCU(int manufacturer, int deviceType, int version)
+{
+    userRam->status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
+    userRam->runState = 1;
+    BcuBase::begin_BCU(manufacturer, deviceType, version);
+}
+
+void BcuUpdate::begin()
+{
+    begin_BCU(0, 0, 0);
+    enableGroupTelSend(false); // no group telegrams
 }
 
 bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)

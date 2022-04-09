@@ -45,8 +45,10 @@
 #define DEVICETYPE 0x2060 //!< Device Type -> 2138.10
 #define APPVERSION 0x01   //!< Application Version -> 0.1
 
-static BcuUpdate _bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
-BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
+BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
+//MASK0701 bcu = MASK0701();
+
+// BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
 
 Timeout runModeTimeout;              //!< running mode LED blinking timeout
 bool blinky = false;
@@ -66,7 +68,7 @@ static void lib_setup()
  *        Sets @ref PIN_RUN as output and in debug build also @ref PIN_INFO as output
  *
  */
-void setup()
+BcuBase* setup()
 {
 // setup LED's for debug
 #if defined(DEBUG) && (!(defined(TS_ARM)))
@@ -91,8 +93,6 @@ void setup()
 #endif
 
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
-    extern volatile byte userEepromModified;
-    userEepromModified = 0;
     runModeTimeout.start(1);
 
 #ifdef DEBUG
@@ -123,7 +123,8 @@ void setup()
 #endif
 
     // finally start the bcu
-    bcu.begin(0, 0, 0); // we are nothing, because we don't answer to property reads
+    bcu.begin();
+    return &bcu;
 }
 
 
@@ -206,7 +207,8 @@ static void run_updater(bool programmingMode)
 
     if (programmingMode)
     {
-        ((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
+        //((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
+        bcu.setProgrammingMode(programmingMode);
     }
 
     while (1)

@@ -62,6 +62,8 @@ static unsigned int ramLocation = 0;                //!< current location of the
 static unsigned int bytesReceived = 0;              //!< number of bytes received by UPD_SEND_DATA since last reset()
 static unsigned int bytesFlashed = 0;               //!< number of bytes flashed by UPD_PROGRAM since last reset()
 
+extern BcuUpdate bcu;
+
 /**
  * @brief Converts a unsigned int into a 4 byte long provided buffer
  * @details A direct cast does not work due to possible miss aligned addresses.

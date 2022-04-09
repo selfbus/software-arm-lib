@@ -27,21 +27,30 @@
 #include <sblib/timeout.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/eib/bcu_base.h>
+#include "userRamUpdater.h"
 #include "update.h"
-
-// Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
-// link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
-#define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
 
 class BcuUpdate: public BcuBase
 {
 public:
+    BcuUpdate();
+    BcuUpdate(UserRamUpdater* userRamUpdater);
+    ~BcuUpdate() = default;
     using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
+    void begin();
+    void begin(int manufacturer, int deviceType, int version) override {};
+    ///\todo implement optimized version in a new subclass of Tlayer4
+    // void loop() override;
 
 protected:
     unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char * telegram, uint8_t telLength) override;
     bool processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength) override;
     bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) override;
+
+    bool applicationRunning() const override;
+    uint16_t getMaskVersion() const override;
+    const char* getBcuType() const override;
+    void begin_BCU(int manufacturer, int deviceType, int version) override;
 };
 
 #ifndef INSIDE_BCU_CPP
