@@ -19,12 +19,11 @@
  */
 
 #include <sblib/internal/iap.h>
-#include <sblib/eib.h>
 #include <sblib/timeout.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/digital_pin.h>
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 #include "config.h"
 #include "app_heliovent.h"
 
@@ -33,6 +32,8 @@
 #else
 #   include "mdtled.h"
 #endif
+
+SYSTEMB bcu;
 
 void objectUpdated(int objno)
 {
@@ -68,8 +69,8 @@ void objectUpdated(int objno)
 
     if ((objno >= 0) && (objno == switchObject))
     {
-        unsigned int status = objectRead(switchObject);
-        objectWrite(rmObject, status);
+        unsigned int status = bcu.comObjects->objectRead(switchObject);
+        bcu.comObjects->objectWrite(rmObject, status);
         digitalWrite(PIN_INFO, status);
     }
 }
@@ -89,12 +90,12 @@ void initApplication(void)
     digitalWrite(PIN_INFO, 0);
 
 #ifdef HELIOS
-    objectWrite(COMOBJ_2_LUEFTUNGSGERAET_HAUPTSCHALTER_STATUS, (unsigned int) 0);
+    bcu.comObjects->objectWrite(COMOBJ_2_LUEFTUNGSGERAET_HAUPTSCHALTER_STATUS, (unsigned int) 0);
 #else
-    objectWrite(COMOBJ_4_KANAL_A_STATUS_EIN_AUS, (unsigned int) 0);
-    objectWrite(COMOBJ_20_KANAL_B_STATUS_EIN_AUS, (unsigned int) 1);
-    objectWrite(COMOBJ_36_KANAL_C_STATUS_EIN_AUS, (unsigned int) 1);
-    objectWrite(COMOBJ_52_KANAL_D_STATUS_EIN_AUS, (unsigned int) 0);
+    bcu.comObjects->objectWrite(COMOBJ_4_KANAL_A_STATUS_EIN_AUS, (unsigned int) 0);
+    bcu.comObjects->objectWrite(COMOBJ_20_KANAL_B_STATUS_EIN_AUS, (unsigned int) 1);
+    bcu.comObjects->objectWrite(COMOBJ_36_KANAL_C_STATUS_EIN_AUS, (unsigned int) 1);
+    bcu.comObjects->objectWrite(COMOBJ_52_KANAL_D_STATUS_EIN_AUS, (unsigned int) 0);
 #endif
 }
 

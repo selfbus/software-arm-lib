@@ -20,11 +20,8 @@
  *  published by the Free Software Foundation.
  */
 
-#include <sblib/eib.h>
-#include <sblib/eib/user_memory.h>
-#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/io_pin_names.h>
-#include <string.h>
+#include <cstring>
 #include "config.h"
 #include "app_heliovent.h"
 
@@ -59,7 +56,7 @@ MemMapper memMapper(0xe900, 0x500);
  *
  * @note  You must implement this function in your code.
  */
-void setup(void)
+BcuBase* setup()
 {
 #if defined(DUMP_PROPERTIES) || defined(DUMP_MEM_OPS)
     serial.setRxPin(PIO2_7);
@@ -74,10 +71,10 @@ void setup(void)
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION);
 #endif
 
-    memcpy(userEeprom.order, &hardwareVersion, sizeof(hardwareVersion));
+    memcpy(bcu.userEeprom->order(), &hardwareVersion, sizeof(hardwareVersion));
 
 #if !defined(HELIOS) && !defined(VALLOX)
-    _bcu.setMemMapper(&memMapper);
+    bcu.setMemMapper(&memMapper);
     // if (memMapper.addRange(0x4A00, 0x400) != MEM_MAPPER_SUCCESS)
     // if (memMapper.addRange(0x4B00, 0x100) != MEM_MAPPER_SUCCESS) // just for testing
     if (memMapper.addRange(0x4B00, 0x300) != MEM_MAPPER_SUCCESS)
@@ -138,6 +135,7 @@ void setup(void)
     fatalError();
     */
     initApplication();
+    return (&bcu);
 }
 
 /**
@@ -148,7 +146,7 @@ void loop(void)
 {
     int objno;
     // Handle updated communication objects
-    while ((objno = nextUpdatedObject()) >= 0)
+    while ((objno = bcu.comObjects->nextUpdatedObject()) >= 0)
     {
         objectUpdated(objno);
     }
@@ -161,7 +159,7 @@ void loop(void)
     checkPeriodic();
 
     // Sleep up to 1 millisecond if there is nothing to do
-    if (bus.idle())
+    if (bcu.bus->idle())
         waitForInterrupt();
 }
 
@@ -171,7 +169,7 @@ void loop(void)
 void loop_noapp(void)
 {
     // Sleep up to 1 millisecond if there is nothing to do
-    if (bus.idle())
+    if (bcu.bus->idle())
         waitForInterrupt();
 }
 

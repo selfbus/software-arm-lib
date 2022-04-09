@@ -18,10 +18,13 @@
  *  published by the Free Software Foundation.
  */
 
-#ifndef APP_RAINCENTER_H_
-#define APP_RAINCENTER_H_
+#ifndef APP_HELIOVENT_H_
+#define APP_HELIOVENT_H_
 
 #include <sblib/types.h>
+#include <sblib/eibSYSTEMB.h>
+
+extern SYSTEMB bcu;
 
 /**
  * A communication object was updated from somebody via the EIB bus.
@@ -50,5 +53,5 @@ void initApplication(void);
 
 
 
-#endif /* APP_RAINCENTER_H_ */
+#endif /* APP_HELIOVENT_H_ */
 /** @}*/
