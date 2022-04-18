@@ -10,6 +10,8 @@
 #ifndef sblib_types_h
 #define sblib_types_h
 
+#include <stdint.h>
+
 /**
  * An unsigned 1 byte value.
  */

@@ -109,7 +109,7 @@ unsigned short reverseByteOrder(unsigned short val);
 
 inline uint16_t makeWord(byte high, byte low)
 {
-    return (high << 8) | low;
+    return ((uint16_t)((high << 8) | low));
 }
 
 inline unsigned int reverseByteOrder(unsigned int val)

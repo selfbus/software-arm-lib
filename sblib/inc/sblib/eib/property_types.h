@@ -26,7 +26,7 @@
  * <b>changes in PropertyDataType must also be represented in
  * property_types.cpp const byte propertySizes[]</b>
  */
-enum PropertyDataType
+enum PropertyDataType : uint8_t
 {
     PDT_CONTROL             = 0,    //!< length: 1 read, 10 write
     PDT_CHAR                = 1,    //!< length: 1
@@ -160,7 +160,7 @@ struct PropertyDef
  *
  * <b>changes in PropertyID must also be represented in *propertyID_str[] (properties_dump.cpp)</b>
  */
-enum PropertyID
+enum PropertyID : uint8_t
 {
     /** Generic object property: Interface Object Type, PDT_UNSIGNED_INT */
     PID_OBJECT_TYPE = 1,
@@ -467,7 +467,7 @@ enum PropertyID
 /**
  * Property control constants.
  */
-enum PropertyControl
+enum PropertyControl : uint8_t
 {
     PC_WRITABLE = 0x80,       //!< The property can be modified
     PC_ARRAY = 0x40,          //!< The property is an array (max. 255 bytes)
