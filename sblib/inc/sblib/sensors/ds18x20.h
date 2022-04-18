@@ -10,6 +10,7 @@
 
 #ifndef ds18x20_h
 #define ds18x20_h
+#include <sblib/types.h>
 #include <sblib/sensors/units.h>
 
 #ifndef onewire_h
