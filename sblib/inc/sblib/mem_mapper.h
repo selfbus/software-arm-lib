@@ -13,6 +13,7 @@
 #ifndef SBLIB_MEM_MAPPER_H_
 #define SBLIB_MEM_MAPPER_H_
 
+#include <sblib/types.h>
 #include <sblib/platform.h>
 
 #define MEM_MAPPER_SUCCESS         0
