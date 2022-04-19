@@ -26,10 +26,6 @@
 // The interrupt handler for the EIB bus access object
 // BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, (*timerBusObj))
 
-#if defined(INCLUDE_SERIAL)
-#   include <sblib/serial.h>
-#endif
-
 extern volatile unsigned int systemTime;
 
 BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables) :
@@ -64,7 +60,7 @@ void BcuDefault::_begin()
     IF_DEBUG(serial.println("DEBUG_BUS_BITLEVEL dump enabled."));
 #endif
 
-#if defined(DUMP_TELEGRAMS) || defined (DUMP_PROPERTIES)  || defined (DUMP_MEM_OPS)
+#if defined(INCLUDE_SERIAL)
     IF_DEBUG(serial.print("BCU Name: "););
     IF_DEBUG(serial.print(getBcuType()); serial.print(" "););
     IF_DEBUG(serial.println(" MaskVersion: 0x", getMaskVersion(), HEX, 4));
@@ -94,9 +90,6 @@ void BcuDefault::_begin()
         IF_DEBUG(serial.print("size: 0x", userEeprom->userEepromSize, HEX, 4); serial.print(" "););
         IF_DEBUG(serial.println("flashSize: 0x", userEeprom->userEepromFlashSize, HEX, 4););
     }
-#   ifdef USER_EEPROM_FLASH_SIZE
-
-#   endif
     IF_DEBUG(serial.println());
 #endif
     sendGrpTelEnabled = true;
@@ -104,9 +97,6 @@ void BcuDefault::_begin()
 
     // set limit to max of 28 telegrams per second (wait 35ms) -  to avoid risk of thermal destruction of the sending circuit
     groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
-    bus->begin();
-    progButtonDebouncer.init(1);
-    enabled = true;
 }
 
 void BcuDefault::setOwnAddress(uint16_t addr)
@@ -637,8 +627,8 @@ bool BcuDefault::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t group
 {
     DB_COM_OBJ(
         serial.println();
-        serial.print("BCU grp addr: 0x", (unsigned int)destAddr, HEX, 4);
-        serial.println(" error state:  0x",(unsigned int)bus.receivedTelegramState(), HEX, 4);
+        serial.print("BCU grp addr: 0x", (unsigned int)groupAddress, HEX, 4);
+        serial.println(" error state:  0x",(unsigned int)bus->receivedTelegramState(), HEX, 4);
     );
 
     comObjects->processGroupTelegram(groupAddress, apciCmd & APCI_GROUP_MASK, telegram);

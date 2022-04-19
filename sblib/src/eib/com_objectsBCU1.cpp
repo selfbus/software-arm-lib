@@ -45,7 +45,7 @@ byte* ComObjectsBCU1::objectValuePtr(int objno)
 void ComObjectsBCU1::processGroupTelegram(int addr, int apci, byte* tel, int trg_objno)
 {
 /**
- * Spec: Resources 4.11.2 Group Object Association Table - Realisation Type 1
+ * Spec: Resources 4.11.2 Group Object Association Table - Realization Type 1
  */
     const byte* assocTab = bcu->addrTables->assocTable();
     const int endAssoc = 1 + (*assocTab) * 2;

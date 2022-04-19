@@ -26,6 +26,9 @@
 #include <sblib/eib/knx_npdu.h>
 #include <sblib/libconfig.h>
 
+#if defined(INCLUDE_SERIAL)
+#   include <sblib/serial.h>
+#endif
 
 ///\todo implement better debugging
 #if defined(DUMP_TL4)
@@ -240,7 +243,10 @@ TLayer4::TLayer4(uint8_t maxTelegramLength):
 void TLayer4::_begin()
 {
 #if defined(INCLUDE_SERIAL)
-    IF_DEBUG(serial.begin(SERIAL_SPEED));
+    IF_DEBUG(
+            serial.begin(SERIAL_SPEED);
+            serial.println("TLayer4::_begin debugging active");
+            );
 #endif
     state = TLayer4::CLOSED;
     // set sending buffer to free
