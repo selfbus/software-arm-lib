@@ -38,6 +38,7 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         progPinInv(true),
         userRam(userRam),
         addrTables(addrTables),
+        comObjects(nullptr),
         progButtonDebouncer()
 {
     timerBusObj = bus;

@@ -11,7 +11,6 @@
 #define sblib_BcuDefault_h
 
 #include <sblib/types.h>
-#include <sblib/eib/com_objects.h>
 #include <sblib/utils.h>
 #include <sblib/mem_mapper.h>
 #include <sblib/usr_callback.h>
@@ -158,7 +157,6 @@ public:
     void softSystemReset() override;
 
     UserEeprom* userEeprom;
-    ComObjects* comObjects;
 
     byte* userMemoryPtr(unsigned int addr);
 

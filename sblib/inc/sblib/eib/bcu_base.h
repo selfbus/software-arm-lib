@@ -13,6 +13,7 @@
 #include <sblib/utils.h>
 #include <sblib/eib/userRam.h>
 #include <sblib/eib/addr_tables.h>
+#include <sblib/eib/com_objects.h>
 #include <sblib/timer.h>
 #include <sblib/debounce.h>
 #include <sblib/eib/knx_tlayer4.h>
@@ -82,6 +83,7 @@ public:
 
     UserRam* userRam;
     AddrTables* addrTables;
+    ComObjects* comObjects;
 
     virtual int maxTelegramSize();
 

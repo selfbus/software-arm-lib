@@ -35,23 +35,15 @@ extern volatile unsigned int systemTime;
 BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables) :
         BcuBase(userRam, addrTables),
         userEeprom(userEeprom),
-		comObjects(comObjects),
         memMapper(nullptr),
 		usrCallback(nullptr),
 		sendGrpTelEnabled(false),
 		groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
 		groupTelSent(millis())
 {
-	/*
-    timerBusObj = bus;
-    setFatalErrorPin(progPin);
-    setKNX_TX_Pin(bus->txPin);
-    */
+    this->comObjects = comObjects;
 }
-/*
-BcuDefault::BcuDefault() : BcuDefault(nullptr, nullptr, nullptr, nullptr)
-{}
-*/
+
 void BcuDefault::_begin()
 {
     BcuBase::_begin();
