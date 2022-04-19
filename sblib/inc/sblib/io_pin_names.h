@@ -9,6 +9,9 @@
 #ifndef SBLIB_IO_PIN_NAMES_H_
 #define SBLIB_IO_PIN_NAMES_H_
 
+#include <sblib/ioports.h>
+
+
 #if defined (__LPC11XX_IO16__)
 	#define PIN_PROG 	PIO2_11
 	#define PIN_INFO 	PIO1_0
