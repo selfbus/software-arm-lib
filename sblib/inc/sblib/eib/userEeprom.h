@@ -128,7 +128,7 @@ inline byte& UserEeprom::operator[](unsigned int idx)
 inline unsigned char UserEeprom::getUInt8(unsigned int idx)
 {
 	idx -= userEepromStart;
-	if (idx >= sizeof(userEepromData))
+	if (idx > (userEepromSize - 1))
 	{
 	    return 0;
 	}
@@ -138,6 +138,10 @@ inline unsigned char UserEeprom::getUInt8(unsigned int idx)
 inline unsigned short UserEeprom::getUInt16(unsigned int idx)
 {
 	idx -= userEepromStart;
+	if ((idx + 1) > (userEepromSize - 1))
+    {
+        return 0;
+    }
     return makeWord(userEepromData[idx], userEepromData[idx+1]);
 }
 
