@@ -25,7 +25,7 @@
 
 void BCU2::begin_BCU(int manufacturer, int deviceType, int version)
 {
-    BcuBase::begin_BCU(manufacturer, deviceType,version);
+    BcuDefault::begin_BCU(manufacturer, deviceType,version);
 }
 
 void BCU2::setOwnAddress (uint16_t addr)
@@ -43,7 +43,7 @@ void BCU2::setOwnAddress (uint16_t addr)
         }
         userEeprom->modified();
     }
-    BcuBase::setOwnAddress(addr);
+    BcuDefault::setOwnAddress(addr);
 }
 
 inline void BCU2::begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress)
@@ -112,7 +112,7 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
     userEeprom->order()[userEeprom->orderSize() - 1] = LOW_BYTE(SBLIB_VERSION);
 
     begin_BCU(manufacturer, deviceType, version);
-    BcuBase::begin();
+    BcuDefault::_begin();
 }
 
 void BCU2::begin(int manufacturer, int deviceType, int version)
@@ -135,7 +135,7 @@ BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(this), new ComObjectsB
 {}
 
 BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties) :
-		BcuBase(userRam, userEeprom, comObjects, addrTables),
+		BcuDefault(userRam, userEeprom, comObjects, addrTables),
 		userRam(userRam),
 		userEeprom(userEeprom),
 //		comObjects(comObjects),
@@ -192,7 +192,7 @@ unsigned char BCU2::processApci(ApciCommand apciCmd, const uint16_t senderAddr, 
         break;
 
     default:
-        sendAckTpu = BcuBase::processApci(apciCmd, senderAddr, senderSeqNo, sendResponse, telegram, telLength);
+        sendAckTpu = BcuDefault::processApci(apciCmd, senderAddr, senderSeqNo, sendResponse, telegram, telLength);
         break;
     }
     return (sendAckTpu);

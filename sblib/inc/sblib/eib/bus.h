@@ -353,6 +353,7 @@ private:
 
 protected:
     friend class TLayer4;
+    friend class BcuDefault;
     friend class BcuBase;
 
     Timer& timer;                //!< The timer

@@ -113,7 +113,7 @@ protected:
     /**
      * Special initialization for the transport layer.
      */
-    virtual void begin();
+    virtual void _begin();
 
     /**
      * Process a group address (T_Data_Group) telegram.

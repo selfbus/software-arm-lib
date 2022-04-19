@@ -9,7 +9,7 @@
  */
 
 #include <sblib/eib/property_types.h>
-#include <sblib/eib/bcu_base.h>
+#include <sblib/eib/bcu_default.h>
 
 /**
  * PropertyDataType sizes in bytes
@@ -43,7 +43,7 @@ byte* PropertyDef::valuePointer(BcuBase* bcu) const
         case PPT_USER_RAM:
             return bcu->userRam->userRamData + offs;
         case PPT_USER_EEPROM:
-            return bcu->userEeprom->userEepromData + offs;
+            return ((BcuDefault*)bcu)->userEeprom->userEepromData + offs;
         default:
             fatalError(); // invalid property pointer type encountered
             break;

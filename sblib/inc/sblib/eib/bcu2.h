@@ -1,5 +1,5 @@
 /*
- *  bcu.h - BCU specific stuff.
+ *  bcu2.h - BCU 2 specific stuff.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -26,7 +26,7 @@
  * In order to use the EIB bus, you need to call bcu.begin() once in your application's
  * setup() function.
  */
-class BCU2 : public BcuBase
+class BCU2 : public BcuDefault
 {
 public:
 	BCU2();

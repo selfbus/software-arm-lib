@@ -29,7 +29,7 @@ void BCU1::setOwnAddress (uint16_t addr)
         userEeprom->addrTab()[1] = LOW_BYTE(addr);
         userEeprom->modified();
     }
-    BcuBase::setOwnAddress(addr);
+    BcuDefault::setOwnAddress(addr);
 }
 
 inline void BCU1::begin(int manufacturer, int deviceType, int version)
@@ -53,7 +53,7 @@ inline void BCU1::begin(int manufacturer, int deviceType, int version)
     userEeprom->writeUserEepromTime = 0;
 
 	begin_BCU(manufacturer, deviceType, version);
-    BcuBase::begin();
+	BcuDefault::_begin();
 }
 
 inline bool BCU1::applicationRunning() const
@@ -69,7 +69,7 @@ BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(this), new ComObjectsB
 {}
 
 BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables) :
-		BcuBase(userRam, userEeprom, comObjects, addrTables),
+		BcuDefault(userRam, userEeprom, comObjects, addrTables),
 		userRam(userRam),
 		userEeprom(userEeprom),
 		comObjects(comObjects),
@@ -80,5 +80,5 @@ BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* com
 // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
 void BCU1::begin_BCU(int manufacturer, int deviceType, int version)
 {
-    BcuBase::begin_BCU(manufacturer, deviceType, version);
+    BcuDefault::begin_BCU(manufacturer, deviceType, version);
 }

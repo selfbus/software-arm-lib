@@ -13,7 +13,7 @@
 #ifndef sblib_bcu1_h
 #define sblib_bcu1_h
 
-#include <sblib/eib/bcu_base.h>
+#include <sblib/eib/bcu_default.h>
 #include <sblib/eib/userEepromBCU1.h>
 #include <sblib/eib/userRamBCU1.h>
 #include <sblib/eib/com_objectsBCU1.h>
@@ -25,7 +25,7 @@
  * In order to use the EIB bus, you need to call bcu.begin() once in your application's
  * setup() function.
  */
-class BCU1 : public BcuBase
+class BCU1 : public BcuDefault
 {
 public:
 	BCU1();

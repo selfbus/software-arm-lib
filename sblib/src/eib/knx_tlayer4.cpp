@@ -237,7 +237,7 @@ TLayer4::TLayer4(uint8_t maxTelegramLength):
 
 }
 
-void TLayer4::begin()
+void TLayer4::_begin()
 {
 #if defined(INCLUDE_SERIAL)
     IF_DEBUG(serial.begin(SERIAL_SPEED));

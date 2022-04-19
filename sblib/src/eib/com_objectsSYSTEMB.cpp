@@ -27,7 +27,7 @@ byte* ComObjectsSYSTEMB::objectValuePtr(int objno)
     int ramAddr = bcu->userRam->userRamStart + 2;
     for (int i = 1; i < objno; i++)
         ramAddr += objectSize(i);
-    return bcu->userMemoryPtr(ramAddr);
+    return ((BcuDefault*)bcu)->userMemoryPtr(ramAddr);
 }
 
 /*
@@ -94,16 +94,16 @@ void ComObjectsSYSTEMB::processGroupTelegram(int addr, int apci, byte* tel, int 
 byte* ComObjectsSYSTEMB::objectConfigTable()
 {
     byte * addr = (byte* ) & ((SYSTEMB*)bcu)->userEeprom->commsTabAddr();
-    return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
+    return ((BcuDefault*)bcu)->userMemoryPtr (makeWord (*(addr + 1), * addr));
 }
 
 byte* ComObjectsSYSTEMB::objectFlagsTable()
 {
     const byte* configTable = objectConfigTable();
     if(le_ptr == LITTLE_ENDIAN)
-    	return bcu->userMemoryPtr(makeWord(configTable[2], configTable[1]));
+    	return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[2], configTable[1]));
 
-    return bcu->userMemoryPtr(makeWord(configTable[1], configTable[2]));
+    return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[1], configTable[2]));
 }
 
 inline const byte* ComObjectsSYSTEMB::getObjectTypeSizes()

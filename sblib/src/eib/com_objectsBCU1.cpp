@@ -22,7 +22,7 @@ byte* ComObjectsBCU1::objectValuePtr(int objno)
     const ComConfigBCU1* cfg = objectConfigBCU1(objno);
 
     if (cfg->baseConfig.config & COMCONF_VALUE_TYPE) // 0 if user RAM, >0 if user EEPROM
-        return bcu->userEeprom->userEepromData + cfg->dataPtr;
+        return ((BcuDefault*)bcu)->userEeprom->userEepromData + cfg->dataPtr;
     return bcu->userRam->userRamData + cfg->dataPtr;
 }
 
@@ -88,12 +88,12 @@ void ComObjectsBCU1::processGroupTelegram(int addr, int apci, byte* tel, int trg
 
 byte* ComObjectsBCU1::objectConfigTable()
 {
-    return bcu->userEeprom->userEepromData + bcu->userEeprom->commsTabPtr();
+    return ((BcuDefault*)bcu)->userEeprom->userEepromData + ((BcuDefault*)bcu)->userEeprom->commsTabPtr();
 }
 
 byte* ComObjectsBCU1::objectFlagsTable()
 {
-    return (byte*)(bcu->userRam->userRamData + bcu->userEeprom->userEepromData[bcu->userEeprom->commsTabPtr() + 1]);
+    return (byte*)(((BcuDefault*)bcu)->userRam->userRamData + ((BcuDefault*)bcu)->userEeprom->userEepromData[((BcuDefault*)bcu)->userEeprom->commsTabPtr() + 1]);
 }
 
 inline const byte* ComObjectsBCU1::getObjectTypeSizes()

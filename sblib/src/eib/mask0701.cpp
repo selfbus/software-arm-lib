@@ -42,7 +42,7 @@ bool MASK0701::processApciMemoryReadPDU(int addressStart, byte *payLoad, int len
         DB_PROPERTIES(serial.print(" LOAD_STATE_ADDR: 0x", addressStart, HEX); serial.println(", objIdx: ", objectIdx, DEC));
         return true;
     }
-    bool result = BcuBase::processApciMemoryReadPDU(addressStart, payLoad, lengthPayLoad);
+    bool result = BcuDefault::processApciMemoryReadPDU(addressStart, payLoad, lengthPayLoad);
     DB_MEM_OPS(
        if (result)
        {
@@ -90,5 +90,5 @@ bool MASK0701::processApciMemoryWritePDU(int addressStart, byte *payLoad, int le
         }
     }
 
-    return BcuBase::processApciMemoryWritePDU(addressStart, payLoad, lengthPayLoad);
+    return BcuDefault::processApciMemoryWritePDU(addressStart, payLoad, lengthPayLoad);
 }

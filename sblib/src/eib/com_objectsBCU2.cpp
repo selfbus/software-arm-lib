@@ -18,24 +18,24 @@ byte* ComObjectsBCU2::objectValuePtr(int objno)
     // if (cfg.config & COMCONF_VALUE_TYPE) // 0 if segment 0, !=0 if segment 1
     const byte * addr = (const byte *) &cfg->dataPtr;
     if (le_ptr == LITTLE_ENDIAN)
-        return bcu->userMemoryPtr(makeWord(addr[1], addr[0]));
+        return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(addr[1], addr[0]));
     else
-        return bcu->userMemoryPtr(makeWord(addr[0], addr[1]));
+        return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(addr[0], addr[1]));
 }
 
 byte* ComObjectsBCU2::objectConfigTable()
 {
     byte * addr = (byte* ) & ((BCU2*)bcu)->userEeprom->commsTabAddr();
-    return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
+    return ((BcuDefault*)bcu)->userMemoryPtr (makeWord (*(addr + 1), * addr));
 }
 
 byte* ComObjectsBCU2::objectFlagsTable()
 {
     const byte* configTable = objectConfigTable();
     if(le_ptr == LITTLE_ENDIAN)
-    	return bcu->userMemoryPtr(makeWord(configTable[2], configTable[1]));
+    	return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[2], configTable[1]));
 
-    return bcu->userMemoryPtr(makeWord(configTable[1], configTable[2]));
+    return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[1], configTable[2]));
 }
 
 inline const ComConfigBCU2* ComObjectsBCU2::objectConfigBCU2(int objno)
