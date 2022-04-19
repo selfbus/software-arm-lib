@@ -761,10 +761,8 @@ void Bus::handleTelegram(bool valid)
 		// We ACK the telegram only if it's for us
 		if (rx_telegram[5] & 0x80) // groupr addr or phy addr
 		{
-			if (destAddr == 0 || bcu->addrTables->indexOfAddr(destAddr) >= 0)
-			{
-				processTel = true; // broadcast or known group addr
-			}
+		    processTel = (destAddr == 0); // broadcast
+		    processTel |= (bcu->addrTables != nullptr) && (bcu->addrTables->indexOfAddr(destAddr) >= 0); // known group addr
 		}
 		else if (destAddr == bcu->ownAddress())
 		{
