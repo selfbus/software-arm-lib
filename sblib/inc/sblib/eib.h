@@ -46,12 +46,16 @@
                     return &bcu;     \
                 }                    \
                 void innerSetup()
+    #define objectConfig(x) bcu.comObjects->objectConfigBCU1(x)
 	extern BCU1 bcu;
 #endif
 
 #define _bcu bcu
 
+#define MASK_VERSION (bcu.getMaskVersion())
+
 #define objectWrite(x, y) bcu.comObjects->objectWrite(x, y)
+#define objectWriteFloat(x, y) bcu.comObjects->objectWriteFloat(x, y)
 #define objectSetValue(x, y) bcu.comObjects->objectSetValue(x, y)
 #define objectRead(x) bcu.comObjects->objectRead(x)
 #define requestObjectRead(x) bcu.comObjects->requestObjectRead(x)
@@ -59,6 +63,10 @@
 #define objectUpdate(x, y) bcu.comObjects->objectUpdate(x, y)
 #define objectWritten(x) bcu.comObjects->objectWritten(x)
 #define objectEndian(x) bcu.comObjects->objectEndian(x)
+#define objectSize(x) bcu.comObjects->objectSize(x)
+
+
+#define indexOfAddr(x) bcu.addrTables->indexOfAddr(x)
 
 #define userEepromData userEeprom.userEepromData
 #define userRamData userRam.userRamData
