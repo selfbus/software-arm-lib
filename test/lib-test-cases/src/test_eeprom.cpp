@@ -42,7 +42,7 @@ static int getCallsToIapProgram(unsigned int eepromSize)
     }
 }
 
-static void checkFlash(BcuBase* bcuToTest, byte* address, uint16_t userEepromStart)
+static void checkFlash(BcuDefault* bcuToTest, byte* address, uint16_t userEepromStart)
 {
     for (int i = 0; i < EEPROM_PAGE_SIZE; ++i)
     {
@@ -56,7 +56,7 @@ static void checkFlash(BcuBase* bcuToTest, byte* address, uint16_t userEepromSta
     }
 }
 
-static void basicRAMTests(BcuBase* bcuToTest, std::string sectionName, uint16_t ramStart, uint16_t ramEnd, uint16_t ramSize)
+static void basicRAMTests(BcuDefault* bcuToTest, std::string sectionName, uint16_t ramStart, uint16_t ramEnd, uint16_t ramSize)
 {
     SECTION(sectionName) {
         REQUIRE(sizeof(bcuToTest->userRam->userRamData) == USER_RAM_SIZE + USER_RAM_SHADOW_SIZE); // user ram matches the defined size

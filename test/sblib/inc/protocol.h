@@ -29,7 +29,7 @@
 #include <string.h>
 #include <stdio.h>
 
-extern BcuBase* bcuUnderTest;
+extern BcuDefault* bcuUnderTest;
 extern const uint8_t dummyMaskVersionHigh;
 extern const uint8_t dummyMaskVersionLow;
 
@@ -106,6 +106,6 @@ struct Test_Case
 };
 
 void executeTest(BcuType testBcuType, Test_Case * tc);
-void telegramPreparation(BcuBase* testBcu, Telegram* tel, uint16_t telCount);
+void telegramPreparation(BcuDefault* testBcu, Telegram* tel, uint16_t telCount);
 
 #endif /* PROTOCOL_H_ */

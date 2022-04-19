@@ -20,7 +20,7 @@ const uint8_t dummyMaskVersionHigh = 0xDE;
 const uint8_t dummyMaskVersionLow = 0xAD;
 uint16_t bcuEepromStartAddress;
 
-BcuBase* bcuUnderTest = nullptr;
+BcuDefault* bcuUnderTest = nullptr;
 
 uint16_t getTotalStepCount(Test_Case* tc)
 {
@@ -35,7 +35,7 @@ uint16_t getTotalStepCount(Test_Case* tc)
     return totalStepCount;
 }
 
-void telegramPreparation(BcuBase* testBcu, Telegram* tel, uint16_t telCount)
+void telegramPreparation(BcuDefault* testBcu, Telegram* tel, uint16_t telCount)
 {
     const uint16_t bcu1MemoryOffset = 0x100;
 
@@ -94,7 +94,7 @@ void telegramPreparation(BcuBase* testBcu, Telegram* tel, uint16_t telCount)
     }
 }
 
-static void _handleBusSendingInterrupt(BcuBase* currentBcu)
+static void _handleBusSendingInterrupt(BcuDefault* currentBcu)
 {
      //    (currentBcu->bus->state == Bus::RECV_WAIT_FOR_STARTBIT_OR_TELEND) ||
      if (currentBcu->bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)
@@ -133,7 +133,7 @@ static void addChecksum(unsigned char * telegram, unsigned int telLength)
     telegram[telLength-1] = checksum;
 }
 
-static void _handleRx(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _handleRx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
     tel->length++; // add one byte for checksum
     addChecksum(tel->bytes, tel->length);
@@ -143,7 +143,7 @@ static void _handleRx(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsig
 	REQUIRE(currentBcu->bus->telegramLen == 0);
 }
 
-static void _checkSendTelegram(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _checkSendTelegram(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
     int i;
     int mismatches = 0;
@@ -181,7 +181,7 @@ static void _checkSendTelegram(BcuBase* currentBcu, Test_Case * tc, Telegram * t
     REQUIRE(mismatches == 0);
 }
 
-static void _handleTx(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _handleTx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
     if (currentBcu->bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)
     {
@@ -206,7 +206,7 @@ static void _handleTx(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsig
     REQUIRE(currentBcu->bus->sendNextTel == NULL);
 }
 
-static void _handleCheckTx(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsigned int tn)
+static void _handleCheckTx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int tn)
 {
     unsigned int s = 0;
     if (currentBcu->bus->sendCurTelegram) s++;
@@ -215,7 +215,7 @@ static void _handleCheckTx(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, 
     REQUIRE(s == tel->variable);
 }
 
-static void _handleTime(BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _handleTime(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
 	unsigned int s = 0;
     if (currentBcu->bus->sendCurTelegram) s++;
@@ -252,7 +252,7 @@ static unsigned int _handleBreak (Test_Case * tc, Telegram * tel, unsigned int t
     return testStep - 1;
 }
 
-static void _loop(BcuBase* currentBcu, const int loopCount)
+static void _loop(BcuDefault* currentBcu, const int loopCount)
 {
     for (int i = 0; i < loopCount; i++)
     {
@@ -260,12 +260,12 @@ static void _loop(BcuBase* currentBcu, const int loopCount)
     }
 }
 
-static void _handleLoop (BcuBase* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
+static void _handleLoop (BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
     _loop(currentBcu, tel->loopCount);
 }
 
-static void checkBcuInitialisation(BcuBase* currentBcu, Test_Case* tc)
+static void checkBcuInitialisation(BcuDefault* currentBcu, Test_Case* tc)
 {
     REQUIRE(currentBcu->state == TLayer4::CLOSED);
     REQUIRE(currentBcu->bus->state == Bus::INIT);
@@ -274,7 +274,7 @@ static void checkBcuInitialisation(BcuBase* currentBcu, Test_Case* tc)
     REQUIRE(tc->version == currentBcu->userEeprom->version());
 }
 
-static void checkBcuEepromSettings(BcuBase* currentBcu, Test_Case * tc)
+static void checkBcuEepromSettings(BcuDefault* currentBcu, Test_Case * tc)
 {
     switch (currentBcu->getMaskVersion())
     {
@@ -308,7 +308,7 @@ static void checkBcuEepromSettings(BcuBase* currentBcu, Test_Case * tc)
     }
 }
 
-void executeTestOnBcu(BcuBase* currentBcu, Test_Case * tc)
+void executeTestOnBcu(BcuDefault* currentBcu, Test_Case * tc)
 {
     bcuUnderTest = currentBcu;
     char msg[1025];
@@ -401,7 +401,7 @@ void copyAllTelegrams(Telegram* telCopy, const Telegram* telOriginal, uint16_t l
 
 void executeTest(BcuType testBcuType, Test_Case * tc)
 {
-    BcuBase* bcuToTest = nullptr;
+    BcuDefault* bcuToTest = nullptr;
     switch (testBcuType)
     {
         case BCU_1:
