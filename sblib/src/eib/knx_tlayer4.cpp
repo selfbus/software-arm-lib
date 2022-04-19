@@ -244,7 +244,10 @@ void TLayer4::_begin()
 {
 #if defined(INCLUDE_SERIAL)
     IF_DEBUG(
-            serial.begin(SERIAL_SPEED);
+            if (!serial.enabled()) // open only if not the app has it already open
+            {
+                serial.begin(SERIAL_SPEED);
+            }
             serial.println("TLayer4::_begin debugging active");
             );
 #endif

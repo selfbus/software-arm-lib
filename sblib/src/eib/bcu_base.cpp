@@ -51,7 +51,6 @@ void BcuBase::_begin()
     TLayer4::_begin();
     bus->begin();
     progButtonDebouncer.init(1);
-    enabled = true;
 }
 
 void BcuBase::loop()
