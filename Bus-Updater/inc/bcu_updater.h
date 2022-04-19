@@ -38,19 +38,14 @@ public:
     ~BcuUpdate() = default;
     using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
     void begin();
-    void begin(int manufacturer, int deviceType, int version) override {};
     ///\todo implement optimized version in a new subclass of Tlayer4
     // void loop() override;
+    bool applicationRunning() const override {return (enabled);}
 
 protected:
     unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char * telegram, uint8_t telLength) override;
     bool processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength) override;
     bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) override;
-
-    bool applicationRunning() const override;
-    uint16_t getMaskVersion() const override;
-    const char* getBcuType() const override;
-    void begin_BCU(int manufacturer, int deviceType, int version) override;
 };
 
 #ifndef INSIDE_BCU_CPP

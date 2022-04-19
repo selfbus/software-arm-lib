@@ -56,7 +56,7 @@ BcuUpdate::BcuUpdate() : BcuUpdate(new UserRamUpdater())
 }
 
 BcuUpdate::BcuUpdate(UserRamUpdater* userRamUpdater) :
-    BcuBase(userRamUpdater, nullptr, nullptr, nullptr)
+    BcuBase(userRamUpdater, nullptr)
 {
 }
 
@@ -128,32 +128,11 @@ void BcuUpdate::loop()
     */
 //}
 
-bool BcuUpdate::applicationRunning() const
-{
-    return true;
-}
-
-uint16_t BcuUpdate::getMaskVersion() const
-{
-    return 0x12;
-}
-
-const char* BcuUpdate::getBcuType() const
-{
-    return "BCU1";
-}
-
-void BcuUpdate::begin_BCU(int manufacturer, int deviceType, int version)
+void BcuUpdate::begin()
 {
     userRam->status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
     userRam->runState = 1;
-    BcuBase::begin_BCU(manufacturer, deviceType, version);
-}
-
-void BcuUpdate::begin()
-{
-    begin_BCU(0, 0, 0);
-    enableGroupTelSend(false); // no group telegrams
+    BcuBase::_begin();
 }
 
 bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)

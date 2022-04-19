@@ -46,9 +46,6 @@
 #define APPVERSION 0x01   //!< Application Version -> 0.1
 
 BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
-//MASK0701 bcu = MASK0701();
-
-// BcuBase& bcu = _bcu;                 //!< alias of _bcu as @ref bcu::BcuBase
 
 Timeout runModeTimeout;              //!< running mode LED blinking timeout
 bool blinky = false;
