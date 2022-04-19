@@ -29,6 +29,7 @@
 								<option id="com.crt.advproject.cpp.arch.1800214811" name="Architecture" superClass="com.crt.advproject.cpp.arch" useByScannerDiscovery="true" value="com.crt.advproject.cpp.target.cm0" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.255467573" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="${controller_type}"/>
+									<listOptionValue builtIn="false" value="NO_OOP_MACROS"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
 									<listOptionValue builtIn="false" value="CORE_M0"/>
@@ -110,7 +111,7 @@
 									<listOptionValue builtIn="false" value="CMSIS_CORE_LPC11xx"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.674856200" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BCU1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.351879834" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false"/>
@@ -161,6 +162,7 @@
 								<option id="com.crt.advproject.cpp.arch.2035479140" name="Architecture" superClass="com.crt.advproject.cpp.arch" useByScannerDiscovery="true" value="com.crt.advproject.cpp.target.cm0" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.129940398" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="${controller_type}"/>
+									<listOptionValue builtIn="false" value="NO_OOP_MACROS"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
 									<listOptionValue builtIn="false" value="CORE_M0"/>
@@ -242,7 +244,7 @@
 									<listOptionValue builtIn="false" value="CMSIS_CORE_LPC11xx"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.1638389016" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BCU1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.1909386479" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false"/>
@@ -293,6 +295,7 @@
 								<option id="com.crt.advproject.cpp.arch.2015032800" name="Architecture" superClass="com.crt.advproject.cpp.arch" useByScannerDiscovery="true" value="com.crt.advproject.cpp.target.cm0" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.1753730838" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="${controller_type}"/>
+									<listOptionValue builtIn="false" value="NO_OOP_MACROS"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
 									<listOptionValue builtIn="false" value="CORE_M0"/>
@@ -374,7 +377,7 @@
 									<listOptionValue builtIn="false" value="CMSIS_CORE_LPC11xx"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.136200150" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BCU1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.1711888895" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false"/>
@@ -425,6 +428,7 @@
 								<option id="com.crt.advproject.cpp.arch.1412864968" name="Architecture" superClass="com.crt.advproject.cpp.arch" useByScannerDiscovery="true" value="com.crt.advproject.cpp.target.cm0" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.compiler.option.preprocessor.def.820229964" name="Defined symbols (-D)" superClass="gnu.cpp.compiler.option.preprocessor.def" useByScannerDiscovery="false" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="${controller_type}"/>
+									<listOptionValue builtIn="false" value="NO_OOP_MACROS"/>
 									<listOptionValue builtIn="false" value="DEBUG"/>
 									<listOptionValue builtIn="false" value="__NEWLIB__"/>
 									<listOptionValue builtIn="false" value="CORE_M0"/>
@@ -506,7 +510,7 @@
 									<listOptionValue builtIn="false" value="CMSIS_CORE_LPC11xx"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.945272535" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BCU1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.1919960948" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false"/>

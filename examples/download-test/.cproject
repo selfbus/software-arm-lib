@@ -92,7 +92,7 @@
 								</option>
 								<option id="gnu.cpp.link.option.paths.1617487187" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Release}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Release_BCU1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Release}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.1388628183" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false"/>
 								<option id="com.crt.advproject.link.memory.load.image.cpp.1924572346" name="Plain load image" superClass="com.crt.advproject.link.memory.load.image.cpp" useByScannerDiscovery="false" value="false;" valueType="string"/>
@@ -209,7 +209,7 @@
 								</option>
 								<option id="gnu.cpp.link.option.paths.1411870069" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BCU1}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.849242433" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false"/>
 								<option id="com.crt.advproject.link.cpp.multicore.slave.1382673884" name="Multicore configuration" superClass="com.crt.advproject.link.cpp.multicore.slave" useByScannerDiscovery="false"/>

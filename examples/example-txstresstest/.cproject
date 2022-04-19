@@ -221,7 +221,7 @@
 									<listOptionValue builtIn="false" value="CMSIS_CORE_LPC11xx"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.324005565" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BIM112}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.1817982986" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false"/>

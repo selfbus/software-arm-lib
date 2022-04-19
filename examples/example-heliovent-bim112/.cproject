@@ -807,7 +807,7 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.873540667" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Debug}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug_BIM112_75}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Debug}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.2079995442" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<option id="com.crt.advproject.link.cpp.multicore.slave.1688527372" name="Multicore configuration" superClass="com.crt.advproject.link.cpp.multicore.slave" useByScannerDiscovery="false"/>
@@ -1094,7 +1094,7 @@
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.cpp.link.option.paths.132585778" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" useByScannerDiscovery="false" valueType="libPaths">
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/CMSIS_CORE_LPC11xx/Release}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Release_BIM112_75}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/sblib/Release}&quot;"/>
 								</option>
 								<option id="com.crt.advproject.link.cpp.crpenable.1139597671" name="Enable automatic placement of Code Read Protection field in image" superClass="com.crt.advproject.link.cpp.crpenable" useByScannerDiscovery="false" value="false" valueType="boolean"/>
 								<option id="com.crt.advproject.link.cpp.multicore.slave.830213374" name="Multicore configuration" superClass="com.crt.advproject.link.cpp.multicore.slave" useByScannerDiscovery="false"/>
