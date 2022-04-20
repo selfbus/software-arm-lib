@@ -202,3 +202,12 @@ word BCU2::getCommObjectTableAddressStatic() const
 {
     return commObjectTableAddressStatic;
 }
+
+void BCU2::setHardwareType(const byte* hardwareType, uint8_t size)
+{
+    if (size > userEeprom->orderSize())
+    {
+        size = userEeprom->orderSize();
+    }
+    memcpy(userEeprom->order(), hardwareType, size);
+}

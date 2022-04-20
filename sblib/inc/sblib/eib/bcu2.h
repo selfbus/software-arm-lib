@@ -102,6 +102,14 @@ public:
     /** The length of the HighRam */
     const int highRamLength = 0xBC;
 
+    /**
+     * Set the hardware type (Object ID 0, Property 78 (PID_HARDWARE_TYPE) formerly done by memcpy(userEeprom.order()...)
+     *
+     * @param hardwareType  Buffer containing the hardware type
+     * @param size          Size of the provided buffer
+     */
+    virtual void setHardwareType(const byte* hardwareType, uint8_t size);
+
 	UserRamBCU2* userRam;
 
 	UserEepromBCU2* userEeprom;
