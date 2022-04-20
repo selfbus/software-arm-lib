@@ -104,12 +104,12 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
     {
         iapReadPartID(&partID);
         memcpy (userEeprom->serial(), &partID, 4);
-        userEeprom->serial()[4] = SBLIB_VERSION >> 8;
-        userEeprom->serial()[5] = SBLIB_VERSION;
+        userEeprom->serial()[4] = HIGH_BYTE(SBLIB_VERSION);
+        userEeprom->serial()[5] = LOW_BYTE(SBLIB_VERSION);
     }
 
-    userEeprom->order()[userEeprom->orderSize() - 2] = HIGH_BYTE(SBLIB_VERSION);
-    userEeprom->order()[userEeprom->orderSize() - 1] = LOW_BYTE(SBLIB_VERSION);
+    userEeprom->orderInfo()[userEeprom->orderInfoSize() - 2] = HIGH_BYTE(SBLIB_VERSION);
+    userEeprom->orderInfo()[userEeprom->orderInfoSize() - 1] = LOW_BYTE(SBLIB_VERSION);
 
     begin_BCU(manufacturer, deviceType, version);
     BcuDefault::_begin();

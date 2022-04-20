@@ -42,6 +42,7 @@ public:
 
 	virtual int serialSize() const { return 6; };
 	virtual int orderSize() const { return 10; };
+	virtual int orderInfoSize() const { return 10; };
 
 	virtual byte& appType() const { return userEepromData[appTypeOffset]; }
 	virtual byte* loadState() const { return &userEepromData[loadStateOffset]; }
@@ -58,7 +59,7 @@ public:
 	virtual byte& padding1() const { return userEepromData[padding1Offset]; }
 	virtual byte& serviceControl() const { return userEepromData[serviceControlOffset]; }
 	virtual byte& padding2() const { return userEepromData[padding2Offset]; }
-	virtual byte& orderInfo() const { return userEepromData[orderInfoOffset]; }
+	virtual byte* orderInfo() const { return &userEepromData[orderInfoOffset]; }
 
 	//virtual byte& peiType() const { return userEepromData[peiTypeOffset]; }
 
