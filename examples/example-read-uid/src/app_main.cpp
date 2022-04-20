@@ -12,9 +12,8 @@
  *          Connect a terminal program to the ARM's serial port.<br/>
  *          Default Tx-pin is PIO1.7 and Rx-pin is PIO1.6.<br/>
  *          You can change the serial port by commenting/uncommenting PIN_SERIAL_RX and PIN_SERIAL_TX.<br/>
- *          The connection settings are 19200 8N1 (19200 baud, 8 data bits, no parity, 1 stop bit).<br/>
+ *          The connection settings are 115200 8N1 (115200 baud, 8 data bits, no parity, 1 stop bit).<br/>
  *
- *          links against BCU1 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -28,9 +27,8 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/internal/iap.h>
-#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/serial.h>
 #include <sblib/timer.h>
@@ -60,6 +58,8 @@ APP_VERSION("SBuid   ", "1", "01"); //!< Create APP_VERSION, its used in the bus
 #define KNX_SERIAL_NUMBER_LENGTH 6      //!< length of a KNX serial number
 /// @endcond
 
+BCU1 bcu = BCU1();
+
 void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int length, char separator='\0');
 
 /**
@@ -68,27 +68,31 @@ void sendBytesInHexToSerialPort(Serial &serialPort, byte* buffer, unsigned int l
  *
  * @note  You must implement this function in your code.
  */
-void setup()
+BcuBase* setup()
 {
-    volatile const char * v = getAppVersion();      // Ensure APP ID is not removed by linker (its used in the bus updater)
-    v++;                                            // just to avoid compiler warning of unused variable
     pinMode(PIN_PROG, OUTPUT);
     digitalWrite(PIN_PROG, true);
     serial.setRxPin(PIN_SERIAL_RX);
     serial.setTxPin(PIN_SERIAL_TX);
     serial.begin(DEFAULT_SERIAL_SPEED);
     serial.println("Selfbus read UID example");
+    return (&bcu);
 }
 
 
 unsigned char __attribute__((section (".selfbusSection"))) selfBusBuffer[12];
 unsigned char __attribute__((section (".selfbusSection"))) selfBusChar = 0xAA;
 
-extern int __selfbus_first_sector, __selfbus_sector_end;
-extern unsigned int __selfbus_image_first_sector, __selfbus_image_size;
+extern int __selfbus_first_sector;
+extern int __selfbus_sector_end;
+extern unsigned int __selfbus_image_first_sector;
+extern unsigned int __selfbus_image_size;
 
-extern unsigned int __base_Flash, __top_Flash;
-extern unsigned int _image_start, _image_end, _image_size;
+extern unsigned int __base_Flash;
+extern unsigned int __top_Flash;
+extern unsigned int _image_start;
+extern unsigned int _image_end;
+extern unsigned int _image_size;
 
 /*
 __base_${memory.name} = ${memory.location}  ; //${memory.name}
@@ -131,17 +135,21 @@ void loop_noapp()
     unsigned int flashStartAddress = (unsigned int) (unsigned int*)&__base_Flash;
     unsigned int flashEndAddress = (unsigned int) (unsigned int*)&__top_Flash;
 
+    flashEndAddress--; // bug in NXP linkerscript adds 1 to endAddress
+
     unsigned int imageStartAddress = (unsigned int) (unsigned int*)&_image_start;
     unsigned int imageEndAddress = (unsigned int) (unsigned int*)&_image_end;
     unsigned int imageSize = (unsigned int) (unsigned int*)&_image_size;
 
-    serial.print("Flash (start,end,size)    : 0x", flashStartAddress, HEX, 6);
-    serial.print(" 0x", flashEndAddress, HEX, 6);
-    serial.println(" 0x", flashEndAddress - flashStartAddress, HEX, 6);
+    imageSize++; // bug in NXP linkerscript misses 1 of imageSize
 
-    serial.print("Firmware (start,end,size) : start: 0x", imageStartAddress, HEX, 6);
-    serial.print(" end: 0x", imageEndAddress, HEX, 6);
-    serial.println(" size: 0x", imageSize, HEX, 6);
+    serial.print("Flash    (start,end,size) : 0x", flashStartAddress, HEX, 6);
+    serial.print(" 0x", flashEndAddress, HEX, 6);
+    serial.println(" 0x", flashEndAddress - flashStartAddress + 1, HEX, 6);
+
+    serial.print("Firmware (start,end,size) : 0x", imageStartAddress, HEX, 6);
+    serial.print(" 0x", imageEndAddress, HEX, 6);
+    serial.println(" 0x", imageSize, HEX, 6);
 
     byte uniqueID[IAP_UID_LENGTH]; // buffer for the UID/GUID of the processsor
     byte knxSerial[KNX_SERIAL_NUMBER_LENGTH]; // buffer for the KNX serial number
@@ -151,7 +159,7 @@ void loop_noapp()
         serial.print("Target UID is             : ");
         // send the uid/guid we received from iapReadUID
         sendBytesInHexToSerialPort(serial, &uniqueID[0], IAP_UID_LENGTH, ':');
-        serial.print("Busupdater needs   (-uid) : ");
+        serial.print("Busupdater needs  (--uid) : ");
         sendBytesInHexToSerialPort(serial, &uniqueID[0], UID_BYTES_FOR_BUSUPDATER, ':');
 
         // create a 48bit serial/hash from the 128bit GUID

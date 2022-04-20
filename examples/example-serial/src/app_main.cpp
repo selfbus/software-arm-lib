@@ -8,7 +8,6 @@
  *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.<br />
  *          Tx-pin is PIO1.7, Rx-pin is PIO1.6<br />
  *
- *          links against BCU1 version of the sblib library
  * @{
  *
  * @file    app_main.cpp
@@ -23,18 +22,19 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/serial.h>
 #include <sblib/internal/iap.h>
 
 
 #define PAUSE_MS 1000 ///> pause in milliseconds between each transmission
 
+BCU1 bcu = BCU1();
+
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     // serial.setRxPin(PIO2_7); // uncomment and change PIO for another RX-pin
     // serial.setTxPin(PIO2_8); // uncomment and change PIO for another TX-pin
@@ -42,10 +42,10 @@ void setup()
 
     serial.println("Selfbus serial port example");
 
-    serial.print("Target MCU has ");
-    serial.print(iapFlashSize() / 1024);
+    serial.print("Target MCU has ", iapFlashSize() / 1024);
     serial.println("k flash");
     serial.println();
+    return (&bcu);
 }
 
 /**
@@ -57,7 +57,7 @@ void loop_noapp()
     unsigned char rxChar;
 
     // Write some text to the serial port
-    serial.print("Counter value: B");
+    serial.print("Counter value: b");
     serial.println(++value, BIN, 8);
 
     // handle incoming data from the serial port and echo it back

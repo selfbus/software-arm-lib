@@ -8,7 +8,6 @@
  *          Implementation on 4TE-ARM-Controller. Including OneWire parasite power mode.
  *          1-wire data line pin is PIO1.7<br />
  *
- *          links against BCU1 version of the sblib library
  * @{
  *
  * @file    app_main.cpp
@@ -23,8 +22,7 @@
 #   include <stdio.h>
 #endif
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/sensors/ds18x20.h>
 
@@ -34,6 +32,8 @@
 #define READ_TIMER      500      ///> Read values timer in milliseconds
 
 #define START_UP_BLINK_DELAY 200 ///> start-up LED_blinking delay in milliseconds
+
+BCU1 bcu = BCU1();
 
 bool bLastRead= false;           ///> Condition to read values if timer reached
 bool bInitSearch= false;         ///> Device search state
@@ -76,7 +76,7 @@ bool set_Own_Ds18x_Device_Roms()
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     ds.DS18x20Init(PORTPIN, PARASITE_POWER);    // Initialize DS18x20 (1-Wire Protocol will be Initialized automatically)
 #if USE_OWN_ROM
@@ -101,6 +101,8 @@ void setup()
     timer32_0.matchMode(MAT1, RESET | INTERRUPT);          // On match of MAT1, generate an interrupt and reset the timer
     timer32_0.match(MAT1, READ_TIMER);                     // Match MAT1 when the timer reaches this value (in milliseconds)
     timer32_0.start();                                     // Start now the timer
+
+    return (&bcu);
 }
 
 /**

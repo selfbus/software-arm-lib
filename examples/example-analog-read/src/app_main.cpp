@@ -8,7 +8,6 @@
  *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
  *          Tx-pin is PIO1.7, Rx-pin is PIO1.6<br />
  *
- *          links against BCU1 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -23,22 +22,31 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
+#include <sblib/analog_pin.h>
 #include <sblib/serial.h>
+
+BCU1 bcu = BCU1();
 
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     analogBegin();
     pinMode(PIO0_11, INPUT_ANALOG); // AD0 @ PIO0.11
 
     // Enable the serial port with 115200 baud, no parity, 1 stop bit
-    // Tx: PIO1.7, Rx: PIO1.6
+    // 4TE Tx: PIO1.7, Rx: PIO1.6
+    serial.setRxPin(PIO1_6);
+    serial.setTxPin(PIO1_7);
+    // TS_ARM Tx: PIO3.0, Rx: PIO3.1
+    // serial.setRxPin(PIO3_1);
+    // serial.setTxPin(PIO3_0);
     serial.begin(115200);
     serial.println("Analog read example");
+
+    return (&bcu);
 }
 
 /**

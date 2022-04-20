@@ -7,7 +7,6 @@
  *          The LED to blink has to be connected to pin PIN_INFO (PIO2.6)
  *          We cannot blink the LED on the LPCxpresso board with PWM.<br/>
  *
- *          links against BCU1 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -22,8 +21,7 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/io_pin_names.h>
 
 /*
@@ -34,10 +32,12 @@
  *
  */
 
+BCU1 bcu = BCU1();
+
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     pinMode(PIN_INFO, OUTPUT_MATCH);  // configure digital pin PIN_INFO to match MAT1 of timer32 #0
 
@@ -54,6 +54,8 @@ void setup()
     timer32_0.match(MAT3, 1000);     // match MAT3 after 1000 milliseconds
 
     timer32_0.start();
+
+    return (&bcu);
 }
 
 /**

@@ -6,8 +6,6 @@
  * @details This example is meant to be a test for the timing of delayMicroseconds().<br/>
  *          By default PIO0.7 is used, which is the LED on the LPCxpresso board.<br/>
  *
- *          links against BCU1 version of the sblib library
- *
  * @{
  *
  * @file   app_main.cpp
@@ -24,8 +22,7 @@
  ---------------------------------------------------------------------------*/
 
 #include <math.h>
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/io_pin_names.h>
 
 
@@ -69,6 +66,8 @@
  *          ==> toggle on and off ~40 nanoseconds
  */
 #define SET_TESTPIN_LOW port->MASKED_ACCESS[mask] = 0
+
+BCU1 bcu = BCU1();
 
 enum SystemSpeed {mhz12, mhz24, mhz36, mhz48};  //!< SystemCoreClock in MHz
 
@@ -150,12 +149,13 @@ void setSystemSpeed(SystemSpeed newSystemSpeed)
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     pinMode(testPin, OUTPUT);
 
     // test different SystemCoreClocks
     // setSystemSpeed(mhz48);
+    return (&bcu);
 }
 
 /**

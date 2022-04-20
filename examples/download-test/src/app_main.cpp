@@ -7,7 +7,6 @@
  *          Tx-pin is PIO1.7, Rx-pin is PIO1.6<br/>
  *          used on the Selfbus 4TE-ARM-Controller the RUN (PIO3.3) and INFO (PIO2.6) LED will blink<br/>
  *
- *          links against BCU1 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -22,21 +21,25 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/timeout.h>
 #include <sblib/serial.h>
 
 Timeout blinky;
 
+APP_VERSION("exDownlo", "0", "10")
+
+BCU1 bcu = BCU1();
+
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     pinMode(PIN_INFO, OUTPUT);
     pinMode(PIN_RUN,  OUTPUT);
+    return (&bcu);
 }
 
 /**
@@ -48,6 +51,8 @@ void loop_noapp()
     SysTick_Config(SystemCoreClock / 1000);
 
     blinky.start (1000);
+    serial.setRxPin(PIO1_6);
+    serial.setTxPin(PIO1_7);
     serial.begin(115200); // Tx: PIO1.7, Rx: PIO1.6
     serial.println("Hello World via KNX download!");
     // TODO: insert code here

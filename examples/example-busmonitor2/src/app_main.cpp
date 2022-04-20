@@ -27,19 +27,19 @@
  ---------------------------------------------------------------------------*/
 
 #include "config.h"
-#include <sblib/eib.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/serial.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/timeout.h>
-#include <sblib/eib/sblib_default_objects.h>
-
 
 Timeout blinky; ///< Timeout to blink the Led
+
+BCU1 bcu = BCU1();
 
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     serial.setTxPin(PIN_SERIAL_TX);
     serial.setRxPin(PIN_SERIAL_RX);
@@ -50,6 +50,7 @@ void setup()
 
     pinMode(PIN_BLINK, OUTPUT);
     blinky.start(1);
+    return (&bcu);
 }
 
 /**

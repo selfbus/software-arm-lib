@@ -27,17 +27,23 @@
 #include "config.h"
 #include "app_heliovent.h"
 
-#ifdef HELIOS
+#ifdef HELIOS_0705
 #   include "heliosvent.h"
 #else
 #   include "mdtled.h"
 #endif
 
-SYSTEMB bcu;
+
+#ifdef VALLOX_07B0
+    SYSTEMB bcu = SYSTEMB();
+#else
+    MASK0705 bcu = MASK0705();
+#endif
+
 
 void objectUpdated(int objno)
 {
-#ifdef HELIOS
+#ifdef HELIOS_0705
     int switchObject = COMOBJ_1_LUEFTUNGSGERAET_HAUPTSCHALTER_SCHALTEN;
     int rmObject = COMOBJ_2_LUEFTUNGSGERAET_HAUPTSCHALTER_STATUS;
 #else
@@ -89,7 +95,7 @@ void initApplication(void)
     delay(300);
     digitalWrite(PIN_INFO, 0);
 
-#ifdef HELIOS
+#ifdef HELIOS_0705
     bcu.comObjects->objectWrite(COMOBJ_2_LUEFTUNGSGERAET_HAUPTSCHALTER_STATUS, (unsigned int) 0);
 #else
     bcu.comObjects->objectWrite(COMOBJ_4_KANAL_A_STATUS_EIN_AUS, (unsigned int) 0);

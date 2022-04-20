@@ -11,7 +11,6 @@
  *              - INFO (PIO2.6)
  *          LED's will blink<br />
  *
- *          links against BCU1 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -26,24 +25,26 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/digital_pin.h>
 #include <sblib/io_pin_names.h>
-#include <sblib/eib/sblib_default_objects.h>
 
 #define BLINK_TIME_1 250 // pause time in milliseconds
 #define BLINK_TIME_2 250 // pause time in milliseconds
 
+BCU1 bcu = BCU1();
+
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     // set pins to output mode
     pinMode(PIN_IO2, OUTPUT);  // PIO0.7 on the LPCxpresso board
     pinMode(PIN_INFO, OUTPUT); // PIO2.6 on a Selfbus-ARM controller
     pinMode(PIN_RUN, OUTPUT);  // PIO3.3 on a Selfbus-ARM controller
     pinMode(PIN_PROG, OUTPUT); // PIO2.0 on a Selfbus-ARM controller
+    return (&bcu);
 }
 
 /**

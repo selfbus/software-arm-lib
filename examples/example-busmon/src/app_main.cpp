@@ -13,7 +13,6 @@
  *           - CC             the number of telegram-bytes to be send<br />
  *           - aa, bb, cc, dd, ee the telegram data (without the checksum)<br />
  *
- *           links against BCU1 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -29,25 +28,26 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/eib.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/serial.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/timeout.h>
-#include <sblib/eib/sblib_default_objects.h>
 
 Timeout blinky; ///< Timeout to blink the RUN Led
+
+BCU1 bcu = BCU1();
 
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     bcu.begin(2, 1, 1); // ABB, dummy something device
 
     // Disable telegram processing by the lib
-    if (userRam.status & BCU_STATUS_TL)
+    if (bcu.userRam->status & BCU_STATUS_TL)
     {
-        userRam.status ^= BCU_STATUS_TL | BCU_STATUS_PARITY;
+        bcu.userRam->status ^= BCU_STATUS_TL | BCU_STATUS_PARITY;
     }
 
     serial.begin(115200); // Tx: PIO1.7, Rx: PIO1.6
@@ -57,6 +57,7 @@ void setup()
     pinMode(PIN_RUN, OUTPUT);  // Run LED
     blinky.start(1);
     bcu.setOwnAddress(0x1140); // 1.1.64
+    return (&bcu);
 }
 
 int receiveCount = -1;
@@ -75,15 +76,15 @@ void loop()
     }
 
     // handle the incoming data from the KNX-bus
-    if (bus.telegramReceived())
+    if (bcu.bus->telegramReceived())
     {
-		serial.print(bus.telegramLen, HEX, 2);
-		for (int i = 0; i < bus.telegramLen; ++i)
+        serial.print(bcu.bus->telegramLen, HEX, 2);
+		for (int i = 0; i < bcu.bus->telegramLen; ++i)
 		{
-			serial.print(bus.telegram[i], HEX, 2);
+			serial.print(bcu.bus->telegram[i], HEX, 2);
 		}
 		serial.println();
-        bus.discardReceivedTelegram();
+		bcu.bus->discardReceivedTelegram();
 
         digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
     }
@@ -101,7 +102,7 @@ void loop()
             sendTelBuffer[tLength++] = serial.read();
             if (tLength == (receiveCount & 0x7F))
             {
-                bus.sendTelegram(sendTelBuffer, tLength);
+                bcu.bus->sendTelegram(sendTelBuffer, tLength);
                 serial.write (0xAD);
                 receiveCount = -1;
             }

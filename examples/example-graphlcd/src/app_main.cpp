@@ -13,7 +13,6 @@
  *              - PIO2_11: SCK0  -> Display SCK "clock"<br />
  *              - PIO0_8:        -> Display CD  "command/data"<br />
  *
- *         links against BCU1 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -31,18 +30,20 @@
 #include <sblib/lcd/graphical_eadogs.h>
 #include <sblib/lcd/font_5x7.h>
 #include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/ioports.h>
 #include <sblib/io_pin_names.h>
 
 #define BLINK_PIN PIN_IO2
+
+BCU1 bcu = BCU1();
 
 LcdGraphicalEADOGS display(SPI_PORT_0, PIO0_9, PIO2_11, PIO0_8, PIO0_2, font_5x7);
 
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     display.begin();
     pinMode(BLINK_PIN, OUTPUT);
@@ -53,6 +54,7 @@ void setup()
     display.println("*** Hello World! ***");
     display.pos(0, 2);
     display.println("********************");
+    return (&bcu);
 }
 
 /**

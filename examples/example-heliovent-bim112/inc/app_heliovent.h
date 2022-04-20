@@ -22,9 +22,17 @@
 #define APP_HELIOVENT_H_
 
 #include <sblib/types.h>
+#include <sblib/eibMASK0705.h>
 #include <sblib/eibSYSTEMB.h>
 
-extern SYSTEMB bcu;
+
+
+#ifdef VALLOX_07B0
+    extern SYSTEMB bcu;
+#else
+    extern MASK0705 bcu;
+#endif
+
 
 /**
  * A communication object was updated from somebody via the EIB bus.

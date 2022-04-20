@@ -4,9 +4,7 @@
  * @ingroup SBLIB_EXAMPLES
  * @brief   A simple application which shows the usage of the Selfbus library sblib
  *          as a bus coupling unit (BCU).
- * @details The mask version of this example is 0x0705.
  *
- *          links against BIM112_75 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
@@ -21,31 +19,29 @@
  */
 
 #include <sblib/io_pin_names.h>
+#include <sblib/serial.h>
 #include <cstring>
 #include "config.h"
 #include "app_heliovent.h"
 
 
-#if defined(HELIOS)
+#if defined(HELIOS_0705)
 #   include "heliosvent.h"
-#elif defined(VALLOX)
+    APP_VERSION("BS4.70  ", "0", "10");
+#elif defined(VALLOX_07B0)
 #   include "vallox.h"
-#elif defined(MDT_TSS)
+    APP_VERSION("VALLOX  ", "0", "11");
+#elif defined(MDT_TSS_0705)
 #   include "mdttss.h"
-#else
-// #   include "mdtled.h"
+    APP_VERSION("BE06001 ", "0", "12");
+#elif defined(MDT_LED_0705)
+#   include "mdtled.h"
+    APP_VERSION("AKD0424R", "0", "13");
+#elif defined(MDT_GLASS_0705)
 #   include "mdtpushbutton.h"
-#endif
-
-#if defined(HELIOS)
-    APP_VERSION("BS4.70  ", "0", "09");
-#elif defined(VALLOX)
-    APP_VERSION("VALLOX  ", "0", "01");
-#elif defined(MDT_TSS)
-    APP_VERSION("BE06001 ", "0", "02");
+    APP_VERSION("BEGT2Tx ", "0", "14");
 #else
-    // APP_VERSION("AKD0424R", "0", "02");
-    APP_VERSION("BEGT2Tx", "0", "01");
+#   error "No device macro defined"
 #endif
 
 MemMapper memMapper(0xe900, 0x500);
@@ -58,14 +54,19 @@ MemMapper memMapper(0xe900, 0x500);
  */
 BcuBase* setup()
 {
-#if defined(DUMP_PROPERTIES) || defined(DUMP_MEM_OPS)
-    serial.setRxPin(PIO2_7);
-    serial.setTxPin(PIO2_8);
-#endif
+    if (!serial.enabled()) // in case sblib didn't open the port, we open it
+    {
+        serial.setRxPin(PIO2_7); // ID_SEL/SV3 on a 4TE-Controller
+        serial.setTxPin(PIO2_8);
+        serial.begin(115200);
+    }
+    serial.print("Example heliovent-bim112 started: ");
+    serial.println((const char*)getAppVersion());
 
-#if defined(HELIOS)
+
+#if defined(HELIOS_0705)
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0x43FE);
-#elif defined(VALLOX)
+#elif defined(VALLOX_07B0)
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION);
 #else
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION);
@@ -73,7 +74,7 @@ BcuBase* setup()
 
     memcpy(bcu.userEeprom->order(), &hardwareVersion, sizeof(hardwareVersion));
 
-#if !defined(HELIOS) && !defined(VALLOX)
+#if !defined(HELIOS_0705) && !defined(VALLOX_07B0)
     bcu.setMemMapper(&memMapper);
     // if (memMapper.addRange(0x4A00, 0x400) != MEM_MAPPER_SUCCESS)
     // if (memMapper.addRange(0x4B00, 0x100) != MEM_MAPPER_SUCCESS) // just for testing
@@ -84,18 +85,16 @@ BcuBase* setup()
 #endif
 
     // test UserRAM
-    /*
     const int testSize = 12;
     byte payLoad[testSize] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B};
     for (int i = 0; i < testSize; i++)
     {
         {
-            _bcu.processApciMemoryWritePDU(getUserRamEnd() - i, &payLoad[0], testSize);
+            bcu.processApciMemoryWritePDU(bcu.userRam->userRamEnd - i, &payLoad[0], testSize);
         }
         serial.println("---------------------");
     }
-    */
-/*
+
     // test USER_EEPROM
     const int testSize2 = 12;
     byte payLoad2[testSize2];
@@ -108,11 +107,11 @@ BcuBase* setup()
 
     for (int k = 0; k < 0x120; k = k +testSize2)
     {
+        int eepromEnd = bcu.userEeprom->userEepromEnd;
         for (int i = 0; i < testSize2; i++)
         {
-            int eepromEnd = USER_EEPROM_START + USER_EEPROM_SIZE - 1;
-            _bcu.processApciMemoryWritePDU(eepromEnd - testSize2-1 + i + k, &payLoad2[0], testSize2);
-            _bcu.processApciMemoryReadPDU(eepromEnd - testSize2-1 + i + k, &readLoad2[0], testSize2);
+            bcu.processApciMemoryWritePDU(eepromEnd - testSize2-1 + i + k, &payLoad2[0], testSize2);
+            bcu.processApciMemoryReadPDU(eepromEnd - testSize2-1 + i + k, &readLoad2[0], testSize2);
 
             for (int testing = 0; testing < testSize2; testing++)
             {
@@ -122,18 +121,14 @@ BcuBase* setup()
                     // fatalError();
                 }
             }
-
-            //serial.println("---------------------");
             serial.flush();
         }
-        // serial.println("---------------------");
-        // serial.flush();
     }
     serial.println("---  DONE  ----------");
+    serial.flush();
 
+    // fatalError();
 
-    fatalError();
-    */
     initApplication();
     return (&bcu);
 }
@@ -153,8 +148,8 @@ void loop(void)
 
     if ((millis() % 1000) == 0)
     {
-        //FIXME why is this running into an fatalError()?
-        // serial.println("userEeprom.optionReg: 0x", userEeprom.optionReg, HEX, 2);
+        //FIXME why this can run into an fatalError()?
+        serial.println("bcu.userEeprom->optionReg(): 0x", bcu.userEeprom->optionReg(), HEX, 2);
     }
     checkPeriodic();
 
