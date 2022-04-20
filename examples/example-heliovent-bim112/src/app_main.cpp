@@ -20,7 +20,6 @@
 
 #include <sblib/io_pin_names.h>
 #include <sblib/serial.h>
-#include <cstring>
 #include "config.h"
 #include "app_heliovent.h"
 
@@ -72,7 +71,7 @@ BcuBase* setup()
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION);
 #endif
 
-    memcpy(bcu.userEeprom->order(), &hardwareVersion, sizeof(hardwareVersion));
+    bcu.setHardwareType(hardwareVersion, sizeof(hardwareVersion));
 
 #if !defined(HELIOS_0705) && !defined(VALLOX_07B0)
     bcu.setMemMapper(&memMapper);
