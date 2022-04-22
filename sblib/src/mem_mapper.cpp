@@ -166,12 +166,12 @@ int MemMapper::getFlashPageNum(int virtAddress) const
 {
     int virtPage = virtAddress >> 8;
 
-    if (virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
+    if ((virtPage < 0) || (virtPage >= FLASH_PAGE_SIZE))
     {
         return MEM_MAPPER_INVALID_ADDRESS;
     }
 
-    return allocTable[virtPage] ^ 0xff;
+    return (allocTable[virtPage] ^ 0xff);
 }
 
 int MemMapper::writeMem(int virtAddress, byte data)
@@ -267,19 +267,17 @@ int MemMapper::readMemPtr(int virtAddress, byte *data, int length,
 
 bool MemMapper::isMapped(int virtAddress)
 {
-    return getFlashPageNum(virtAddress) > 0 || autoAddPage ? true : false;
+    if (autoAddPage)
+    {
+        return (true);
+    }
+    int pageNum = getFlashPageNum(virtAddress);
+    return ((pageNum != MEM_MAPPER_INVALID_ADDRESS) && (pageNum != 0));
 }
 
 bool MemMapper::isMappedRange(int virtStartAddress, int virtEndAddress)
 {
-    if (!autoAddPage)
-    {
-        return ((getFlashPageNum(virtStartAddress) > 0) && (getFlashPageNum(virtEndAddress) > 0));
-    }
-    else
-    {
-        return true;
-    }
+    return (isMapped(virtStartAddress) && isMapped(virtEndAddress));
 }
 
 byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash) const

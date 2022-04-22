@@ -689,16 +689,29 @@ bool BcuDefault::processApciMemoryReadPDU(int addressStart, byte *payLoad, int l
     return result;
 }
 
-bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem)
+bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *payLoad, unsigned int lengthPayLoad, const bool &readMem)
 {
-    const unsigned int addressEnd = addressStart + lengthPayLoad - 1;
-    bool startNotFound = false; // we need this as a exit condition, in case memory range is no where found
-
     if (lengthPayLoad == 0)
     {
-        DB_MEM_OPS(serial.println(" Error processApciMemoryOperation : lengthPayLoad: 0x", lengthPayLoad , HEX, 2));
-        return false;
+        DB_MEM_OPS(serial.println(" Error processApciMemoryOperation : lengthPayLoad == 0"));
+        return (false);
     }
+
+    const unsigned int addressEnd = addressStart + lengthPayLoad - 1;
+
+    if (addressEnd < addressStart)
+    {
+        DB_MEM_OPS(
+                serial.print(" Error processApciMemoryOperation : address overflow start 0x", addressStart, HEX);
+                serial.print(" end 0x", addressEnd, HEX);
+                serial.println(" lengthPayLoad ", lengthPayLoad, DEC);
+                );
+        return (false);
+    }
+
+    bool startNotFound = false; // we need this as a exit condition, in case memory range is no where found
+    bool startFound;
+    bool endFound;
 
     while ((!startNotFound) && (addressStart <= addressEnd))
     {
@@ -706,7 +719,9 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
         // check if we have a memMapper and if payLoad is handled by it
         if (memMapper != nullptr)
         {
-            if (memMapper->isMappedRange(addressStart, addressEnd))
+            startFound = memMapper->isMapped(addressStart);
+            endFound = memMapper->isMapped(addressEnd);
+            if (startFound && endFound)
             {
                 // start & end fit into memMapper
                 bool operationResult = false;
@@ -718,15 +733,15 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
                 if (operationResult)
                 {
                     DB_MEM_OPS(serial.println(" -> memmapped ", lengthPayLoad, DEC));
-                    return true;
+                    return (true);
                 }
                 else
-                    return false;
+                    return (false);
             }
-            else if (memMapper->isMapped(addressStart))
+            else if (startFound)
             {
                 // we only know that start is mapped so lets do memory operation byte by byte
-                for (int i = 0; i < lengthPayLoad; i++)
+                for (unsigned int i = 0; i < lengthPayLoad; i++)
                 {
                     bool operationResult = memMapper->isMapped(addressStart);
                     if (operationResult)
@@ -756,7 +771,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
         // check if payLoad is in USER_EEPROM
         if (addressStart <= addressEnd)
         {
-            if ((addressStart >= userEeprom->userEepromStart) &&  (addressEnd < userEeprom->userEepromEnd))
+            if ((addressStart >= userEeprom->userEepromStart) &&  (addressEnd <= userEeprom->userEepromEnd))
             {
                 // start & end are in USER_EEPROM
                 if (readMem)
@@ -769,12 +784,12 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
                     userEeprom->modified();
                 }
                 DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
-                return true;
+                return (true);
             }
-            else if ((addressStart >= userEeprom->userEepromStart) && (addressStart < userEeprom->userEepromEnd))
+            else if ((addressStart >= userEeprom->userEepromStart) && (addressStart <= userEeprom->userEepromEnd))
             {
                 // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
-                const int copyCount = userEeprom->userEepromEnd - addressStart;
+                const int copyCount = (userEeprom->userEepromEnd - addressStart + 1);
                 if (readMem)
                 {
                     memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), copyCount);
@@ -803,7 +818,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
                 else
                     cpyToUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
                 DB_MEM_OPS(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC));
-                return true;
+                return (true);
             }
             else if ((addressStart >= userRam->userRamStart) && (addressStart <= userRam->userRamEnd))
             {
@@ -827,7 +842,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
             DB_MEM_OPS(
                 (readMem) ? serial.print(" -> MemoryRead :", addressStart, HEX, 4) : serial.print(" -> MemoryWrite:", addressStart, HEX, 4);
                 serial.print(" Data:");
-                for(int i=0; i<lengthPayLoad ; i++)
+                for(unsigned int i=0; i<lengthPayLoad ; i++)
                 {
                     serial.print(" ", payLoad[i], HEX, 2);
                 }

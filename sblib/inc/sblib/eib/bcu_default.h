@@ -130,7 +130,7 @@ public:
      *
      * @return true if successfully, otherwise false
      */
-    bool processApciMemoryOperation(unsigned int addressStart, byte *payLoad, int lengthPayLoad, const bool readMem);
+    bool processApciMemoryOperation(unsigned int addressStart, byte *payLoad, unsigned int lengthPayLoad, const bool &readMem);
 
     /**
      * Process a APCI_MASTER_RESET_PDU

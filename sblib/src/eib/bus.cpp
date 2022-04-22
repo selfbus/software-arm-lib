@@ -770,7 +770,7 @@ void Bus::handleTelegram(bool valid)
 		}
 		else
 		{
-			DB(serial.println(" not processed: ", destAddr, HEX));
+			DB(serial.println(" Bus::handleTelegram not processed: 0x", destAddr, HEX));
 		}
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
