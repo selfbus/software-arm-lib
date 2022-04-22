@@ -264,6 +264,10 @@ void ComObjects::addObjectFlags(int objno, int flags)
 void ComObjects::setObjectFlags(int objno, int flags)
 {
     byte* flagsPtr = objectFlagsTable();
+    if (flagsPtr == nullptr)
+    {
+        return;
+    }
     flagsPtr += objno >> 1;
 
 
