@@ -14,48 +14,48 @@
 #include <limits.h>
 
 
-TEST_CASE("Datapoint type conversion: dptToFloat","[SBLIB]")
+TEST_CASE("Datapoint type conversion: floatToDpt9","[SBLIB]")
 {
-    REQUIRE(dptToFloat(0) == 0);
+    REQUIRE(floatToDpt9(0) == 0);
 
-    REQUIRE(dptToFloat(1) == 1);
-    REQUIRE(dptToFloat(2) == 2);
-    REQUIRE(dptToFloat(2047) == 0x07ff);
-    REQUIRE(dptToFloat(2048) == 0x0c00);
-    REQUIRE(dptToFloat(2050) == 0x0c01);
-    REQUIRE(dptToFloat(4096) == 0x1400);
-    REQUIRE(dptToFloat(8192) == 0x1c00);
-    REQUIRE(dptToFloat(67043328) == 0x7ffe);
-    REQUIRE(dptToFloat(67076095) == 0x7ffe);
-    REQUIRE(dptToFloat(67076096) == 0x7fff);
-    REQUIRE(dptToFloat(67076097) == 0x7fff);
-    REQUIRE(dptToFloat(INT_MAX) == 0x7fff);
+    REQUIRE(floatToDpt9(1) == 1);
+    REQUIRE(floatToDpt9(2) == 2);
+    REQUIRE(floatToDpt9(2047) == 0x07ff);
+    REQUIRE(floatToDpt9(2048) == 0x0c00);
+    REQUIRE(floatToDpt9(2050) == 0x0c01);
+    REQUIRE(floatToDpt9(4096) == 0x1400);
+    REQUIRE(floatToDpt9(8192) == 0x1c00);
+    REQUIRE(floatToDpt9(67043328) == 0x7ffe);
+    REQUIRE(floatToDpt9(67076095) == 0x7ffe);
+    REQUIRE(floatToDpt9(67076096) == 0x7fff);
+    REQUIRE(floatToDpt9(67076097) == 0x7fff);
+    REQUIRE(floatToDpt9(INT_MAX) == 0x7fff);
 
-    REQUIRE(dptToFloat(-1) == 0x87ff);
-    REQUIRE(dptToFloat(-2) == 0x87fe);
-    REQUIRE(dptToFloat(-2048) == 0x8000);
-    REQUIRE(dptToFloat(-4096) == 0x8800);
-    REQUIRE(dptToFloat(-67108864) == 0xf800);
-    REQUIRE(dptToFloat(-67108865) == 0x7fff);
-    REQUIRE(dptToFloat(INT_MIN) == 0x7fff);
+    REQUIRE(floatToDpt9(-1) == 0x87ff);
+    REQUIRE(floatToDpt9(-2) == 0x87fe);
+    REQUIRE(floatToDpt9(-2048) == 0x8000);
+    REQUIRE(floatToDpt9(-4096) == 0x8800);
+    REQUIRE(floatToDpt9(-67108864) == 0xf800);
+    REQUIRE(floatToDpt9(-67108865) == 0x7fff);
+    REQUIRE(floatToDpt9(INT_MIN) == 0x7fff);
 }
 
-TEST_CASE("Datapoint type conversion: dptFromFloat","[SBLIB]")
+TEST_CASE("Datapoint type conversion: dpt9ToFloat","[SBLIB]")
 {
-    REQUIRE(dptFromFloat(0) == 0);
+    REQUIRE(dpt9ToFloat(0) == 0);
 
-    REQUIRE(dptFromFloat(1) == 1);
-    REQUIRE(dptFromFloat(2) == 2);
-    REQUIRE(2047 == dptFromFloat(0x07ff));
-    REQUIRE(2048 == dptFromFloat(0x0c00));
-    REQUIRE(4096 == dptFromFloat(0x1400));
-    REQUIRE(8192 == dptFromFloat(0x1c00));
-    REQUIRE(67043328 == dptFromFloat(0x7ffe));
-    REQUIRE(INVALID_DPT_FLOAT == dptFromFloat(0x7fff));
+    REQUIRE(dpt9ToFloat(1) == 1);
+    REQUIRE(dpt9ToFloat(2) == 2);
+    REQUIRE(2047 == dpt9ToFloat(0x07ff));
+    REQUIRE(2048 == dpt9ToFloat(0x0c00));
+    REQUIRE(4096 == dpt9ToFloat(0x1400));
+    REQUIRE(8192 == dpt9ToFloat(0x1c00));
+    REQUIRE(67043328 == dpt9ToFloat(0x7ffe));
+    REQUIRE(INVALID_DPT_FLOAT == dpt9ToFloat(0x7fff));
 
-    REQUIRE(-1 == dptFromFloat(0x87ff));
-    REQUIRE(-2 == dptFromFloat(0x87fe));
-    REQUIRE(-2048 == dptFromFloat(0x8000));
-    REQUIRE(-4096 == dptFromFloat(0x8800));
-    REQUIRE(-67108864 == dptFromFloat(0xf800));
+    REQUIRE(-1 == dpt9ToFloat(0x87ff));
+    REQUIRE(-2 == dpt9ToFloat(0x87fe));
+    REQUIRE(-2048 == dpt9ToFloat(0x8000));
+    REQUIRE(-4096 == dpt9ToFloat(0x8800));
+    REQUIRE(-67108864 == dpt9ToFloat(0xf800));
 }

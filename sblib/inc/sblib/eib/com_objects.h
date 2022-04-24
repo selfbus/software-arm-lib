@@ -341,7 +341,7 @@ inline void ComObjects::objectWrite(int objno, byte* value)
 
 inline void ComObjects::objectWriteFloat(int objno, int value)
 {
-    _objectWrite(objno, dptToFloat(value), COMFLAG_TRANSREQ);
+    _objectWrite(objno, floatToDpt9(value), COMFLAG_TRANSREQ);
 }
 
 inline void ComObjects::objectUpdate(int objno, unsigned int value)
@@ -356,12 +356,12 @@ inline void ComObjects::objectUpdate(int objno, byte* value)
 
 inline void ComObjects::objectUpdateFloat(int objno, int value)
 {
-    _objectWrite(objno, dptToFloat(value), COMFLAG_UPDATE);
+    _objectWrite(objno, floatToDpt9(value), COMFLAG_UPDATE);
 }
 
 inline float ComObjects::objectReadFloat(int objno)
 {
-    return dptFromFloat(objectRead(objno));
+    return dpt9ToFloat(objectRead(objno));
 }
 
 #endif /*sblib_com_objects_h*/

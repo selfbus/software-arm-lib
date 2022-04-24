@@ -183,7 +183,7 @@ public:
      * Query about range mapping
      *
      * @param virtStartAddress - the virtual start address of the data block
-     * @param virtEndAddress - the virtual start address of the data block
+     * @param virtEndAddress - the virtual end address of the data block
      * @return true if virtual address range is mapped
      */
     virtual bool isMappedRange(int virtStartAddress, int virtEndAddress);

@@ -1,5 +1,5 @@
 /*
- *  datapoint_types.h - Conversion functions for datapoint types.
+ *  datapoint_types.cpp - Conversion functions for datapoint types.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -14,7 +14,7 @@
 #define DPT_FLOAT_NEG_SIGN 0x8000
 
 
-unsigned short dptToFloat(int value)
+unsigned short floatToDpt9(int value)
 {
     int exp = 0;
 
@@ -43,7 +43,7 @@ unsigned short dptToFloat(int value)
     }
 }
 
-int dptFromFloat(unsigned short dptValue)
+int dpt9ToFloat(unsigned short dptValue)
 {
     int exp = (dptValue >> 11) & 15;
     int value;
