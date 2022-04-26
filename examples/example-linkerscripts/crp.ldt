@@ -1,0 +1,17 @@
+<#--
+We miss use the original crp.ldt to induce our selfbus sectionat addres 0x1f0, after we are done we include the orginal crp.ldt from nxp
+This file tells the linker to create a ".selfbusSection" section in flash and to keep it, even if not referenced
+
+
+original idea: https://mcuoneclipse.com/2019/10/06/linking-bootloader-applications-with-eclipse-and-freemarker-scripts/
+
+Take a lot on [MCUxpresso-Installdir]/MCUXpressoIDE[VERSION]/ide/Wizards/linker/*.ldt
+to get a idea of other possible linkerscripts
+-->
+        /* Selfbus named flash section at 0x1f0: */
+       . = 0x1f0;
+            __selfbus_first_sector = .; /* create symbol for start of selfbus section */
+            KEEP(*(.selfbus))           /* keep .selfbusSection variables even if not referenced */
+            __selfbus_sector_end = .;   /* create symbol for end of selfbus section */
+
+<#include "crp_from_nxp.ldt" >
