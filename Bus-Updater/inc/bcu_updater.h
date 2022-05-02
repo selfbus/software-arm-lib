@@ -38,8 +38,6 @@ public:
     ~BcuUpdate() = default;
     using BcuBase::setProgrammingMode; // make it public so we can use it in bootloader.cpp
     void begin();
-    ///\todo implement optimized version in a new subclass of Tlayer4
-    // void loop() override;
     bool applicationRunning() const override {return (enabled);}
 
 protected:
