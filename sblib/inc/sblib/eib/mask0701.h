@@ -1,5 +1,5 @@
 /*
- *  bcu.h - BCU specific stuff.
+ *  mask0701.h - BCU specific stuff.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *

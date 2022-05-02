@@ -9,7 +9,6 @@
  */
 
 #include <sblib/version.h>
-#include <sblib/eib/user_memory.h>
 #include <sblib/internal/variables.h>
 
 
