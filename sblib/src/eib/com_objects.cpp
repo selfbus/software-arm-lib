@@ -406,7 +406,8 @@ bool ComObjects::sendNextGroupTelegram()
     sendNextObjIndex %= numObjs;
 
 	//const ComConfig* configTab = &objectConfig(0);
-
+///\todo BUG This commented out section can lead to LL_BUSY responses of the Bus and it wont recover from that state
+/*
     // pending transmission status check, switch off interrupts to avoid reading/storing changing data
     noInterrupts();
 	if ( !(transmitting_object_no == INVALID_OBJECT_NUMBER) && bcu->bus->getBusTXStateValid() )
@@ -432,7 +433,8 @@ bool ComObjects::sendNextGroupTelegram()
 		bcu->bus->setBusTXStateValid(false);
 	}
 	interrupts();
-
+*/
+///\todoe BUG END
     // scan all objects, read config and group address of object
     for (uint16_t objno = sendNextObjIndex; objno < numObjs; ++objno)
     {
