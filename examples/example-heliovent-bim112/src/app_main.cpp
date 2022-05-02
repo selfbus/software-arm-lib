@@ -89,7 +89,7 @@ BcuBase* setup()
     for (int i = 0; i < testSize; i++)
     {
         {
-            bcu.processApciMemoryWritePDU(bcu.userRam->userRamEnd - i, &payLoad[0], testSize);
+            bcu.processApciMemoryWritePDU(bcu.userRam->endAddr() - i, &payLoad[0], testSize);
         }
         serial.println("---------------------");
     }
