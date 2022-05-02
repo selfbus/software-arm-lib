@@ -35,19 +35,20 @@
 #include <sblib/eib/com_objectsBCU1.h>
 #include <sblib/eib/typesBCU2.h>
 
-class BcuBase;
+class BcuDefault;
 
 class ComObjectsBCU2 : public ComObjectsBCU1
 {
 public:
-	ComObjectsBCU2(BcuBase* bcuInstance) : ComObjectsBCU1(bcuInstance) {}
+    ComObjectsBCU2() = delete;
+    ComObjectsBCU2(BcuDefault* bcuInstance) : ComObjectsBCU1(bcuInstance) {}
 	~ComObjectsBCU2() = default;
 
 protected:
 	virtual byte* objectValuePtr(int objno) override;
 	virtual byte* objectConfigTable() override;
 	virtual byte* objectFlagsTable() override;
-	const ComConfig& objectConfig(int objno) override { return objectConfigBCU2(objno)->baseConfig; }
+	const ComConfig& objectConfig(int objno) override;
 
 private:
 	const ComConfigBCU2* objectConfigBCU2(int objno);

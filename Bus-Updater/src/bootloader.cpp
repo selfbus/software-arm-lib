@@ -24,6 +24,7 @@
 #include <sblib/digital_pin.h>
 #include <sblib/internal/iap.h> // for IAP_SUCCESS
 #include <sblib/eib/apci.h>
+#include <sblib/hardware_descriptor.h>
 #include "boot_descriptor_block.h"
 #include "bcu_updater.h"
 #include "dump.h"
@@ -147,7 +148,7 @@ void loop()
         blinky = !blinky;
     }
 
-    digitalWrite(PIN_PROG, blinky);
+    digitalWrite(hwPinProgButton(), blinky);
 
 #if defined(DEBUG) && (!(defined(TS_ARM)))
     digitalWrite(PIN_RUN, blinky);
@@ -238,8 +239,8 @@ static void run_updater(bool programmingMode)
     *magicWord = 0;		// wrong magicWord, delete it
 
     // Enter Updater when programming button was pressed at power up
-    pinMode(PIN_PROG, INPUT | PULL_UP);
-    if (!digitalRead(PIN_PROG))
+    pinMode(hwPinProgButton(), INPUT | PULL_UP);
+    if (!digitalRead(hwPinProgButton()))
     {
         run_updater(true);
     }

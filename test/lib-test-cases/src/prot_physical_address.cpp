@@ -24,7 +24,7 @@ static ProtocolTestState protoState[2];
 static void tc_setup(Telegram* tel, uint16_t telCount)
 {
     bcuUnderTest->setOwnAddress(0x11C9); // set own address to 1.1.102
-    bcuUnderTest->userRam->status ^= 0x81; // set the programming mode
+    bcuUnderTest->userRam->status() ^= 0x81; // set the programming mode
     telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
@@ -45,10 +45,10 @@ static void phy_addr_changed(void * state, unsigned int param)
 
 static void clearProgMode(void * state, unsigned int param)
 {
-    if (bcuUnderTest->userRam->status & BCU_STATUS_PROG)
+    if (bcuUnderTest->userRam->status() & BCU_STATUS_PROGRAMMING_MODE)
     {
-        bcuUnderTest->userRam->status   ^= 0x81; // clear the programming mode
-        VaS(state)->state = bcuUnderTest->userRam->status;
+        bcuUnderTest->userRam->status()   ^= 0x81; // clear the programming mode
+        VaS(state)->state = bcuUnderTest->userRam->status();
     }
 }
 
@@ -93,7 +93,7 @@ static Telegram testCaseTelegrams[] =
 
 static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->state      = bcuUnderTest->userRam->status;
+    state->state      = bcuUnderTest->userRam->status();
     state->connected  = bcuUnderTest->directConnection();
     state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 

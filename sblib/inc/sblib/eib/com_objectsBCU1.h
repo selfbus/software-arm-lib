@@ -35,12 +35,18 @@
 #include <sblib/eib/com_objects.h>
 #include <sblib/eib/typesBCU1.h>
 
-class BcuBase;
+class BcuDefault;
 
+/**
+ * Group Object Table - Realisation Type 1
+ * @details KNX Spec. 2.1 3/5/1 4.12.2 p. 168ff
+ *
+ */
 class ComObjectsBCU1 : public ComObjects
 {
 public:
-	ComObjectsBCU1(BcuBase* bcuInstance) : ComObjects(bcuInstance) {}
+    ComObjectsBCU1() = delete;
+	ComObjectsBCU1(BcuDefault* bcuInstance) : ComObjects((BcuBase*)bcuInstance) {}
 	~ComObjectsBCU1() = default;
 
 	virtual const ComConfig& objectConfig(int objno) override;

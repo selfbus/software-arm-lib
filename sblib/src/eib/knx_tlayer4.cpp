@@ -811,7 +811,7 @@ void TLayer4::actionA07SendDirectTelegram()
         dumpTelegramBytes(true, &sendTelegram[0], telegramSize(sendTelegram), true);
     );
     telegramReadyToSend = false;
-    send(sendTelegram, telegramSizeNpdu(sendTelegram));
+    send(sendTelegram, telegramSize(sendTelegram));
     connectedTime = systemTime;
 }
 

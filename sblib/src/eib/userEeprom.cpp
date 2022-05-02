@@ -11,17 +11,22 @@
 #include <sblib/eib/bus.h>
 #include <cstring>
 
-inline unsigned int UserEeprom::numEepromPages() const
+uint32_t UserEeprom::flashSize() const
 {
-	return FLASH_SECTOR_SIZE / userEepromFlashSize;
+    return (userEepromFlashSize);
 }
 
-inline byte* UserEeprom::lastEepromPage() const
+unsigned int UserEeprom::numEepromPages() const
 {
-	return flashSectorAddress() + userEepromFlashSize * (numEepromPages() - 1);
+	return FLASH_SECTOR_SIZE / flashSize();
 }
 
-inline byte* UserEeprom::flashSectorAddress() const
+byte* UserEeprom::lastEepromPage() const
+{
+	return flashSectorAddress() + flashSize() * (numEepromPages() - 1);
+}
+
+byte* UserEeprom::flashSectorAddress() const
 {
 	return (FLASH_BASE_ADDRESS + iapFlashSize() - FLASH_SECTOR_SIZE);
 }
@@ -33,7 +38,7 @@ byte* UserEeprom::findValidPage()
 
     while (page >= firstPage)
     {
-        if (page[userEepromSize - 1] != 0xff)  ///\todo check more then  only one byte for 0xff (empty flash)
+        if (page[size() - 1] != 0xff)  ///\todo check more then  only one byte for 0xff (empty flash)
             return page;
 
         page -= userEepromFlashSize;
@@ -47,9 +52,9 @@ void UserEeprom::readUserEeprom()
     byte* page = findValidPage();
 
     if (page)
-        memcpy(userEepromData, page, userEepromSize);
+        memcpy(userEepromData, page, size());
     else
-        memset(userEepromData, 0, userEepromSize); // TODO should filling with zeros indicate a readError? if yes, then it should be somewhere reported
+        memset(userEepromData, 0, size()); // TODO should filling with zeros indicate a readError? if yes, then it should be somewhere reported
 
     userEepromModified = false;
 }
@@ -57,11 +62,16 @@ void UserEeprom::readUserEeprom()
 void UserEeprom::writeUserEeprom()
 {
     if (!userEepromModified)
+    {
         return;
+    }
 
     // Wait for an idle bus and then disable the interrupts
     while (!bcu->bus->idle())
+    {
         ;
+    }
+
     noInterrupts();
 
     byte* page = findValidPage();
@@ -86,13 +96,13 @@ void UserEeprom::writeUserEeprom()
         }
     }
 
-    userEepromData[userEepromSize - 1] = 0; // mark the page as in use
+    userEepromData[size() - 1] = 0; // mark the page as in use
 
     IAP_Status rc;
 
-    for (unsigned int i = 0; i < userEepromSize; i += 1024)
+    for (unsigned int i = 0; i < size(); i += 1024)
     {
-    	int chunk = userEepromSize - i;
+    	int chunk = size() - i;
     	if (chunk > 1024)
     	{
     		chunk = 1024;
@@ -109,14 +119,48 @@ void UserEeprom::writeUserEeprom()
 }
 
 UserEeprom::UserEeprom(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) :
-		userEepromData(new byte[size]), bcu(bcu), userEepromStart(start), userEepromSize(size), userEepromEnd(start+size-1), userEepromFlashSize(flashSize)
+		Memory(start, size),
+		userEepromData(new byte[size]),
+		bcu(bcu),
+		userEepromFlashSize(flashSize)
 {
     readUserEeprom();
 }
 
-byte& UserEeprom::operator[](unsigned int idx)
+byte& UserEeprom::operator[](uint32_t address)
 {
-    idx -= userEepromStart;
-    return userEepromData[idx];
+    normalizeAddress(&address);
+    return userEepromData[address];
 }
 
+
+uint8_t UserEeprom::getUInt8(uint32_t address) const
+{
+    normalizeAddress(&address);
+    if (address > (size() - 1))
+    {
+        return 0;
+    }
+    return userEepromData[address];
+}
+
+uint16_t UserEeprom::getUInt16(uint32_t address) const
+{
+    normalizeAddress(&address);
+    if ((address + 1) > (size() - 1))
+    {
+        return 0;
+    }
+    return makeWord(userEepromData[address], userEepromData[address + 1]);
+}
+
+void UserEeprom::modified()
+{
+    userEepromModified = true;
+    writeUserEepromTime = 0;
+}
+
+bool UserEeprom::isModified() const
+{
+    return userEepromModified;
+}

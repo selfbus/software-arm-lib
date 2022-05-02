@@ -14,10 +14,10 @@
 #   include <sblib/serial.h>
 #endif
 
-MASK0701::MASK0701() : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(this), new ComObjectsMASK0701(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this))
+MASK0701::MASK0701() : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(this), new ComObjectsBCU2(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this))
 {}
 
-MASK0701::MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsMASK0701* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties) :
+MASK0701::MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsBCU2* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties) :
 		BCU2(userRam, userEeprom, comObjects, addrTables, properties)/*,
 		userRam(userRam),
 		userEeprom(userEeprom),

@@ -22,6 +22,7 @@
 #define MEM_MAPPER_OUT_OF_MEMORY   -4
 #define MEM_MAPPER_INVALID_LENGTH  -8
 
+///\todo class Memory as base class for MemMapper
 class MemMapper
 {
 public:

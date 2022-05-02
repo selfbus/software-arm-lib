@@ -88,7 +88,7 @@ static void tc_setup(Telegram* tel, uint16_t telCount)
 
 static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->state      = bcuUnderTest->userRam->status;
+    state->state      = bcuUnderTest->userRam->status();
     state->connected  = bcuUnderTest->directConnection();
     state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 

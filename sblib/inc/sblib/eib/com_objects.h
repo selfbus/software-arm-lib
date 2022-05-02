@@ -29,6 +29,7 @@
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
  */
+
 #ifndef sblib_com_objects_h
 #define sblib_com_objects_h
 
@@ -43,6 +44,7 @@ class BcuBase;
 class ComObjects
 {
 public:
+    ComObjects() = delete;
 	ComObjects(BcuBase* bcu);
 	~ComObjects();
 
@@ -198,7 +200,7 @@ public:
 	 * Get the ID of the next communication object that was updated
 	 * over the bus by a write-value-request telegram.
 	 *
-	 * @return The ID of the next updated com-object, -1 if none.
+	 * @return The ID of the next updated com-object, @ref INVALID_OBJECT_NUMBER if none was found.
 	 */
 	int nextUpdatedObject();
 
@@ -226,39 +228,36 @@ public:
 	 */
 	virtual const ComConfig& objectConfig(int objno) = 0;
 
+	void processGroupTelegram(int addr, int apci, byte* tel);
+
 	/**
 	 * Process a multicast group telegram received from bus or requested by the application.
 	 *
-	 * This function is called by bcu.processTelegram() and from the local process. It is usually not required to call
-	 * this function from within a user program.
+	 * @brief This function is called by bcu.processTelegram() and from the local process.
+	 *        It is usually not required to call this function from within a user program.
 	 *
-	 * @param addr - the destination group address.
-	 * @apci - Kind of telegram to be processed
-	 *         APCI_GROUP_VALUE_WRITE_PDU
-	 *         APCI_GROUP_VALUE_RESPONSE_PDU
-	 *         APCI_GROUP_VALUE_READ_PDU
-	 * @tel - pointer to the telegram to read from
-	 *         (only used if APCI_GROUP_VALUE_WRITE_PDU or APCI_GROUP_VALUE_RESPONSE_PDU)
-	 *
-	 *         if called from app, we have the triggering object as additional parameter
-	 * @trg_objno - objno triggering the group telegram from the application layer
-	 *
+	 * @param addr      The destination group address.
+	 * @param apci      Kind of telegram to be processed
+     *                     - @ref APCI_GROUP_VALUE_WRITE_PDU
+     *                     - @ref APCI_GROUP_VALUE_RESPONSE_PDU
+     *                     - @ref APCI_GROUP_VALUE_READ_PDU
+	 * @param tel       Pointer to the telegram to read from
+	 *                  (only used for @ref APCI_GROUP_VALUE_WRITE_PDU or @ref APCI_GROUP_VALUE_RESPONSE_PDU)
+	 *                  if called from app, we have the triggering object as additional parameter
+	 * @param trg_objno Object number triggering the group telegram from the application layer
 	 */
-
-	void processGroupTelegram(int addr, int apci, byte* tel);
-
 	virtual void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno) = 0;
 
 	/**
 	 * Get the communication object configuration table ("COMMS" table). This is the table
 	 * with the flags that are configured by ETS (not the RAM status flags).
 	 *
-	 * @return The com-objects configuration table.
-	 *
 	 * @brief The first byte of the table contains the number of entries. The second
 	 * byte contains the address of the object status flags in userRam. The rest of
 	 * the table consists of the ComConfig objects - 3 bytes per communication
 	 * object.
+	 *
+	 * @return Pointer to com-objects configuration table.
 	 */
 	virtual byte* objectConfigTable() = 0;
 
@@ -272,25 +271,100 @@ public:
 	 * object.
 	 */
 	virtual byte* objectFlagsTable() = 0;
+
+	/**
+	 *  Send next Group read/write telegram based on RAM flag status and handle bus rx/tx status
+	 *  of previously transmitted telegram
+	 *
+	 *  @details Periodically called from BCU-loop function.
+	 *           Scan RAM flags of objects if there is a read or write request from the app.
+	 *           If object config flag allows communication and transmission requests from app send respective message
+	 *           and reset the RAM flags and return true. If no request is found in RAM flag return false
+	 *
+	 *           Scan if AIL is waiting for confirmation of lower bus-layers from last transmit request (read/write)
+	 *           and set the object-flag according to bus result
+	 *
+	 *  @return true if a telegram was sent, otherwise false
+	 */
 	bool sendNextGroupTelegram();
 
 protected:
-	BcuBase* bcu;
-	int le_ptr = BIG_ENDIAN;
-	int transmitting_object_no= INVALID_OBJECT_NUMBER; // object number of last transmitted bus msg - status should be in transmitting
-	int sndStartIdx = 0;
-
+	/**
+	 * Get the size of the com-object in bytes, for sending/receiving telegrams.
+	 * 0 is returned if the object's size is <= 6 bit.
+	 */
 	int telegramObjectSize(int objno);
+
+	/**
+	 * Add one or more flags to the flags of a communication object.
+	 * This does not clear any flag of the communication object.
+	 *
+	 * @param objno - the ID of the communication object
+	 * @param flags - the flags to add
+	 *
+	 * @see @ref objectWritten(int)
+	 * @see @ref requestObjectRead(int)
+	 */
 	void addObjectFlags(int objno, int flags);
+
+	/**
+	 * Set the flags of a communication object.
+	 *
+	 * @param objno - the ID of the communication object
+	 * @param flags - the new communication object flags
+	 *
+	 * @see @ref objectWritten(int)
+	 * @see @ref requestObjectRead(int)
+	 */
 	void setObjectFlags(int objno, int flags);
 	void _objectWrite(int objno, unsigned int value, int flags);
 	void _objectWriteBytes(int objno, byte* value, int flags);
+
+	/**
+	 * @return The number of communication objects.
+	 */
 	int objectCount();
+
+	/**
+	 * Find the first group address for the communication object. This is the
+	 * address that is used when sending a read-value or a write-value telegram.
+	 *
+	 * @param objno - the ID of the communication object
+	 * @return The group address, or 0 if none found.
+	 */
 	int firstObjectAddr(int objno);
+
+	/**
+	 * Create and send a group read request telegram.
+	 *
+	 * In order to avoid overwriting a telegram in the send buffer while the bus is still sending the last telegram
+	 * we wait for a free buffer
+	 *
+	 * @param objno - the ID of the communication object
+	 * @param addr - the group address to read
+	 */
 	void sendGroupReadTelegram(int objno, int addr);
+
+	/**
+	 * Create and send a group write or group response telegram.
+	 *
+	 * In order to avoid overwriting a telegram in the send buffer while the bus is still sending the last telegram
+	 * we wait for a free buffer
+	 *
+	 * @param objno - the ID of the communication object
+	 * @param addr - the destination group address
+	 * @param isResponse - true if response telegram, false if write telegram
+	 */
 	void sendGroupWriteTelegram(int objno, int addr, bool isResponse);
 	void processGroupWriteTelegram(int objno, byte* tel);
 	virtual const byte* getObjectTypeSizes() = 0;
+
+    BcuBase* bcu;
+    int le_ptr;
+    int transmitting_object_no; //!< Object number of last transmitted bus message - status should be in transmitting
+    int sendNextObjIndex;       //!< Next object number which  will be checked in sendNextGroupTelegram() for transmission
+    int nextUpdatedObjIndex;    //!< Next object number which  will be checked in nextUpdatedObject() for processing by the application
+
 };
 
 

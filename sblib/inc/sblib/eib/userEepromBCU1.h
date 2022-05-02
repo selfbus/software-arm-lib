@@ -9,7 +9,8 @@
 class UserEepromBCU1 : public UserEeprom
 {
 public:
-	UserEepromBCU1(BcuBase *bcu) : UserEeprom(bcu, 0x100, 256, 256) {};
+    UserEepromBCU1() = delete;
+    UserEepromBCU1(BcuBase *bcu) : UserEeprom(bcu, 0x100, 256, 256) {};
 	~UserEepromBCU1() = default;
 
 	static const int optionRegOffset = 0;       //!< 0x0100: EEPROM option register

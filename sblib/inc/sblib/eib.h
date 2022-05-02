@@ -10,6 +10,7 @@
 #ifndef sblib_eib_h
 #define sblib_eib_h
 
+//#if 0
 #ifndef NO_OOP_MACROS
 
 #include <sblib/core.h>
@@ -75,12 +76,13 @@
 #define userMemoryPtr bcu.userMemoryPtr
 #define setUserRamStart userRam.setUserRamStart
 
-#define USER_EEPROM_START userEeprom.userEepromStart
-#define USER_EEPROM_SIZE userEeprom.userEepromSize
-#define USER_EEPROM_END userEeprom.userEepromEnd
+#define USER_EEPROM_START userEeprom.startAddr()
+#define USER_EEPROM_SIZE userEeprom.size()
+#define USER_EEPROM_END userEeprom.endAddr()
 
 #define bus (*(bcu.bus))
 
 
 #endif /* NO_OOP_MACROS */
+//#endif
 #endif /*sblib_eib_h*/

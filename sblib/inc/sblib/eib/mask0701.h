@@ -16,7 +16,7 @@
 #include <sblib/eib/bcu2.h>
 #include <sblib/eib/userEepromMASK0701.h>
 #include <sblib/eib/userRamMASK0701.h>
-#include <sblib/eib/com_objectsMASK0701.h>
+#include <sblib/eib/com_objectsBCU2.h>
 #include <sblib/eib/addr_tablesMASK0701.h>
 #include <sblib/eib/propertiesMASK0701.h>
 
@@ -30,7 +30,7 @@ class MASK0701 : public BCU2
 {
 public:
 	MASK0701();
-	MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsMASK0701* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties);
+	MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsBCU2* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties);
 	~MASK0701() = default;
 
     virtual const char* getBcuType() const override { return "BIM112"; }

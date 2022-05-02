@@ -12,7 +12,7 @@
 #include <sblib/eib/bcu1.h>
 #include <sblib/internal/variables.h>
 
-#include <string.h> // for memcpy in propertyValueReadTelegram()
+#include <cstring> // for memcpy in propertyValueReadTelegram()
 
 #include <sblib/eib/propertiesBCU2.h>
 #include <sblib/eib/bcu2.h>
@@ -270,11 +270,11 @@ LoadState PropertiesBCU2::handleAllocAbsDataSegment(const int objectIdx, const b
         case MT_EEPROM:
         {
             // check against user ram
-            memStartValid = (absDataSegmentStartAddress >= (unsigned int) bcu->userRam->userRamStart) && (absDataSegmentStartAddress < ((unsigned int) bcu->userRam->userRamEnd));
-            memEndValid = (absDataSegmentEndAddress >= (unsigned int) bcu->userRam->userRamStart) && (absDataSegmentEndAddress < ((unsigned int) bcu->userRam->userRamEnd));
+            memStartValid = bcu->userRam->inRange(absDataSegmentStartAddress);
+            memEndValid = bcu->userRam->inRange(absDataSegmentEndAddress);
             // check against user EEPROM
-            memStartValid |= (absDataSegmentStartAddress >= bcu->userEeprom->userEepromStart) && (absDataSegmentStartAddress < bcu->userEeprom->userEepromEnd);
-            memEndValid |= (absDataSegmentEndAddress >= bcu->userEeprom->userEepromStart) && (absDataSegmentEndAddress < bcu->userEeprom->userEepromEnd);
+            memStartValid |= bcu->userEeprom->inRange(absDataSegmentStartAddress);
+            memEndValid |= bcu->userEeprom->inRange(absDataSegmentEndAddress);
             // check against MemMapper
             MemMapper* bcuMemMapper = bcu->getMemMapper();
             memStartValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));

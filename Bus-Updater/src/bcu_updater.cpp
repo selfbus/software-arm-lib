@@ -27,10 +27,6 @@
 #include "bcu_updater.h"
 #include "dump.h"
 
-
-// The EIB bus access object
-// Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
-
 #ifdef DEBUG
 #   define DEFAULT_COUNT_TO_FAIL (30)
     int defaultCountToFail = DEFAULT_COUNT_TO_FAIL;
@@ -98,40 +94,11 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderA
             return (T_NACK_PDU);
     }
 }
-/*
-void BcuUpdate::loop()
-{
-    if (!enabled)
-        return;
-    //TLayer4::loop();
-    BcuBase::loop();
-    ///\todo MERGE
-*/
-/* partly already done in BcuBase::loop
-    if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE))
-    {
-        processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
-    }
-
-    if (progPin)
-    {
-        // Detect the falling edge of pressing the prog button
-        pinMode(progPin, INPUT|PULL_UP);
-        int oldValue = progButtonDebouncer.value();
-        if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
-        {
-            userRam->status ^= 0x81;  // toggle programming mode and checksum bit
-        }
-        pinMode(progPin, OUTPUT);
-        digitalWrite(progPin, (userRam->status & BCU_STATUS_PROG) ^ progPinInv);
-    }
-    */
-//}
 
 void BcuUpdate::begin()
 {
-    userRam->status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
-    userRam->runState = 1;
+    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
+    userRam->runState() = 1;
     BcuBase::_begin();
 }
 

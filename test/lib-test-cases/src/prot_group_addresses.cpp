@@ -329,7 +329,7 @@ static Telegram testCaseTelegrams[] =
 
 static void gatherProtocolState(ProtocolTestState * state, ProtocolTestState * refState)
 {
-    state->state      = bcuUnderTest->userRam->status;
+    state->state      = bcuUnderTest->userRam->status();
     state->connected  = bcuUnderTest->directConnection();
     state->ownAddress = bcuUnderTest->userEeprom->addrTab()[0] << 8 | bcuUnderTest->userEeprom->addrTab()[1];
 

@@ -46,8 +46,7 @@ enum Hop_count_type
  *
  * @return The size of the telegram, excluding the checksum byte.
  */
-#define telegramSizeNpdu(tel) (7 + (tel[5] & 15)) //FIXME telegramSize accesses tel[5] without any check
-
+#define telegramSize(tel) (7 + (tel[5] & 15)) //FIXME telegramSize accesses tel[5] without any check
 
 
 #endif /* SBLIB_KNX_NPDU_H_ */

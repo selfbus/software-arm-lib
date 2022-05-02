@@ -1,5 +1,5 @@
 /*
- *  types.h - EIB data types
+ *  typesBCU2.h - EIB data types
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *

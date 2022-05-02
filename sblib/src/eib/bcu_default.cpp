@@ -11,6 +11,7 @@
 #define INSIDE_BCU_CPP
 #include <sblib/io_pin_names.h>
 #include <sblib/eib/knx_lpdu.h>
+#include <sblib/eib/knx_npdu.h>
 #include <sblib/eib/bcu_default.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/internal/variables.h>
@@ -42,6 +43,12 @@ BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* com
 
 void BcuDefault::_begin()
 {
+#ifndef ROUTER
+    if (ownAddress() == 0) // 0.0.0 is not allowed for normal devices, only routers
+    {
+        setOwnAddress(PHY_ADDR_DEFAULT); //set default address 15.15.255
+    }
+#endif
     BcuBase::_begin();
 
 #ifdef DUMP_TELEGRAMS ///\todo move to Bus::begin()
@@ -79,16 +86,16 @@ void BcuDefault::_begin()
 #   endif
     if (userRam != nullptr)
     {
-        IF_DEBUG(serial.print("userRam    start: 0x", userRam->userRamStart, HEX, 4); serial.print(" "););
-        IF_DEBUG(serial.print("end: 0x", userRam->userRamEnd, HEX, 4); serial.print(" "););
-        IF_DEBUG(serial.println("size: 0x", userRam->userRamSize, HEX, 4));
+        IF_DEBUG(serial.print("userRam    start: 0x", (unsigned int)userRam->startAddr(), HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.print("end: 0x", (unsigned int)userRam->endAddr(), HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.println("size: 0x", (unsigned int)userRam->size(), HEX, 4));
     }
     if (userEeprom != nullptr)
     {
-        IF_DEBUG(serial.print("userEeprom start: 0x", userEeprom->userEepromStart, HEX, 4); serial.print(" "););
-        IF_DEBUG(serial.print("end: 0x", userEeprom->userEepromEnd, HEX, 4); serial.print(" "););
-        IF_DEBUG(serial.print("size: 0x", userEeprom->userEepromSize, HEX, 4); serial.print(" "););
-        IF_DEBUG(serial.println("flashSize: 0x", userEeprom->userEepromFlashSize, HEX, 4););
+        IF_DEBUG(serial.print("userEeprom start: 0x", (unsigned int)userEeprom->startAddr(), HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.print("end: 0x", (unsigned int)userEeprom->endAddr(), HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.print("size: 0x", (unsigned int)userEeprom->size(), HEX, 4); serial.print(" "););
+        IF_DEBUG(serial.println("flashSize: 0x", (unsigned int)userEeprom->flashSize(), HEX, 4););
     }
     IF_DEBUG(serial.println());
 #endif
@@ -421,24 +428,7 @@ void BcuDefault::loop()
 	}
 #endif
 
-    TLayer4::loop();
-	if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE) && (userRam->status & BCU_STATUS_TL))
-	{
-        processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
-	}
-
-	if (progPin)
-	{
-		// Detect the falling edge of pressing the prog button
-		pinMode(progPin, INPUT|PULL_UP);
-		int oldValue = progButtonDebouncer.value();
-		if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
-		{
-			userRam->status ^= 0x81;  // toggle programming mode and checksum bit
-		}
-		pinMode(progPin, OUTPUT);
-		digitalWrite(progPin, (userRam->status & BCU_STATUS_PROG) ^ progPinInv);
-	}
+    BcuBase::loop(); // check processTelegram and programming button state
 
     // if bus is not sending (telegram buffer is empty) check for next telegram to be send
     if (sendGrpTelEnabled && !bus->sendingTelegram())
@@ -494,69 +484,17 @@ void BcuDefault::end()
     }
 }
 
-///\todo move to class userRam
-void BcuDefault::cpyToUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
-{
-    if ((address == USER_RAM_SYSTEM_STATE_ADDRESS) && (count == 1))
-    {
-        userRam->status = *buffer;
-        return;
-    }
-
-    address -= userRam->userRamStart;
-    if ((address > USER_RAM_SYSTEM_STATE_ADDRESS) || ((address + count) < USER_RAM_SYSTEM_STATE_ADDRESS))
-    {
-        memcpy((void*)(userRam->userRamData + address), buffer, count);
-    }
-    else
-    {
-        while (count--)
-        {
-            if (address == USER_RAM_SYSTEM_STATE_ADDRESS)
-                userRam->status = * buffer;
-            else
-                userRam->userRamData[address] = * buffer;
-            buffer++;
-            address++;
-        }
-    }
-}
-
-///\todo move to class userRam
-void BcuDefault::cpyFromUserRam(unsigned int address, unsigned char * buffer, unsigned int count)
-{
-    if ((address == USER_RAM_SYSTEM_STATE_ADDRESS) && (count == 1))
-    {
-        *buffer = userRam->status;
-        return;
-    }
-
-    address -= userRam->userRamStart;
-    if ((address > USER_RAM_SYSTEM_STATE_ADDRESS) || ((address + count) < USER_RAM_SYSTEM_STATE_ADDRESS))
-    {
-        memcpy(buffer, (const void*)(userRam->userRamData + address), count);
-    }
-    else
-    {
-        while (count--)
-        {
-            if (address == USER_RAM_SYSTEM_STATE_ADDRESS)
-                * buffer = userRam->status;
-            else
-                * buffer = userRam->userRamData[address];
-            buffer++;
-            address++;
-        }
-    }
-}
-
 byte* BcuDefault::userMemoryPtr(unsigned int addr)
 {
-    if (addr >= userEeprom->userEepromStart && addr < userEeprom->userEepromEnd)
+    if (userEeprom->inRange(addr))
+    {
         return &(*userEeprom)[addr];
-    else if (addr >= userRam->userRamStart && addr < (userRam->userRamStart + userRam->userRamSize))
+    }
+    else if (userRam->inRange(addr))
+    {
         return &(*userRam)[addr];
-    return 0;
+    }
+    return nullptr;
 }
 
 // The method begin_BCU() is renamed during compilation to indicate the BCU type.
@@ -611,15 +549,6 @@ void BcuDefault::setCaptureChannel(TimerCapture captureChannel) {
     bus->captureChannel=captureChannel;
 }
 
-void BcuDefault::setProgPin(int prgPin) {
-    progPin=prgPin;
-    setFatalErrorPin(progPin);
-}
-
-void BcuDefault::setProgPinInverted(int prgPinInv) {
-    progPinInv=prgPinInv;
-}
-
 /**
  * todo check for RX status and inform upper layer if needed
  */
@@ -641,7 +570,7 @@ bool BcuDefault::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *te
     {
         if (apciCmd == APCI_INDIVIDUAL_ADDRESS_WRITE_PDU)
         {
-            setOwnAddress(MAKE_WORD(telegram[8], telegram[9]));
+            setOwnAddress(makeWord(telegram[8], telegram[9]));
         }
         else if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
         {
@@ -702,7 +631,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
     if (addressEnd < addressStart)
     {
         DB_MEM_OPS(
-                serial.print(" Error processApciMemoryOperation : address overflow start 0x", addressStart, HEX);
+                serial.print("   --> address overflow start 0x", addressStart, HEX);
                 serial.print(" end 0x", addressEnd, HEX);
                 serial.println(" lengthPayLoad ", lengthPayLoad, DEC);
                 );
@@ -768,71 +697,64 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
             }
         }
 
-        // check if payLoad is in USER_EEPROM
-        if (addressStart <= addressEnd)
+        // check if payLoad is in userEeprom
+        if (userEeprom->inRange(addressStart, addressEnd)) // start & end in userEeprom ?
         {
-            if ((addressStart >= userEeprom->userEepromStart) &&  (addressEnd <= userEeprom->userEepromEnd))
+            if (readMem)
             {
-                // start & end are in USER_EEPROM
-                if (readMem)
-                {
-                    memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), addressEnd - addressStart + 1);
-                }
-                else
-                {
-                    memcpy(userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), &payLoad[0], addressEnd - addressStart + 1);
-                    userEeprom->modified();
-                }
-                DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
-                return (true);
+                memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), addressEnd - addressStart + 1);
             }
-            else if ((addressStart >= userEeprom->userEepromStart) && (addressStart <= userEeprom->userEepromEnd))
+            else
             {
-                // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
-                const int copyCount = (userEeprom->userEepromEnd - addressStart + 1);
-                if (readMem)
-                {
-                    memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), copyCount);
-                }
-                else
-                {
-                    memcpy(userEeprom->userEepromData + (addressStart - userEeprom->userEepromStart), &payLoad[0], copyCount);
-                    userEeprom->modified();
-                }
-                addressStart += copyCount;
-                payLoad += copyCount;
-                startNotFound = false;
-                DB_MEM_OPS(serial.println(" -> EEPROM processed: ", copyCount, DEC));
+                memcpy(userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), &payLoad[0], addressEnd - addressStart + 1);
+                userEeprom->modified();
             }
+            DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
+            return (true);
+        }
+        else if (userEeprom->inRange(addressStart))
+        {
+            // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
+            const int copyCount = (userEeprom->endAddr() - addressStart + 1);
+            if (readMem)
+            {
+                memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), copyCount);
+            }
+            else
+            {
+                memcpy(userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), &payLoad[0], copyCount);
+                userEeprom->modified();
+            }
+            addressStart += copyCount;
+            payLoad += copyCount;
+            startNotFound = false;
+            DB_MEM_OPS(serial.println(" -> EEPROM processed: ", copyCount, DEC));
         }
 
         // check if payLoad is in UserRam
-        if (addressStart <= addressEnd)
+        if ((userRam->inRange(addressStart, addressEnd)) ||
+            ((userRam->isStatusAddress(addressStart)) && (userRam->isStatusAddress(addressEnd)))) // USER_RAM_STATUS_ADDRESS (0x60) is system state specific
         {
-            if (((addressStart >= userRam->userRamStart) && (addressEnd <= userRam->userRamEnd)) ||
-                 ((addressStart == USER_RAM_SYSTEM_STATE_ADDRESS) && (addressEnd == USER_RAM_SYSTEM_STATE_ADDRESS))) // USER_RAM_STATUS_ADDRESS (0x60) is system state specific
-            {
-                // start & end are in UserRAM
-                if (readMem)
-                    cpyFromUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
-                else
-                    cpyToUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
-                DB_MEM_OPS(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC));
-                return (true);
-            }
-            else if ((addressStart >= userRam->userRamStart) && (addressStart <= userRam->userRamEnd))
-            {
-                // start is in UserRAM, but payLoad is too long, we need to cut it down to fit
-                const int copyCount = userRam->userRamEnd - addressStart + 1;
-                if (readMem)
-                    cpyFromUserRam(addressStart, &payLoad[0], copyCount);
-                else
-                    cpyToUserRam(addressStart, &payLoad[0], copyCount);
-                addressStart += copyCount;
-                payLoad += copyCount;
-                startNotFound = false;
-                DB_MEM_OPS(serial.println(" -> UserRAM processed: ", copyCount, DEC));
-            }
+            // start & end are in UserRAM
+            if (readMem)
+                userRam->cpyFromUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
+            else
+                userRam->cpyToUserRam(addressStart, &payLoad[0], addressEnd - addressStart + 1);
+            DB_MEM_OPS(serial.println(" -> UserRAM ", addressEnd - addressStart + 1, DEC));
+            return (true);
+        }
+        else if (userRam->inRange(addressStart))
+        {
+            // start is in UserRAM, but payLoad is too long, we need to cut it down to fit
+            const int copyCount = userRam->endAddr() - addressStart + 1;
+            if (readMem)
+                userRam->cpyFromUserRam(addressStart, &payLoad[0], copyCount);
+            else
+                userRam->cpyToUserRam(addressStart, &payLoad[0], copyCount);
+            addressStart += copyCount;
+            payLoad += copyCount;
+            startNotFound = false;
+            DB_MEM_OPS(serial.println(" -> UserRAM processed: ", copyCount, DEC));
         }
 
         // ok, lets prepare for another try, maybe we find the remaining bytes in another memory
@@ -918,7 +840,7 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
             sendTelegram[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
             setApciCommand(sendTelegram, APCI_MEMORY_RESPONSE_PDU, count);
             sendTelegram[8] = HIGH_BYTE(address);
-            sendTelegram[9] = LOW_BYTE(address);
+            sendTelegram[9] = lowByte(address);
             *sendResponse = true;
         }
         break;
@@ -971,7 +893,7 @@ bool BcuDefault::processDeviceDescriptorReadTelegram(int id)
     sendTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
     setApciCommand(sendTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
     sendTelegram[8] = HIGH_BYTE(getMaskVersion());
-    sendTelegram[9] = LOW_BYTE(getMaskVersion());
+    sendTelegram[9] = lowByte(getMaskVersion());
     return (true);
 }
 

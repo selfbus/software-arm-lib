@@ -34,7 +34,7 @@ void BCU2::setOwnAddress (uint16_t addr)
     if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
     {
         userEeprom->addrTab()[0] = HIGH_BYTE(addr);
-        userEeprom->addrTab()[1] = LOW_BYTE(addr);
+        userEeprom->addrTab()[1] = lowByte(addr);
         if (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADING)
         {
             byte * addrTab = addrTables->addrTable() + 1;
@@ -50,18 +50,18 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
 {
     setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
     ///\todo same like in bcu1
-    userRam->status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
+    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
     userRam->deviceControl() = 0;
-    userRam->runState = 1;
+    userRam->runState() = 1;
 
     userEeprom->runError() = 0xff;
     userEeprom->portADDR() = 0;
 
     userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
-    userEeprom->manufacturerL() = LOW_BYTE(manufacturer);
+    userEeprom->manufacturerL() = lowByte(manufacturer);
 
     userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
-    userEeprom->deviceTypeL() = LOW_BYTE(deviceType);
+    userEeprom->deviceTypeL() = lowByte(deviceType);
 
     userEeprom->version() = version;
 
@@ -105,11 +105,11 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
         iapReadPartID(&partID);
         memcpy (userEeprom->serial(), &partID, 4);
         userEeprom->serial()[4] = HIGH_BYTE(SBLIB_VERSION);
-        userEeprom->serial()[5] = LOW_BYTE(SBLIB_VERSION);
+        userEeprom->serial()[5] = lowByte(SBLIB_VERSION);
     }
 
     userEeprom->orderInfo()[userEeprom->orderInfoSize() - 2] = HIGH_BYTE(SBLIB_VERSION);
-    userEeprom->orderInfo()[userEeprom->orderInfoSize() - 1] = LOW_BYTE(SBLIB_VERSION);
+    userEeprom->orderInfo()[userEeprom->orderInfoSize() - 1] = lowByte(SBLIB_VERSION);
 
     begin_BCU(manufacturer, deviceType, version);
     BcuDefault::_begin();
@@ -125,10 +125,10 @@ inline bool BCU2::applicationRunning() const
     if (!enabled)
         return false;
 
-    return userRam->runState == 1 &&
-    		userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADED &&  // Address table object
-			userEeprom->loadState()[OT_ASSOC_TABLE] == LS_LOADED && // Association table object &
-			userEeprom->loadState()[OT_APPLICATION] == LS_LOADED;   // Application object. All three in State "Loaded"
+    return ((userRam->runState() == 1) &&
+            (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADED) &&  // address table object
+			(userEeprom->loadState()[OT_ASSOC_TABLE] == LS_LOADED) && // association table object
+			(userEeprom->loadState()[OT_APPLICATION] == LS_LOADED));  // application object. All three in state "Loaded"
 }
 
 BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(this), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
@@ -138,8 +138,6 @@ BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* com
 		BcuDefault(userRam, userEeprom, comObjects, addrTables),
 		userRam(userRam),
 		userEeprom(userEeprom),
-//		comObjects(comObjects),
-//		addrTables(addrTables),
 		properties(properties)
 {}
 

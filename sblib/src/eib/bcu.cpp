@@ -148,7 +148,7 @@ bool BCU::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram,
     {
         if (apciCmd == APCI_INDIVIDUAL_ADDRESS_WRITE_PDU)
         {
-            setOwnAddress(MAKE_WORD(telegram[8], telegram[9]));
+            setOwnAddress(makeWord(telegram[8], telegram[9]));
         }
         else if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
         {
@@ -168,7 +168,7 @@ bool BCU::processDeviceDescriptorReadTelegram(int id)
     sendTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
     setApciCommand(sendTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
     sendTelegram[8] = HIGH_BYTE(getMaskVersion());
-    sendTelegram[9] = LOW_BYTE(getMaskVersion());
+    sendTelegram[9] = lowByte(getMaskVersion());
     return (true);
 }
 
@@ -487,7 +487,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const uint16_t senderAddr, c
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
         count = telegram[7] & 0x0f; // number of data bytes
-        address = MAKE_WORD(telegram[8], telegram[9]); // address of the data block
+        address = makeWord(telegram[8], telegram[9]); // address of the data block
 
         if (apciCmd == APCI_MEMORY_WRITE_PDU)
         {
@@ -516,7 +516,7 @@ unsigned char BCU::processApci(ApciCommand apciCmd, const uint16_t senderAddr, c
             sendTelegram[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
             setApciCommand(sendTelegram, APCI_MEMORY_RESPONSE_PDU, count);
             sendTelegram[8] = HIGH_BYTE(address);
-            sendTelegram[9] = LOW_BYTE(address);
+            sendTelegram[9] = lowByte(address);
             *sendResponse = true;
         }
         break;

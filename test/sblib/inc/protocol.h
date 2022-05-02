@@ -35,7 +35,7 @@ extern const uint8_t dummyMaskVersionLow;
 
 // #define GET_LENGTH(array) (sizeof(array)/sizeof(array[0]))
 
-#define EEPROM_START (bcuUnderTest->userEeprom->userEepromStart)
+#define EEPROM_START (bcuUnderTest->userEeprom->startAddr())
 #define ADD_EEPROM_START(address) ((address + bcuEepromStartAddress))
 #define HIGH_BYTE2(b) (static_cast<unsigned char>(b >> 8))
 #define LOW_BYTE2(b) (static_cast<unsigned char>(b & 0xff))

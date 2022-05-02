@@ -87,11 +87,11 @@ LoadState PropertiesSYSTEMB::handleAllocAbsDataSegment(const int objectIdx, cons
         case MT_EEPROM:
         {
             // check against user ram
-            memStartValid = (absDataSegmentStartAddress >= (unsigned int) bcu->userRam->userRamStart) && (absDataSegmentStartAddress < ((unsigned int) bcu->userRam->userRamEnd));
-            memEndValid = (absDataSegmentEndAddress >= (unsigned int) bcu->userRam->userRamStart) && (absDataSegmentEndAddress < ((unsigned int) bcu->userRam->userRamEnd));
+            memStartValid = bcu->userRam->inRange(absDataSegmentStartAddress);
+            memEndValid = bcu->userRam->inRange(absDataSegmentEndAddress);
             // check against user EEPROM
-            memStartValid |= (absDataSegmentStartAddress >= bcu->userEeprom->userEepromStart) && (absDataSegmentStartAddress < bcu->userEeprom->userEepromEnd);
-            memEndValid |= (absDataSegmentEndAddress >= bcu->userEeprom->userEepromStart) && (absDataSegmentEndAddress < bcu->userEeprom->userEepromEnd);
+            memStartValid |= bcu->userEeprom->inRange(absDataSegmentStartAddress);
+            memEndValid |= bcu->userEeprom->inRange(absDataSegmentEndAddress);
             // check against MemMapper
             MemMapper* bcuMemMapper = bcu->getMemMapper();
             memStartValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));
@@ -175,7 +175,7 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
     // Mode = 0x01 => fill allocated memory
     if (payLoad[4] > 0)
     {
-        byte* physMemAddr = (byte*)(bcu->userEeprom->userEepromData + (virtMemAddr - bcu->userEeprom->userEepromStart));
+        byte* physMemAddr = (byte*)(bcu->userEeprom->userEepromData + (virtMemAddr - bcu->userEeprom->startAddr()));
         byte fillByte = payLoad[5];
         for (uint32_t i = 0; i < reqMemSize; i++)
             physMemAddr[i] = fillByte;
@@ -228,7 +228,7 @@ int PropertiesSYSTEMB::loadProperty(int objectIdx, const byte* data, int len)
         const PropertyDef* def = propertyDef(objectIdx, PID_TABLE_REFERENCE);
         byte* valuePtr = def->valuePointer(bcu);
         uint16_t virtMemStart = ((valuePtr[1] << 8) + valuePtr[0]);
-        byte* memStart = (byte*)(bcu->userEeprom->userEepromData + (virtMemStart - bcu->userEeprom->userEepromStart));
+        byte* memStart = (byte*)(bcu->userEeprom->userEepromData + (virtMemStart - bcu->userEeprom->startAddr()));
 
         def = propertyDef(objectIdx, PID_MCB_TABLE);
         byte* mcbPtr = def->valuePointer(bcu);

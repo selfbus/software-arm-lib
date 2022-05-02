@@ -24,7 +24,7 @@ int ComObjectsSYSTEMB::objectSize(int objno)
 
 byte* ComObjectsSYSTEMB::objectValuePtr(int objno)
 {
-    int ramAddr = bcu->userRam->userRamStart + 2;
+    int ramAddr = bcu->userRam->startAddr() + 2;
     for (int i = 1; i < objno; i++)
         ramAddr += objectSize(i);
     return ((BcuDefault*)bcu)->userMemoryPtr(ramAddr);

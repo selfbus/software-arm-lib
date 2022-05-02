@@ -9,7 +9,8 @@
 class UserEepromBCU2 : public UserEepromBCU1
 {
 public:
-	UserEepromBCU2(BcuBase* bcu) : UserEepromBCU1(bcu, 0x100, 1024, 1024) {};
+    UserEepromBCU2() = delete;
+    UserEepromBCU2(BcuBase* bcu) : UserEepromBCU1(bcu, 0x100, 1024, 1024) {};
 	~UserEepromBCU2() = default;
 
 	static const int appTypeOffset = 21;        //!< 0x0115: \todo Application program type: 0=BCU2, else BCU1

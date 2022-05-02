@@ -56,7 +56,7 @@ void BcuBase::_begin()
 void BcuBase::loop()
 {
     TLayer4::loop();
-	if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE) && (userRam->status & BCU_STATUS_TL))
+	if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE) && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
 	{
         processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
@@ -68,10 +68,10 @@ void BcuBase::loop()
 		int oldValue = progButtonDebouncer.value();
 		if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
 		{
-			userRam->status ^= 0x81;  // toggle programming mode and checksum bit
+			userRam->status() ^= 0x81;  // toggle programming mode and checksum bit
 		}
 		pinMode(progPin, OUTPUT);
-		digitalWrite(progPin, (userRam->status & BCU_STATUS_PROG) ^ progPinInv);
+		digitalWrite(progPin, (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) ^ progPinInv);
 	}
 }
 
@@ -84,14 +84,14 @@ bool BcuBase::setProgrammingMode(bool newMode)
 
     if (newMode)
     {
-        userRam->status |= 0x81;  // set programming mode and checksum bit
+        userRam->status() |= 0x81;  // set programming mode and checksum bit
     }
     else
     {
-        userRam->status &= 0x81;  // clear programming mode and checksum bit
+        userRam->status() &= 0x81;  // clear programming mode and checksum bit
     }
     pinMode(progPin, OUTPUT);
-    digitalWrite(progPin, (userRam->status & BCU_STATUS_PROG) ^ progPinInv);
+    digitalWrite(progPin, (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) ^ progPinInv);
     return true;
 }
 
@@ -121,7 +121,7 @@ void BcuBase::end()
 
 bool BcuBase::programmingMode() const
 {
-    return (userRam->status & BCU_STATUS_PROG) == BCU_STATUS_PROG;
+    return (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) == BCU_STATUS_PROGRAMMING_MODE;
 }
 
 int BcuBase::maxTelegramSize()
@@ -142,5 +142,14 @@ void BcuBase::send(unsigned char* telegram, unsigned short length)
 void BcuBase::softSystemReset()
 {
     NVIC_SystemReset();
+}
+
+void BcuBase::setProgPin(int prgPin) {
+    progPin=prgPin;
+    setFatalErrorPin(progPin);
+}
+
+void BcuBase::setProgPinInverted(int prgPinInv) {
+    progPinInv=prgPinInv;
 }
 

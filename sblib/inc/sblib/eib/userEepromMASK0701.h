@@ -9,7 +9,9 @@
 class UserEepromMASK0701 : public UserEepromBCU2
 {
 public:
-	UserEepromMASK0701(BcuBase* bcu) : UserEepromBCU2(bcu, 0x3f00, 3072, 4096) {};
+    UserEepromMASK0701() = delete;
+    ///\todo make start at 0x4000, right now 0x4000-0x100= 0x3f00 is chosen to avoid address-offset calculations to a BCU1
+    UserEepromMASK0701(BcuBase* bcu) : UserEepromBCU2(bcu, 0x3f00, 3072, 4096) {};
 	~UserEepromMASK0701() = default;
 
 protected:

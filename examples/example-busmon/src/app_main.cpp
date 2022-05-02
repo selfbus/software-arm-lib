@@ -45,9 +45,9 @@ BcuBase* setup()
     bcu.begin(2, 1, 1); // ABB, dummy something device
 
     // Disable telegram processing by the lib
-    if (bcu.userRam->status & BCU_STATUS_TL)
+    if (bcu.userRam->status & BCU_STATUS_TRANSPORT_LAYER)
     {
-        bcu.userRam->status ^= BCU_STATUS_TL | BCU_STATUS_PARITY;
+        bcu.userRam->status ^= BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_PARITY;
     }
 
     serial.begin(115200); // Tx: PIO1.7, Rx: PIO1.6

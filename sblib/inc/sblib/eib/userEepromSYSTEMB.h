@@ -9,6 +9,8 @@
 class UserEepromSYSTEMB : public UserEepromMASK0701
 {
 public:
+    UserEepromSYSTEMB() = delete;
+    ///\todo check start of 0x3300, maybe the same reason like for 0x0701 -> -0x100 is chosen to avoid address-offset calculations to a BCU1
 	UserEepromSYSTEMB(BcuBase* bcu) : UserEepromMASK0701(bcu, 0x3300, 3072, 4096) {};
 	~UserEepromSYSTEMB() = default;
 

@@ -1,5 +1,5 @@
 /*
- *  types.h - EIB data types
+ *  typesBCU1.h - EIB data types
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
@@ -23,7 +23,8 @@ struct ComConfigBCU1
 	 */
 	typedef byte DataPtrType;
 
-	/** Data pointer, low byte. Depending on the COMCONF_VALUE_TYPE flag in the
+	/**
+	 * Data pointer, low byte. Depending on the COMCONF_VALUE_TYPE flag in the
      * config byte, this pointer points to userRam or userEeprom.
      */
     DataPtrType dataPtr;

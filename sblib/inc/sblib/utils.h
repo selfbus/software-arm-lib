@@ -14,8 +14,6 @@
 #include <sblib/libconfig.h>
 
 #define HIGH_BYTE(x) ((uint8_t)(x >> 8))  ///\todo create new macro "secondByte" in bits.h
-#define LOW_BYTE(x) ((uint8_t)(x & 0xff)) ///\todo replace with macro "lowByte" from bits.h
-#define MAKE_WORD(highByte, lowByte) ((uint16_t)((highByte << 8) | lowByte)) ///\todo replace with macro "makeWord" from bits.h
 
 /**
  * Copy from src to dest with reversing the byte order.

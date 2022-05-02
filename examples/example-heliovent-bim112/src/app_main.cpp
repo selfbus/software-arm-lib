@@ -106,7 +106,7 @@ BcuBase* setup()
 
     for (int k = 0; k < 0x120; k = k +testSize2)
     {
-        int eepromEnd = bcu.userEeprom->userEepromEnd;
+        int eepromEnd = bcu.userEeprom->endAddr();
         for (int i = 0; i < testSize2; i++)
         {
             bcu.processApciMemoryWritePDU(eepromEnd - testSize2-1 + i + k, &payLoad2[0], testSize2);

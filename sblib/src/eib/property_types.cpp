@@ -41,7 +41,8 @@ byte* PropertyDef::valuePointer(BcuBase* bcu) const
         switch (valAddr & PPT_MASK)
         {
         case PPT_USER_RAM:
-            return bcu->userRam->userRamData + offs;
+            // return bcu->userRam->userRamData + offs;
+            return bcu->userRam->userRamData + offs; ///\todo check this was correct replaced or not
         case PPT_USER_EEPROM:
             return ((BcuDefault*)bcu)->userEeprom->userEepromData + offs;
         default:

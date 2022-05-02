@@ -87,11 +87,11 @@ LoadState PropertiesMASK0701::handleAllocAbsDataSegment(const int objectIdx, con
         case MT_EEPROM:
         {
             // check against user ram
-            memStartValid = (absDataSegmentStartAddress >= (unsigned int) bcu->userRam->userRamStart) && (absDataSegmentStartAddress < ((unsigned int) bcu->userRam->userRamEnd));
-            memEndValid = (absDataSegmentEndAddress >= (unsigned int) bcu->userRam->userRamStart) && (absDataSegmentEndAddress < ((unsigned int) bcu->userRam->userRamEnd));
+            memStartValid = bcu->userRam->inRange(absDataSegmentStartAddress);
+            memEndValid = bcu->userRam->inRange(absDataSegmentEndAddress);
             // check against user EEPROM
-            memStartValid |= (absDataSegmentStartAddress >= bcu->userEeprom->userEepromStart) && (absDataSegmentStartAddress < bcu->userEeprom->userEepromEnd);
-            memEndValid |= (absDataSegmentEndAddress >= bcu->userEeprom->userEepromStart) && (absDataSegmentEndAddress < bcu->userEeprom->userEepromEnd);
+            memStartValid |= bcu->userEeprom->inRange(absDataSegmentStartAddress);
+            memEndValid |= bcu->userEeprom->inRange(absDataSegmentEndAddress);
             // check against MemMapper
             MemMapper* bcuMemMapper = bcu->getMemMapper();
             memStartValid |=  (bcuMemMapper != nullptr) && (bcuMemMapper->isMapped(absDataSegmentStartAddress));

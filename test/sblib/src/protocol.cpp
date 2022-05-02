@@ -13,7 +13,6 @@
 #include <sblib/bits.h>
 #include "protocol.h"
 
-extern int sndStartIdx;
 extern unsigned int wfiSystemTimeInc;
 
 const uint8_t dummyMaskVersionHigh = 0xDE;
@@ -86,7 +85,7 @@ void telegramPreparation(BcuDefault* testBcu, Telegram* tel, uint16_t telCount)
             }
 
             memAddress -= bcu1MemoryOffset; // all memory addresses are for BCU1 so "normalize" them
-            memAddress += testBcu->userEeprom->userEepromStart; // move by current Eeprom start
+            memAddress += testBcu->userEeprom->startAddr(); // move by current Eeprom start
 
             tel->bytes[8] = memAddress >> 8;
             tel->bytes[9] = memAddress & 0xff;
@@ -279,28 +278,28 @@ static void checkBcuEepromSettings(BcuDefault* currentBcu, Test_Case * tc)
     switch (currentBcu->getMaskVersion())
     {
         case 0x12:
-            REQUIRE(currentBcu->userEeprom->userEepromStart == 0x100);
-            REQUIRE(currentBcu->userEeprom->userEepromEnd == 0x1ff);
-            REQUIRE(currentBcu->userEeprom->userEepromSize == 256);
+            REQUIRE(currentBcu->userEeprom->startAddr() == 0x100);
+            REQUIRE(currentBcu->userEeprom->endAddr() == 0x1ff);
+            REQUIRE(currentBcu->userEeprom->size() == 256);
             break;
 
         case 0x20:
-            REQUIRE(currentBcu->userEeprom->userEepromStart == 0x100);
-            REQUIRE(currentBcu->userEeprom->userEepromEnd == 0x4ff);
-            REQUIRE(currentBcu->userEeprom->userEepromSize == 1024);
+            REQUIRE(currentBcu->userEeprom->startAddr() == 0x100);
+            REQUIRE(currentBcu->userEeprom->endAddr() == 0x4ff);
+            REQUIRE(currentBcu->userEeprom->size() == 1024);
             break;
 
         case 0x701:
         case 0x705:
-            REQUIRE(currentBcu->userEeprom->userEepromStart == 0x3f00);
-            REQUIRE(currentBcu->userEeprom->userEepromEnd == 0x4aff);
-            REQUIRE(currentBcu->userEeprom->userEepromSize == 3072);
+            REQUIRE(currentBcu->userEeprom->startAddr() == 0x3f00);
+            REQUIRE(currentBcu->userEeprom->endAddr() == 0x4aff);
+            REQUIRE(currentBcu->userEeprom->size() == 3072);
             break;
 
         case 0x7B0:
-            REQUIRE(currentBcu->userEeprom->userEepromStart == 0x3300);
-            REQUIRE(currentBcu->userEeprom->userEepromEnd == 0x3eff);
-            REQUIRE(currentBcu->userEeprom->userEepromSize == 3072);
+            REQUIRE(currentBcu->userEeprom->startAddr() == 0x3300);
+            REQUIRE(currentBcu->userEeprom->endAddr() == 0x3eff);
+            REQUIRE(currentBcu->userEeprom->size() == 3072);
             break;
 
         default:
@@ -334,7 +333,6 @@ void executeTestOnBcu(BcuDefault* currentBcu, Test_Case * tc)
     currentBcu->bus->timerInterruptHandler(); // move the ISR out of INIT state
     REQUIRE(currentBcu->bus->state == Bus::IDLE);
 
-    sndStartIdx = 0;
     systemTime  = 0;
     wfiSystemTimeInc = 1;
     setup();

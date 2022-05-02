@@ -66,19 +66,6 @@ extern volatile bool  tb_in_ov;
  */
 #define SB_BUS_NACK_BUSY 0x00
 
-
-// The size of the telegram buffer in bytes
-#define SB_TELEGRAM_SIZE 24
-
-/**
- * Test if we are in programming mode (the button on the controller is pressed and
- * the red programming LED is on).
- *
- * @return 1 if in programming mode, 0 if not.
- */
-#define sb_prog_mode_active() (sbUserRam->status & 1)
-
-
 /**
  * Low level class for EIB bus access.
  *
@@ -129,7 +116,7 @@ public:
     bool idle() const;
 
     /**
-     *    Interface to upper layer for sending a telegram
+     * Interface to upper layer for sending a telegram
      *
      * Is called from within the BCU-loop method. Is blocking if there is no free buffer pointer.
      *
@@ -164,17 +151,17 @@ public:
 
 
     /**
-        * Get the state of the last send Telegram
-        *
-        * @return  0 if no error, or tx error state
-        */
+     * Get the state of the last send Telegram
+     *
+     * @return  0 if no error, or tx error state
+     */
     int sendTelegramState() const;
 
     /**
-          * Get the state of the last received Telegram
-          *
-          * @return  0 if no error, or rx error state
-          */
+     * Get the state of the last received Telegram
+     *
+     * @return  0 if no error, or rx error state
+     */
     int receivedTelegramState() const;
 
 
@@ -193,7 +180,7 @@ public:
 
     /**
      * Set weather the an acknowledgment from the last received byte should be sent.
-     * !!!!!!! critical as this could change the sendAck value during usage in the  SM - should be not used outside the bus SM!!
+     * !!!!!!! critical as this could change the sendAck value during usage in the state machine (SM) - should not be used outside the bus SM!!
      *  not needed as the SM should check the bit1 in the telegram header to check if the sender is requesting an ACK
      */
     void setSendAck(int newSendAck);
@@ -205,46 +192,40 @@ public:
      */
     void maxSendTries(int tries);
 
-
     /**
-       * Set the number of busy tries that we do sent a telegram when we received a BUSY from remote.
-       *
-       * @param tries - the number of tries. Default: 3.
-       */
-
+     * Set the number of busy tries that we do sent a telegram when we received a BUSY from remote.
+     *
+     * @param tries - the number of tries. Default: 3.
+     */
     void maxSendBusyTries(int tries);
 
     /**
-       * Set the tx bus state.
-       *
-       * @param state - true if state is valid/available
-       */
-
+     * Set the tx bus state.
+     *
+     * @param state - true if state is valid/available
+     */
     void setBusTXStateValid(bool state) ;
 
     /**
-       * get the tx bus state.
-       *
-       * @return state - true if state is valid/available
-       */
-
+     * get the tx bus state.
+     *
+     * @return state - true if state is valid/available
+     */
     bool getBusTXStateValid(void)const ;
 
     /**
-        * Set the rx bus state.
-        *
-        * @param state - true if state is valid/available
-        */
+     * Set the rx bus state.
+     *
+     * @param state - true if state is valid/available
+     */
+    void setBusRXStateValid(bool state) ;
 
-     void setBusRXStateValid(bool state) ;
-
-     /**
-        * get the rx bus state.
-        *
-        * @return state - true if state is valid/available
-        */
-
-     bool getBusRXStateValid(void)const;
+    /**
+     * get the rx bus state.
+     *
+     * @return state - true if state is valid/available
+     */
+    bool getBusRXStateValid(void)const;
 
 
 
@@ -338,18 +319,16 @@ private:
     void handleTelegram(bool valid);
 
 
-    /** !!!!!!!!!!! not available in code !!!!!!!!!!!!
-       * Sending Process is waiting for an acknowledgment.
-       * Handle the received byte(s) on a low level. Repeat the last send Telegram in case of invalid ack
-       *  This function is called by the function TIMER16_1_IRQHandler() to decide about repetition
-       *  of last sent Telegram.
-       *
-       * @param valid - 1 if (all) bytes had correct parity, 0 if not
-       */
-
-    void handleAckTelegram(bool valid);
-
-
+    /**
+     * !!!!!!!!!!! not available in code !!!!!!!!!!!!
+     * Sending Process is waiting for an acknowledgment.
+     * Handle the received byte(s) on a low level. Repeat the last send Telegram in case of invalid ack
+     * This function is called by the function TIMER16_1_IRQHandler() to decide about repetition
+     * of last sent Telegram.
+     *
+     * @param valid - 1 if (all) bytes had correct parity, 0 if not
+     */
+    // void handleAckTelegram(bool valid);
 
 protected:
     friend class TLayer4;
@@ -361,39 +340,37 @@ protected:
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
     TimerMatch pwmChannel;       //!< The timer channel for PWM for sending
     TimerMatch timeChannel;      //!< The timer channel for timeouts
-    volatile int sendAck;                 //!< Send an acknowledge or not-acknowledge byte if != 0
+    volatile int sendAck;        //!< Send an acknowledge or not-acknowledge byte if != 0
 
 private:
-    volatile State state;                 //!< The state of the lib's telegram sending/receiving
-    volatile int sendTries;               //!< The number of repeats when sending a telegram
-    volatile int sendTriesMax;            //!< The maximum number of repeats when sending a telegram. Default: 3 todo hora: load from EPROM
-    volatile int sendBusyTries;           //!< The number of busy repeats when sending a telegram
-    volatile int sendBusyTriesMax;        //!< The maximum number of busy repeats when sending a telegram. Default: 3 todo hora: load from EPROM
-    int nextByteIndex;           //!< The number of the next byte in the telegram
+    volatile State state;          //!< The state of the lib's telegram sending/receiving
+    volatile int sendTries;        //!< The number of repeats when sending a telegram
+    volatile int sendTriesMax;     //!< The maximum number of repeats when sending a telegram. Default: 3 todo hora: load from EPROM
+    volatile int sendBusyTries;    //!< The number of busy repeats when sending a telegram
+    volatile int sendBusyTriesMax; //!< The maximum number of busy repeats when sending a telegram. Default: 3 todo hora: load from EPROM
+    int nextByteIndex;             //!< The number of the next byte in the telegram
 
-    int currentByte;             //!< The current byte that is received/sent, including the parity bit
-    int sendTelegramLen;         //!< The size of the to be sent telegram in bytes (including the checksum).
-    volatile byte *sendCurTelegram;       //!< The telegram that is currently being sent.
-    volatile byte *sendNextTel;           //!< The telegram to be sent after sbSendTelegram is done.
+    int currentByte;                //!< The current byte that is received/sent, including the parity bit
+    int sendTelegramLen;            //!< The size of the to be sent telegram in bytes (including the checksum).
+    volatile byte *sendCurTelegram; //!< The telegram that is currently being sent.
+    volatile byte *sendNextTel;     //!< The telegram to be sent after sbSendTelegram is done.
     volatile byte *rx_telegram = new byte[bcu->maxTelegramSize()]; //!< Telegram buffer for the L1/L2 receiving process
 
     int bitMask;
-    int bitTime;                 // The bit-time within a byte when receiving
-    int parity;                  // Parity bit of the current byte
-    int valid;                   // 1 if parity is valid for all bits of the telegram
-    int checksum;                // Checksum of the telegram: 0 if valid at end of telegram
-    volatile unsigned short rx_error;	// hold the rx error flags of the rx process of the state machine
-    volatile unsigned short tx_error;	// hold the tx error flags of the tx process of the state machine
-    bool wait_for_ack_from_remote; // sending process is requesting an ack from remote side
-   // bool need_to_send_ack_to_remote; // receiving process need to send ack to remote sending side
-    bool busy_wait_from_remote; // remote side is busy, re-send telegram after 150bit time wait
-   // bool busy_wait_to_remote; // receiving process/ upper layer busy, send busy to remote sender
-    bool repeated;              // A send telegram is repeated
-    bool repeatTelegram;        // need to repeat last  telegram sent
-    bool collision;              // A collision occurred
-    unsigned int lastRXTimeVal; // time measurement between telegrams - last SysTime value
-
-
+    int bitTime;                 //!< The bit-time within a byte when receiving
+    int parity;                  //!< Parity bit of the current byte
+    int valid;                   //!< 1 if parity is valid for all bits of the telegram
+    int checksum;                //!< Checksum of the telegram: 0 if valid at end of telegram
+    volatile unsigned short rx_error;	//!< hold the rx error flags of the rx process of the state machine
+    volatile unsigned short tx_error;	//!< hold the tx error flags of the tx process of the state machine
+    bool wait_for_ack_from_remote; //!< sending process is requesting an ack from remote side
+   // bool need_to_send_ack_to_remote; //!< receiving process need to send ack to remote sending side
+    bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
+   // bool busy_wait_to_remote; //!< receiving process/ upper layer busy, send busy to remote sender
+    bool repeated;              //!< A send telegram is repeated
+    bool repeatTelegram;        //!< need to repeat last  telegram sent
+    bool collision;             //!< A collision occurred
+    unsigned int lastRXTimeVal; //!< time measurement between telegrams - last SysTime value
 };
 
 
@@ -408,49 +385,35 @@ private:
 #define BUS_TIMER_INTERRUPT_HANDLER(handler, busObj) \
     extern "C" void handler() { busObj.timerInterruptHandler(); }
 
-/**
- * Get the size of a telegram, including the protocol header but excluding
- * the checksum byte. The size is calculated by getting the length from byte 5 of the
- * telegram and adding 7 for the protocol overhead.
- *
- * @param tel - the telegram to get the size
- *
- * @return The size of the telegram, excluding the checksum byte.
- */
-#define telegramSize(tel) (7 + (tel[5] & 15)) //FIXME telegramSize accesses tel[5] without any check
-
-
 //define some error states
 #define RX_OK 0
-#define RX_STARTBIT_ERROR 1  		// we detected high level few us after cap. event of start bit
-#define RX_STOPBIT_ERROR 2 			// we received a cap event during stop bit
-#define RX_TIMING_ERROR 4			// received edge of bits is not in the timing window n*104-7 - n*104+33
-#define RX_TIMING_ERROR_SPIKE 8		// received edge of bit but low pulse is to short
-#define RX_PARITY_ERROR 16			// parity not valid
-#define RX_CHECKSUM_ERROR 32		// checksum not valid
-#define RX_LENGHT_ERROR 64			// received number of byte does not match length value of telegram
-#define RX_BUFFER_BUSY 128			// rx buffer still busy by higher layer process while a new telegram was received
-#define RX_INVALID_TELEGRAM_ERROR 256	// we received something but not a valid tel frame: to short,  to long, spike
-#define RX_PREAMBLE_ERROR 512		// first char we received has invalid value in bit 0 and bit 1
+#define RX_STARTBIT_ERROR 1             //!< we detected high level few us after cap. event of start bit
+#define RX_STOPBIT_ERROR 2              //!< we received a cap event during stop bit
+#define RX_TIMING_ERROR 4               //!< received edge of bits is not in the timing window n*104-7 - n*104+33
+#define RX_TIMING_ERROR_SPIKE 8         //!< received edge of bit but low pulse is to short
+#define RX_PARITY_ERROR 16              //!< parity not valid
+#define RX_CHECKSUM_ERROR 32            //!< checksum not valid
+#define RX_LENGHT_ERROR 64              //!< received number of byte does not match length value of telegram
+#define RX_BUFFER_BUSY 128              //!< rx buffer still busy by higher layer process while a new telegram was received
+#define RX_INVALID_TELEGRAM_ERROR 256   //!< we received something but not a valid tel frame: to short,  to long, spike
+#define RX_PREAMBLE_ERROR 512		    //!< first char we received has invalid value in bit 0 and bit 1
 
-#define TX_OK 0
-#define TX_STARTBIT_BUSY_ERROR 1	// bus is busy few us before we intended to send a start bit
-#define TX_TIMING_ERROR 2			// error during the sending of bits (low bit after high bit was not detected
-#define TX_NACK_ERROR 4				// we received a NACK
-#define TX_ACK_TIMEOUT_ERROR 8		// we did not received an ACK after sending in the respective time window
-#define TX_REMOTE_BUSY_ERROR 16		// AFTER SENDING, REMOTE SIDE SENDS busy BACK
-#define TX_PWM_STARTBIT_ERROR 32	// we could not receive our send start bit as cap event, possible HW fault
-#define TX_COLLISION_ERROR 64		// collision, we tried to send high bit but low bit was detected- send from other device
-#define TX_RETRY_ERROR 128			// max number of retries reached, tx process terminated
+#define TX_OK 0                     //!< No error
+#define TX_STARTBIT_BUSY_ERROR 1	//!< bus is busy few us before we intended to send a start bit
+#define TX_TIMING_ERROR 2			//!< error during the sending of bits (low bit after high bit was not detected
+#define TX_NACK_ERROR 4				//!< we received a NACK
+#define TX_ACK_TIMEOUT_ERROR 8		//!< we did not received an ACK after sending in the respective time window
+#define TX_REMOTE_BUSY_ERROR 16		//!< AFTER SENDING, REMOTE SIDE SENDS busy BACK
+#define TX_PWM_STARTBIT_ERROR 32	//!< we could not receive our send start bit as cap event, possible HW fault
+#define TX_COLLISION_ERROR 64		//!< collision, we tried to send high bit but low bit was detected- send from other device
+#define TX_RETRY_ERROR 128			//!< max number of retries reached, tx process terminated
 
 
 //
 //  Inline functions
 //
-// FIXME make Bus::idle() work together with catch-unit tests
 inline bool Bus::idle() const
 {
-    //XXX Issue #42 maybe should also check that we have no pending interrupt
     return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == 0);
 }
 
@@ -514,7 +477,7 @@ inline void Bus::end()
 {
 }
 
-inline void  Bus::setSendAck(int newSendAck)
+inline void Bus::setSendAck(int newSendAck)
 {
 	this->sendAck = newSendAck;
 }

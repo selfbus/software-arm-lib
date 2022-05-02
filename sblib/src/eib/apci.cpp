@@ -16,7 +16,7 @@
  it under the terms of the GNU General Public License version 3 as
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
-
+#include <sblib/bits.h>
 #include <sblib/eib/apci.h>
 #include <sblib/utils.h>
 
@@ -40,7 +40,7 @@ ApciCommand apciCommand(unsigned char *telegram)
 void setApciCommand(unsigned char *telegram, ApciCommand newApciCommand, byte additionalData)
 {
     telegram[APCI_HIGH_BYTE] = HIGH_BYTE(newApciCommand);
-    telegram[APCI_LOW_BYTE] = LOW_BYTE(newApciCommand);
+    telegram[APCI_LOW_BYTE] = lowByte(newApciCommand);
     telegram[APCI_LOW_BYTE] |= additionalData;
 }
 

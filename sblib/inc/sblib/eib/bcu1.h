@@ -55,16 +55,6 @@ public:
     const char* getBcuType() const override { return "BCU1"; }
     uint16_t getMaskVersion() const override { return  0x12; }
 
-    /** Start address of the user RAM when ETS talks with us. */
-    const int userRamStartDefault = 0;
-
-    /** The size of the user RAM in bytes. */
-    const int userRamSize = 0x100;
-    /** How many bytes have to be allocated at the end of the RAM
-    	for shadowed values
-    */
-    const int userRamShadowSize = 3;
-
 	UserRamBCU1* userRam;
 
 	UserEepromBCU1* userEeprom;

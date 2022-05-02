@@ -34,12 +34,12 @@
 
 #include <sblib/eib/com_objectsMASK0701.h>
 
-class BcuBase;
+class BcuDefault;
 
 class ComObjectsSYSTEMB : public ComObjectsMASK0701
 {
 public:
-	ComObjectsSYSTEMB(BcuBase* bcuInstance) : ComObjectsMASK0701(bcuInstance) {}
+	ComObjectsSYSTEMB(BcuDefault* bcuInstance) : ComObjectsMASK0701(bcuInstance) {}
 	~ComObjectsSYSTEMB() = default;
 
 	virtual inline const ComConfig& objectConfig(int objno) override;

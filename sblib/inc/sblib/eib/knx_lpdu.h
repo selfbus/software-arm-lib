@@ -27,6 +27,8 @@
 #include <sblib/bits.h>
 #include <sblib/utils.h>
 
+#define PHY_ADDR_DEFAULT (0xffff)   //!> default physical address 15.15.255
+
 #define LPDU_CONTROL_BYTE           (0)
 #define LPDU_SENDER_HIGH_BYTE       (1)
 #define LPDU_SENDER_LOW_BYTE        (2)
@@ -121,7 +123,7 @@ inline uint16_t senderAddress(unsigned char *telegram)
 inline void setSenderAddress(unsigned char *telegram, uint16_t newSenderAddress)
 {
     telegram[LPDU_SENDER_HIGH_BYTE] = HIGH_BYTE(newSenderAddress);
-    telegram[LPDU_SENDER_LOW_BYTE] = LOW_BYTE(newSenderAddress);
+    telegram[LPDU_SENDER_LOW_BYTE] = lowByte(newSenderAddress);
 }
 
 
@@ -133,7 +135,7 @@ inline uint16_t destinationAddress(unsigned char *telegram)
 inline void setDestinationAddress(unsigned char *telegram, uint16_t newDestinationAddress)
 {
     telegram[LPDU_DESTINATION_HIGH_BYTE] = HIGH_BYTE(newDestinationAddress);
-    telegram[LPDU_DESTINATION_LOW_BYTE] = LOW_BYTE(newDestinationAddress);
+    telegram[LPDU_DESTINATION_LOW_BYTE] = lowByte(newDestinationAddress);
 }
 
 inline KNXFrameType frameType(unsigned char *telegram)

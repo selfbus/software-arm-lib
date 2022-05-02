@@ -26,19 +26,38 @@ byte* ComObjectsBCU2::objectValuePtr(int objno)
 byte* ComObjectsBCU2::objectConfigTable()
 {
     byte * addr = (byte* ) & ((BCU2*)bcu)->userEeprom->commsTabAddr();
-    return ((BcuDefault*)bcu)->userMemoryPtr (makeWord (*(addr + 1), * addr));
+    uint16_t comObjTableAddr = makeWord (*(addr + 1), * addr);
+    return ((BcuDefault*)bcu)->userMemoryPtr(comObjTableAddr);
 }
 
 byte* ComObjectsBCU2::objectFlagsTable()
 {
     const byte* configTable = objectConfigTable();
-    if(le_ptr == LITTLE_ENDIAN)
-    	return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[2], configTable[1]));
+    uint16_t flagsTableAddress;
 
-    return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[1], configTable[2]));
+    if(le_ptr == LITTLE_ENDIAN)
+    {
+        flagsTableAddress = makeWord(configTable[2], configTable[1]);
+    }
+    else
+    {
+        flagsTableAddress = makeWord(configTable[1], configTable[2]);
+    }
+    return ((BcuDefault*)bcu)->userMemoryPtr(flagsTableAddress);
 }
 
-inline const ComConfigBCU2* ComObjectsBCU2::objectConfigBCU2(int objno)
+const ComConfigBCU2* ComObjectsBCU2::objectConfigBCU2(int objno)
 {
-	return (const ComConfigBCU2*) (objectConfigTable() + 1 + sizeof(ComConfigBCU2::DataPtrType) + objno * sizeof(ComConfigBCU2) );
+    const byte* configTable = objectConfigTable();
+    if (configTable == nullptr)
+    {
+        return (nullptr);
+    }
+    uint16_t offSet = 1 + sizeof(ComConfigBCU2::DataPtrType) + objno * sizeof(ComConfigBCU2);
+    return (const ComConfigBCU2*) (configTable + offSet);
+}
+
+const ComConfig& ComObjectsBCU2::objectConfig(int objno)
+{
+    return objectConfigBCU2(objno)->baseConfig;
 }

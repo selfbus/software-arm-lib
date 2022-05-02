@@ -21,12 +21,23 @@
 #include <sblib/mem_mapper.h>
 #include <sblib/eib/bus.h>
 
+BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(this), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
+{}
+
+BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables) :
+        BcuDefault(userRam, userEeprom, comObjects, addrTables),
+        userRam(userRam),
+        userEeprom(userEeprom),
+        comObjects(comObjects),
+        addrTables(addrTables)
+{}
+
 void BCU1::setOwnAddress (uint16_t addr)
 {
     if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
     {
         userEeprom->addrTab()[0] = HIGH_BYTE(addr);
-        userEeprom->addrTab()[1] = LOW_BYTE(addr);
+        userEeprom->addrTab()[1] = lowByte(addr);
         userEeprom->modified();
     }
     BcuDefault::setOwnAddress(addr);
@@ -35,18 +46,18 @@ void BCU1::setOwnAddress (uint16_t addr)
 inline void BCU1::begin(int manufacturer, int deviceType, int version)
 {
     setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
-    userRam->status = BCU_STATUS_LL | BCU_STATUS_TL | BCU_STATUS_AL | BCU_STATUS_USR;
+    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
     userRam->deviceControl() = 0;
-    userRam->runState = 1;
+    userRam->runState() = 1;
 
     userEeprom->runError() = 0xff;
     userEeprom->portADDR() = 0;
 
     userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
-    userEeprom->manufacturerL() = LOW_BYTE(manufacturer);
+    userEeprom->manufacturerL() = lowByte(manufacturer);
 
     userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
-    userEeprom->deviceTypeL() = LOW_BYTE(deviceType);
+    userEeprom->deviceTypeL() = lowByte(deviceType);
 
     userEeprom->version() = version;
 
@@ -56,25 +67,20 @@ inline void BCU1::begin(int manufacturer, int deviceType, int version)
 	BcuDefault::_begin();
 }
 
-inline bool BCU1::applicationRunning() const
+bool BCU1::applicationRunning() const
 {
     if (!enabled)
         return false;
 
-    return ((userRam->status & (BCU_STATUS_PROG|BCU_STATUS_AL)) == BCU_STATUS_AL &&
-        userRam->runState == 1 && userEeprom->runError() == 0xff); // ETS sets the run error to 0 when programming
+    uint8_t status = userRam->status();
+    uint8_t runState = userRam->runState();
+    uint8_t runError = userEeprom->runError();
+    return (
+            ((status & (BCU_STATUS_PROGRAMMING_MODE | BCU_STATUS_APPLICATION_LAYER)) == BCU_STATUS_APPLICATION_LAYER) &&
+             (runState == 1) &&
+             (runError == 0xff)  // ETS sets the run error to 0 when programming
+           );
 }
-
-BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(this), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
-{}
-
-BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables) :
-		BcuDefault(userRam, userEeprom, comObjects, addrTables),
-		userRam(userRam),
-		userEeprom(userEeprom),
-		comObjects(comObjects),
-		addrTables(addrTables)
-{}
 
 // The method begin_BCU() is renamed during compilation to indicate the BCU type.
 // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.

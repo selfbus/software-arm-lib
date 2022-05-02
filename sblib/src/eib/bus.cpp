@@ -233,7 +233,7 @@
 
 #include <sblib/eib/bus.h>
 #include <sblib/eib/knx_lpdu.h>
-
+#include <sblib/eib/knx_npdu.h>
 #include <sblib/core.h>
 #include <sblib/interrupt.h>
 #include <sblib/platform.h>
@@ -368,9 +368,6 @@
 #define BUSY_RETRY_DEFAULT 3        //!> default BUSY retry
 #define ROUTE_CNT_DEFAULT 6         //!> default Route Count
 
-#define PHY_ADDR_HI_DEFAULT 0xff    //!> default physical address high byte for 15.15.255
-#define PHY_ADDR_LO_DEFAULT 0xff    //!> default physical address low byte for 15.15.255 c/f knxspec 3/05/01
-#define PHY_ADDR_DEFAULT ((PHY_ADDR_HI_DEFAULT << 8) | PHY_ADDR_LO_DEFAULT) //!> default physical address 15.15.255
 #define PHY_ADDR_AREA(address) ((address >> 12) & 0x0f) //!> return the area number of a given physical KNX address
 #define PHY_ADDR_LINE(address) ((address >> 8) & 0x0f)  //!> return the line number of a given physical KNX address
 #define PHY_ADDR_DEVICE(address) (address & 0xff)       //!> return device number of a given physical KNX address
@@ -465,32 +462,17 @@ Bus::Bus(BcuBase* bcuInstance, Timer& aTimer, int aRxPin, int aTxPin, TimerCaptu
 /**
  * Start BUS operation
  *
- * get our own phy addr, reset operating parameters, start the timer
+ * reset operating parameters, start the timer
  * set the pwm parameter so that we have no pulse on bus and no interrupt from timer
  * activate capture interrupt, set bus pins to respective mode
  *
- * In case we are a normal device (ROUTER not defined for compilation) we check for 0.0.0 as phy addr
- * and change to default 15.15.255 if  zero is our addr
  *	//todo get defined values from usereprom for busy-retry and nack-retry
- *
  */
 void Bus::begin()
 {
-	//check own addr - are we a router then 0 is allowed
-	//0.0.0 is not allowed for normal devices
-	//set default addr  15.15.255 in case we have PhyAdr of 0.0.0
-
-#ifndef ROUTER
-	if (bcu->ownAddress() == 0)
-	{
-		bcu->setOwnAddress(PHY_ADDR_DEFAULT);
-	}
-#endif
-
 	//todo load send-retries from eprom
 	//sendTriesMax =  userEeprom.maxRetransmit & 0x03;
 	//sendBusyTriesMax = (userEeprom.maxRetransmit >>5) & 0x03; // default
-
 	sendTriesMax =  NACK_RETRY_DEFAULT;
 	sendBusyTriesMax = BUSY_RETRY_DEFAULT; // default
 
@@ -506,7 +488,7 @@ void Bus::begin()
 	timer.pwmEnable(pwmChannel);
 	// any cap intr during start up time is ignored and will reset start up time
 	timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // todo  enabled the  timer reset by the falling edge of cap event
+	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // todo  enabled the timer reset by the falling edge of cap event
 	timer.start();
 	timer.interrupts();
 	timer.prescaler(TIMER_PRESCALER);
@@ -774,11 +756,11 @@ void Bus::handleTelegram(bool valid)
 		}
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
-		if (!(bcu->userRam->status & BCU_STATUS_TL))
+		if (!(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
 		{ // TL is disabled we might process the telegram
 			processTel = true;
 			// if LL is in normal mode (not busmonitor mode) we send ack back
-			if (bcu->userRam->status & BCU_STATUS_LL)
+			if (bcu->userRam->status() & BCU_STATUS_LINK_LAYER)
 				if (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG )
 				{
 					sendAck = SB_BUS_ACK;
@@ -1138,12 +1120,12 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			if ( (!nextByteIndex) && (currentByte & PREAMBLE_MASK) )
 				rx_error |= RX_PREAMBLE_ERROR;// preamble error, continue to read bytes - possibility to discard the telegram at higher layer
 
-			if (nextByteIndex < SB_TELEGRAM_SIZE)
+			if (nextByteIndex < bcu->maxTelegramSize())
 			{
 				rx_telegram[nextByteIndex++] = currentByte;
 				checksum ^= currentByte;
 			} else {
-				nextByteIndex = SB_TELEGRAM_SIZE -1;
+				nextByteIndex = bcu->maxTelegramSize() -1;
 				rx_error |= RX_LENGHT_ERROR;
 			}
 

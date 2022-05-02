@@ -32,6 +32,18 @@ public:
     ~BcuBase() = default;
 
     /**
+     * Set ProgPin of board, must be called before begin method
+     * @param progPin Pin definition
+     */
+    void setProgPin(int prgPin);
+
+    /**
+     * Set ProgPin output inverted, must be called before begin method
+     * @param progPin output inverted
+     */
+    void setProgPinInverted(int prgPinInv);
+
+    /**
      * End using the EIB bus coupling unit.
      */
     void end();
@@ -57,7 +69,7 @@ public:
      * The BCU's main processing loop. This is like the application's loop() function,
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
-    void loop() override;
+    virtual void loop() override;
 
     /**
      *

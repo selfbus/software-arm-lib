@@ -197,19 +197,24 @@
 #   define d(x)
 #endif
 
-// The COMFLAG_UPDATE flag, moved to the high nibble
+/** The COMFLAG_UPDATE flag, moved to the high nibble */
 #define COMFLAG_UPDATE_HIGH (COMFLAG_UPDATE << 4)
 
-// The COMFLAG_TRANS_MASK mask, moved to the high nibble
+/** The COMFLAG_TRANS_MASK mask, moved to the high nibble */
 #define COMFLAG_TRANS_MASK_HIGH (COMFLAG_TRANS_MASK << 4)
 
-ComObjects::ComObjects(BcuBase* bcuInstance) : bcu(bcuInstance) {}
-ComObjects::~ComObjects() {}
+ComObjects::ComObjects(BcuBase* bcuInstance) :
+    bcu(bcuInstance),
+    le_ptr(BIG_ENDIAN),
+    transmitting_object_no(INVALID_OBJECT_NUMBER),
+    sendNextObjIndex(0)
+{
+}
 
-/**
- * Get the size of the com-object in bytes, for sending/receiving telegrams.
- * 0 is returned if the object's size is <= 6 bit.
- */
+ComObjects::~ComObjects()
+{
+}
+
 int ComObjects::telegramObjectSize(int objno)
 {
     int type = objectType(objno);
@@ -217,16 +222,6 @@ int ComObjects::telegramObjectSize(int objno)
     return getObjectTypeSizes()[type - BIT_7];
 }
 
-/*
- * Add one or more flags to the flags of a communication object.
- * This does not clear any flag of the communication object.
- *
- * @param objno - the ID of the communication object
- * @param flags - the flags to add
- *
- * @see objectWritten(int)
- * @see requestObjectRead(int)
- */
 void ComObjects::addObjectFlags(int objno, int flags)
 {
     byte* flagsTab = objectFlagsTable();
@@ -249,18 +244,8 @@ void ComObjects::addObjectFlags(int objno, int flags)
     d(serial.print(", out: ");)
 	d(serial.print(flagsTab[objno >> 1], HEX, 2);)
 	d(serial.println();)
-
 }
 
-/*
- * Set the flags of a communication object.
- *
- * @param objno - the ID of the communication object
- * @param flags - the new communication object flags
- *
- * @see objectWritten(int)
- * @see requestObjectRead(int)
- */
 void ComObjects::setObjectFlags(int objno, int flags)
 {
     byte* flagsPtr = objectFlagsTable();
@@ -268,16 +253,13 @@ void ComObjects::setObjectFlags(int objno, int flags)
     {
         return;
     }
-    flagsPtr += objno >> 1;
+    flagsPtr += objno >> 1; // "select" high or low nibble according to objno odd or even
 
-
-    d(serial.print(" setObjFlags in (obj, flags): ");)
-	d(serial.print(objno, DEC, 2);)
-    d(serial.print(", to: ");)
-	d(serial.print(flags, HEX, 2);)
-	d(serial.print(", is: ");)
-	d(serial.print(*flagsPtr, HEX, 2);)
-    d(serial.print(", out: ");)
+    d(
+      serial.print(" setObjFlags obj: ", objno, DEC, 2);
+      serial.print(" is: ", *flagsPtr, HEX, 2);
+	  serial.print(" to: ", flags, HEX, 2);
+    )
 
     if (objno & 1)
     {
@@ -289,10 +271,7 @@ void ComObjects::setObjectFlags(int objno, int flags)
         *flagsPtr &= 0xf0;
         *flagsPtr |= flags;
     }
-
-	d(serial.print(*flagsPtr, HEX, 2);)
-	d(serial.println();)
-
+	d(serial.println(" out: ", *flagsPtr, HEX, 2);)
 }
 
 unsigned int ComObjects::objectRead(int objno)
@@ -312,6 +291,10 @@ unsigned int ComObjects::objectRead(int objno)
 void ComObjects::_objectWrite(int objno, unsigned int value, int flags)
 {
     byte* ptr = objectValuePtr(objno);
+    if (ptr == nullptr)
+    {
+        return;
+    }
     int sz = objectSize(objno);
 
     if ((ptr == 0) || (sz == 0xff)) ///\todo check maximum possible objectSize sz = objectTypeSizes[10] = 15? 0xff can indicate a corrupted Ram/EEPROM
@@ -324,7 +307,7 @@ void ComObjects::_objectWrite(int objno, unsigned int value, int flags)
     }
 
     //addObjectFlags(objno, flags);
-    setObjectFlags(objno, flags); //clear any pending ram comms flags and set new flags
+    setObjectFlags(objno, flags); //clear any pending ram com object flags and set new flags
 }
 
 void ComObjects::_objectWriteBytes(int objno, byte* value, int flags)
@@ -338,22 +321,12 @@ void ComObjects::_objectWriteBytes(int objno, byte* value, int flags)
     addObjectFlags(objno, flags);
 }
 
-/*
- * @return The number of communication objects.
- */
 inline int ComObjects::objectCount()
 {
     // The first byte of the config table contains the number of com-objects
     return *objectConfigTable();
 }
 
-/*
- * Find the first group address for the communication object. This is the
- * address that is used when sending a read-value or a write-value telegram.
- *
- * @param objno - the ID of the communication object
- * @return The group address, or 0 if none found.
- */
 int ComObjects::firstObjectAddr(int objno)
 {
     byte* assocTab = bcu->addrTables->assocTable();
@@ -367,19 +340,9 @@ int ComObjects::firstObjectAddr(int objno)
             return (addr[0] << 8) | addr[1];
         }
     }
-
     return 0;
 }
 
-/**
- * Create and send a group read request telegram.
- *
- * In order to avoid overwriting a telegram in the send buffer while the bus is still sending the last telegram
- * we wait for a free buffer
- *
- * @param objno - the ID of the communication object
- * @param addr - the group address to read
- */
 void ComObjects::sendGroupReadTelegram(int objno, int addr)
 {
 	while (bcu->sendTelegram[0]);  // wait for a free buffer
@@ -394,16 +357,6 @@ void ComObjects::sendGroupReadTelegram(int objno, int addr)
     bcu->bus->setBusRXStateValid(false);
 }
 
-/**
- * Create and send a group write or group response telegram.
- *
- * In order to avoid overwriting a telegram in the send buffer while the bus is still sending the last telegram
- * we wait for a free buffer
- *
- * @param objno - the ID of the communication object
- * @param addr - the destination group address
- * @param isResponse - true if response telegram, false if write telegram
- */
 void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 {
     byte* valuePtr = objectValuePtr(objno);
@@ -434,35 +387,27 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
     bcu->bus->setBusTXStateValid(false);
 }
 
-int sndStartIdx = 0;
-
-/**
- *  Send next Group read/write Telegram based on RAM flag status and handle bus rx/tx status
- *  of previously transmitted telegram
- *
- *  Periodically called from BCU-loop function
- *
- *  Scan RAM flags of objects if there is a read or write request from the app.
- *  If object config flag allows communication and transmission requests from app send respective message
- *  and reset the RAM flags and return true.
- *  If no request is found in RAM flag return false
- *
- *  Scan if AIL is waiting for confirmation of lower bus-layers from last transmit request (read/write)
- *  and set the object-flag according to bus result
- *
- *  @return true if a telegram was send, 0 if none found/send.
- *
- */
 bool ComObjects::sendNextGroupTelegram()
 {
-    int addr, flags, objno, config, numObjs = objectCount();
-	//const ComConfig* configTab = &objectConfig(0);
     byte* flagsTab = objectFlagsTable();
-    if(flagsTab == 0)
+    if(flagsTab == nullptr)
     {
-    	return false;
+        return (false);
     }
-	//  pending transmission status check, switch off interrupts to avoid reading/storing changing data
+
+    uint16_t addr;
+    uint8_t flags;
+    uint16_t config;
+    uint16_t numObjs = objectCount();
+    if (numObjs == 0)
+    {
+        return (false);
+    }
+    sendNextObjIndex %= numObjs;
+
+	//const ComConfig* configTab = &objectConfig(0);
+
+    // pending transmission status check, switch off interrupts to avoid reading/storing changing data
     noInterrupts();
 	if ( !(transmitting_object_no == INVALID_OBJECT_NUMBER) && bcu->bus->getBusTXStateValid() )
 	{
@@ -472,10 +417,11 @@ bool ComObjects::sendNextGroupTelegram()
 			// set RAM Status flag to ok : clear COMFLAG_TRANS_MASK	and possible DATAREQ
          	unsigned int mask = (COMFLAG_TRANS_MASK |COMFLAG_DATAREQ )  << (transmitting_object_no & 1 ? 4 :  0);
             flagsTab[transmitting_object_no >> 1] &= ~mask;
-
-		} else
-		{ //set status to error, clear COMFLAG_TRANS_MASK and set COMFLAG_ERROR
-         	unsigned int mask = (COMFLAG_TRANS_MASK |COMFLAG_DATAREQ)  << (transmitting_object_no & 1 ? 4 :  0);
+		}
+		else
+		{
+            //set status to error, clear COMFLAG_TRANS_MASK and set COMFLAG_ERROR
+            unsigned int mask = (COMFLAG_TRANS_MASK |COMFLAG_DATAREQ)  << (transmitting_object_no & 1 ? 4 :  0);
             flagsTab[transmitting_object_no >> 1] &= ~mask;
             mask = (COMFLAG_ERROR) << (transmitting_object_no & 1 ? 4 :  0);
             flagsTab[transmitting_object_no >> 1] |= mask;
@@ -487,31 +433,47 @@ bool ComObjects::sendNextGroupTelegram()
 	}
 	interrupts();
 
-    // scan all objects, read config and Grp Addr of object
-    for (objno = sndStartIdx; objno < numObjs; ++objno)
+    // scan all objects, read config and group address of object
+    for (uint16_t objno = sendNextObjIndex; objno < numObjs; ++objno)
     {
-    	const ComConfig& configTab = objectConfig(objno);
+        uint8_t* h = (objectConfigTable() + 3); // 1 tablesize 2 RAM-Flags-Table Pointer
+/*        h = h + objno * 4;
+        serial.print("obj ", objno, DEC); serial.print(" ");serial.print(((ComConfigBCU2*)h)->DataPtrType[0]));
+        d(
+
+        );
+        return (const ComConfigBCU2*) (objectConfigTable() + 1 + sizeof(ComConfigBCU2::DataPtrType) + objno * sizeof(ComConfigBCU2) );
+
+        Data Pointer // low mem
+        Config Octet
+        Type Octet  // high mem
+*/
+        const ComConfig& configTab = objectConfig(objno);
         config = configTab.config;
         addr = firstObjectAddr(objno);
 
-        // we need to check if <transmit enable> and <communication enable>
-        // is set in the config for the resp. object.
-        if (addr == 0 || !(config & COMCONF_COMM)|| !(config & COMCONF_TRANS))
+        // check if <transmit enable> and <communication enable> is set in the config for the resp. object.
+        if ((addr == 0) || !(config & COMCONF_COMM)|| !(config & COMCONF_TRANS))
+        {
              continue;  // no communication allowed or no grp-adr associated, next obj.
+        }
 
         // check ram-flags for read or write request
     	flags = flagsTab[objno >> 1];
-        if (objno & 1) flags >>= 4;
+        if (objno & 1)
+        {
+            flags >>= 4;
+        }
 
         if ((flags & COMFLAG_TRANSREQ) == COMFLAG_TRANSREQ)
-        {//app is triggering a object read or write request on the bus
-
+        {
+            //app is triggering a object read or write request on the bus
             if (flags & COMFLAG_DATAREQ)
-            	// app triggeres a read request on the bus - no further search for local objects belonging to the same group,
+            	// app triggered a read request on the bus - no further search for local objects belonging to the same group,
             	// they will be updated by the response to the read request
                 sendGroupReadTelegram(objno, addr);
             else
-            	// app triggeres a write request on the bus  and check for additional associations to Grp Addr for local writes
+            	// app triggered a write request on the bus  and check for additional associations to Grp Addr for local writes
             	sendGroupWriteTelegram(objno, addr, false);
 
             // we set the status to TRANSMITING (0x02), clear DATAREQ flag
@@ -521,83 +483,67 @@ bool ComObjects::sendNextGroupTelegram()
             flagsTab[objno >> 1] |= mask;
 
 
-            sndStartIdx = objno + 1;
+            sendNextObjIndex = objno + 1;
             return true;
         }
     }
 
-    sndStartIdx = 0;
+    sendNextObjIndex++; // nothing found to send, lets prepare for next round
     return false;
 }
 
-/**
- * Get the ID of the next communication object that was updated
- * over the bus by a write-value-request or read-response telegram.
- *
- * @return The ID of the next updated com-object, -1 if none.
- */
 int ComObjects::nextUpdatedObject()
 {
-    static int startIdx = 0;
-
     byte* flagsTab = objectFlagsTable();
-    if(flagsTab == 0)
-    	return -1;
-	//d(serial.print(" next updated obj- ");)
-	//d(serial.print("n");)
-    //d(serial.print("start idx: ");)
- 	//d(serial.println(startIdx, DEC, 3);)
-
-    int flags, objno, numObjs = objectCount();
-
-    for (objno = startIdx; objno < numObjs; ++objno)
+    if(flagsTab == nullptr)
     {
-        flags = flagsTab[objno >> 1];
+    	return (INVALID_OBJECT_NUMBER);
+    }
 
-        if (objno & 1) flags &= COMFLAG_UPDATE_HIGH;
+    uint8_t flags;
+    uint16_t numObjs = objectCount();
+
+    if (numObjs == 0)
+    {
+        return (INVALID_OBJECT_NUMBER);
+    }
+    nextUpdatedObjIndex = 0; ///\todo this is old behavior
+    //nextUpdatedObjIndex %= numObjs; ///\todo this should be a less resource intense alternative, even more could be here optimized
+
+    for (uint16_t objno = nextUpdatedObjIndex; objno < numObjs; ++objno)
+    {
+        flags = flagsTab[objno >> 1]; // gets the same byte twice
+
+        if (objno & 1) flags &= COMFLAG_UPDATE_HIGH; // check high or low nibble
         else flags &= COMFLAG_UPDATE;
 
-        //d(serial.print(" obj: ");)
-        //d(serial.print(objno, DEC, 2);)
-        //d(serial.print(", ");)
-
- 		//d(serial.print(" fi: ");)
- 		//d(serial.print(flags, HEX, 2);)
-        //d(serial.print("; ");)
-		//d(serial.println();)
+        // d(serial.print(" obj: ", objno, DEC); serial.println(", fi: ", flags, HEX, 2);)
 
         if (flags)
         {
-            d(serial.print(" flags set obj: ");)
-          	d(serial.print(objno, DEC, 2);)
-            d(serial.print(", ");)
-      		d(serial.print(" fi: ");)
-      		d(serial.print(flags, HEX, 2);)
-            d(serial.print("; ");)
+            // fi = flags in, fo = flags out
+            d(serial.print(" flags set obj: ", objno, DEC); serial.print(", fi: ", flags, HEX, 2); serial.print("; ");)
 
         	flagsTab[objno >> 1] &= ~flags;
-            startIdx = objno + 1;
+            nextUpdatedObjIndex = objno + 1;
 
-            d(int nflags = flagsTab[objno >> 1];)
-
-            d(serial.print(" fo: ");)
-     		d(serial.print(nflags, HEX, 2);)
-			d(serial.println();)
-
+            d(serial.println(" fo: ", flagsTab[objno >> 1], HEX, 2);)
 			return objno;
         }
     }
-
-    startIdx = 0;
-    return -1;
+    nextUpdatedObjIndex++; // nothing found to send, lets prepare for next round
+    return INVALID_OBJECT_NUMBER;
 }
 
 void ComObjects::processGroupWriteTelegram(int objno, byte* tel)
 {
     byte* valuePtr = objectValuePtr(objno);
 
-    if (valuePtr == nullptr) // TODO valuePtr = nullptr will raise a hardware fault
+    if (valuePtr == nullptr)
+    {
         IF_DEBUG(fatalError(););
+        return;
+    }
 
     int count = telegramObjectSize(objno);
 
