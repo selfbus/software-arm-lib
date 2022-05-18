@@ -3,6 +3,7 @@
 	<name>u8glib</name>
 	<comment></comment>
 	<projects>
+		<project>sblib</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>
