@@ -56,7 +56,9 @@ void BcuBase::_begin()
 void BcuBase::loop()
 {
     TLayer4::loop();
-	if (bus->telegramReceived() && (!bus->sendingTelegram()) && (bus->state == Bus::IDLE) && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+    bool telegramInQueu = bus->telegramReceived();
+    telegramInQueu &= (!bus->sendingTelegram());
+	if ( telegramInQueu && (bus->state == Bus::IDLE) && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
 	{
         processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}

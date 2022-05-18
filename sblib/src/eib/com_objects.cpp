@@ -434,7 +434,7 @@ bool ComObjects::sendNextGroupTelegram()
 	}
 	interrupts();
 */
-///\todoe BUG END
+///\todo BUG END
     // scan all objects, read config and group address of object
     for (uint16_t objno = sendNextObjIndex; objno < numObjs; ++objno)
     {

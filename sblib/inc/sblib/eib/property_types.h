@@ -199,7 +199,7 @@ enum PropertyID : uint8_t
     PID_MANUFACTURER_ID = 12,
 
     /** Application object property: program version, PDT_GENERIC_05 */
-    PID_PROG_VERSION = 13,
+    PID_PROGRAM_VERSION = 13,
 
     /** Device object property: device control, PDT_BISET8 alt. PDT_GENERIC_01 */
     PID_DEVICE_CONTROL = 14,
