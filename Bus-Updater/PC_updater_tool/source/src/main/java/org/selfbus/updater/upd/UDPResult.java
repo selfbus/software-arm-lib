@@ -68,6 +68,10 @@ public enum UDPResult {
     FLASH_ERROR(0x110, "Flash page could not be programmed", true),
     /** Flash page not allowed to erase */
     PAGE_NOT_ALLOWED_TO_ERASE(0x111, "Flash page not allowed to erase", true),
+
+    /** Address range not allowed to erase */
+    UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE(0x112, "Address range not allowed to erase", true),
+
     /** Command not implemented */
     NOT_IMPLEMENTED(0xFFFF, "Command not implemented", true),
     /** Unknown error */
