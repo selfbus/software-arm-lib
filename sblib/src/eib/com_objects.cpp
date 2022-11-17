@@ -207,7 +207,8 @@ ComObjects::ComObjects(BcuBase* bcuInstance) :
     bcu(bcuInstance),
     le_ptr(BIG_ENDIAN),
     transmitting_object_no(INVALID_OBJECT_NUMBER),
-    sendNextObjIndex(0)
+    sendNextObjIndex(0),
+    nextUpdatedObjIndex(0)
 {
 }
 
