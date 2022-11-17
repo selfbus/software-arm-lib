@@ -14,8 +14,9 @@
 /**
  * An invalid 2 byte float (DPT9/EIS5).
  * To be used for floatToDpt9() and dpt9ToFloat().
+ * @note KNX Spec. 2.1 3/7/2 3.10 p.32 value 0x7FFF shall denote invalid data
  */
-#define INVALID_DPT_FLOAT  2147483647U
+#define INVALID_DPT_FLOAT  0x7fff
 
 /**
  * Convert a "float" value to 2 byte DPT9.xxx
