@@ -430,14 +430,15 @@ void BcuDefault::loop()
 
     BcuBase::loop(); // check processTelegram and programming button state
 
+    // handle group object telegrams only if application is runnning
     // if bus is not sending (telegram buffer is empty) check for next telegram to be send
-    if (sendGrpTelEnabled && !bus->sendingTelegram())
+    if (sendGrpTelEnabled && applicationRunning() && !bus->sendingTelegram())
     {
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
         {
-        	// check in com_objects method for waiting objects from user app and store in telegrambuffer
-        	// and call bus->sendTelegram
+            // check in com_objects method for waiting objects from user app and store in telegrambuffer
+            // and call bus->sendTelegram
          if (comObjects->sendNextGroupTelegram())
              groupTelSent = millis();
 
