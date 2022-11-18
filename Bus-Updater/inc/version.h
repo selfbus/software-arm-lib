@@ -22,7 +22,7 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
-#define BL_IDENTITY (0x1070) //!< boot loader Version 0.67
+#define BL_IDENTITY (0x1071) //!< boot loader Version 0.71
 #define UPDATER_MIN_MAJOR_VERSION (0) //!< minimum required major version of the Selfbus Updater we are talking to
 #define UPDATER_MIN_MINOR_VERSION (66) //!< minimum required minor version of the Selfbus Updater we are talking to
 
