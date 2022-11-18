@@ -1,4 +1,4 @@
-# Selfbus-Updater 0.67
+# Selfbus-Updater 0.68
 
 ## Requirements
 

@@ -211,7 +211,7 @@ public class CliOptions {
                 .argName("COM-port")
                 .hasArg()
                 .required(false)
-                .desc("use TPUART serial communication (experimental, needs serialcom or rxtx library in java.library.path").build();
+                .desc("use TPUART serial communication (experimental, needs serialcom or rxtx library in java.library.path)").build();
         Option medium = Option.builder(OPT_SHORT_MEDIUM).longOpt(OPT_LONG_MEDIUM)
                 .argName("tp1|rf")
                 .hasArg()
@@ -271,13 +271,13 @@ public class CliOptions {
                 .hasArg()
                 .required(false)
                 .type(Number.class)
-                .desc("KNX IP Secure tunneling user password (Commissioning password/Inbetriebnahmepasswort), \" in password may not work").build();
+                .desc("KNX IP Secure tunneling user password (Commissioning password/Inbetriebnahmepasswort), quotation marks (\") in password may not work").build();
         Option devicePasswd = Option.builder(null).longOpt(OPT_LONG_DEVICE_PASSWORD)
                 .argName("password")
                 .hasArg()
                 .required(false)
                 .type(Number.class)
-                .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) \" in password may not work").build();
+                .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) quotation marks(\") in password may not work").build();
 
         Option knxPriority = Option.builder(null).longOpt(OPT_LONG_PRIORITY)
                 .argName("SYSTEM|NORMAL|URGENT|LOW")

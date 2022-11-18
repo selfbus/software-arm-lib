@@ -372,8 +372,13 @@ public final class DeviceManagement {
             else if ((devices.length == 1) && (progDeviceAddr != null) && (progDeviceAddr.equals(devices[0]))) { // correct device in prog mode
             	return;
             }
-            logger.warn("{}Device(s) in bootloader/programming mode: {}{}", ConColors.BRIGHT_RED, Arrays.stream(devices).toArray(), ConColors.RESET);
-            throw new UpdaterException("The wrong device or more than one device are already in programming mode.");
+            logger.warn("{}{} Device(s) in bootloader/programming mode: {}{}", ConColors.BRIGHT_RED, devices.length, Arrays.stream(devices).toArray(), ConColors.RESET);
+            if (devices.length == 0) {
+                throw new UpdaterException("No device in programming mode.");
+            }
+            else {
+                throw new UpdaterException(String.format("%d wrong device(s) %s are already in programming mode.", devices.length, Arrays.toString(devices)));
+            }
         } catch (KNXException | InterruptedException e ) {
             throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()));
         }
