@@ -51,6 +51,15 @@ BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communica
 Timeout runModeTimeout;              //!< running mode LED blinking timeout
 bool blinky = false;
 
+uint32_t getProgrammingButton()
+{
+#ifdef ALTERNATIVE_PROGRAMMING_BUTTON
+    return (PIO2_8);
+#else
+    return (hwPinProgButton());
+#endif
+}
+
 /**
  * @brief Configures the system timer to call SysTick_Handler once every 1 msec.
  *
@@ -91,6 +100,7 @@ BcuBase* setup()
 #endif
 
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
+    bcu.setProgPin(getProgrammingButton());
     runModeTimeout.start(1);
 
 #ifdef DEBUG
@@ -125,7 +135,6 @@ BcuBase* setup()
     return &bcu;
 }
 
-
 /**
  * @brief Handles bus.idle(), LED status and MCU's reset (if requested by KNX-telegram), called from run_updater(...)
  *
@@ -148,7 +157,7 @@ void loop()
         blinky = !blinky;
     }
 
-    digitalWrite(hwPinProgButton(), blinky);
+    digitalWrite(getProgrammingButton(), blinky);
 
 #if defined(DEBUG) && (!(defined(TS_ARM)))
     digitalWrite(PIN_RUN, blinky);
@@ -239,8 +248,8 @@ static void run_updater(bool programmingMode)
     *magicWord = 0;		// wrong magicWord, delete it
 
     // Enter Updater when programming button was pressed at power up
-    pinMode(hwPinProgButton(), INPUT | PULL_UP);
-    if (!digitalRead(hwPinProgButton()))
+    pinMode(getProgrammingButton(), INPUT | PULL_UP);
+    if (!digitalRead(getProgrammingButton()))
     {
         run_updater(true);
     }

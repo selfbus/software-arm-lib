@@ -32,6 +32,14 @@
     #define BL_FEATURES      0x0100             //!< Feature list of bootloader in Release version
 #endif
 
+/**
+ * @def ALTERNATIVE_PROGRAMMING_BUTTON
+ *
+ * define to use the alternative programming button
+ */
+//#define ALTERNATIVE_PROGRAMMING_BUTTON
+
+
 #define BL_ID_STRING         "[SB KNX BL ]"     //!< boot loader identity string for getAppVersion()
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
 
