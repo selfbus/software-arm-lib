@@ -36,8 +36,12 @@ BCU1 bcu = BCU1();
  */
 BcuBase* setup()
 {
-    // serial.setRxPin(PIO2_7); // uncomment and change PIO for another RX-pin
-    // serial.setTxPin(PIO2_8); // uncomment and change PIO for another TX-pin
+    serial.setRxPin(PIO1_6); // @ swd/jtag connector
+    serial.setTxPin(PIO1_7); // @ swd/jtag connector
+
+    // serial.setRxPin(PIO2_7); // @ 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
+    // serial.setTxPin(PIO2_8); // @ 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
+
     serial.begin(115200);
 
     serial.println("Selfbus serial port example");
