@@ -51,5 +51,19 @@ bool checkApciForMagicWord(byte eraseCode, byte channelNumber)
     return ((eraseCode == BOOTLOADER_MAGIC_ERASE) && (channelNumber == BOOTLOADER_MAGIC_CHANNEL));
 }
 
+uint8_t mainGroup(uint16_t address)
+{
+    return (highByte(address) >> 3);
+}
+
+uint8_t middleGroup(uint16_t address)
+{
+    return (highByte(address) & 0x07);
+}
+
+uint8_t lowGroup(uint16_t address)
+{
+    return (lowByte(address));
+}
 
 /** @}*/
