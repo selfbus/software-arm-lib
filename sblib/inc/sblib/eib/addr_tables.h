@@ -10,6 +10,7 @@
 #ifndef sblib_addr_tables_h
 #define sblib_addr_tables_h
 
+#include <stdint.h>
 #include <sblib/types.h>
 
 class AddrTables
@@ -57,6 +58,12 @@ public:
 	 * 1 byte addr-table index, 1 byte com-object number.
 	 */
 	virtual byte* assocTable() = 0;
+
+    /**
+     * Get total number of address entries
+     * @return Total number of address entries including own address
+     */
+    virtual uint16_t addrCount();
 
 	int addrForSendObject(int objno);
 };

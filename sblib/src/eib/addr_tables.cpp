@@ -36,3 +36,9 @@ int AddrTables::addrForSendObject(int objno)
 {
     return 0;
 }
+
+uint16_t AddrTables::addrCount()
+{
+    byte* ptrAddrTable = addrTable();
+    return (*ptrAddrTable);
+}

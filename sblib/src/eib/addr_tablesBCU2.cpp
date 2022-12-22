@@ -1,5 +1,5 @@
 /*
- * addr_tablesBCU1.cpp
+ * addr_tablesBCU2.cpp
  *
  *  Created on: 20.11.2021
  *      Author: dridders
@@ -42,4 +42,11 @@ byte* AddrTablesBCU2::assocTable()
 {
     byte * addr = (byte* ) & bcu->userEeprom->assocTabAddr();
     return bcu->userMemoryPtr (makeWord (*(addr + 1), * addr));
+}
+
+uint16_t AddrTablesBCU2::addrCount()
+{
+    byte* ptrAddrTable = addrTable();
+    uint16_t count = makeWord (*(ptrAddrTable + 1), * ptrAddrTable);
+    return (count);
 }
