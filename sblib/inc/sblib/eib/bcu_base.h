@@ -85,13 +85,11 @@ public:
      */
     int progPinInv;
 
-     /**
+    /**
       * @brief Performs a system reset by calling @ref NVIC_SystemReset
-      * @details Before the reset a USR_CALLBACK_RESET is send to the application,
-      *          the UserEprom and memMapper are written to flash.
       * @warning This function will never return.
       */
-     virtual void softSystemReset();
+    virtual void softSystemReset();
 
     UserRam* userRam;
     AddrTables* addrTables;

@@ -136,7 +136,7 @@ public:
      virtual unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
                                        bool * sendResponse, unsigned char * telegram, uint8_t telLength);
 
-     /**
+    /**
       * @brief Performs a system reset by calling @ref NVIC_SystemReset
       * @details Before the reset a USR_CALLBACK_RESET is send to the application,
       *          the UserEprom and memMapper are written to flash.
