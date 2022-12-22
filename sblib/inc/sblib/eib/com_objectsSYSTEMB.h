@@ -52,7 +52,7 @@ protected:
 
 	virtual int objectSize(int objno) override;
 	virtual byte* objectValuePtr(int objno) override;
-	virtual void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno) override;
+	virtual void processGroupTelegram(uint16_t addr, int apci, byte* tel, int trg_objno) override;
 	virtual byte* objectConfigTable() override;
 	virtual byte* objectFlagsTable() override;
 

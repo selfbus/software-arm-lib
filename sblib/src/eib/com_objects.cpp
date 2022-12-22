@@ -335,13 +335,21 @@ int ComObjects::firstObjectAddr(int objno)
 
     for (++assocTab; assocTab < assocTabEnd; assocTab += 2)
     {
-        if (assocTab[1] == objno)
+        if (assocTab[1] != objno)
         {
-            byte* addr = bcu->addrTables->addrTable() + 1 + (assocTab[0] << 1);
-            return (addr[0] << 8) | addr[1];
+            continue;
         }
+        uint16_t addressTablePos = (assocTab[0]) + 1; // +1 because first address in addressTable is our own address
+
+        if (addressTablePos > bcu->addrTables->addrCount())
+        {
+            continue;
+        }
+
+        byte* addr = bcu->addrTables->addrTable() + 1 + (assocTab[0] << 1);
+        return ((addr[0] << 8) | addr[1]);
     }
-    return 0;
+    return (0);
 }
 
 void ComObjects::sendGroupReadTelegram(int objno, int addr)

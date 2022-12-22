@@ -246,7 +246,7 @@ public:
 	 *                  if called from app, we have the triggering object as additional parameter
 	 * @param trg_objno Object number triggering the group telegram from the application layer
 	 */
-	virtual void processGroupTelegram(int addr, int apci, byte* tel, int trg_objno) = 0;
+	virtual void processGroupTelegram(uint16_t addr, int apci, byte* tel, int trg_objno) = 0;
 
 	/**
 	 * Get the communication object configuration table ("COMMS" table). This is the table

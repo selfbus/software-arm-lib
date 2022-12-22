@@ -52,7 +52,7 @@ byte* ComObjectsBCU1::objectValuePtr(int objno)
 
 /*
  *  A Group read/write Telegram on the bus or a
- *  Telegram transmitt-request (object read/write)from the app was received
+ *  Telegram transmit-request (object read/write) from the app was received
  *
  *  From bus: Called from bus::ProcessTelegram function triggered by the BCUbase-loop function.
  *  From app: Called from sendGroupWriteTelegram or sendGroupReadTelegram
@@ -66,7 +66,7 @@ byte* ComObjectsBCU1::objectValuePtr(int objno)
  *  @return void
  *
  */
-void ComObjectsBCU1::processGroupTelegram(int addr, int apci, byte* tel, int trg_objno)
+void ComObjectsBCU1::processGroupTelegram(uint16_t addr, int apci, byte* tel, int trg_objno)
 {
 /**
  * Spec: Resources 4.11.2 Group Object Association Table - Realization Type 1
@@ -75,24 +75,34 @@ void ComObjectsBCU1::processGroupTelegram(int addr, int apci, byte* tel, int trg
     const int endAssoc = 1 + (*assocTab) * 2;
     int objno, objConf;
 
-    // Convert the group address into the index into the group address table
+    DB_COM_OBJ(
+            serial.print("grpAddr ", mainGroup(addr));
+            serial.print("/", middleGroup(addr));
+            serial.print("/", lowGroup(addr));
+            serial.print(": gapos ");
+            );
+    // Convert the group address into the index of the group address table
     const int gapos = bcu->addrTables->indexOfAddr(addr);
     if (gapos < 0)
     {
-        DB_COM_OBJ(serial.println("gapos not found"););
+        DB_COM_OBJ(serial.println("not found"););
         return;
     }
-    DB_COM_OBJ(serial.println("gapos  : ", gapos););
+    else
+    {
+        DB_COM_OBJ(serial.println(gapos););
+    }
 
     // Loop over all entries in the association table, as one group address
     // could be assigned to multiple com-objects.
     for (int idx = 1; idx < endAssoc; idx += 2)
     {
         // Check if grp-address index in assoc table matches the dest grp address index
-        if (gapos != assocTab[idx]) // We found an association for our addr
+        if (gapos != assocTab[idx])
         {
             continue;
         }
+        // We found an association for our addr
         objno = assocTab[idx + 1];  // Get the com-object number from the assoc table
         DB_COM_OBJ(serial.println("objno  : ", objno););
 

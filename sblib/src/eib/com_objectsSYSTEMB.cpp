@@ -46,7 +46,7 @@ byte* ComObjectsSYSTEMB::objectValuePtr(int objno)
  *  @return void
  *
  */
-void ComObjectsSYSTEMB::processGroupTelegram(int addr, int apci, byte* tel, int trg_objno)
+void ComObjectsSYSTEMB::processGroupTelegram(uint16_t addr, int apci, byte* tel, int trg_objno)
 {
     //
     // Spec: Resources 4.11.4 Group Object Association Table - Realization Type 6
