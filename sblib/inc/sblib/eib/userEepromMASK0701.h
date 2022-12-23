@@ -5,6 +5,12 @@
 
 /**
  * The BCU BIM112 MaskVersion 0x0701 user EEPROM
+ * @details Can be accessed by name, like userEeprom.manuDataH() and as an array, like
+ *          userEeprom[addr]. Please note that the @ref startAddress is subtracted.
+ *          E.g. userEeprom[0x107] is the correct address for userEeprom.version() not userEeprom[0x07].
+ *
+ * @note see KNX Spec. 2.1
+ *       - BIM112            : not in Spec. 2.1 some information in 06 Profiles 4.2.10 p.36
  */
 class UserEepromMASK0701 : public UserEepromBCU2
 {

@@ -14,15 +14,15 @@ public:
 	UserEepromSYSTEMB(BcuBase* bcu) : UserEepromMASK0701(bcu, 0x3300, 3072, 4096) {};
 	~UserEepromSYSTEMB() = default;
 
-	static const int addrTabAddrOffset = 33;    //!< 0x3321-0x3322
-	static const int assocTabAddrOffset = 35;   //!< 0x3323-0x3324
+	static const int addrTabAddrOffset  = 0x21; //!< 0x3321-0x3322
+	static const int assocTabAddrOffset = 0x23; //!< 0x3323-0x3324
 
-	static const int addrTabMcbOffset = 77;     //!< 0x334D-0x3354
-	static const int assocTabMcbOffset = 85;    //!< 0x3355-0x335C
-	static const int commsTabMcbOffset = 93;    //!< 0x335D-0x3364
-	static const int eibObjMcbOffset = 101;     //!< 0x3365-0x336C
-	static const int commsSeg0McbOffset = 109;  //!< 0x336D-0x3374
-    static const int eibObjVerOffset = 0x75;    //!< 0x3375-0x3379 Application program 1 version
+	static const int addrTabMcbOffset   = 0x4D; //!< 0x334D-0x3354
+	static const int assocTabMcbOffset  = 0x55; //!< 0x3355-0x335C
+	static const int commsTabMcbOffset  = 0x5D; //!< 0x335D-0x3364
+	static const int eibObjMcbOffset    = 0x65; //!< 0x3365-0x336C
+	static const int commsSeg0McbOffset = 0x6D; //!< 0x336D-0x3374
+    static const int eibObjVerOffset    = 0x75; //!< 0x3375-0x3379 Application program 1 version
     static const int commsSeg0VerOffset = 0x7A; //!< 0x337A-0x337E Application program 2 version
 
 	virtual word& addrTabAddr() const override { return *(word*)&userEepromData[addrTabAddrOffset]; }
