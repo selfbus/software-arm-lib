@@ -76,6 +76,11 @@ public:
      */
     void setOwnAddress(uint16_t addr) override;
 
+    /**
+     * Process a broadcast telegram.
+     */
+    bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) override;
+
     //  BCU 2, mask version 2.0
     virtual const char* getBcuType() const override { return "BCU2"; }
     virtual unsigned short getMaskVersion() const override { return 0x20; }
@@ -119,6 +124,8 @@ public:
 protected:
     unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
             bool *sendResponse, unsigned char *telegram, uint8_t telLength) override;
+
+    void sendApciIndividualAddressSerialNumberReadResponse();
 
     word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
 };

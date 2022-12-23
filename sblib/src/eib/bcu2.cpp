@@ -14,6 +14,7 @@
 
 #include <sblib/eib/bcu2.h>
 #include <sblib/eib/apci.h>
+#include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/com_objects.h>
 #include <string.h>
 #include <sblib/internal/variables.h>
@@ -177,4 +178,57 @@ void BCU2::setHardwareType(const byte* hardwareType, uint8_t size)
         size = userEeprom->orderSize();
     }
     memcpy(userEeprom->order(), hardwareType, size);
+}
+
+bool BCU2::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
+{
+    switch (apciCmd)
+    {
+        case APCI_INDIVIDUALADDRESS_SERIALNUMBER_WRITE_PDU:
+            // telegram[8-13] contains serial number to check, telegram[14-15] = new physical address
+            if (memcmp(&telegram[8], &userEeprom->serial()[0], userEeprom->serialSize()) != 0)
+            {
+                return (false);
+            }
+            setOwnAddress(makeWord(telegram[14], telegram[15]));
+            break;
+
+        case APCI_INDIVIDUALADDRESS_SERIALNUMBER_READ_PDU:
+            // telegram[8-13] contains serial number to check
+            if (memcmp(&telegram[8], &userEeprom->serial()[0], userEeprom->serialSize()) != 0)
+            {
+                return (false);
+            }
+            sendApciIndividualAddressSerialNumberReadResponse();
+            break;
+
+        default :
+            // let base class handle the broadcast
+            return (BcuDefault::processBroadCastTelegram(apciCmd, telegram, telLength));
+    }
+    return (true);
+}
+
+void BCU2::sendApciIndividualAddressSerialNumberReadResponse()
+{
+    initLpdu(sendTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD);
+    // 1+2 contain the sender address, which is set by bus.sendTelegram()
+    setDestinationAddress(sendTelegram, 0x0000); // Zero target address, it's a broadcast
+    sendTelegram[5] = 0xe0 + 11; // address type & routing count in high nibble + response length (11) in low nibble
+    setApciCommand(sendTelegram, APCI_INDIVIDUALADDRESS_SERIALNUMBER_RESPONSE_PDU, 0);
+    // sendTelegram[8-13] contains serial number
+    for (uint8_t i = 0; i < userEeprom->serialSize(); i++)
+    {
+        sendTelegram[8+i] = userEeprom->serial()[i];
+    }
+
+    // sendTelegram[14-15] contains domain address
+    sendTelegram[14] = 0x00;
+    sendTelegram[15] = 0x00;
+
+    // sendTelegram[16-17] reserved
+    sendTelegram[16] = 0x00;
+    sendTelegram[17] = 0x00;
+
+    bus->sendTelegram(sendTelegram, 18);
 }

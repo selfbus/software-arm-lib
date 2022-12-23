@@ -587,16 +587,24 @@ bool BcuDefault::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t group
 
 bool BcuDefault::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
 {
-    if (programmingMode()) // we are in programming mode
+    if (!programmingMode())
     {
-        if (apciCmd == APCI_INDIVIDUAL_ADDRESS_WRITE_PDU)
-        {
+        return (true);
+    }
+
+    // we are in programming mode
+    switch (apciCmd)
+    {
+        case APCI_INDIVIDUAL_ADDRESS_WRITE_PDU:
             setOwnAddress(makeWord(telegram[8], telegram[9]));
-        }
-        else if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
-        {
+            break;
+
+        case APCI_INDIVIDUAL_ADDRESS_READ_PDU:
             sendApciIndividualAddressReadResponse();
-        }
+            break;
+
+        default :
+            return (false);
     }
     return (true);
 }
