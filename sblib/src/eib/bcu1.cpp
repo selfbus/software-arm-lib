@@ -12,7 +12,6 @@
  *  published by the Free Software Foundation.
  */
 
-#define INSIDE_BCU_CPP
 #include <sblib/eib/bcu1.h>
 #include <sblib/eib/apci.h>
 #include <sblib/eib/com_objects.h>
@@ -32,38 +31,9 @@ BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* com
         addrTables(addrTables)
 {}
 
-void BCU1::setOwnAddress (uint16_t addr)
-{
-    if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
-    {
-        userEeprom->addrTab()[0] = HIGH_BYTE(addr);
-        userEeprom->addrTab()[1] = lowByte(addr);
-        userEeprom->modified();
-    }
-    BcuDefault::setOwnAddress(addr);
-}
-
 inline void BCU1::begin(int manufacturer, int deviceType, int version)
 {
-    setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
-    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
-    userRam->deviceControl() = 0;
-    userRam->runState() = 1;
-
-    userEeprom->runError() = 0xff;
-    userEeprom->portADDR() = 0;
-
-    userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
-    userEeprom->manufacturerL() = lowByte(manufacturer);
-
-    userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
-    userEeprom->deviceTypeL() = lowByte(deviceType);
-
-    userEeprom->version() = version;
-
-    userEeprom->writeUserEepromTime = 0;
-
-	begin_BCU(manufacturer, deviceType, version);
+    BcuDefault::begin(manufacturer, deviceType, version);
 	BcuDefault::_begin();
 }
 
@@ -78,13 +48,6 @@ bool BCU1::applicationRunning() const
     return (
             ((status & (BCU_STATUS_PROGRAMMING_MODE | BCU_STATUS_APPLICATION_LAYER)) == BCU_STATUS_APPLICATION_LAYER) &&
              (runState == 1) &&
-             (runError == 0xff)  // ETS sets the run error to 0 when programming
+             (runError == 0xff)  // ETS sets the run error to 0 while programming
            );
-}
-
-// The method begin_BCU() is renamed during compilation to indicate the BCU type.
-// If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-void BCU1::begin_BCU(int manufacturer, int deviceType, int version)
-{
-    BcuDefault::begin_BCU(manufacturer, deviceType, version);
 }

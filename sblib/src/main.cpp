@@ -52,8 +52,3 @@ int main()
             loop_noapp();
     }
 }
-
-void loop_noapp()
-{
-    waitForInterrupt();
-}

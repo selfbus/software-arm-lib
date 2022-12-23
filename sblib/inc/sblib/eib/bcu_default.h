@@ -186,9 +186,6 @@ public:
     void setGroupTelRateLimit(unsigned int limit);
 
 protected:
-    // The method begin_BCU() is renamed during compilation to indicate the BCU type.
-    // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-    virtual void begin_BCU(int manufacturer, int deviceType, int version) = 0;
     /*
      * Special initialization for the BCU
      */
@@ -200,7 +197,7 @@ protected:
      * @param deviceType - the device type (16 bit)
      * @param version - the version of the application program (8 bit)
      */
-    virtual void begin(int manufacturer, int deviceType, int version) = 0;
+    virtual void begin(int manufacturer, int deviceType, int version);
 
     /**
      * Process a group address (T_Data_Group) telegram.
@@ -230,10 +227,5 @@ protected:
 
 #define  MAX_GROUP_TEL_PER_SECOND  28
 #define  DEFAULT_GROUP_TEL_WAIT_MILLIS  1000/MAX_GROUP_TEL_PER_SECOND
-
-
-#ifndef INSIDE_BCU_CPP
-#   undef begin_BCU
-#endif
 
 #endif /*sblib_BcuDefault_h*/

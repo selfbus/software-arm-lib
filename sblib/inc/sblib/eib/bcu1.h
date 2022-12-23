@@ -43,14 +43,6 @@ public:
 
     bool applicationRunning() const;
 
-    /**
-     * Set our own physical address. Normally the physical address is set by ETS when
-     * programming the device.
-     *
-     * @param addr - the physical address
-     */
-    void setOwnAddress(uint16_t addr) override;
-
     //  BCU 1, mask version 1.2
     const char* getBcuType() const override { return "BCU1"; }
     uint16_t getMaskVersion() const override { return  0x12; }
@@ -64,13 +56,6 @@ public:
 	AddrTablesBCU1* addrTables;
 
 protected:
-    // The method begin_BCU() is renamed during compilation to indicate the BCU type.
-    // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-    void begin_BCU(int manufacturer, int deviceType, int version);
 };
-
-#ifndef INSIDE_BCU_CPP
-#   undef begin_BCU
-#endif
 
 #endif /*sblib_bcu1_h*/

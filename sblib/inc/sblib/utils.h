@@ -137,7 +137,7 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
  * @param str1 - the first string
  * @param str2 - the second string
  *
- * @brief Example:  CPP_CONCAT(begin_,BCU_NAME) results in begin_BCU_NAME
+ * @brief Example:  CPP_CONCAT(example_,BCU_NAME) results in example_BCU_NAME
  */
 #define CPP_CONCAT(str1,str2)  str1 ## str2
 
@@ -148,7 +148,7 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
  * @param str1 - the first string
  * @param str2 - the second string
  *
- * @brief Example:  CPP_QUOTE_EXPAND(begin_,BCU_NAME) results in begin_BCU2  (if BCU_NAME is defined as BCU2)
+ * @brief Example:  CPP_QUOTE_EXPAND(example_,BCU_NAME) results in example_BCU2  (if BCU_NAME is defined as BCU2)
  */
 #define CPP_CONCAT_EXPAND(str1,str2) CPP_CONCAT(str1,str2)
 

@@ -7,7 +7,6 @@
  *  published by the Free Software Foundation.
  */
 
-#define INSIDE_BCU_CPP
 #include <sblib/io_pin_names.h>
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/bcu_base.h>

@@ -41,8 +41,4 @@ protected:
 
 };
 
-#ifndef INSIDE_BCU_CPP
-#   undef begin_BCU
-#endif
-
 #endif /*sblib_systemb_h*/

@@ -117,19 +117,10 @@ public:
 	PropertiesBCU2* properties;
 
 protected:
-    // The method begin_BCU() is renamed during compilation to indicate the BCU type.
-    // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-    virtual void begin_BCU(int manufacturer, int deviceType, int version);
-
     unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
             bool *sendResponse, unsigned char *telegram, uint8_t telLength) override;
 
     word commObjectTableAddressStatic;       //!> The read-only CommObjectTable address which can't be changed by KNX telegrams
 };
-
-
-#ifndef INSIDE_BCU_CPP
-#   undef begin_BCU
-#endif
 
 #endif /*sblib_bcu2_h*/

@@ -2,18 +2,15 @@
  * @file   main.h
  * @brief  Functions for applications using the Selfbus library.
  *
- * @note   Your Application must at least implement following functions:
+ * @note   Your Application must implement following functions:
  *         - void setup()
  *         - void loop()
- * @par
- * @note   Optional your application can implement following functions:
  *         - void loop_noapp()
- *         - void loop_debug()
  *
  * @warning All functions must return after their work is done.
  *
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  *
  * @bug No known bugs.
  ******************************************************************************/
@@ -28,8 +25,6 @@
 #define sblib_main_h
 
 #include <sblib/eib/bcu_base.h>
-
-#define WEAK __attribute__ ((weak))
 
 /**
  * @brief This function is called by the Selfbus's library main
@@ -50,8 +45,9 @@ void loop();
 /**
  * @brief While no KNX-application is loaded,
  *        this function is called in a loop by the Selfbus's library main.
- *        Implementation is optional.
+ *
+ * @note  You must implement this function in your code.
  */
-WEAK void loop_noapp();
+void loop_noapp();
 
 #endif /*sblib_main_h*/

@@ -54,8 +54,4 @@ private:
     static const uint16_t LOAD_STATE_ADDR = 0xb6e9; /** Address for load state */
 };
 
-#ifndef INSIDE_BCU_CPP
-#   undef begin_BCU
-#endif
-
 #endif /*sblib_mask0701_h*/

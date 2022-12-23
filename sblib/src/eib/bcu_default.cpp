@@ -8,7 +8,6 @@
  *  published by the Free Software Foundation.
  */
 
-#define INSIDE_BCU_CPP
 #include <sblib/io_pin_names.h>
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_npdu.h>
@@ -106,8 +105,36 @@ void BcuDefault::_begin()
     groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
 }
 
+void BcuDefault::begin(int manufacturer, int deviceType, int version)
+{
+    setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
+    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
+    userRam->deviceControl() = 0;
+    userRam->runState() = 1;
+
+    ///\todo why we touch runError here ? KNX spec 2.1 9/4/1 4.1.10.3.13 p.31 states "They shall be explicitly cleared by a management-tool."
+    userEeprom->runError() = 0xff;
+    userEeprom->portADDR() = 0;
+
+    userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
+    userEeprom->manufacturerL() = lowByte(manufacturer);
+
+    userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
+    userEeprom->deviceTypeL() = lowByte(deviceType);
+
+    userEeprom->version() = version;
+
+    userEeprom->writeUserEepromTime = 0;
+}
+
 void BcuDefault::setOwnAddress(uint16_t addr)
 {
+    if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
+    {
+        userEeprom->addrTab()[0] = HIGH_BYTE(addr);
+        userEeprom->addrTab()[1] = lowByte(addr);
+        userEeprom->modified();
+    }
     BcuBase::setOwnAddress(addr);
 }
 
@@ -457,7 +484,7 @@ void BcuDefault::loop()
             if ((int)millis() - (int)userEeprom->writeUserEepromTime > 0)
             {
                 if (usrCallback)
-                    usrCallback->Notify(USR_CALLBACK_FLASH);
+                    usrCallback->Notify(UsrCallbackType::flash);
                 userEeprom->writeUserEeprom();
                 if (memMapper)
                 {
@@ -472,7 +499,7 @@ void BcuDefault::loop()
 void BcuDefault::end()
 {
     if (usrCallback)
-        usrCallback->Notify(USR_CALLBACK_BCU_END);
+        usrCallback->Notify(UsrCallbackType::bcu_end);
 
     enabled = false;
 
@@ -496,13 +523,6 @@ byte* BcuDefault::userMemoryPtr(unsigned int addr)
         return &(*userRam)[addr];
     }
     return nullptr;
-}
-
-// The method begin_BCU() is renamed during compilation to indicate the BCU type.
-// If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-void BcuDefault::begin_BCU(int manufacturer, int deviceType, int version)
-{
-
 }
 
 void BcuDefault::setMemMapper(MemMapper *mapper)
@@ -945,7 +965,7 @@ void BcuDefault::softSystemReset()
 {
     if (usrCallback)
     {
-        usrCallback->Notify(USR_CALLBACK_RESET);
+        usrCallback->Notify(UsrCallbackType::reset);
     }
 
     userEeprom->writeUserEeprom(); // Flush the EEPROM before resetting

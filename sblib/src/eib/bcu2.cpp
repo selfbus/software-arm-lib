@@ -12,7 +12,6 @@
  *  published by the Free Software Foundation.
  */
 
-#define INSIDE_BCU_CPP
 #include <sblib/eib/bcu2.h>
 #include <sblib/eib/apci.h>
 #include <sblib/eib/com_objects.h>
@@ -23,50 +22,21 @@
 #include <sblib/eib/propertiesBCU2.h>
 #include <sblib/eib/bus.h>
 
-void BCU2::begin_BCU(int manufacturer, int deviceType, int version)
+void BCU2::setOwnAddress(uint16_t addr)
 {
-    BcuDefault::begin_BCU(manufacturer, deviceType,version);
-}
-
-void BCU2::setOwnAddress (uint16_t addr)
-{
-    ///\todo some parts are the same in BCU1
-    if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
+    BcuDefault::setOwnAddress(addr);
+    if (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADING)
     {
-        userEeprom->addrTab()[0] = HIGH_BYTE(addr);
-        userEeprom->addrTab()[1] = lowByte(addr);
-        if (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADING)
-        {
-            byte * addrTab = addrTables->addrTable() + 1;
-            * (addrTab + 0)  = userEeprom->addrTab()[0];
-            * (addrTab + 1)  = userEeprom->addrTab()[1];
-        }
+        byte * addrTab = addrTables->addrTable() + 1;
+        * (addrTab + 0)  = HIGH_BYTE(ownAddress());
+        * (addrTab + 1)  = lowByte(ownAddress());
         userEeprom->modified();
     }
-    BcuDefault::setOwnAddress(addr);
 }
 
 inline void BCU2::begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress)
 {
-    setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
-    ///\todo same like in bcu1
-    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
-    userRam->deviceControl() = 0;
-    userRam->runState() = 1;
-
-    userEeprom->runError() = 0xff;
-    userEeprom->portADDR() = 0;
-
-    userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
-    userEeprom->manufacturerL() = lowByte(manufacturer);
-
-    userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
-    userEeprom->deviceTypeL() = lowByte(deviceType);
-
-    userEeprom->version() = version;
-
-    userEeprom->writeUserEepromTime = 0;
-    ///\todo end
+    BcuDefault::begin(manufacturer, deviceType, version);
 
     userRam->peiType() = 0;     // PEI type: 0=no adapter connected to PEI.
     userEeprom->appType() = 0;  // Set to BCU2 application. ETS reads this when programming.
@@ -111,7 +81,6 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
     userEeprom->orderInfo()[userEeprom->orderInfoSize() - 2] = HIGH_BYTE(SBLIB_VERSION);
     userEeprom->orderInfo()[userEeprom->orderInfoSize() - 1] = lowByte(SBLIB_VERSION);
 
-    begin_BCU(manufacturer, deviceType, version);
     BcuDefault::_begin();
 }
 
@@ -120,7 +89,7 @@ void BCU2::begin(int manufacturer, int deviceType, int version)
     begin(manufacturer, deviceType, version, 0);
 }
 
-inline bool BCU2::applicationRunning() const
+bool BCU2::applicationRunning() const
 {
     if (!enabled)
         return false;

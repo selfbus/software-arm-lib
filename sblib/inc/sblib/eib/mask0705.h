@@ -47,16 +47,6 @@ public:
     	for shadowed values
     */
     const int userRamShadowSize = 3;
-
-/** Address for load control */
-//#   define LOAD_CONTROL_ADDR 0x104
-
-/** Address for load state */
-//#   define LOAD_STATE_ADDR 0xb6e9
 };
-
-#ifndef INSIDE_BCU_CPP
-#   undef begin_BCU
-#endif
 
 #endif /*sblib_mask0705_h*/
