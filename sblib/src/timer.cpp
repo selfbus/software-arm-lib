@@ -205,6 +205,26 @@ void Timer::counterMode(int mode, int clearMode)
     timer->CTCR = config;
 }
 
+void Timer::setIRQPriority(uint32_t newPriority)
+{
+    if (this == &timer16_0)
+    {
+        NVIC_SetPriority(TIMER_16_0_IRQn, newPriority);
+    }
+    else if (this == &timer16_1)
+    {
+        NVIC_SetPriority(TIMER_16_1_IRQn, newPriority);
+    }
+    else if (this == &timer32_0)
+    {
+        NVIC_SetPriority(TIMER_32_0_IRQn, newPriority);
+    }
+    else if (this == &timer32_1)
+    {
+        NVIC_SetPriority(TIMER_32_1_IRQn, newPriority);
+    }
+}
+
 //
 // The original timer handler is used for performance reasons.
 // Use attachInterrupt() to override this handler.

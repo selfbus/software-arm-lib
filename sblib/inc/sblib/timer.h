@@ -470,6 +470,12 @@ public:
      */
     bool getMatchChannelLevel(int channel);
 
+    /**
+     * Set interrupt priority for the associated hardware timer
+     *
+     * @param newPriority - new interrupt priority for the timer
+     */
+    void setIRQPriority(uint32_t newPriority);
 
 protected:
 	LPC_TMR_TypeDef* timer;
