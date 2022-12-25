@@ -9,9 +9,8 @@
 class UserEepromSYSTEMB : public UserEepromMASK0701
 {
 public:
-    UserEepromSYSTEMB() = delete;
     ///\todo check start of 0x3300, maybe the same reason like for 0x0701 -> -0x100 is chosen to avoid address-offset calculations to a BCU1
-	UserEepromSYSTEMB(BcuBase* bcu) : UserEepromMASK0701(bcu, 0x3300, 3072, 4096) {};
+	UserEepromSYSTEMB() : UserEepromMASK0701(0x3300, 3072, 4096) {};
 	~UserEepromSYSTEMB() = default;
 
 	static const int addrTabAddrOffset  = 0x21; //!< 0x3321-0x3322
@@ -34,7 +33,7 @@ public:
 	virtual byte* eibObjMcb() const { return &userEepromData[eibObjMcbOffset]; }
 
 protected:
-	UserEepromSYSTEMB(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromMASK0701(bcu, start, size, flashSize) {};
+	UserEepromSYSTEMB(unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromMASK0701(start, size, flashSize) {};
 };
 
 #endif /*sblib_usereeprom_systemb_h*/

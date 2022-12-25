@@ -61,15 +61,9 @@ void UserEeprom::readUserEeprom()
 
 void UserEeprom::writeUserEeprom()
 {
-    if (!userEepromModified)
+    if (!isModified())
     {
         return;
-    }
-
-    // Wait for an idle bus and then disable the interrupts
-    while (!bcu->bus->idle())
-    {
-        ;
     }
 
     noInterrupts();
@@ -114,14 +108,13 @@ void UserEeprom::writeUserEeprom()
     	}
     }
 
+    modified(false);
     interrupts();
-    userEepromModified = 0;
 }
 
-UserEeprom::UserEeprom(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) :
+UserEeprom::UserEeprom(unsigned int start, unsigned int size, unsigned int flashSize) :
 		Memory(start, size),
 		userEepromData(new byte[size]),
-		bcu(bcu),
 		userEepromFlashSize(flashSize)
 {
     readUserEeprom();
@@ -154,10 +147,24 @@ uint16_t UserEeprom::getUInt16(uint32_t address) const
     return makeWord(userEepromData[address], userEepromData[address + 1]);
 }
 
-void UserEeprom::modified()
+void UserEeprom::modified(bool newModified)
 {
-    userEepromModified = true;
-    writeUserEepromTime = 0;
+    userEepromModified = newModified;
+    if (userEepromModified)
+    {
+        writeUserEepromTime = millis() + 50;
+    }
+    else
+    {
+        writeUserEepromTime = 0;
+    }
+}
+
+bool UserEeprom::writeDelayElapsed() const
+{
+    bool elapsed = userEepromModified;
+    elapsed |= ((int)millis() - (int)writeUserEepromTime) > 0;
+    return (elapsed);
 }
 
 bool UserEeprom::isModified() const

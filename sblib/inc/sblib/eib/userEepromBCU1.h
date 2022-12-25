@@ -15,8 +15,7 @@
 class UserEepromBCU1 : public UserEeprom
 {
 public:
-    UserEepromBCU1() = delete;
-    UserEepromBCU1(BcuBase *bcu) : UserEeprom(bcu, 0x100, 256, 256) {};
+    UserEepromBCU1() : UserEeprom(0x100, 256, 256) {};
 	~UserEepromBCU1() = default;
 
 	static const int optionRegOffset         = 0x00; //!< 0x0100: EEPROM option register
@@ -74,7 +73,7 @@ public:
     virtual byte& checksum() const { return userEepromData[checksumOffset]; }
 
 protected:
-	UserEepromBCU1(BcuBase *bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEeprom(bcu, start, size, flashSize) {};
+	UserEepromBCU1(unsigned int start, unsigned int size, unsigned int flashSize) : UserEeprom(start, size, flashSize) {};
 };
 
 #endif /*sblib_usereeprom_bcu1_h*/

@@ -378,7 +378,7 @@ bool PropertiesSYSTEMB::propertyValueWriteTelegram(int objectIdx, PropertyID pro
             reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
         }
         if (def->isEepromPointer())
-            bcu->userEeprom->modified();
+            bcu->userEeprom->modified(true);
     }
 
     bcu->sendTelegram[5] += len;

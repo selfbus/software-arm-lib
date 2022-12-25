@@ -124,7 +124,7 @@ void BcuDefault::begin(int manufacturer, int deviceType, int version)
 
     userEeprom->version() = version;
 
-    userEeprom->writeUserEepromTime = 0;
+    userEeprom->modified(false);
 }
 
 void BcuDefault::setOwnAddress(uint16_t addr)
@@ -133,7 +133,7 @@ void BcuDefault::setOwnAddress(uint16_t addr)
     {
         userEeprom->addrTab()[0] = HIGH_BYTE(addr);
         userEeprom->addrTab()[1] = lowByte(addr);
-        userEeprom->modified();
+        userEeprom->modified(true);
     }
     BcuBase::setOwnAddress(addr);
 }
@@ -464,13 +464,13 @@ void BcuDefault::loop()
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
         {
-            // check in com_objects method for waiting objects from user app and store in telegrambuffer
-            // and call bus->sendTelegram
+            // check for possible next comobject to be send
          if (comObjects->sendNextGroupTelegram())
              groupTelSent = millis();
 
         }
-        // To prevent overflows if no telegrams are sent for a long time - todo: better reload with systemTime - groupTelWaitMillis
+        // To prevent overflows if no telegrams are sent for a long time
+        ///\todo better reload with systemTime - groupTelWaitMillis
         if (elapsed(groupTelSent) >= 2000)
         {
             groupTelSent += 1000;
@@ -479,37 +479,18 @@ void BcuDefault::loop()
 
     if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && connectedTo() == 0)
     {
-        if (userEeprom->writeUserEepromTime)
+        if (userEeprom->writeDelayElapsed())
         {
-            if ((int)millis() - (int)userEeprom->writeUserEepromTime > 0)
-            {
-                if (usrCallback)
-                    usrCallback->Notify(UsrCallbackType::flash);
-                userEeprom->writeUserEeprom();
-                if (memMapper)
-                {
-                    memMapper->doFlash();
-                }
-            }
+            flushUserMemory(UsrCallbackType::flash, true);
         }
-        else userEeprom->writeUserEepromTime = millis() + 50;
     }
 }
 
 void BcuDefault::end()
 {
-    if (usrCallback)
-        usrCallback->Notify(UsrCallbackType::bcu_end);
-
-    enabled = false;
-
+    flushUserMemory(UsrCallbackType::bcu_end, true);
     bus->end();
-
-    userEeprom->writeUserEeprom();
-    if (memMapper)
-    {
-        memMapper->doFlash();
-    }
+    enabled = false;
 }
 
 byte* BcuDefault::userMemoryPtr(unsigned int addr)
@@ -736,7 +717,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
             else
             {
                 memcpy(userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), &payLoad[0], addressEnd - addressStart + 1);
-                userEeprom->modified();
+                userEeprom->modified(true);
             }
             DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
             return (true);
@@ -752,7 +733,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
             else
             {
                 memcpy(userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), &payLoad[0], copyCount);
-                userEeprom->modified();
+                userEeprom->modified(true);
             }
             addressStart += copyCount;
             payLoad += copyCount;
@@ -971,17 +952,35 @@ bool BcuDefault::processApciMasterResetPDU(unsigned char *telegram, const uint8_
 
 void BcuDefault::softSystemReset()
 {
-    if (usrCallback)
+    bool waitIdle = true;
+#ifdef IAP_EMULATION
+    waitIdle = false; ///\todo workaround for lib test cases running later into a infinitive loop at ' while (!bus->idle())'
+#endif
+    flushUserMemory(UsrCallbackType::reset, waitIdle);
+    BcuBase::softSystemReset();
+}
+
+bool BcuDefault::flushUserMemory(UsrCallbackType reason, bool waitIdle)
+{
+    if (waitIdle)
     {
-        usrCallback->Notify(UsrCallbackType::reset);
+        while (!bus->idle()) // wait for an idle bus
+        {
+            ;
+        }
     }
 
-    userEeprom->writeUserEeprom(); // Flush the EEPROM before resetting
+    if (usrCallback)
+    {
+        usrCallback->Notify(reason);
+    }
+
+    userEeprom->writeUserEeprom();
 
     if (memMapper)
     {
         memMapper->doFlash();
     }
-    BcuBase::softSystemReset();
+    return (true);
 }
 

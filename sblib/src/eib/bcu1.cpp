@@ -20,7 +20,7 @@
 #include <sblib/mem_mapper.h>
 #include <sblib/eib/bus.h>
 
-BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(this), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
+BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
 {}
 
 BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables) :

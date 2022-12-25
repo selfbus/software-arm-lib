@@ -210,7 +210,7 @@ LoadState PropertiesMASK0701::handleAllocAbsTaskSegment(const int objectIdx, con
             return LS_ERROR;
         }
 
-        bcu->userEeprom->modified();
+        bcu->userEeprom->modified(true);
     }
     return LS_LOADING;
 }

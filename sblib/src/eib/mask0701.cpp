@@ -14,15 +14,11 @@
 #   include <sblib/serial.h>
 #endif
 
-MASK0701::MASK0701() : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(this), new ComObjectsBCU2(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this))
+MASK0701::MASK0701() : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(), new ComObjectsBCU2(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this))
 {}
 
 MASK0701::MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsBCU2* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties) :
-		BCU2(userRam, userEeprom, comObjects, addrTables, properties)/*,
-		userRam(userRam),
-		userEeprom(userEeprom),
-		comObjects(comObjects),
-		addrTables(addrTables)*/
+		BCU2(userRam, userEeprom, comObjects, addrTables, properties)
 {}
 
 bool MASK0701::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
@@ -77,9 +73,8 @@ bool MASK0701::processApciMemoryWritePDU(int addressStart, byte *payLoad, int le
         DB_PROPERTIES(serial.println(" LOAD_CONTROL_ADDR: objectIdx:", objectIdx, HEX));
         if (objectIdx < INTERFACE_OBJECT_COUNT)
         {
-            // userEeprom.loadState[objectIdx] = (uint8_t)loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
             userEeprom->loadState()[objectIdx] = properties->loadProperty(objectIdx, &payLoad[0], lengthPayLoad);
-            userEeprom->modified();
+            userEeprom->modified(true);
             DB_PROPERTIES(serial.println());
             return true;
         }

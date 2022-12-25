@@ -196,7 +196,7 @@ LoadState PropertiesBCU2::handleAllocAbsTaskSegment(const int objectIdx, const b
             return LS_ERROR;
         }
 
-        bcu->userEeprom->modified();
+        bcu->userEeprom->modified(true);
     }
     return LS_LOADING;
 }
@@ -662,7 +662,7 @@ bool PropertiesBCU2::propertyValueWriteTelegram(int objectIdx, PropertyID proper
         reverseCopy(valuePtr + start * size, data, len);
         reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
         if (def->isEepromPointer())
-            bcu->userEeprom->modified();
+            bcu->userEeprom->modified(true);
     }
 
     bcu->sendTelegram[5] += len;

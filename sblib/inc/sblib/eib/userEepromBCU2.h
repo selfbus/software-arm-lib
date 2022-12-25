@@ -15,8 +15,7 @@
 class UserEepromBCU2 : public UserEepromBCU1
 {
 public:
-    UserEepromBCU2() = delete;
-    UserEepromBCU2(BcuBase* bcu) : UserEepromBCU1(bcu, 0x100, 1024, 1024) {};
+    UserEepromBCU2() : UserEepromBCU1(0x100, 1024, 1024) {};
 	~UserEepromBCU2() = default;
 
 	static const int appTypeOffset        = 0x015; //!< 0x0115: \todo Application program type: 0=BCU2, else BCU1
@@ -69,7 +68,7 @@ public:
 	virtual byte* orderInfo() const { return &userEepromData[orderInfoOffset]; }
 
 protected:
-	UserEepromBCU2(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromBCU1(bcu, start, size, flashSize) {};
+	UserEepromBCU2(unsigned int start, unsigned int size, unsigned int flashSize) : UserEepromBCU1(start, size, flashSize) {};
 };
 
 #endif /*sblib_usereeprom_bcu2_h*/

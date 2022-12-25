@@ -16,8 +16,6 @@
 /** number of interface objects supported */
 #define INTERFACE_OBJECT_COUNT 8
 
-class BcuBase;
-
 /**
  * The user EEPROM
  * @details Can be accessed by name, like userEeprom.manuDataH() and as an array, like
@@ -33,11 +31,10 @@ class UserEeprom : public Memory
 {
 public:
     UserEeprom() = delete;
-    UserEeprom(BcuBase* bcu, unsigned int start, unsigned int size, unsigned int flashSize);
+    UserEeprom(unsigned int start, unsigned int size, unsigned int flashSize);
 	~UserEeprom() = default;
 
 	__attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) byte *userEepromData; // must be word aligned, otherwise iapProgram will fail
-	BcuBase* bcu;
 
     virtual byte& optionReg() const = 0;
     virtual byte& manuDataH() const = 0;
@@ -76,15 +73,20 @@ public:
     uint16_t getUInt16(uint32_t address) const override;
 
     /**
-     * Mark the user EEPROM as modified. The EEPROM will be written to flash when the
+     * Mark/unmark the user EEPROM as modified. The EEPROM will be written to flash when the
      * bus is idle, all telegrams are processed, and no direct data connection is open.
+     *
+     * @param newModified Set true to mark the eeprom as modified
+     *
      */
-    void modified();
+    void modified(bool newModified);
 
     /**
      * Test if the user EEPROM is modified.
      */
     bool isModified() const;
+
+    bool writeDelayElapsed() const;
 
     uint32_t flashSize() const;
 
@@ -92,10 +94,12 @@ public:
     byte* lastEepromPage() const;
     byte* flashSectorAddress() const;
 
+    /**
+     * If user-eeprom is modified, changes are written to the mcu's flash
+     * @warn While the eeprom is written, all interrupts are disabled.
+     */
     void writeUserEeprom();
     void readUserEeprom();
-    unsigned int writeUserEepromTime = 0;
-    bool userEepromModified = false;
 
 protected:
     /**
@@ -106,6 +110,9 @@ protected:
      * @return If successful: number of the last valid flash page, otherwise 0
      */
     byte* findValidPage();
+
+    bool userEepromModified = false;
+    unsigned int writeUserEepromTime = 0;
 
     const unsigned int userEepromFlashSize;
 };

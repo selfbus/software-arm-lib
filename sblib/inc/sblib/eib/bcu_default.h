@@ -218,6 +218,15 @@ protected:
      */
     bool processDeviceDescriptorReadTelegram(int id);  ///\todo move to a new subclass BL doesnt need that
 
+    /**
+     * Flushes all pending write operations to user memory (eeprom, memmapper) and sends a callback to the user
+     *
+     * @param reason    The reason, why the memory is flushed
+     * @param waitIdle  set true to wait for an idle bus
+     * @return  True if eeprom was flushed, otherwise false
+     */
+    bool flushUserMemory(UsrCallbackType reason, bool waitIdle);
+
     MemMapper *memMapper;
     UsrCallback *usrCallback;
     bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.

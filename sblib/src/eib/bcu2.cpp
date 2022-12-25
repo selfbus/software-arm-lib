@@ -31,7 +31,7 @@ void BCU2::setOwnAddress(uint16_t addr)
         byte * addrTab = addrTables->addrTable() + 1;
         * (addrTab + 0)  = HIGH_BYTE(ownAddress());
         * (addrTab + 1)  = lowByte(ownAddress());
-        userEeprom->modified();
+        userEeprom->modified(true);
     }
 }
 
@@ -52,7 +52,7 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
     if ((commObjectTableAddressStatic != 0) && ( userEeprom->commsTabAddr() != commObjectTableAddressStatic))
     {
         userEeprom->commsTabAddr() = commObjectTableAddressStatic;
-        userEeprom->modified();
+        userEeprom->modified(true);
     }
 
     unsigned int partID;
@@ -101,7 +101,7 @@ bool BCU2::applicationRunning() const
 			(userEeprom->loadState()[OT_APPLICATION] == LS_LOADED));  // application object. All three in state "Loaded"
 }
 
-BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(this), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
+BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
 {}
 
 BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties) :
