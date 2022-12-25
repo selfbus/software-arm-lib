@@ -234,8 +234,8 @@ void dumpLogHeader()
 }
 
 TLayer4::TLayer4(uint8_t maxTelegramLength):
-    sendTelegram(new byte[maxTelegramLength]),
-    lastTelegram(new byte[maxTelegramLength])
+    sendTelegram(new byte[maxTelegramLength]()),
+    lastTelegram(new byte[maxTelegramLength]())
 {
 
 }

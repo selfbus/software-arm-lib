@@ -24,7 +24,7 @@
 
 UserRam::UserRam(uint32_t start, uint32_t size, uint32_t shadowSize) :
         Memory(start, size + shadowSize),
-        userRamData(new uint8_t[size + shadowSize]),
+        userRamData(new uint8_t[size + shadowSize]()),
         _status(0),
         _runState(0),
         shadowSize(shadowSize)

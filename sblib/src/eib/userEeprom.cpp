@@ -114,7 +114,7 @@ void UserEeprom::writeUserEeprom()
 
 UserEeprom::UserEeprom(unsigned int start, unsigned int size, unsigned int flashSize) :
 		Memory(start, size),
-		userEepromData(new byte[size]),
+		userEepromData(new byte[size]()),
 		userEepromFlashSize(flashSize)
 {
     readUserEeprom();

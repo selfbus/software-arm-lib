@@ -254,7 +254,7 @@ public:
      * The received telegram.
      * The higher layer process should not change the telegram data in the buffer!
      */
-    byte* telegram = new byte[bcu->maxTelegramSize()];
+    byte* telegram = new byte[bcu->maxTelegramSize()]();
 
     /**
       * The total length of the received telegram in telegram[].
@@ -354,7 +354,7 @@ private:
     int sendTelegramLen;            //!< The size of the to be sent telegram in bytes (including the checksum).
     volatile byte *sendCurTelegram; //!< The telegram that is currently being sent.
     volatile byte *sendNextTel;     //!< The telegram to be sent after sbSendTelegram is done.
-    volatile byte *rx_telegram = new byte[bcu->maxTelegramSize()]; //!< Telegram buffer for the L1/L2 receiving process
+    volatile byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
 
     int bitMask;
     int bitTime;                 //!< The bit-time within a byte when receiving
