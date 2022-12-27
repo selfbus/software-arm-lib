@@ -27,8 +27,6 @@ enum BcuStatus
     BCU_STATUS_PARITY            = 0x80, //!< Parity bit: even parity for bits 0..6)
 };
 
-//const BCU_STATUS_ ///\todo some constants for normal operation
-
 /**
  * Device control flags, for @ref deviceControl()
  */

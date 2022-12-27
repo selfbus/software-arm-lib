@@ -23,48 +23,23 @@ MASK0701::MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, Com
 
 bool MASK0701::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
-    DB_MEM_OPS(
-       serial.print("ApciMemoryReadPDU : 0x", addressStart, HEX, 4);
-       serial.print(" count: ", lengthPayLoad, DEC);
-    );
     // special handling of DMP_LoadStateMachineRead_RCo_Mem (APCI_MEMORY_READ_PDU)
     // See KNX Spec. 3/5/2 3.30.2 p.121  (deprecated)
     if (addressStart >= LOAD_STATE_ADDR && addressStart < LOAD_STATE_ADDR + INTERFACE_OBJECT_COUNT)
     {
     	unsigned int objectIdx = addressStart - LOAD_STATE_ADDR;
-    	// memcpy(payLoad, &userEeprom->loadState() + (addressStart - LOAD_STATE_ADDR), lengthPayLoad);
+    	//memcpy(payLoad, &userEeprom->loadState() + (addressStart - LOAD_STATE_ADDR), lengthPayLoad);
     	memcpy(payLoad, &userEeprom->loadState()[objectIdx], lengthPayLoad);
-    	DB_MEM_OPS(serial.print(" LOAD_STATE_ADDR: 0x", addressStart, HEX); serial.println(", objIdx: ", objectIdx, DEC));
-        DB_PROPERTIES(serial.print(" LOAD_STATE_ADDR: 0x", addressStart, HEX); serial.println(", objIdx: ", objectIdx, DEC));
+    	DB_MEM_OPS(serial.print(" LOAD_STATE_ADDR: 0x", addressStart, HEX); serial.print(", objIdx: ", objectIdx, DEC); serial.println(" *payLoad=0x", *payLoad, HEX, 2));
+        DB_PROPERTIES(serial.print(" LOAD_STATE_ADDR: 0x", addressStart, HEX); serial.print(", objIdx: ", objectIdx, DEC); serial.println(" *payLoad=0x", *payLoad, HEX, 2));
         return true;
     }
     bool result = BcuDefault::processApciMemoryReadPDU(addressStart, payLoad, lengthPayLoad);
-    DB_MEM_OPS(
-       if (result)
-       {
-           serial.print("           result :", addressStart, HEX, 4);
-           serial.print(" Data:");
-           for(int i=0; i<lengthPayLoad ; i++)
-           {
-               serial.print(" ", payLoad[i], HEX, 2);
-           }
-           serial.println(" count: ", lengthPayLoad, DEC);
-       }
-    );
     return result;
 }
 
 bool MASK0701::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
-    DB_MEM_OPS(
-       serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
-       serial.print(" Data:");
-       for(int i=0; i<lengthPayLoad ; i++)
-       {
-           serial.print(" ", payLoad[i], HEX, 2);
-       }
-       serial.print(" count: ", lengthPayLoad, DEC);
-    );
     // special handling of DMP_LoadStateMachineWrite_RCo_Mem (APCI_MEMORY_WRITE_PDU)
     // See KNX Spec. 3/5/2 3.28.2 p.109 (deprecated)
     if (addressStart == LOAD_CONTROL_ADDR)

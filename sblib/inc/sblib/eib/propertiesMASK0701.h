@@ -7,8 +7,8 @@
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
  */
-#ifndef sblib_properties_systemb_h
-#define sblib_properties_systemb_h
+#ifndef sblib_properties_mask0701_h
+#define sblib_properties_mask0701_h
 
 #include <sblib/eib/propertiesBCU2.h>
 #include <sblib/eib/userRamMASK0701.h>
@@ -233,4 +233,4 @@ inline const PropertyDef* const* PropertiesMASK0701::propertiesTab() const
 	return propertiesTabInstance;
 }
 
-#endif /*sblib_properties_systemb_h*/
+#endif /*sblib_properties_mask0701_h*/
