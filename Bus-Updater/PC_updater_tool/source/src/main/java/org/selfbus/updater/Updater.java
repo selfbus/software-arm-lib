@@ -400,7 +400,7 @@ public class Updater implements Runnable {
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
                 }
                 else {
-                    resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash());
+                    resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash(), cliOptions.logStatistics());
                 }
                 printStatisticData(flashTimeStart, resultTotal);
                 logger.info("\nRequesting Bootloader statistic...");

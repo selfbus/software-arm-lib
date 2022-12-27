@@ -21,7 +21,7 @@ public class FlashFullMode {
     /**
      * Normal update routine, sending complete image
      */
-    public static ResponseResult doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay, boolean eraseFirmwareRange)
+    public static ResponseResult doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay, boolean eraseFirmwareRange, boolean logStatistics)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
             InterruptedException, UpdaterException, KNXRemoteException {
         ResponseResult resultSendData, resultProgramData;
@@ -80,7 +80,10 @@ public class FlashFullMode {
             }
             resultTotal.addCounters(resultProgramData); // keep track of static data
             progAddress += txBuffer.length;
-            dm.requestBootLoaderStatistic(); ///\todo remove on release
+
+            if (logStatistics) {
+                dm.requestBootLoaderStatistic();
+            }
         }
         fis.close();
         return resultTotal;

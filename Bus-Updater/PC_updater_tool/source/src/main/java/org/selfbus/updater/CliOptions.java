@@ -104,6 +104,8 @@ public class CliOptions {
 
     private static final String OPT_LONG_DUMPFLASH = "DUMPFLASH";
 
+    private static final String OPT_LONG_LOGSTATISTIC = "statistic";
+
     private static final int PRINT_WIDTH = 100;
     private final static List<String> VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
     private final static List<String> VALID_PRIORITIES = Arrays.asList("SYSTEM", "NORMAL", "URGENT", "LOW");
@@ -148,6 +150,8 @@ public class CliOptions {
     private long dumpFlashEndAddress = -1;
 
     private Priority priority = Priority.LOW;
+
+    private boolean logStatistics = false;
 
     private boolean help = false;
     private boolean version = false;
@@ -286,6 +290,8 @@ public class CliOptions {
                 .type(String.class)
                 .desc(String.format("KNX telegram priority (default %s)", this.priority.toString().toUpperCase())).build();
 
+        Option logStatistic = new Option(null, OPT_LONG_LOGSTATISTIC, false, "show more statistic data");
+
         // options will be shown in order as they are added to cliOptions
         cliOptions.addOption(fileName);
 
@@ -326,6 +332,7 @@ public class CliOptions {
         cliOptions.addOption(eraseFlash);
         cliOptions.addOption(dumpFlash);
         cliOptions.addOption(NO_FLASH);
+        cliOptions.addOption(logStatistic);
 
 
         parse(args);
@@ -524,6 +531,11 @@ public class CliOptions {
                 devicePassword = cmdLine.getOptionValue(OPT_LONG_DEVICE_PASSWORD);
             }
 
+            if (cmdLine.hasOption(OPT_LONG_LOGSTATISTIC)) {
+                logStatistics = true;
+            }
+            logger.debug("logStatistics={}", logStatistics);
+
             // some logical checks for options which exclude each other
             // differential mode and eraseflash makes no sense
             if (eraseFullFlash() && (!full())) {
@@ -687,4 +699,6 @@ public class CliOptions {
     public Priority priority() {
         return priority;
     }
+
+    public boolean logStatistics() {return logStatistics;};
 }
