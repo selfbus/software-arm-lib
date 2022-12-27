@@ -156,8 +156,10 @@ LoadState PropertiesSYSTEMB::handleDataRelativeAllocation(const int objectIdx, c
     word*    tableAddress[] = {&bcu->userEeprom->addrTabAddr(), &bcu->userEeprom->assocTabAddr(), &bcu->userEeprom->commsTabAddr(),
 	                       &bcu->userEeprom->eibObjAddr(), &bcu->userEeprom->commsSeg0Addr()};
 
-    byte* tableSize[] = {&bcu->userEeprom->addrTabMcb()[0], &bcu->userEeprom->assocTabMcb()[0], &bcu->userEeprom->commsTabMcb()[0],
-                         &bcu->userEeprom->eibObjMcb()[0], &bcu->userEeprom->commsSeg0Mcb()[0]};
+    UserEepromSYSTEMB* userEeprom = (UserEepromSYSTEMB*) bcu->userEeprom;
+
+    byte* tableSize[] = {&userEeprom->addrTabMcb()[0], &userEeprom->assocTabMcb()[0], &userEeprom->commsTabMcb()[0],
+                         &userEeprom->eibObjMcb()[0], &userEeprom->commsSeg0Mcb()[0]};
 
     word virtMemAddr = 0x3A9E; ///\todo get rid of magic number USER_EEPROM_START + USER_EEPROM_SIZE
     for (int i = 0; i < 5; i++)

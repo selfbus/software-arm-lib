@@ -36,7 +36,6 @@ public:
     virtual const char* getBcuType() const override { return "SYSTEM_B"; }
     virtual uint16_t getMaskVersion() const override { return 0x7B0; }
 
-	UserEepromSYSTEMB* userEeprom;
 protected:
 
 };
