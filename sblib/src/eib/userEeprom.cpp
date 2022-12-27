@@ -54,9 +54,9 @@ void UserEeprom::readUserEeprom()
     if (page)
         memcpy(userEepromData, page, size());
     else
-        memset(userEepromData, 0, size()); // TODO should filling with zeros indicate a readError? if yes, then it should be somewhere reported
+        memset(userEepromData, 0, size()); ///\todo should filling with zeros indicate a readError? if yes, then it should be somewhere reported
 
-    userEepromModified = false;
+    modified(false);
 }
 
 void UserEeprom::writeUserEeprom()

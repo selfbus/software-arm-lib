@@ -593,7 +593,7 @@ bool BcuDefault::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *te
 bool BcuDefault::processApciMemoryWritePDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
     DB_MEM_OPS(
-       serial.print("ApciMemoryWritePDU:", addressStart, HEX, 4);
+       serial.print("ApciMemoryWritePDU: 0x", addressStart, HEX, 4);
        serial.print(" Data:");
        for(int i=0; i<lengthPayLoad ; i++)
        {
@@ -607,7 +607,7 @@ bool BcuDefault::processApciMemoryWritePDU(int addressStart, byte *payLoad, int 
 bool BcuDefault::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)
 {
     DB_MEM_OPS(
-       serial.print("ApciMemoryReadPDU :", addressStart, HEX, 4);
+       serial.print("ApciMemoryReadPDU : 0x", addressStart, HEX, 4);
        serial.print(" count: ", lengthPayLoad, DEC);
     );
 
@@ -710,29 +710,32 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
         // check if payLoad is in userEeprom
         if (userEeprom->inRange(addressStart, addressEnd)) // start & end in userEeprom ?
         {
+            const int copyCount = addressEnd - addressStart + 1;
+            uint8_t* mem = this->userMemoryPtr(addressStart);
             if (readMem)
             {
-                memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), addressEnd - addressStart + 1);
+                memcpy(&payLoad[0], mem, copyCount);
             }
             else
             {
-                memcpy(userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), &payLoad[0], addressEnd - addressStart + 1);
+                memcpy(mem, &payLoad[0], copyCount);
                 userEeprom->modified(true);
             }
-            DB_MEM_OPS(serial.println(" -> EEPROM ", addressEnd - addressStart + 1, DEC));
+            DB_MEM_OPS(serial.println(" -> EEPROM ", copyCount, DEC));
             return (true);
         }
         else if (userEeprom->inRange(addressStart))
         {
             // start is in USER_EEPROM, but payLoad is too long, we need to cut it down to fit
             const int copyCount = (userEeprom->endAddr() - addressStart + 1);
+            uint8_t* mem = this->userMemoryPtr(addressStart);
             if (readMem)
             {
-                memcpy(&payLoad[0], userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), copyCount);
+                memcpy(&payLoad[0], mem, copyCount);
             }
             else
             {
-                memcpy(userEeprom->userEepromData + (addressStart - userEeprom->startAddr()), &payLoad[0], copyCount);
+                memcpy(mem, &payLoad[0], copyCount);
                 userEeprom->modified(true);
             }
             addressStart += copyCount;
@@ -778,7 +781,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
                 {
                     serial.print(" ", payLoad[i], HEX, 2);
                 }
-                serial.println(" count: ", lengthPayLoad, DEC);
+                serial.print(" count: ", lengthPayLoad, DEC);
             );
         }
     }
@@ -789,6 +792,10 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
            serial.print(" not found start: 0x", addressStart, HEX, 4);
            serial.print(" end: 0x", addressEnd, HEX, 4);
            serial.println(" lengthPayLoad:", lengthPayLoad);
+       }
+       else
+       {
+           serial.println();
        }
     );
 

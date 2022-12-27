@@ -619,8 +619,13 @@ bool PropertiesBCU2::propertyValueReadTelegram(int objectIdx, PropertyID propert
     if(len > 12) return false; // length error
 
     if (type < PDT_CHAR_BLOCK)
-    reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
-    else memcpy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+    {
+        reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+    }
+    else
+    {
+        memcpy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+    }
 
     bcu->sendTelegram[5] += len;
 

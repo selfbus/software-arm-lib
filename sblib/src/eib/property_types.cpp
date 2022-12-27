@@ -11,6 +11,10 @@
 #include <sblib/eib/property_types.h>
 #include <sblib/eib/bcu_default.h>
 
+#if defined(INCLUDE_SERIAL)
+#   include <sblib/serial.h>
+#endif
+
 /**
  * PropertyDataType sizes in bytes
  */
@@ -41,9 +45,10 @@ byte* PropertyDef::valuePointer(BcuBase* bcu) const
         switch (valAddr & PPT_MASK)
         {
         case PPT_USER_RAM:
-            // return bcu->userRam->userRamData + offs;
+            DB_PROPERTIES(serial.println("RAM"););
             return bcu->userRam->userRamData + offs; ///\todo check this was correct replaced or not
         case PPT_USER_EEPROM:
+            DB_PROPERTIES(serial.println("EEPROM"););
             return ((BcuDefault*)bcu)->userEeprom->userEepromData + offs;
         default:
             fatalError(); // invalid property pointer type encountered
