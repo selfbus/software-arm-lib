@@ -51,7 +51,7 @@ void telegramPreparation(BcuDefault* testBcu, Telegram* tel, uint16_t telCount)
         }
 
         if ((tel->type == TEL_TX) &&
-            (tel->bytes[6] & 0x03 == 0x03) &&
+            ((tel->bytes[6] & 0x03) == 0x03) &&
             (tel->bytes[7] == 0x40))
         {
             // mask version APCI_DEVICEDESCRIPTOR_RESPONSE_PDU
@@ -202,7 +202,7 @@ static void _handleTx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, un
 
     _handleBusSendingInterrupt(currentBcu);
 
-    REQUIRE(currentBcu->bus->sendNextTel == NULL);
+    REQUIRE(currentBcu->bus->sendNextTel == nullptr);
 }
 
 static void _handleCheckTx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int tn)
@@ -343,7 +343,7 @@ void executeTestOnBcu(BcuDefault* currentBcu, Test_Case * tc)
     }
 
     if (tc->setup) tc->setup(tc->telegram, totalStepCount);
-    if (tc->gatherState) tc->gatherState(refState, NULL);
+    if (tc->gatherState) tc->gatherState(refState, nullptr);
     tel = tc->telegram;
     while (tel->type != END)
     {
