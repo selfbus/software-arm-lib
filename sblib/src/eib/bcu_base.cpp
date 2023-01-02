@@ -127,7 +127,7 @@ bool BcuBase::programmingMode() const
 
 int BcuBase::maxTelegramSize()
 {
-    return 24;
+    return 23;
 }
 
 void BcuBase::discardReceivedTelegram()
