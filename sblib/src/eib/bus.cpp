@@ -797,7 +797,7 @@ void Bus::handleTelegram(bool valid)
 				else
 				{// store data in telegram buffer for higher layers, set telegramLen to indicate data available
 					//todo check if telegram[] buffer is free
-					for (int i =0; i <= nextByteIndex; i++) telegram[i] = rx_telegram[i];
+					for (int i = 0; i < nextByteIndex; i++) telegram[i] = rx_telegram[i];
 					telegramLen = nextByteIndex;
 					bus_rx_state = rx_error;
 					rx_error = 0;
