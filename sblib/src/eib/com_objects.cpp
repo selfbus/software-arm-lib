@@ -447,8 +447,8 @@ bool ComObjects::sendNextGroupTelegram()
     // scan all objects, read config and group address of object
     for (uint16_t objno = sendNextObjIndex; objno < numObjs; ++objno)
     {
-        uint8_t* h = (objectConfigTable() + 3); // 1 tablesize 2 RAM-Flags-Table Pointer
-/*        h = h + objno * 4;
+/*        uint8_t* h = (objectConfigTable() + 3); // 1 tablesize 2 RAM-Flags-Table Pointer
+        h = h + objno * 4;
         serial.print("obj ", objno, DEC); serial.print(" ");serial.print(((ComConfigBCU2*)h)->DataPtrType[0]));
         d(
 
