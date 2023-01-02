@@ -37,7 +37,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/eib/properties.h
         inc/sblib/eib/property_types.h
         inc/sblib/eib/sblib_default_objects.h
-        inc/sblib/eib/telegram.h
         inc/sblib/eib/types.h
         inc/sblib/eib/user_memory.h
         inc/sblib/i2c/bh1750.h
@@ -72,7 +71,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/onewire.h
         inc/sblib/platform.h
         inc/sblib/print.h
-        inc/sblib/printable.h
         inc/sblib/serial.h
         inc/sblib/spi.h
         inc/sblib/stream.h
@@ -91,7 +89,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         src/eib/properties.cpp
         src/eib/property_defs.cpp
         src/eib/property_types.cpp
-        src/eib/telegram.cpp
         src/eib/user_memory.cpp
         src/i2c/bh1750.cpp
         src/i2c/ds3231.cpp
