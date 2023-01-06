@@ -377,7 +377,7 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 	///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
 	initLpdu(bcu->sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
 	setDestinationAddress(bcu->sendTelegram, addr);
-    bcu->sendTelegram[5] = 0xe0 | ((objSize + 1) & 0xff);
+    bcu->sendTelegram[5] = 0xe0 | ((objSize + 1) & 0x0f);
 
     isResponse ? cmd = APCI_GROUP_VALUE_RESPONSE_PDU : cmd = APCI_GROUP_VALUE_WRITE_PDU;
 
