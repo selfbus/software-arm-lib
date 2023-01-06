@@ -377,7 +377,7 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 	///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
 	initLpdu(bcu->sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
 	setDestinationAddress(bcu->sendTelegram, addr);
-    bcu->sendTelegram[5] = 0xe0 | ((objSize + 1) & 0xff);
+    bcu->sendTelegram[5] = 0xe0 | ((objSize + 1) & 0x0f);
 
     isResponse ? cmd = APCI_GROUP_VALUE_RESPONSE_PDU : cmd = APCI_GROUP_VALUE_WRITE_PDU;
 
@@ -447,8 +447,8 @@ bool ComObjects::sendNextGroupTelegram()
     // scan all objects, read config and group address of object
     for (uint16_t objno = sendNextObjIndex; objno < numObjs; ++objno)
     {
-        uint8_t* h = (objectConfigTable() + 3); // 1 tablesize 2 RAM-Flags-Table Pointer
-/*        h = h + objno * 4;
+/*        uint8_t* h = (objectConfigTable() + 3); // 1 tablesize 2 RAM-Flags-Table Pointer
+        h = h + objno * 4;
         serial.print("obj ", objno, DEC); serial.print(" ");serial.print(((ComConfigBCU2*)h)->DataPtrType[0]));
         d(
 
