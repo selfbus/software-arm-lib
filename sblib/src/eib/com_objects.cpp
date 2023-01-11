@@ -220,7 +220,7 @@ int ComObjects::telegramObjectSize(int objno)
 {
     int type = objectType(objno);
     if (type < BIT_7) return 0;
-    return getObjectTypeSizes()[type - BIT_7];
+    return objectSize(objno);
 }
 
 void ComObjects::addObjectFlags(int objno, int flags)
@@ -298,7 +298,7 @@ void ComObjects::_objectWrite(int objno, unsigned int value, int flags)
     }
     int sz = objectSize(objno);
 
-    if ((ptr == 0) || (sz == 0xff)) ///\todo check maximum possible objectSize sz = objectTypeSizes[10] = 15? 0xff can indicate a corrupted Ram/EEPROM
+    if ((ptr == 0) || (sz == -1))
         return;
 
     for (; sz > 0; --sz)

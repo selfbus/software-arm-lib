@@ -357,7 +357,6 @@ protected:
 	 */
 	void sendGroupWriteTelegram(int objno, int addr, bool isResponse);
 	void processGroupWriteTelegram(int objno, byte* tel);
-	virtual const byte* getObjectTypeSizes() = 0;
 
     BcuBase* bcu;
     int le_ptr;

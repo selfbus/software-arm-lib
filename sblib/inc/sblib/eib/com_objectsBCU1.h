@@ -57,11 +57,9 @@ public:
 	virtual byte* objectFlagsTable() override;
 
 	const ComConfigBCU1* objectConfigBCU1(int objno); ///\todo make protected again after ramLocation fix, see setup.cpp fixRamLoc(.) of 4sense-bcu1
-protected:
+private:
 	// The size of the object types BIT_7...VARDATA in bytes
 	const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 14 };
-
-	virtual const byte* getObjectTypeSizes() override;
 };
 
 #endif /*sblib_com_objects_BCU1_h*/

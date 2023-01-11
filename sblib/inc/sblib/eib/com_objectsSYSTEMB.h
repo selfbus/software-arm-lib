@@ -44,12 +44,12 @@ public:
 
 	virtual inline const ComConfig& objectConfig(int objno) override;
 
+private:
+	// The size of the object types 6...20 in bytes
+	// KNX spec v2.1 3/5/1 p. 178 (section 4.12.5.2.4.1.4)
+	const byte objectTypeSizes[15] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 5, 7, 9, 11, 12, 13 };
+
 protected:
-	// The size of the object types BIT_7...VARDATA in bytes
-	const byte objectTypeSizes[15] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 5, 7, 9, 11, 12, 13};
-
-	virtual const byte* getObjectTypeSizes() override;
-
 	virtual int objectSize(int objno) override;
 	virtual byte* objectValuePtr(int objno) override;
 	virtual void processGroupTelegram(uint16_t addr, int apci, byte* tel, int trg_objno) override;
