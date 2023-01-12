@@ -13,8 +13,13 @@
 
 int ComObjectsSYSTEMB::objectSize(int objno)
 {
+    // KNX spec v2.1 3/5/1 p. 178 (section 4.12.5.2.4.1.4)
+    // The size of the object types 6...20 in bytes
+    const byte objectTypeSizes[15] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 5, 7, 9, 11, 12, 13 };
+
     int type = objectType(objno);
-    if (type < BIT_7) return 1;
+    if (type < BIT_7)
+        return 1;
     if (type < 21)
         return objectTypeSizes[type - BIT_7];
     if (type < 255)
@@ -104,11 +109,6 @@ byte* ComObjectsSYSTEMB::objectFlagsTable()
     	return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[2], configTable[1]));
 
     return ((BcuDefault*)bcu)->userMemoryPtr(makeWord(configTable[1], configTable[2]));
-}
-
-inline const byte* ComObjectsSYSTEMB::getObjectTypeSizes()
-{
-	return objectTypeSizes;
 }
 
 inline const ComConfig& ComObjectsSYSTEMB::objectConfig(int objno)

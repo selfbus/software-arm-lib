@@ -45,11 +45,6 @@ public:
 	virtual inline const ComConfig& objectConfig(int objno) override;
 
 protected:
-	// The size of the object types BIT_7...VARDATA in bytes
-	const byte objectTypeSizes[15] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 5, 7, 9, 11, 12, 13};
-
-	virtual const byte* getObjectTypeSizes() override;
-
 	virtual int objectSize(int objno) override;
 	virtual byte* objectValuePtr(int objno) override;
 	virtual void processGroupTelegram(uint16_t addr, int apci, byte* tel, int trg_objno) override;

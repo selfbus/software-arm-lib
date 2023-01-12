@@ -16,9 +16,15 @@
 
 int ComObjectsBCU1::objectSize(int objno)
 {
+    // The size of the object types BIT_7...VARDATA in bytes
+    const byte objectTypeSizes[10] = { 1, 1, 2, 3, 4, 6, 8, 10, 14, 14 };
+
     int type = objectType(objno);
-    if (type < BIT_7) return 1;
-    return objectTypeSizes[type - BIT_7];
+    if (type < BIT_7)
+        return 1;
+    if (type <= VARDATA)
+        return objectTypeSizes[type - BIT_7];
+    return -1;
 }
 
 byte* ComObjectsBCU1::objectValuePtr(int objno)
@@ -157,11 +163,6 @@ byte* ComObjectsBCU1::objectFlagsTable() // stored in RAM
     objCfgTablePtr++; // add 1 to get the RAM-Flags-Table Pointer
     return ((BcuDefault*)bcu)->userMemoryPtr(*objCfgTablePtr);
     //return (byte*)(((BcuDefault*)bcu)->userRam->userRamData + ((BcuDefault*)bcu)->userEeprom->userEepromData[((BcuDefault*)bcu)->userEeprom->commsTabPtr() + 1]);
-}
-
-inline const byte* ComObjectsBCU1::getObjectTypeSizes()
-{
-	return objectTypeSizes;
 }
 
 inline const ComConfig& ComObjectsBCU1::objectConfig(int objno) { return objectConfigBCU1(objno)->baseConfig; }
