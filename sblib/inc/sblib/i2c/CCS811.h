@@ -51,13 +51,13 @@ public:
   bool begin(uint8_t I2C_ADDR, int WAKE_PIN);
   char readStatus(void);
   char readHW_ID(void);
-  int getBaseline(void);
-  void setBaseline(int baseline);
+  uint16_t getBaseline(void);
+  void setBaseline(uint16_t baseline);
   char readErrorID(char _status);
   int readTVOC(void);
   int readCO2(void);
   void setMode(uint8_t modeNumber);
-  void getData(void);
+  bool getData(void);
   void compensate(float t, float rh);
   void _digitalWrite(int WAKE_PIN, bool VAL);
   void reset(void);

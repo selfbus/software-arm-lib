@@ -104,13 +104,13 @@ char CCS811Class::readHW_ID(void) {
 // register and the Algorithms will use the new value in its
 // calculations (until it adjusts it as part of its internal Automatic
 // Baseline Correction).
-int CCS811Class::getBaseline(void) {
+uint16_t CCS811Class::getBaseline(void) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t buffer[2];
   Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, BASELINE_REG, buffer, 2); // read BASELINE register
 
-  int baseline = ((uint8_t) buffer[0] << 8) + buffer[1];
+  uint16_t baseline = ((uint8_t) buffer[0] << 8) + buffer[1];
 
   digitalWrite(_WAKE_PIN, true);
 
@@ -118,7 +118,7 @@ int CCS811Class::getBaseline(void) {
 }
 
 // set the baseline from before reading to the CCS811
-void CCS811Class::setBaseline(int baseline) {
+void CCS811Class::setBaseline(uint16_t baseline) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t i2cData[] = {BASELINE_REG, (uint8_t)(baseline >> 8), (uint8_t) baseline};
@@ -161,16 +161,23 @@ void CCS811Class::setMode(uint8_t modeNumber) {
 }
 
 // get the CO2 and TVOC Data from CSS811
-void CCS811Class::getData(void) {
+bool CCS811Class::getData(void) {
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t buffer[4];
-  Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, ALG_RESULT_DATA, buffer, 4); // reading ALG_RESULT_DATA clears DATA_READY bit in 0x00
+
+  uint8_t len = Chip_I2C_MasterCmdRead(I2C0, _I2C_ADDR, ALG_RESULT_DATA, buffer, 4); // reading ALG_RESULT_DATA clears DATA_READY bit in 0x00
+  digitalWrite(_WAKE_PIN, true);
+
+  if (len != 4)
+  {
+	  return false;
+  }
 
   CO2 = ((uint8_t) buffer[0] << 8) + buffer[1];
   TVOC = ((uint8_t) buffer[2] << 8) + buffer[3];
 
-  digitalWrite(_WAKE_PIN, true);
+  return true;
 }
 
 int CCS811Class::readTVOC(void) {
