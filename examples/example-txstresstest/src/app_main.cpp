@@ -5,11 +5,10 @@
  * @brief   A simple application which stress tests the KNX-Tx driver.
  * @details The mask version of this example is 0x0701.
  *
- *          links against BIM112_71 version of the sblib library
  * @{
  *
  * @file   app_main.cpp
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2023
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -18,28 +17,32 @@
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
  */
-
+#include <sblib/eibMASK0701.h>
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>
-#include <sblib/eib.h>
-#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/io_pin_names.h>
+
 #include <sblib/timeout.h>
 #include <string.h>
 
-#define KNX_PHYS_ADDRESS    (0xAFFE)    //!< own physical KNX address (10.15.254)
+// #define KNX_PHYS_ADDRESS    (0xAFFE)    //!< own physical KNX address (10.15.254)
+#define KNX_PHYS_ADDRESS    (0x0002)    //!< own physical KNX address (0.0.0)
 #define MANUFACTURER        (0x83)      //!< Manufacturer ID (MDT)
 #define DEVICETYPE          (0x0030)    //!< Device Type (Binary input 16f)
 #define APPVERSION          (0x20)      //!< Application Version
 
-#define TEST_FILLBYTE       (0x00)  //!< Value the payload bytes should be filled with
-#define TEST_DELAY_MS       (1)    //!< Delay in milliseconds between two test telegrams
-#define TEST_TELEGRAM_SIZE  (24)    //!< Length of the test telegram, including trailing 0x00 byte and checksum byte (sblib supports up to 24 Bytes)
-#define TEST_STARTUP_DELAY_MS (1000)//!< Delay in milliseconds before the test starts
+#define TEST_FILLBYTE       (0x00)      //!< Value the payload bytes should be filled with
+#define TEST_DELAY_MS       (1)         //!< Delay in milliseconds between two test telegrams
+#define TEST_TELEGRAM_SIZE  (24)        //!< Length of the test telegram, including trailing 0x00 byte and checksum byte (sblib supports up to 24 Bytes)
+#define TEST_MAX_SEND_RETIES (100)        //!< maximum retries in case of no ACK
+#define TEST_STARTUP_DELAY_MS (1000)    //!< Delay in milliseconds before the test starts
 
 
 const unsigned char hardwareVersion[6] = {0, 0, 0, 0, 0x00, 0x1E}; //!< The hardware identification number
+
+MASK0701 bcu;
+
 Timeout sendTimeout;
 
 APP_VERSION("SBSTRES", "0", "01");
@@ -64,10 +67,8 @@ void initTestTelegram()
 
 void sendTestTelegram()
 {
-    // prepare test telegram
-    initTestTelegram();
-
-    bus.sendTelegram(testTelegram, testTelegramSize);
+    initLpdu(testTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // init control byte
+    bcu.bus->sendTelegram(testTelegram, testTelegramSize);
     sendTimeout.start(TEST_DELAY_MS);
 }
 
@@ -77,14 +78,16 @@ void sendTestTelegram()
  *
  * @note  You must implement this function in your code.
  */
-void setup(void)
+BcuBase* setup()
 {
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION);
     bcu.setOwnAddress(KNX_PHYS_ADDRESS);
-    bus.maxSendTries(1);
-    memcpy(userEeprom.order, &hardwareVersion, sizeof(hardwareVersion));
-
+    bcu.bus->maxSendTries(TEST_MAX_SEND_RETIES);
+    bcu.setHardwareType(hardwareVersion, sizeof(hardwareVersion));
+    // prepare test telegram
+    initTestTelegram();
     sendTimeout.start(TEST_STARTUP_DELAY_MS);
+    return (&bcu);
 }
 
 /**
@@ -93,14 +96,19 @@ void setup(void)
  */
 void loop(void)
 {
-    if (bus.idle() && sendTimeout.expired())
+    if (!bcu.bus->idle())
+    {
+        return;
+    }
+
+    if ((TEST_DELAY_MS <= 0) || (sendTimeout.expired()))
     {
         sendTestTelegram();
     }
-
-    // Sleep up to 1 millisecond if there is nothing to do
-    if (bus.idle())
+    else
+    {
         waitForInterrupt();
+    }
 }
 
 /**
