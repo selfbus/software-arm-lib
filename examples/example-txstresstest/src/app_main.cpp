@@ -27,7 +27,7 @@
 #include <string.h>
 
 // #define KNX_PHYS_ADDRESS    (0xAFFE)    //!< own physical KNX address (10.15.254)
-#define KNX_PHYS_ADDRESS    (0x0002)    //!< own physical KNX address (0.0.0)
+#define KNX_PHYS_ADDRESS    (0x0002)    //!< own physical KNX address (0.0.2)
 #define MANUFACTURER        (0x83)      //!< Manufacturer ID (MDT)
 #define DEVICETYPE          (0x0030)    //!< Device Type (Binary input 16f)
 #define APPVERSION          (0x20)      //!< Application Version
