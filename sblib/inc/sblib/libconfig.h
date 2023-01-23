@@ -99,7 +99,6 @@
 
 /// \todo following #defines should be moved to this libconfig.h file
 // IAP_EMULATION        /// \todo from platform.h & analog_pin.cpp (used for catch-unit tests of the sblib)
-// SPI_BLOCK_TRANSFER   /// \todo from spi.h & spi.cpp
 // DEBUG                /// \todo from utils.h
 // SERIAL_WRITE_DIRECT  /// \todo from serial.cpp
 // BH1750_DEBUG         /// \todo from in bh1750.h

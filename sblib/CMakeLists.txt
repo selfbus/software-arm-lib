@@ -19,7 +19,7 @@ set_property(CACHE BusType PROPERTY STRINGS BCU_TYPE=10 BCU_TYPE=20 BIM112)
 
 set(LOGGING OFF CACHE BOOL "Whether to through the serial port")
 
-add_definitions(-DSPI_BLOCK_TRANSFER -DSERIAL_WRITE_DIRECT -D${BusType} )
+add_definitions(-DSERIAL_WRITE_DIRECT -D${BusType} )
 
 add_subdirectory(${SBLPC_DIR} CMSIS_CORE_LPC11xx)
 

@@ -184,9 +184,8 @@ public:
      */
     int transfer(int val, SpiTransferMode transferMode);
 
-#ifdef SPI_BLOCK_TRANSFER
     /**
-     * Transfer a bloc of data SPI bus.
+     * Transfer a block of data SPI bus.
      * If a receive buffer is specified, the received data will be copied into this buffer.
      * If an asynchrone transfer is requested, the transmit FIFo will be filled in the interrupt
      * service routine of the SPI controller.
@@ -214,13 +213,10 @@ public:
      */
     void finalizeBlockTransfer(void);
 
-#endif
-
 protected:
     LPC_SSP_TypeDef& port;
     int clockDiv;
 
-#ifdef SPI_BLOCK_TRANSFER
     uint16_t * sndData;
     uint16_t * recData;
     int        sndCount;
@@ -228,7 +224,6 @@ protected:
     int        errors;
 public:
     bool       finished;
-#endif
 };
 
 
