@@ -58,7 +58,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/buffered_stream.h
         inc/sblib/core.h
         inc/sblib/debounce.h
-        inc/sblib/debug.h
         inc/sblib/digital_pin.h
         inc/sblib/eib.h
         inc/sblib/i2c.h
@@ -111,7 +110,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         src/arrays.cpp
         src/buffered_stream.cpp
         src/debounce.cpp
-        src/debug.cpp
         src/digital_pin_shift.cpp
         src/i2c.cpp
         src/iap.cpp
