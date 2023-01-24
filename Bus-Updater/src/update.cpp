@@ -142,7 +142,6 @@ void uShort16ToStream(unsigned char * buffer, unsigned int val)
  *
  * @param count Number of bytes the return telegram shall have
  * @param cmd   UPD/UDP command/response to set the return telegram
- * @return always true
  */
 static void prepareReturnTelegram(unsigned int count, unsigned char cmd)
 {
@@ -152,7 +151,6 @@ static void prepareReturnTelegram(unsigned int count, unsigned char cmd)
     bcu.sendTelegram[8] = 0;
     bcu.sendTelegram[9] = cmd;
 }
-
 
 /**
  * @brief Returns the unlocked status of the device
