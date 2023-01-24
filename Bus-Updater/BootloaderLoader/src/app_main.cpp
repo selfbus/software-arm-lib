@@ -21,7 +21,7 @@ extern const unsigned int _image_start;
 #define BOOTLOADER_FLASH_STARTADDRESS ((unsigned int) 0x0) //!< Flash start address of the bootloader
 #define LOADERLOADER_VERSION          (0x0001)             //!< boot loader loader Version 0.01
 
-APP_VERSION("SBloader", "0", "01");
+APP_VERSION("SBloader", "0", "80");
 
 void setup()
 {

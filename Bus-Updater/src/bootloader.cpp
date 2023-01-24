@@ -38,7 +38,7 @@
 #define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
 #define RUN_MODE_BLINK_IDLE (1000)     //!< while idle/disconnected, programming and run led blinking time in milliseconds
 #define BL_RESERVED_RAM_START (0x10000000) //!< RAM start address for bootloader
-#define BL_DEFAULT_VECTOR_TABLE_SIZE (200 / sizeof(unsigned int)) //!< vectortable size to copy prior application start
+#define BL_DEFAULT_VECTOR_TABLE_SIZE (192 / sizeof(unsigned int)) //!< vectortable size to copy prior application start
 
 // KNX/EIB specific settings
 #define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
@@ -165,10 +165,9 @@ void loop()
 }
 
 /**
- * @brief Starts the application by coping application's stack top and vector table to ram, remaps it and calls Reset vector of it
+ * @brief Starts the application by coping application's stack top and vectortable to ram, remaps it and calls Reset vector of it
  *
- * @param start Start address of application
- * @warning Explanation may be wrong,
+ * @param start     Start address of application
  */
 static void jumpToApplication(unsigned int start)
 {
@@ -178,7 +177,7 @@ static void jumpToApplication(unsigned int start)
     unsigned int * rom = (unsigned int *) start;
     unsigned int * ram = (unsigned int *) BL_RESERVED_RAM_START;
     unsigned int i;
-    // copy the first 200 bytes of the "application" (the vector table)
+    // copy the first 192 bytes (vector table) of the "application"
     // into the RAM and than remap the vector table inside the RAM
 
     d3(serial.println("Vectortable Size: ", (unsigned int) (BL_DEFAULT_VECTOR_TABLE_SIZE * sizeof(start)), HEX, 4););
