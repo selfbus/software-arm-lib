@@ -194,6 +194,8 @@ static void jumpToApplication(unsigned int start)
      * manually to ensure a correct stack.
      */
     asm volatile ("mov SP, %0" : : "r" (StackTop));
+
+    __DSB(); // DSB after a memory map switching according to UM10398 28.4.2.4
     /* Once the stack is setup we jump to the application reset vector */
     asm volatile ("bx      %0" : : "r" (ResetVector));
 #endif
