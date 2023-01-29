@@ -187,6 +187,7 @@ static void jumpToApplication(unsigned int start)
         *ram = *rom;
     }
     LPC_SYSCON->SYSMEMREMAP = 0x01;
+    // DO NOT use a __DSB here, even if the user manual UM10398 28.4.2.4 states it, otherwise application won't start.
 
     /* Normally during RESET the stack pointer will be loaded
      * with the value stored location 0x0. Since the vector
@@ -194,8 +195,6 @@ static void jumpToApplication(unsigned int start)
      * manually to ensure a correct stack.
      */
     asm volatile ("mov SP, %0" : : "r" (StackTop));
-
-    __DSB(); // DSB after a memory map switching according to UM10398 28.4.2.4
     /* Once the stack is setup we jump to the application reset vector */
     asm volatile ("bx      %0" : : "r" (ResetVector));
 #endif
