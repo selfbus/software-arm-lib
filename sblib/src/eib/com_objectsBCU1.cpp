@@ -41,19 +41,12 @@ byte* ComObjectsBCU1::objectValuePtr(int objno)
     {
         addrObjValue += ((BcuDefault*)bcu)->userEeprom->startAddr();
         objValuePtr = ((BcuDefault*)bcu)->userMemoryPtr(addrObjValue);
-        // return ((BcuDefault*)bcu)->userEeprom->userEepromData + cfg->dataPtr;
     }
     else
     {
         objValuePtr = ((BcuDefault*)bcu)->userMemoryPtr(addrObjValue);
-        // return bcu->userRam->userRamData + cfg->dataPtr;
     }
     return (objValuePtr);
-
-
-    // if (cfg->baseConfig.config & COMCONF_VALUE_TYPE) // 0 if user RAM, >0 if user EEPROM
-    //    return ((BcuDefault*)bcu)->userEeprom->userEepromData + cfg->dataPtr;
-    //return bcu->userRam->userRamData + cfg->dataPtr;
 }
 
 /*
@@ -150,7 +143,6 @@ byte* ComObjectsBCU1::objectConfigTable() // stored in eeprom
     commsTabPtr += ((BcuDefault*)bcu)->userEeprom->startAddr(); // for BCU1 add 0x100
 
     return ((BcuDefault*)bcu)->userMemoryPtr(commsTabPtr);
-    // return ((BcuDefault*)bcu)->userEeprom->userEepromData + commsTabPtr; // this did not add 0x100
 }
 
 byte* ComObjectsBCU1::objectFlagsTable() // stored in RAM
@@ -162,7 +154,6 @@ byte* ComObjectsBCU1::objectFlagsTable() // stored in RAM
     }
     objCfgTablePtr++; // add 1 to get the RAM-Flags-Table Pointer
     return ((BcuDefault*)bcu)->userMemoryPtr(*objCfgTablePtr);
-    //return (byte*)(((BcuDefault*)bcu)->userRam->userRamData + ((BcuDefault*)bcu)->userEeprom->userEepromData[((BcuDefault*)bcu)->userEeprom->commsTabPtr() + 1]);
 }
 
 inline const ComConfig& ComObjectsBCU1::objectConfig(int objno) { return objectConfigBCU1(objno)->baseConfig; }
