@@ -106,7 +106,7 @@ int Decompressor::pageCompletedDoFlash()
 		// proceed to flash the decompressed page stored in the scratchpad RAM
 		d1("Diff - Program Page at Address 0x");
 		d2((unsigned int)startAddrOfPageToBeFlashed, HEX,4);
-		lastError = executeProgramFlash(*startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
+		lastError = executeProgramFlash((unsigned int)startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
 		//lastError = iapProgram(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
 		//lastError = UDP_IAP_SUCCESS; // Dry RUN! for debug
 	}
