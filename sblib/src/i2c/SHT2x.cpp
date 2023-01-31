@@ -80,7 +80,7 @@ int SHT2xClass::GetTemperature(void)
 {
   int value = readSensor(eTempHoldCmd);
   if (value == 0 || (value & 0x2)) {
-    return -273;                    // Roughly Zero Kelvin indicates an error
+    return -27300;                    // Roughly Zero Kelvin indicates an error
   }
 
   value = value & 0xFFFC; //remove last two status Bits

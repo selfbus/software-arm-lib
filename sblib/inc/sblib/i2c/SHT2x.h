@@ -65,10 +65,25 @@ public:
     float GetDewPoint(void);
 
 private:
+    /**
+     * Start humidity or temperature measurement (hold master) and performs validation of measured data
+     *
+     * @param command  Measurement command for Temperature (0xE3) or rHumidity (0xE5)
+     *
+     * @return the measurement data including two status bits
+     */
     uint16_t readSensor(uint8_t command);
     bool initialized = false;
 
 protected:
+    /**
+     * Performs a CRC8 calculation on the supplied values.
+     *
+     * @param data  Pointer to the data to use when calculating the CRC8.
+     * @param len   The number of bytes in 'data'.
+     *
+     * @return The computed CRC8 value.
+     */
     uint8_t crc8(const uint8_t *data, uint8_t len);
 
 };
