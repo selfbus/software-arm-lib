@@ -123,6 +123,9 @@ extern "C" void handler() { callback; }
 
 ALWAYS_INLINE void noInterrupts()
 {
+    // data synchronization barrier and instruction synchronization barrier to ensure that no interrupt occurs after we disabled them
+    __DSB();
+    __ISB();
     __disable_irq();
 }
 
@@ -143,6 +146,9 @@ ALWAYS_INLINE void enableInterrupt(IRQn_Type interruptType)
 
 ALWAYS_INLINE void disableInterrupt(IRQn_Type interruptType)
 {
+    // data synchronization barrier and instruction synchronization barrier to ensure that no interrupt occurs after we disabled them
+    __DSB();
+    __ISB();
     NVIC->ICER[0] = 1 << (interruptType & 0x1f);
 }
 
