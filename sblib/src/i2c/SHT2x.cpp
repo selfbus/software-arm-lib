@@ -45,11 +45,21 @@ typedef enum {
   eRHumidityHoldCmd   = 0xE5,
   eTempNoHoldCmd      = 0xF3,
   eRHumidityNoHoldCmd = 0xF5,
+  eWriteUserReg       = 0xE6,
+  eReadUserReg        = 0xE7,
 } HUM_MEASUREMENT_CMD_T;
 
 void SHT2xClass::Init(void)
 {
   i2c_lpcopen_init();
+
+  byte result;
+  if (Chip_I2C_MasterCmdRead(I2C0, eSHT2xAddress, eReadUserReg, &result, 1) == 1)
+  {
+	  const uint8_t data[] = { (uint8_t)eWriteUserReg, (uint8_t)(result & 0x7E) };
+	  Chip_I2C_MasterSend(I2C0, eSHT2xAddress, data, sizeof(data));
+	  initialized = true;
+  }
 }
 
 int SHT2xClass::GetHumidity(void)
@@ -99,22 +109,34 @@ uint16_t SHT2xClass::readSensor(uint8_t command)
 
   uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
 
-  // loop to receive measurement result within the timeout period
-  while (Chip_I2C_MasterCmdRead(I2C0, eSHT2xAddress, command, result, 3) == 0){
-    if ((millis() - timeout) > 0) {
-      i2c_lpcopen_init();
-      return 0;
-    }
+  if (!initialized)
+  {
+    Init();
   }
 
-  //TODO: CRC8 and status Bit verification
-  if (crc8(result, 2) != result[2])
+  if (initialized)
+  {
+    // loop to receive measurement result within the timeout period
+    while (Chip_I2C_MasterCmdRead(I2C0, eSHT2xAddress, command, result, 3) < 3){
+      if ((millis() - timeout) > 0) {
+        i2c_lpcopen_init();
+        return 0;
+      }
+    }
+
+    // CRC check
+    if (crc8(result, 2) != result[2])
+    {
+      return 0;
+    }
+
+    // Concatenate result Bytes
+    return ((result[0] << 8) | (result[1] << 0));
+  }
+  else
   {
     return 0;
   }
-
-  // Concatenate result Bytes
-  return ((result[0] << 8) | (result[1] << 0));
 }
 
 uint8_t SHT2xClass::crc8(const uint8_t *data, uint8_t len)
