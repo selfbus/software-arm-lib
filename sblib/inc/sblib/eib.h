@@ -10,7 +10,7 @@
 #ifndef sblib_eib_h
 #define sblib_eib_h
 
-//#if 0
+#if 0
 #ifndef NO_OOP_MACROS
 
 #include <sblib/core.h>
@@ -84,5 +84,5 @@
 
 
 #endif /* NO_OOP_MACROS */
-//#endif
+#endif
 #endif /*sblib_eib_h*/
