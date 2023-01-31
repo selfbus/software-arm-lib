@@ -67,6 +67,9 @@ public:
 private:
     uint16_t readSensor(uint8_t command);
 
+protected:
+    uint8_t crc8(const uint8_t *data, uint8_t len);
+
 };
 
 #endif
