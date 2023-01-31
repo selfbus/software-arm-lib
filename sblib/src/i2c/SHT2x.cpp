@@ -55,10 +55,11 @@ void SHT2xClass::Init(void)
 int SHT2xClass::GetHumidity(void)
 {
   unsigned int value = readSensor(eRHumidityHoldCmd);
-  if (value == 0) {
+  if (value == 0 || !(value & 0x2)) {
     return 0; // Some unrealistic value
   }
 
+  value = value & 0xFFFC; //remove last two status Bits
   value = 12500 * value;
   value = value / 65536;
   value = value -600;
@@ -68,10 +69,11 @@ int SHT2xClass::GetHumidity(void)
 int SHT2xClass::GetTemperature(void)
 {
   int value = readSensor(eTempHoldCmd);
-  if (value == 0) {
+  if (value == 0 || (value & 0x2)) {
     return -273;                    // Roughly Zero Kelvin indicates an error
   }
 
+  value = value & 0xFFFC; //remove last two status Bits
   value = 17572 * value;
   value = value / 65536;
   value = value - 4685;
@@ -106,7 +108,30 @@ uint16_t SHT2xClass::readSensor(uint8_t command)
   }
 
   //TODO: CRC8 and status Bit verification
+  if (crc8(result, 2) != result[2])
+  {
+    return 0;
+  }
 
-  // Concatenate result Bytes and remove last two status Bits
-  return ((result[0] << 8) | (result[1] << 0) & 0xFFFC);
+  // Concatenate result Bytes
+  return ((result[0] << 8) | (result[1] << 0));
+}
+
+uint8_t SHT2xClass::crc8(const uint8_t *data, uint8_t len)
+{
+  // CRC-8 formula from page 14 of SHT spec pdf
+  // Sensirion_Humidity_Sensors_SHT2x_CRC_Calculation.pdf
+  const uint8_t POLY = 0x31;
+  uint8_t crc = 0x00;
+
+  for (uint8_t j = len; j; --j)
+  {
+    crc ^= *data++;
+
+    for (uint8_t i = 8; i; --i)
+    {
+      crc = (crc & 0x80) ? (crc << 1) ^ POLY : (crc << 1);
+    }
+  }
+  return crc;
 }
