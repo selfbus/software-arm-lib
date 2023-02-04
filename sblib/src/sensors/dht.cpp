@@ -204,7 +204,7 @@ uint32_t DHT::expectPulse(bool level) {
 *****************************************************************************/
 float DHT::CalcdewPointFast(float celsius, float humidity)
 {
-  float temp = (17.271f * celsius) / (237.7f + celsius) + log(humidity/100.0f);
+  float temp = (17.271f * celsius) / (237.7f + celsius) + logf(humidity/100.0f);
   return ( (237.7f * temp) / (17.271f - temp) );
 }
 
@@ -222,7 +222,7 @@ float DHT::CalcdewPointFast(float celsius, float humidity)
 /*
 float DHT::CalcdewPoint(float celsius, float humidity)
 {
-  float T= ( log( pow( 10, (( (-7.90298 * (373.15/(273.15 + celsius)-1)) ) +
+  float T= ( logf( pow( 10, (( (-7.90298 * (373.15/(273.15 + celsius)-1)) ) +
            ( 5.02808 * log10( 373.15/(273.15 + celsius)) ) +
            ( -1.3816e-7 * (pow( 10, (11.344*(1-1/373.15/(273.15 + celsius))))-1) ) +
            ( 8.1328e-3 * (pow( 10,(-3.49149*(373.15/(273.15 + celsius)-1)))-1) ) +
