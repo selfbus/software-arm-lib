@@ -26,7 +26,7 @@ int Print::print(int value, Base base, int digits)
         --digits;
     }
 
-    return print((unsigned int) value, base, digits) + wlen;
+    return print((uintptr_t) value, base, digits) + wlen;
 }
 
 int Print::print(const char* str, int value, Base base, int digits)
