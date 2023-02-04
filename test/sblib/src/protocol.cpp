@@ -8,10 +8,10 @@
  *  published by the Free Software Foundation.
  */
 
+#include "protocol.h"
 #include <sblib/internal/variables.h>
 #include <sblib/internal/iap.h>
 #include <sblib/bits.h>
-#include "protocol.h"
 
 extern unsigned int wfiSystemTimeInc;
 
