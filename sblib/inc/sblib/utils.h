@@ -71,7 +71,7 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
  *
  *        OFFSET_OF(ex,c) returns 2
  */
-#define OFFSET_OF(type, field)  ((unsigned int) &(((type *) 0)->field))
+#define OFFSET_OF(type, field)  (offsetof(type, field))
 
 /**
  * Include the C++ code snippet if DEBUG is defined, do not include the code
