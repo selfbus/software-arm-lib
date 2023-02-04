@@ -43,14 +43,6 @@ enum IAP_Status
 unsigned int iapSectorOfAddress(const byte* address);
 
 /**
- * Get the index of the FLASH sector for the passed address.
- *
- * @param address - the address inside the FLASH
- * @return The sector index of the address.
- */
-unsigned int iapSectorOfAddress(const unsigned int address);
-
-/**
  * Get the index of the FLASH page for the passed address.
  *
  * @param address - the address inside the FLASH
@@ -59,20 +51,12 @@ unsigned int iapSectorOfAddress(const unsigned int address);
 unsigned int iapPageOfAddress(const byte* address);
 
 /**
- * Get the index of the FLASH page for the passed address.
- *
- * @param address - the address inside the FLASH
- * @return The sector index of the address.
- */
-unsigned int iapPageOfAddress(const unsigned int address);
-
-/**
  * Get the address of the given FLASH page index.
  *
  * @param page - the page index inside the FLASH
  * @return The address of the given page index.
  */
-unsigned int iapAddressOfPage(const unsigned int page);
+uint8_t * iapAddressOfPage(const unsigned int page);
 
 /**
  * Get the address of the given FLASH sector index.
@@ -80,7 +64,7 @@ unsigned int iapAddressOfPage(const unsigned int page);
  * @param sector - the sector index inside the FLASH
  * @return The address of the given sector index.
  */
-unsigned int iapAddressOfSector(const unsigned int sector);
+uint8_t * iapAddressOfSector(const unsigned int sector);
 
 /**
  * Erase the specified sector.

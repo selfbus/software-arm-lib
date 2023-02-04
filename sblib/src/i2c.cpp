@@ -162,8 +162,6 @@ struct i2c_slave_interface {
 	I2C_EVENTHANDLER_T event;
 };
 
-void* test =0;
-
 /* I2C interfaces */
 static struct i2c_interface i2c[I2C_NUM_INTERFACE] = {
 	{LPCOPEN_I2C, /*SYSCTL_CLOCK_I2C,*/ Chip_I2C_EventHandler, 0, 0, 0, 0}

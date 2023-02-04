@@ -37,10 +37,12 @@
 #   define d1(x) {serial.print(x);}
 #   define dline(x) {serial.println(x);}
 #   define d2(u,v,w) {serial.print(u,v,w);}
+#   define d2ptr(u) {serial.print(u);}
 #   define d3(x) {x;}
 #else
 #   define d1(x)
 #   define d2(u,v,w)
+#   define d2ptr(u)
 #   define d3(x)
 #   define dline(x)
 #endif

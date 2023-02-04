@@ -113,14 +113,14 @@ BcuBase* setup()
     serial.print(" ");
     serial.println(__TIME__);
     serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
-    serial.print("Flash      (start,end,size) : 0x", flashFirstAddress(), HEX, 6);
-    serial.print(" 0x", flashLastAddress(), HEX, 6);
+    serial.print("Flash      (start,end,size) : 0x", flashFirstAddress());
+    serial.print(" 0x", flashLastAddress());
     serial.println(" 0x", flashSize(), HEX, 6);
-    serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress(), HEX, 6);
-    serial.print(" 0x", bootLoaderLastAddress(), HEX, 6);
+    serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress());
+    serial.print(" 0x", bootLoaderLastAddress());
     serial.println(" 0x", bootLoaderSize(), HEX, 6);
-    serial.println("Firmware (start)            : 0x", applicationFirstAddress(), HEX, 6);
-    serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress(), HEX, 6);
+    serial.println("Firmware (start)            : 0x", applicationFirstAddress());
+    serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress());
     serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
     serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
     serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
@@ -169,7 +169,7 @@ void loop()
  *
  * @param start     Start address of application
  */
-static void jumpToApplication(unsigned int start)
+static void jumpToApplication(uint8_t * start)
 {
 #ifndef IAP_EMULATION
     unsigned int StackTop = *(unsigned int *) (start);

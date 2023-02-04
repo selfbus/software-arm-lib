@@ -14,11 +14,10 @@
 #   define d(x)
 #endif
 
-extern const __attribute__((aligned(16))) unsigned int incbin_bl_start;
-extern const unsigned int incbin_bl_end;
-extern const unsigned int _image_start;
+extern const __attribute__((aligned(16))) uint8_t incbin_bl_start[];
+extern const uint8_t incbin_bl_end[];
 
-#define BOOTLOADER_FLASH_STARTADDRESS ((unsigned int) 0x0) //!< Flash start address of the bootloader
+#define BOOTLOADER_FLASH_STARTADDRESS ((uint8_t *) 0x0)    //!< Flash start address of the bootloader
 #define LOADERLOADER_VERSION          (0x0001)             //!< boot loader loader Version 0.01
 
 APP_VERSION("SBloader", "0", "80");
@@ -50,7 +49,7 @@ int main()
 {
     setup();
 
-    const unsigned int newBlSize = ((unsigned int) &incbin_bl_end - (unsigned int) &incbin_bl_start) + 1;
+    const unsigned int newBlSize = (incbin_bl_end - incbin_bl_start);
     const unsigned int newBlStartSector = iapSectorOfAddress(BOOTLOADER_FLASH_STARTADDRESS);
     const unsigned int newBlEndSector = iapSectorOfAddress(BOOTLOADER_FLASH_STARTADDRESS + newBlSize - 1);
     d(
@@ -65,20 +64,20 @@ int main()
         serial.println(" --> done");
     )
 
-	for (unsigned int i = (unsigned int)&incbin_bl_start; i < (unsigned int)&incbin_bl_end; i += FLASH_SECTOR_SIZE)
+	for (const uint8_t * i = incbin_bl_start; i < incbin_bl_end; i += FLASH_SECTOR_SIZE)
 	{
 	    __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) byte buf[FLASH_SECTOR_SIZE]; // Address of buf must be word aligned, see iapProgram(..) hint.
 		memset(buf, 0xFF, FLASH_SECTOR_SIZE);
-		unsigned int len = (unsigned int)&incbin_bl_end - i;
+		unsigned int len = incbin_bl_end - i;
 		if (len > FLASH_SECTOR_SIZE)
 		{
 			len = FLASH_SECTOR_SIZE;
 		}
-		memcpy(buf, (void*)i, len);
+		memcpy(buf, i, len);
 
-		unsigned int flash = i - (unsigned int)&incbin_bl_start;
+		uint8_t * flash = BOOTLOADER_FLASH_STARTADDRESS + (i - incbin_bl_start);
 
-		if (flash == 0)
+		if (flash == nullptr)
 		{
 	        // NXP bootloader uses an Int-Vect as a checksum to see if the application is valid.
 	        // If the value is not correct then it does not start the application
@@ -95,9 +94,9 @@ int main()
 		    )
 		}
 	    d(
-	        serial.print("flashing 0x", flash, HEX, 4);
+	        serial.print("flashing 0x", flash);
 	    )
-		iapProgram((byte*)flash, buf, FLASH_SECTOR_SIZE);
+		iapProgram(flash, buf, FLASH_SECTOR_SIZE);
 	    d(
 	        serial.println(" --> done");
 	    )

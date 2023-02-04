@@ -72,12 +72,12 @@ void IAP_Init_Flash(unsigned char value)
     memset(FLASH, value, FLASH_SIZE);
 }
 
-void IAP_Call (unsigned long * cmd, unsigned long * stat)
+void IAP_Call (uintptr_t * cmd, uintptr_t * stat)
 {
     unsigned int i;
     unsigned int end;
-    unsigned int * rom;
-    unsigned int * ram;
+    uint8_t * rom;
+    uint8_t * ram;
 
     * stat = CMD_SUCCESS;
     switch (* cmd)
@@ -98,13 +98,18 @@ void IAP_Call (unsigned long * cmd, unsigned long * stat)
         iap_calls [I_BLANK_CHECK]++;
         i    =  * (cmd + 1)      * SECTOR_SIZE;
         end  = (* (cmd + 2) + 1) * SECTOR_SIZE;
+        if (i >= end)
+        {
+            * stat = INVALID_COMMAND;
+            break;
+        }
         for (; i < end; i++)
         {
-        	if (i >= FLASH_SIZE)
-        	{
-        		* stat = INVALID_SECTOR;
-        		break;
-        	}
+            if (i >= FLASH_SIZE)
+            {
+                * stat = INVALID_SECTOR;
+                break;
+            }
             if (FLASH [i] != 0xFF)
             {
                 * stat = SECTOR_NOT_BLANK;
@@ -114,15 +119,15 @@ void IAP_Call (unsigned long * cmd, unsigned long * stat)
         break;
     case IAP_COPY_RAM2FLASH :
         iap_calls [I_RAM2FLASH]++;
-        rom = (unsigned int *) (int) (* (cmd + 1));
-        ram = (unsigned int *) (* (cmd + 2));
+        rom = (uint8_t *) (* (cmd + 1));
+        ram = (uint8_t *) (* (cmd + 2));
         i   = * (cmd + 3);
         memcpy (rom, ram, i);
         break;
     case IAP_COMPARE :
         iap_calls [I_COMPARE]++;
-        rom = (unsigned int *) (* (cmd + 1));
-        ram = (unsigned int *) (* (cmd + 2));
+        rom = (uint8_t *) (* (cmd + 1));
+        ram = (uint8_t *) (* (cmd + 2));
         i   = * (cmd + 3);
         if (memcmp (rom, ram, i) != 0)
         {
@@ -132,7 +137,7 @@ void IAP_Call (unsigned long * cmd, unsigned long * stat)
 
     case IAP_READ_UID:
         iap_calls [I_READ_UID]++;
-        unsigned char guid[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16};
+        uint8_t guid[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16};
         cmd += 6; //points now to p.res
         memcpy(cmd, &guid, 16);
         break;

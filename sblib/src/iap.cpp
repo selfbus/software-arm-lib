@@ -41,10 +41,10 @@ enum IAP_Command
  */
 struct IAP_Parameter
 {
-    unsigned long cmd;         //!< Command
-    unsigned long par[4];      //!< Parameters
-    unsigned long stat;        //!< Status
-    unsigned long res[4];      //!< Result
+    uintptr_t cmd;         //!< Command
+    uintptr_t par[4];      //!< Parameters
+    uintptr_t stat;        //!< Status
+    uintptr_t res[4];      //!< Result
 };
 
 // The size of the flash in bytes. Use iapFlashSize() to get the flash size.
@@ -55,7 +55,7 @@ unsigned int iapFlashBytes = 0;
  * IAP call function (DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING!)
  * use instead: IAP_Call_InterruptSafe()
  */
-typedef void (*IAP_Func)(unsigned long * cmd, unsigned long * stat);
+typedef void (*IAP_Func)(uintptr_t * cmd, uintptr_t * stat);
 
 #ifndef IAP_EMULATION
 #  if defined(__LPC11XX__) || defined(__LPC11UXX__) || defined(__LPC13XX__) || defined(__LPC17XX__)
@@ -67,7 +67,7 @@ typedef void (*IAP_Func)(unsigned long * cmd, unsigned long * stat);
 #  endif
 #  define IAP_Call ((IAP_Func) IAP_LOCATION)
 #else
-   extern "C" void IAP_Call (unsigned long * cmd, unsigned long * stat);
+   extern "C" void IAP_Call (uintptr_t * cmd, uintptr_t * stat);
 #endif
 
 
@@ -81,7 +81,7 @@ typedef void (*IAP_Func)(unsigned long * cmd, unsigned long * stat);
  *         Vector Table is located in the Flash this will fail and raise a
  *         non-handled HardFault condition.
  */
-inline void IAP_Call_InterruptSafe(unsigned long *cmd, unsigned long *stat, const bool getLock = true)
+inline void IAP_Call_InterruptSafe(uintptr_t * cmd, uintptr_t * stat, const bool getLock = true)
 {
     if (getLock)
     {
@@ -162,7 +162,7 @@ IAP_Status iapErasePageRange(const unsigned int startPageNumber, const unsigned 
     return (IAP_Status) p.stat;
 }
 
-IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
+IAP_Status iapProgram(uint8_t * rom, const uint8_t * ram, unsigned int size)
 {
     // IMPORTANT: Address of ram must be word aligned. Otherwise you'll run into a IAP_SRC_ADDR_ERROR
     // Use '__attribute__ ((aligned (FLASH_PAGE_ALIGNMENT)))' to force correct alignment even with compiler optimization -Ox
@@ -183,8 +183,8 @@ IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
 
     // then we can copy the RAM content to the FLASH
     p.cmd = CMD_COPY_RAM2FLASH;
-    p.par[0] = (unsigned long) rom;
-    p.par[1] = (unsigned long) ram;
+    p.par[0] = (uintptr_t) rom;
+    p.par[1] = (uintptr_t) ram;
     p.par[2] = size;
     p.par[3] = SystemCoreClock / 1000;
     IAP_Call_InterruptSafe(&p.cmd, &p.stat, false);
@@ -197,8 +197,8 @@ IAP_Status iapProgram(byte* rom, const byte* ram, unsigned int size)
 
     // now we check that RAM and FLASH have the same content
     p.cmd = CMD_COMPARE;
-    p.par[0] = (unsigned long) rom;
-    p.par[1] = (unsigned long) ram;
+    p.par[0] = (uintptr_t) rom;
+    p.par[1] = (uintptr_t) ram;
     p.par[2] = size;
     IAP_Call_InterruptSafe(&p.cmd, &p.stat, false);
     interrupts();
@@ -227,34 +227,24 @@ IAP_Status iapReadPartID(unsigned int* partId)
     return (IAP_Status) p.stat;
 }
 
-unsigned int iapSectorOfAddress(const byte* address)
+unsigned int iapSectorOfAddress(const uint8_t * address)
 {
     return (unsigned int)((address - FLASH_BASE_ADDRESS) / FLASH_SECTOR_SIZE);
 }
 
-unsigned int iapSectorOfAddress(const unsigned int address)
-{
-    return (iapSectorOfAddress((byte*)address));
-}
-
-unsigned int iapPageOfAddress(const byte* address)
+unsigned int iapPageOfAddress(const uint8_t * address)
 {
     return (unsigned int)((address - FLASH_BASE_ADDRESS) / FLASH_PAGE_SIZE);
 }
 
-unsigned int iapPageOfAddress(const unsigned int address)
+uint8_t * iapAddressOfPage(const unsigned int page)
 {
-    return (iapPageOfAddress((byte*)address));
+    return (page * FLASH_PAGE_SIZE) + FLASH_BASE_ADDRESS;
 }
 
-unsigned int iapAddressOfPage(const unsigned int page)
+uint8_t * iapAddressOfSector(const unsigned int sector)
 {
-    return (page * FLASH_PAGE_SIZE) + LPC_FLASH_BASE;
-}
-
-unsigned int iapAddressOfSector(const unsigned int sector)
-{
-    return (sector * FLASH_SECTOR_SIZE) + LPC_FLASH_BASE;
+    return (sector * FLASH_SECTOR_SIZE) + FLASH_BASE_ADDRESS;
 }
 
 unsigned int iapFlashSize()

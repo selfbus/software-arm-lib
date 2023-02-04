@@ -53,7 +53,7 @@ UDP_State eraseFullFlash();
  * @warning             Function can take up to ~3.5 seconds to return.
  *                      It works on a page and sector base. Page erases are very slow ~100ms for one page
  */
-UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAddress, const bool rangeCheck = true);
+UDP_State eraseAddressRange(uint8_t * startAddress, const uint8_t * endAddress, const bool rangeCheck = true);
 
 /**
  * @brief Checks if the address range is allowed to be programmed
@@ -64,7 +64,7 @@ UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAdd
  *                         or false to check range of the application itself
  * @return                 true if programming is allowed, otherwise false
  */
-bool addressAllowedToProgram(unsigned int start, unsigned int length, bool isBootDescriptor = false);
+bool addressAllowedToProgram(uint8_t * start, unsigned int length, bool isBootDescriptor = false);
 
 /**
  * @brief Programs the specified number of bytes from the RAM to the specified location
@@ -78,7 +78,7 @@ bool addressAllowedToProgram(unsigned int start, unsigned int length, bool isBoo
  *                or a @ref IAP_Status
  * @warning       The function calls iap_Program which by itself calls no_interrupts().
  */
-UDP_State executeProgramFlash(unsigned int address, const byte* ram, unsigned int size, bool isBootDescriptor = false);
+UDP_State executeProgramFlash(uint8_t * address, const uint8_t * ram, unsigned int size, bool isBootDescriptor = false);
 
 
 

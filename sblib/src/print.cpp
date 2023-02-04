@@ -36,7 +36,7 @@ int Print::print(const char* str, int value, Base base, int digits)
     return wlen;
 }
 
-int Print::print(unsigned int value, Base base, int digits)
+int Print::print(uintptr_t value, Base base, int digits)
 {
     byte buf[PRINTBUF_SIZE]; // need the maximum size for binary printing
     byte ch;
@@ -57,7 +57,7 @@ int Print::print(unsigned int value, Base base, int digits)
     return write((byte*) pos, buf + PRINTBUF_SIZE - pos);
 }
 
-int Print::print(const char* str, unsigned int value, Base base, int digits)
+int Print::print(const char* str, uintptr_t value, Base base, int digits)
 {
     int wlen = print(str);
     wlen += print(value, base, digits);
@@ -87,7 +87,7 @@ int Print::write(const char* str)
     return 0;
 }
 
-int Print::println(const char* str, unsigned int value, Base base, int digits)
+int Print::println(const char* str, uintptr_t value, Base base, int digits)
 {
     int wlen = print(str, value, base, digits);
     wlen += println();

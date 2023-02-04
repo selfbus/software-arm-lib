@@ -25,6 +25,19 @@
 #include "dump.h"
 
 /**
+ * @brief Checks if the pointer is aligned.
+ *
+ * @param  ptr       Pointer to check
+ * @param  alignment Expected alignment, needs to be a power of 2
+ * @return           true if pointer is aligned to alignment, otherwise false
+ */
+static inline bool is_aligned(const uint8_t * ptr, const uint32_t alignment)
+{
+    // See https://stackoverflow.com/a/1898487 and https://stackoverflow.com/a/28760180 for reasoning.
+    return (((uintptr_t)(const void *)ptr) & (alignment - 1)) == 0;
+}
+
+/**
  * @brief Erases if allowed the requested sector.
  * @param sector  Sector number to be erased
  * @return        @ref UDP_IAP_SUCCESS if successful, otherwise @ref UDP_SECTOR_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
@@ -36,13 +49,13 @@ static UDP_State eraseSector(unsigned int sector)
 }
 */
 
-bool addressAllowedToProgram(unsigned int start, unsigned int length, bool isBootDescriptor)
+bool addressAllowedToProgram(uint8_t * start, unsigned int length, bool isBootDescriptor)
 {
-    if ((start & (FLASH_PAGE_ALIGNMENT)) || !length) // not aligned to page or 0 length
+    if (!is_aligned(start, FLASH_PAGE_SIZE) || !length) // not aligned to page or 0 length
     {
         return (0);
     }
-    unsigned int end = start + length - 1;
+    uint8_t * end = start + length - 1;
     if (isBootDescriptor)
     {
         return ((start >= bootDescriptorBlockAddress()) && (end < applicationFirstAddress()));
@@ -148,12 +161,12 @@ UDP_State erasePage(unsigned int page)
     return (erasePageRange(page, page));
 }
 
-UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAddress, const bool rangeCheck)
+UDP_State eraseAddressRange(uint8_t * startAddress, const uint8_t * endAddress, const bool rangeCheck)
 {
     UDP_State result = UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE;
     d3(
-        serial.print(" eraseAddressRange 0x", startAddress, HEX, 4);
-        serial.println("-0x", endAddress, HEX, 4);
+        serial.print(" eraseAddressRange 0x", startAddress);
+        serial.println("-0x", endAddress);
     );
 
     if (rangeCheck && (!addressAllowedToProgram(startAddress, endAddress - startAddress + 1, false)))
@@ -180,20 +193,20 @@ UDP_State eraseAddressRange(unsigned int startAddress, const unsigned int endAdd
         return (result);
     }
 
-    const bool addressSectorAligned = !(startAddress & (FLASH_SECTOR_SIZE  - 1));
-    if (!addressSectorAligned)
+    if (!is_aligned(startAddress, FLASH_SECTOR_SIZE))
     {
         // start address is not sector aligned, lets erase on a page level
         start = startPage;
         startSector++;
         // from start to last page of the sector
-        end = iapPageOfAddress(((startSector * FLASH_SECTOR_SIZE) - 1)); ///\todo there must be a better version
+        uint8_t * nextSectorStartAddress = FLASH_BASE_ADDRESS + (startSector * FLASH_SECTOR_SIZE);
+        end = iapPageOfAddress(nextSectorStartAddress) - 1;
         result = erasePageRange(start, end); // this is slow and can take up to 15*100ms = ~1,5s
         if (result != UDP_IAP_SUCCESS)
         {
             return (result);
         }
-        startAddress = startSector * FLASH_SECTOR_SIZE; // set new startAddress
+        startAddress = nextSectorStartAddress; // set new startAddress
     }
 
     startSector = iapSectorOfAddress(startAddress);
@@ -244,7 +257,7 @@ UDP_State eraseFullFlash()
     return eraseAddressRange(iapAddressOfPage(page), flashLastAddress(), false);
 }
 
-UDP_State executeProgramFlash(unsigned int address, const byte* ram, unsigned int size, bool isBootDescriptor)
+UDP_State executeProgramFlash(uint8_t * address, const uint8_t * ram, unsigned int size, bool isBootDescriptor)
 {
     UDP_State result = UDP_ADDRESS_NOT_ALLOWED_TO_FLASH;
     if (!addressAllowedToProgram(address, size, isBootDescriptor))
@@ -252,7 +265,7 @@ UDP_State executeProgramFlash(unsigned int address, const byte* ram, unsigned in
         return (UDP_ADDRESS_NOT_ALLOWED_TO_FLASH);
     }
 
-    result = (UDP_State)iapProgram((byte *) address, ram, size);
+    result = (UDP_State)iapProgram(address, ram, size);
     return (result);
 }
 

@@ -81,7 +81,7 @@ class Decompressor
 
 		uint32_t getCrc32();
 
-		uint32_t getStartAddrOfPageToBeFlashed();
+		uint8_t * getStartAddrOfPageToBeFlashed();
 
 		uint32_t getBytesCountToBeFlashed();
 
