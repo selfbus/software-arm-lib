@@ -129,7 +129,7 @@ unsigned int streamToUIn32(uint8_t * buffer)
  */
 inline uint8_t * streamToPtr(uint8_t * buffer)
 {
-    return (uint8_t *) streamToUIn32(buffer);
+    return FLASH_BASE_ADDRESS + streamToUIn32(buffer);
 }
 
 ///\todo implement universal numberToStream by providing the size as parameter
@@ -151,7 +151,7 @@ void uInt32ToStream(uint8_t * buffer, unsigned int val)
  */
 inline void ptrToStream(uint8_t * buffer, uint8_t * val)
 {
-    uInt32ToStream(buffer, (uint32_t) val);
+    uInt32ToStream(buffer, val - FLASH_BASE_ADDRESS);
 }
 
 void uShort16ToStream(uint8_t * buffer, unsigned int val)
