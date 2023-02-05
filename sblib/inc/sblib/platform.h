@@ -10,6 +10,19 @@
 #ifndef sblib_platform_h
 #define sblib_platform_h
 
+// Per Herb Sutter, the register keyword did not have any effect on C++ programs at all:
+//
+//     https://www.drdobbs.com/keywords-that-arent-or-comments-by-anoth/184403859
+//
+// That was back in 2003, but ARM still used the keyword in CMSIS. Nowadays, with C++17
+// using register yields the following
+//
+//     warning: ISO C++17 does not allow 'register' storage class specifier [-Wregister]
+//
+// As compiler output is indeed exactly the same, regardless of whether register is
+// specified or not, it's ok to hide it from the compiler with the preprocessor's help.
+#define register
+
 #if defined(__LPC11XX__)
 #include <LPC11xx.h>
 /**
