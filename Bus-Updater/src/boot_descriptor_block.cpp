@@ -145,7 +145,7 @@ uint8_t * bootLoaderLastAddress(void)
 unsigned int bootLoaderSize(void)
 {
     // includes .text and .data
-    return (_image_size);
+    return ((unsigned int)(uintptr_t)&_image_size);
 }
 
 uint8_t * flashFirstAddress(void)
