@@ -52,7 +52,7 @@
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)     //!< magic number for device is locked and can't be flashed
 #define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< magic number for device is unlocked and flashing is allowed
 
-static unsigned char __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
+static uint8_t __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
 
 // Try to avoid direct access to these global variables.
 // It's better to use their get, set and reset functions
@@ -73,7 +73,7 @@ extern BcuUpdate bcu;
  * @param val    the unsigned int to be converted
  * @warning function doesn't perform any sanity-checks on the provided buffer
  */
-void uInt32ToStream(unsigned char * buffer, unsigned int val);
+void uInt32ToStream(uint8_t * buffer, unsigned int val);
 
 /**
  * @brief Send the flash content from startAddress to endAddress
@@ -83,11 +83,11 @@ void uInt32ToStream(unsigned char * buffer, unsigned int val);
  * @param endAddress
  */
 #if defined(DEBUG)
-void dumpFlashContent(unsigned int startAddress, unsigned int endAddress)
+void dumpFlashContent(uint8_t * startAddress, uint8_t * endAddress)
 {
     if (startAddress > endAddress)
     {
-        unsigned int temp = startAddress;
+        uint8_t * temp = startAddress;
         startAddress = endAddress;
         endAddress = temp;
     }
@@ -102,7 +102,7 @@ void dumpFlashContent(unsigned int startAddress, unsigned int endAddress)
         endAddress = flashLastAddress();
     }
 
-    dumpToSerialinIntelHex(&serial, (unsigned char *) startAddress, endAddress - startAddress + 1);
+    dumpToSerialinIntelHex(&serial, startAddress, endAddress - startAddress + 1);
 }
 #endif
 
@@ -115,14 +115,26 @@ void dumpFlashContent(unsigned int startAddress, unsigned int endAddress)
  * @return to unsigned int converted value of the 4 first bytes of buffer
  * @warning function doesn't perform any sanity-checks on the provided buffer
  */
-unsigned int streamToUIn32(unsigned char * buffer)
+unsigned int streamToUIn32(uint8_t * buffer)
 {
     return ((unsigned int)(buffer[3] << 24 | buffer[2] << 16 | buffer[1] << 8 | buffer[0]));
 }
 
+/**
+ * @brief Converts a 4 byte long provided buffer into a pointer
+ *
+ * @param buffer data to convert
+ * @return first 4 bytes of buffer converted to a pointer
+ * @warning function doesn't perform any sanity-checks on the provided buffer
+ */
+inline uint8_t * streamToPtr(uint8_t * buffer)
+{
+    return FLASH_BASE_ADDRESS + streamToUIn32(buffer);
+}
+
 ///\todo implement universal numberToStream by providing the size as parameter
 ///      and delete uInt32ToStream + uShort16ToStream
-void uInt32ToStream(unsigned char * buffer, unsigned int val)
+void uInt32ToStream(uint8_t * buffer, unsigned int val)
 {
     buffer[3] = (byte)(val >> 24);
     buffer[2] = (byte)(val >> 16);
@@ -130,7 +142,19 @@ void uInt32ToStream(unsigned char * buffer, unsigned int val)
     buffer[0] = (byte)(val & 0xff);
 }
 
-void uShort16ToStream(unsigned char * buffer, unsigned int val)
+/**
+ * @brief Converts a pointer to a 4 byte long and writes it to buffer
+ *
+ * @param buffer memory area to receive converted value
+ * @param val pointer to convert and write
+ * @warning function doesn't perform any sanity-checks on the provided buffer
+ */
+inline void ptrToStream(uint8_t * buffer, uint8_t * val)
+{
+    uInt32ToStream(buffer, val - FLASH_BASE_ADDRESS);
+}
+
+void uShort16ToStream(uint8_t * buffer, unsigned int val)
 {
     buffer[1] = (byte)(val >> 8);
     buffer[0] = (byte)(val & 0xff);
@@ -238,7 +262,7 @@ void resetUPDProtocol(void)
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if device is unlocked, otherwise @ref UDP_UID_MISMATCH or a @ref IAP_Status.
  * @return        always T_ACK_PDU
  */
-static unsigned char updUnlockDevice(unsigned char * data)
+static unsigned char updUnlockDevice(uint8_t * data)
 {
     if (getProgButtonState())
     { // the operator has physical access to the device -> we unlock it
@@ -287,9 +311,9 @@ static unsigned char updUnlockDevice(unsigned char * data)
  * @post          sets lastError always to UDP_IAP_SUCCESS
  * @return        always T_ACK_PDU
  */
-static unsigned char updAppVersionRequest(unsigned char * data)
+static unsigned char updAppVersionRequest(uint8_t * data)
 {
-    unsigned char* appversion;
+    char* appversion;
     appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - (1 + data[3]) * BOOT_BLOCK_DESC_SIZE));
     lastError = UDP_IAP_SUCCESS;
     prepareReturnTelegram(BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
@@ -321,7 +345,7 @@ static unsigned char updAppVersionRequest(unsigned char * data)
  * @note          device must be unlocked
  */
 /*
-static unsigned char updEraseSector(unsigned char * data)
+static unsigned char updEraseSector(uint8_t * data)
 {
     resetProtocol();
     setLastError(eraseSector(data[3]));
@@ -337,11 +361,11 @@ static unsigned char updEraseSector(unsigned char * data)
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updDumpFlashRange(unsigned char * data)
+static unsigned char updDumpFlashRange(uint8_t * data)
 {
 #ifdef DEBUG
-    unsigned int startAddress = streamToUIn32(&data[3]);
-    unsigned int endAddress = streamToUIn32(&data[7]);
+    uint8_t * startAddress = streamToPtr(&data[3]);
+    uint8_t * endAddress = streamToPtr(&data[7]);
     setLastError(UDP_IAP_SUCCESS);
     dumpFlashContent(startAddress, endAddress);
 #else
@@ -359,10 +383,10 @@ static unsigned char updDumpFlashRange(unsigned char * data)
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updEraseAddressRange(unsigned char * data)
+static unsigned char updEraseAddressRange(uint8_t * data)
 {
-    unsigned int startAddress = streamToUIn32(&data[3]);
-    unsigned int endAddress = streamToUIn32(&data[7]);
+    uint8_t * startAddress = streamToPtr(&data[3]);
+    uint8_t * endAddress = streamToPtr(&data[7]);
     setLastError(eraseAddressRange(startAddress, endAddress));
     resetUPDProtocol();
     return (T_ACK_PDU);
@@ -391,7 +415,7 @@ static unsigned char updEraseFullFlash()
  * @return        always T_ACK_PDU
  * @note          device must be unlocked
  */
-static unsigned char updSendData(unsigned char * data, unsigned int nCount)
+static unsigned char updSendData(uint8_t * data, unsigned int nCount)
 {
     ramLocation = data[3];// * 11;  // Current Byte position as message number with 11 Bytes payload each
     nCount --;                      // 1 Bytes abziehen, da diese für die Nachrichtennummer verwendet wird
@@ -405,7 +429,7 @@ static unsigned char updSendData(unsigned char * data, unsigned int nCount)
 
     bytesReceived += nCount;
 
-    memcpy((void *) &ramBuffer[ramLocation], data + 4, nCount); //ab dem 4. Byte sind die Daten verfügbar
+    memcpy(&ramBuffer[ramLocation], data + 4, nCount); //ab dem 4. Byte sind die Daten verfügbar
     setLastError(UDP_IAP_SUCCESS);
     for(unsigned int i=0; i<nCount; i++)
     {
@@ -426,11 +450,11 @@ static unsigned char updSendData(unsigned char * data, unsigned int nCount)
  * @note          device must be unlocked
  * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updProgram(unsigned char * data)
+static unsigned char updProgram(uint8_t * data)
 {
     unsigned int crcRamBuffer;
     unsigned int flash_count = streamToUIn32(data + 3);
-    unsigned int address = streamToUIn32(data + 3 + 4);
+    uint8_t * address = streamToPtr(data + 3 + 4);
 
     if (!addressAllowedToProgram(address, flash_count))
     {
@@ -465,7 +489,7 @@ static unsigned char updProgram(unsigned char * data)
         flash_count = FLASH_PAGE_SIZE;
 
     d3(serial.print("writing ", flash_count));
-    d3(serial.print(" bytes @ 0x", address, HEX, 8));
+    d3(serial.print(" bytes @ 0x", address));
     d3(serial.println(" crc 0x", crcRamBuffer, HEX, 8));
 
     bytesFlashed += flash_count;
@@ -483,7 +507,7 @@ static unsigned char updProgram(unsigned char * data)
  *
  * @return always T_ACK_PDU
  */
-static unsigned char updRequestBootloaderIdentity(unsigned char * data)
+static unsigned char updRequestBootloaderIdentity(uint8_t * data)
 {
     unsigned int majorVersionUpdater = streamToUIn32(data + 3);
     unsigned int minorVersionUpdater = streamToUIn32(data + 3 + 4);
@@ -507,14 +531,14 @@ static unsigned char updRequestBootloaderIdentity(unsigned char * data)
 
     unsigned int bootloaderIdentity = BL_IDENTITY;
     unsigned int bootloaderFeatures = BL_FEATURES;
-    unsigned int appFirstAddress = applicationFirstAddress();
+    uint8_t * appFirstAddress = applicationFirstAddress();
     prepareReturnTelegram(12, UPD_RESPONSE_BL_IDENTITY);
     uInt32ToStream(bcu.sendTelegram + 10, bootloaderIdentity);  // Bootloader identity
     uInt32ToStream(bcu.sendTelegram + 14, bootloaderFeatures);  // Bootloader features
-    uInt32ToStream(bcu.sendTelegram + 18, appFirstAddress);     // application first possible start address
+    ptrToStream(bcu.sendTelegram + 18, appFirstAddress);        // application first possible start address
     d3(serial.print("BL ID 0x", bootloaderIdentity, HEX, 8));
     d3(serial.print("    BL feature 0x", bootloaderFeatures, HEX, 8));
-    d3(serial.println("    FW start   0x", appFirstAddress, HEX, 8));
+    d3(serial.println("    FW start   0x", appFirstAddress));
 
     return (T_ACK_PDU);
 }
@@ -576,19 +600,19 @@ static unsigned char udpRequestBootDescriptionBlock()
 
     if (!valid)
     {
-        bootDescr->startAddress = 0xFFFFFFFF;
-        bootDescr->endAddress = bootDescr->startAddress;
-        bootDescr->appVersionAddress = bootDescr->startAddress;
-        bootDescr->crc = bootDescr->startAddress;
+        bootDescr->startAddress = (uint8_t *)-1;
+        bootDescr->endAddress = (uint8_t *)-1;
+        bootDescr->appVersionAddress = (char *)-1;
+        bootDescr->crc = -1;
     }
 
     prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
     memcpy(bcu.sendTelegram + 10, bootDescr, 12); // startAddress, endAddress, crc
 
-    d3(serial.print("FW start@ 0x", bootDescr->startAddress , HEX, 8));   // Firmware start address
-    d3(serial.print(" end@ 0x", bootDescr->endAddress, HEX, 8));        // Firmware end address
-    d3(serial.print(" Desc.@ 0x", bootDescr->appVersionAddress, HEX, 8)); // Firmware App descriptor address (for getAppVersion())
-    d3(serial.println(" CRC : 0x", bootDescr->crc, HEX, 8));                // Firmware CRC
+    d3(serial.print("FW start@ 0x", bootDescr->startAddress));   // Firmware start address
+    d3(serial.print(" end@ 0x", bootDescr->endAddress));        // Firmware end address
+    d3(serial.print(" Desc.@ 0x", bootDescr->appVersionAddress)); // Firmware App descriptor address (for getAppVersion())
+    d3(serial.println(" CRC : 0x", (uintptr_t)bootDescr->crc, HEX, 8));                // Firmware CRC
     return (T_ACK_PDU);
 }
 
@@ -602,8 +626,8 @@ static unsigned char udpRequestBootDescriptionBlock()
  */
 static unsigned char updRequestData()
 {
-    /*
-     memcpy(bcu.sendTelegram + 9, (void *)address, count);
+     /*
+     memcpy(bcu.sendTelegram + 9, address, count);
      bcu.sendTelegram[5] = 0x63 + count;
      bcu.sendTelegram[6] = 0x42;
      bcu.sendTelegram[7] = 0x40 | count;
@@ -682,10 +706,10 @@ static unsigned char updUnkownCommand()
  * @note          device must be unlocked
  * @warning       The function calls @ref executeProgramFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updUpdateBootDescriptorBlock(unsigned char * data)
+static unsigned char updUpdateBootDescriptorBlock(uint8_t * data)
 {
     unsigned int count = streamToUIn32(data + 3); // length of the descriptor
-    unsigned int address;
+    uint8_t * address;
     unsigned int crc;
     UDP_State result = UDP_NOT_IMPLEMENTED;
 
@@ -715,7 +739,7 @@ static unsigned char updUpdateBootDescriptorBlock(unsigned char * data)
     address = bootDescriptorBlockAddress();                // start address of boot block descriptor
     crc = crc32(0xFFFFFFFF, ramBuffer, count);  // checksum on used length only
 
-    d3(serial.println("Desc.      @ 0x", address, HEX, 4));
+    d3(serial.println("Desc.      @ 0x", address));
     d3(serial.println("Desc.    CRC 0x", crc, HEX, 8));
     d3(serial.println("Received CRC 0x", streamToUIn32(data + 7), HEX, 8));
     // compare calculated crc with the one we received for this packet
@@ -732,7 +756,7 @@ static unsigned char updUpdateBootDescriptorBlock(unsigned char * data)
 
     d3(serial.println("CRC MATCH, comparing MCUs BootDescriptor: count: ", count));
     //If received descriptor is not equal to current one, flash it
-    if(memcmp((byte *) address, ramBuffer, count) == 0)
+    if(memcmp(address, ramBuffer, count) == 0)
     {
         d3(serial.println("is equal, skipping"));
         result = UDP_IAP_SUCCESS;
@@ -791,7 +815,7 @@ static unsigned char updUpdateBootDescriptorBlock(unsigned char * data)
  * @note          device must be unlocked
  * @warning       The function calls @ref Decompressor.pageCompletedDoFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updSendDataToDecompress(unsigned char * data, unsigned int nCount)
+static unsigned char updSendDataToDecompress(uint8_t * data, unsigned int nCount)
 {
 #ifndef DECOMPRESSOR
     dline("-->not implemented")
@@ -824,17 +848,17 @@ static unsigned char updSendDataToDecompress(unsigned char * data, unsigned int 
  * @note          device must be unlocked
  * @warning       The function calls @ref Decompressor.pageCompletedDoFlash which calls @ref iap_Program which by itself calls @ref no_interrupts().
  */
-static unsigned char updProgramDecompressedDataToFlash(unsigned char * data)
+static unsigned char updProgramDecompressedDataToFlash(uint8_t * data)
 {
 #ifndef DECOMPRESSOR
     setLastError(UDP_NOT_IMPLEMENTED);
 #else
     unsigned int count = decompressor.getBytesCountToBeFlashed();
-    unsigned int address = decompressor.getStartAddrOfPageToBeFlashed();
+    uint8_t * address = decompressor.getStartAddrOfPageToBeFlashed();
     unsigned int crc;
 
     d1("\n\rFlash Diff address 0x");
-    d2(address,HEX,4);
+    d2ptr(address);
     d1(" length: ");
     d2(count,DEC,3);
 
@@ -869,7 +893,7 @@ static unsigned char updProgramDecompressedDataToFlash(unsigned char * data)
      return (T_ACK_PDU);
 }
 
-unsigned char handleApciMemoryWriteRequest(unsigned char * data)
+unsigned char handleApciMemoryWriteRequest(uint8_t * data)
 {
     unsigned int count = data[0] & 0x0f;
     byte updCommand = data[2];

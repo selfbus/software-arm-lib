@@ -47,7 +47,7 @@
 #define BOOT_BLOCK_COUNT 1                      //!< Number of applications supported (application description blocks)
                                                 //!< @warning @ref BOOT_BLOCK_COUNT other's than 1 are not tested!
 
-extern unsigned char bl_id_string[BL_ID_STRING_LENGTH]; //!< default bootloader identity "string" used in @ref getAppVersion()
+extern char bl_id_string[BL_ID_STRING_LENGTH]; //!< default bootloader identity "string" used in @ref getAppVersion()
 
 /**
  * @struct AppDescriptionBlock
@@ -56,10 +56,10 @@ extern unsigned char bl_id_string[BL_ID_STRING_LENGTH]; //!< default bootloader 
  */
 typedef struct AppDescriptionBlock
 {
-    unsigned int startAddress;          ///< start address of the application
-    unsigned int endAddress;            ///< end address of the application
-    unsigned int crc;                   //!< crc from startAddress to end endAddress
-    unsigned int appVersionAddress;     //!< address of the APP_VERSION[20] @note string MUST start with "!AVP!@:" e.g. "!AVP!@:SBuid   1.00"
+    uint8_t * startAddress;         ///< start address of the application
+    uint8_t * endAddress;           ///< end address of the application
+    uint32_t crc;                   //!< crc from startAddress to end endAddress
+    char * appVersionAddress;       //!< address of the APP_VERSION[20] @note string MUST start with "!AVP!@:" e.g. "!AVP!@:SBuid   1.00"
 }__attribute__ ((aligned (BOOT_BLOCK_DESC_SIZE))) AppDescriptionBlock;
 
 /**
@@ -78,7 +78,7 @@ unsigned int checkApplication(AppDescriptionBlock * block);
  * @return      if valid, pointer to buffer of application version string (length BL_ID_STRING_LENGTH)
  *              otherwise bl_id_string
  */
-unsigned char * getAppVersion(AppDescriptionBlock * block);
+char * getAppVersion(AppDescriptionBlock * block);
 
 /**
  * @brief Return start address of application
@@ -87,21 +87,21 @@ unsigned char * getAppVersion(AppDescriptionBlock * block);
  * @return      Start address of application in case of valid descriptor block,
  *              otherwise base address of firmware area, directly behind bootloader
  */
-unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block);
+uint8_t * getFirmwareStartAddress(AppDescriptionBlock * block);
 
 /**
  * @brief returns the first address of the bootloader image (_image_start symbol included by the linker)
  *
  * @return first address of the bootloader image
  */
-unsigned int bootLoaderFirstAddress(void);
+uint8_t * bootLoaderFirstAddress(void);
 
 /**
  * @brief returns the last address of the bootloader image (__image_end symbol included by the linker)
  *
  * @return last address of the bootloader image
  */
-unsigned int bootLoaderLastAddress(void);
+uint8_t * bootLoaderLastAddress(void);
 
 /**
  * @brief returns the size of the bootloader image in bytes (__image_end - _image_start - 1)
@@ -115,14 +115,14 @@ unsigned int bootLoaderSize(void);
  *
  * @return first address of the the default flash memory
  */
-unsigned int flashFirstAddress(void);
+uint8_t * flashFirstAddress(void);
 
 /**
  * @brief returns the last address of the default flash memory (__top_Flash symbol included by the linker)
  *
  * @return last address of the the default flash memory
  */
-unsigned int flashLastAddress(void);
+uint8_t * flashLastAddress(void);
 
 /**
  * @brief returns the size of the default flash memory in bytes (__top_Flash - __base_Flash - 1)
@@ -136,14 +136,14 @@ unsigned int flashSize(void);
  *
  * @return first address of the application's firmware
  */
-unsigned int applicationFirstAddress(void);
+uint8_t * applicationFirstAddress(void);
 
 /**
  * @brief returns the first address of the boot descriptor block
  *
  * @return first address of the boot descriptor block
  */
-unsigned int bootDescriptorBlockAddress(void);
+uint8_t * bootDescriptorBlockAddress(void);
 
 /**
  * @brief returns the page number of the boot descriptor block

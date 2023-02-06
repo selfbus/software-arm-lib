@@ -18,32 +18,32 @@
  published by the Free Software Foundation.
  -----------------------------------------------------------------------------*/
 
-// #include <sblib/internal/iap.h>
+#include <sblib/internal/iap.h>
 #include "boot_descriptor_block.h"
 #include "crc.h"
+#include <memory>
 
 #ifndef IAP_EMULATION
-extern unsigned int __base_Flash;   //!< marks the beginning of the flash memory (inserted by the linker)
+extern uint8_t __base_Flash[];      //!< marks the beginning of the flash memory (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
-extern unsigned int __top_Flash;    //!< marks the end of the flash memory (inserted by the linker)
+extern uint8_t __top_Flash[];       //!< marks the end of the flash memory (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
-extern unsigned int _image_start;   //!< marks the beginning of the bootloader firmware (inserted by the linker)
+extern uint8_t _image_start[];      //!< marks the beginning of the bootloader firmware (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
-extern unsigned int _image_end;     //!< marks the end of the bootloader firmware (inserted by the linker)
+extern uint8_t _image_end[];        //!< marks the end of the bootloader firmware (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
 extern unsigned int _image_size;    //!< marks the size of the bootloader firmware (inserted by the linker)
                                     //!< used to protect the updater from killing itself with a new application downloaded over the bus
 #else
     // for catch unit tests ///\todo move this to cpu-emulation
-    unsigned int __base_Flash = 0x0000;
-    unsigned int  __top_Flash = 0x10000;
-    unsigned int _image_start = 0x0000;
-    unsigned int _image_end = 0x2EFF;
-    unsigned int _image_size = 0x2F00;
+    uint8_t * __base_Flash = &FLASH[0x0000];
+    uint8_t *  __top_Flash = &FLASH[0x10000];
+    uint8_t * _image_start = &FLASH[0x0000];
+    uint8_t * _image_end = &FLASH[0x2F00];
+    unsigned int _image_size = _image_end - _image_start;
 #endif
 
-__attribute__((unused)) unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_STRING; // actually it's used in getAppVersion,
-                                                                                        // this is just to suppress compiler warning
+char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_STRING;
 
 
 /**
@@ -58,7 +58,7 @@ __attribute__((unused)) unsigned char bl_id_string[BL_ID_STRING_LENGTH] = BL_ID_
  * @param start
  * @return
  */
-unsigned int checkVectorTable(unsigned int start)
+unsigned int checkVectorTable(uint8_t * start)
 {
     unsigned int i;
     unsigned int * address;
@@ -67,10 +67,8 @@ unsigned int checkVectorTable(unsigned int start)
 
     for (i = 0; i < 7; i++)				// Checksum is 2's complement of entries 0 through 6
         cs += address[i];
-    //if (address[7])
 
     return (~cs+1);
-    return (address[0]);
 }
 
 unsigned int checkApplication(AppDescriptionBlock * block)
@@ -100,16 +98,17 @@ unsigned int checkApplication(AppDescriptionBlock * block)
     return (0);
 }
 
-unsigned char* getAppVersion(AppDescriptionBlock * block)
+char* getAppVersion(AppDescriptionBlock * block)
 {
-    if ((block->appVersionAddress >= applicationFirstAddress()) &&
-        (block->appVersionAddress < flashLastAddress() - sizeof(block->appVersionAddress)))
+    void * appVersionAddress = (void *)(block->appVersionAddress);
+    if ((appVersionAddress >= applicationFirstAddress()) &&
+        (appVersionAddress < flashLastAddress() - sizeof(block->appVersionAddress)))
     {
-        return ((unsigned char*) (block->appVersionAddress));
+        return (block->appVersionAddress);
     }
     else
     {
-        return (&bl_id_string[0]); // Bootloader ID is invalid (address out of range)
+        return (bl_id_string); // Bootloader ID is invalid (address out of range)
     }
 }
 
@@ -120,44 +119,44 @@ unsigned char* getAppVersion(AppDescriptionBlock * block)
  * @return      Start address of application in case of valid descriptor block,
  *              otherwise base address of firmware area, directly behind bootloader
  */
-unsigned char * getFirmwareStartAddress(AppDescriptionBlock * block)
+uint8_t * getFirmwareStartAddress(AppDescriptionBlock * block)
 {
     if (checkApplication(block))
     {
-    	return ((unsigned char *) (block->startAddress));
+    	return (block->startAddress);
     }
     else
     {
-    	return ((unsigned char *) applicationFirstAddress());
+    	return (applicationFirstAddress());
     }
 }
 
-unsigned int bootLoaderFirstAddress(void)
+uint8_t * bootLoaderFirstAddress(void)
 {
-    return ((unsigned int) (unsigned int*)&_image_start);
+    return (_image_start);
 }
 
-unsigned int bootLoaderLastAddress(void)
+uint8_t * bootLoaderLastAddress(void)
 {
     //linker sets this not correctly, so we need the -1
-    return ((unsigned int) (unsigned int*)&_image_end - 1);
+    return (_image_end - 1);
 }
 
 unsigned int bootLoaderSize(void)
 {
     // includes .text and .data
-    return ((unsigned int) (unsigned int*)&_image_size);
+    return ((unsigned int)(uintptr_t)&_image_size);
 }
 
-unsigned int flashFirstAddress(void)
+uint8_t * flashFirstAddress(void)
 {
-    return ((unsigned int) (unsigned int*)&__base_Flash);
+    return (__base_Flash);
 }
 
-unsigned int flashLastAddress(void)
+uint8_t * flashLastAddress(void)
 {
     //linker sets this not correctly, so we need the -1
-    return ((unsigned int) ((unsigned int*)&__top_Flash) - 1);
+    return (__top_Flash - 1);
 }
 
 unsigned int flashSize(void)
@@ -166,19 +165,21 @@ unsigned int flashSize(void)
     return ((flashLastAddress() - flashFirstAddress() + 1));
 }
 
-unsigned int applicationFirstAddress(void)
+uint8_t * applicationFirstAddress(void)
 {
     // replacement for #define APPLICATION_FIRST_SECTOR //!< where the application starts (BL size) + (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT)
-    unsigned int appFirstAddress = bootLoaderFirstAddress() + bootLoaderSize();
+    uint8_t * appFirstAddress = bootLoaderFirstAddress() + bootLoaderSize();
     // all boot descriptor block's are placed in front of the application,
     // so we need for them space after bootloader and before the application
     appFirstAddress += (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT);
-    // round up the the next flash page
-    appFirstAddress = ((appFirstAddress/FLASH_PAGE_SIZE) + 1) * FLASH_PAGE_SIZE;
-    return appFirstAddress;
+    // align to the next flash page
+    void * ptr = appFirstAddress;
+    std::size_t space = FLASH_PAGE_ALIGNMENT;
+    std::align(FLASH_PAGE_SIZE, 1, ptr, space);
+    return (uint8_t *)ptr;
 }
 
-unsigned int bootDescriptorBlockAddress(void)
+uint8_t * bootDescriptorBlockAddress(void)
 {
     // replacement for #define BOOT_DSCR_ADDRESS  (APPLICATION_FIRST_SECTOR - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT))
     // boot descriptor block is placed in front of the application
@@ -189,7 +190,7 @@ unsigned int bootDescriptorBlockPage(void)
 {
     // replacement for #define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1) //!< flash page number of the application description block
     // every boot descriptor block is placed in front of the application, so subtract all of them
-    return ((applicationFirstAddress() / BOOT_BLOCK_DESC_SIZE) - BOOT_BLOCK_COUNT); //!< flash page number of the application description block
+    return iapPageOfAddress(bootDescriptorBlockAddress());
 }
 
 /** @}*/
