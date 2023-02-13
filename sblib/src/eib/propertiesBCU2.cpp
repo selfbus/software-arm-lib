@@ -59,7 +59,7 @@ const PropertyDef* PropertiesBCU2::propertyDef(int objectIdx, PropertyID propert
     if (objectIdx >= NUM_PROP_OBJECTS)
     {
         DB_PROPERTIES(serial.print("propertyDef: ");printObjectIdx(objectIdx); serial.println(" not implemented!"););
-        return 0;
+        return nullptr;
     }
     return findProperty(propertyId, propertiesTab()[objectIdx]);
 }

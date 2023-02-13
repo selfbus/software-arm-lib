@@ -44,7 +44,7 @@ byte* UserEeprom::findValidPage()
         page -= userEepromFlashSize;
     }
 
-    return 0; // no valid page found
+    return nullptr; // no valid page found
 }
 
 void UserEeprom::readUserEeprom()

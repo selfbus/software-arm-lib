@@ -46,7 +46,7 @@ static char * number(char * buf, char * end, long num, int base, int size,
         type &= ~ZEROPAD;
     // we only allow a base between 8 and 16
     if (base < 8 || base > 16)
-        return 0;
+        return nullptr;
     c = (type & ZEROPAD) ? '0' : ' ';
     sign = 0;
     if (type & SIGN) {
