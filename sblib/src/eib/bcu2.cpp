@@ -45,7 +45,7 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
     if (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADING)
     {
         byte * addrTab = addrTables->addrTable() + 1;
-        setOwnAddress(makeWord((*(addrTab) << 8) , *(addrTab + 1)));
+        setOwnAddress(makeWord(*(addrTab) , *(addrTab + 1)));
     }
 
     commObjectTableAddressStatic = readOnlyCommObjectTableAddress;
