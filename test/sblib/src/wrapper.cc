@@ -27,8 +27,8 @@ extern "C"
     void queryState (unsigned int * busTelgramLen, unsigned int * sendCurTelegram, unsigned int * sendNextTel, unsigned int * time)
     {
         * busTelgramLen = bus.telegramLen;
-        * sendCurTelegram = (bus.sendCurTelegram != NULL);
-        * sendNextTel     = (bus.sendNextTel     != NULL);
+        * sendCurTelegram = (bus.sendCurTelegram != nullptr);
+        * sendNextTel     = (bus.sendNextTel     != nullptr);
         * time            = systemTime;
     }
 

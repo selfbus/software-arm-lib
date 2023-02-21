@@ -67,7 +67,7 @@ unsigned int millis();
  * Get the number of milliseconds that elapsed since the reference time.
  *
  * @param ref - the reference time to compare with
- * @return The numer of milliseconds since time.
+ * @return The number of milliseconds since time.
  */
 unsigned int elapsed(unsigned int ref);
 
@@ -470,6 +470,12 @@ public:
      */
     bool getMatchChannelLevel(int channel);
 
+    /**
+     * Set interrupt priority for the associated hardware timer
+     *
+     * @param newPriority - new interrupt priority for the timer
+     */
+    void setIRQPriority(uint32_t newPriority);
 
 protected:
 	LPC_TMR_TypeDef* timer;

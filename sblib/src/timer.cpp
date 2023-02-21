@@ -76,7 +76,7 @@ void delayMicroseconds(unsigned int usec)
     {
         if (usec > MAX_DELAY_MICROSECONDS)
         {
-            fatalError(); //stop execution otherwise we can run into a overflow
+            fatalError(); //stop execution otherwise we can run into an overflow
         };
         ticksToWait = (usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000000);
         // ticksToWait = ((usec - MIN_DELAY_MICROSECONDS) * (SystemCoreClock / 1000)) / 1000; // this is more precise but also slower
@@ -85,7 +85,7 @@ void delayMicroseconds(unsigned int usec)
     while (ticksToWait > 0)
     {
         // don't use SysTick->CTRL COUNTFLAG, by reading and processing it
-        // a undetected overflow can happen
+        // an undetected overflow can happen
         sysTickValue = SysTick->VAL;
         elapsed = lastSystemTickValue - sysTickValue;
         if (elapsed < 0)
@@ -203,6 +203,26 @@ void Timer::counterMode(int mode, int clearMode)
     }
 
     timer->CTCR = config;
+}
+
+void Timer::setIRQPriority(uint32_t newPriority)
+{
+    if (this == &timer16_0)
+    {
+        NVIC_SetPriority(TIMER_16_0_IRQn, newPriority);
+    }
+    else if (this == &timer16_1)
+    {
+        NVIC_SetPriority(TIMER_16_1_IRQn, newPriority);
+    }
+    else if (this == &timer32_0)
+    {
+        NVIC_SetPriority(TIMER_32_0_IRQn, newPriority);
+    }
+    else if (this == &timer32_1)
+    {
+        NVIC_SetPriority(TIMER_32_1_IRQn, newPriority);
+    }
 }
 
 //

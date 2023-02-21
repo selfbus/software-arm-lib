@@ -1,18 +1,19 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application which will read Lux and RTC from
- *          LPC1115 Dev Board using I2C class with a timer and the timer interrupt.
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
+ * @defgroup SBLIB_EXAMPLE_I2C_1 i2c example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Read Lux and RTC from LPC1115 Developer Board using I2C class with a timer and the timer interrupt
+ * @details for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT<br/>
+ *         "Enable printf float" in Project settings -> Managed Linker Script<br/>
  *
- *          needs BCU1 version of the sblib library
- *          needs at least a 64KB LPC111x.
+ * @note   needs at least a 64KB LPC111x.
  *
- *          for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT
- *          "Enable printf float" in Prj settings -> Managed Linker Script
+ * @{
  *
- *
+ * @file   app_main.cpp
  * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
  * @author Mario Theodoridis Copyright (c) 2021
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -22,11 +23,10 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
 #include <sblib/types.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/i2c.h>
+#include <sblib/eibBCU1.h>
 
 #define DBG_LUX             1 ///< BH1750 Lux
 #define DBG_PRINT_LUX       1
@@ -68,6 +68,8 @@
 #endif
 
 #define READ_TIMER 1000      ///> Read values timer in Milliseconds
+
+BCU1 bcu = BCU1();
 
 bool bReadTimer= false;      ///> Condition to read values if timer reached
 
@@ -162,7 +164,7 @@ bool SetRTCAlarm()
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
 
 #if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
@@ -205,6 +207,8 @@ void setup()
     timer32_0.matchMode(MAT1, RESET | INTERRUPT);       // On match of MAT1, generate an interrupt and reset the timer
     timer32_0.match(MAT1, READ_TIMER);                  // Match MAT1 when the timer reaches this value (in milliseconds)
     timer32_0.start();                                  // Start now the timer
+
+    return (&bcu);
 }
 
 #if DBG_LUX
@@ -330,3 +334,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

@@ -22,7 +22,8 @@
  * License along with SHT2x.  If not, see
  * <http://www.gnu.org/licenses/>.
  *
- *  Adapted to Selfbus Library by Oliver Stefan (2019)
+ * Adapted to Selfbus Library by Oliver Stefan (2019)
+ * Adapted to lpcopen I2C functions by Oliver Stefan (2021)
  */
 
 #include <stdint.h>
@@ -44,136 +45,115 @@ typedef enum {
   eRHumidityHoldCmd   = 0xE5,
   eTempNoHoldCmd      = 0xF3,
   eRHumidityNoHoldCmd = 0xF5,
+  eWriteUserReg       = 0xE6,
+  eReadUserReg        = 0xE7,
 } HUM_MEASUREMENT_CMD_T;
 
-
-/******************************************************************************
- * Global Functions
- ******************************************************************************/
-
-/*****************************************************************************
-** Function name:  Init
-**
-** Descriptions:   Initialize the SHT21
-**
-** parameters:     none
-**
-** Returned value: true on success, false on failure
-**
-*****************************************************************************/
 void SHT2xClass::Init(void)
 {
   i2c_lpcopen_init();
-  /*
-  i2c_sht2x= I2C::Instance();
-  if(!i2c_sht2x->bI2CIsInitialized) {
-      i2c_sht2x->I2CInit();
+
+  byte result;
+  if (Chip_I2C_MasterCmdRead(I2C0, eSHT2xAddress, eReadUserReg, &result, 1) == 1)
+  {
+	  const uint8_t data[] = { (uint8_t)eWriteUserReg, (uint8_t)(result & 0x7E) };
+	  Chip_I2C_MasterSend(I2C0, eSHT2xAddress, data, sizeof(data));
+	  initialized = true;
   }
-  return (i2c_sht2x ? true:false);*/
 }
 
-/**********************************************************
- * GetHumidity
- *  Gets the current humidity from the sensor.
- *
- * @return float - The relative humidity in %RH
- **********************************************************/
-//float SHT2xClass::GetHumidity(void)
-//{
-//    float value = readSensor(eRHumidityHoldCmd);
-//    if (value == 0) {
-//        return 0;                       // Some unrealistic value
-//    }
-//    return -6.0 + 125.0 / 65536.0 * value;
-//}
 int SHT2xClass::GetHumidity(void)
 {
   unsigned int value = readSensor(eRHumidityHoldCmd);
-  if (value == 0) {
-    return 0;                       // Some unrealistic value
+  if (value == 0 || !(value & 0x2)) {
+    return 0; // Some unrealistic value
   }
+
+  value = value & 0xFFFC; //remove last two status Bits
   value = 12500 * value;
   value = value / 65536;
   value = value -600;
   return value; //-600 + 12500 / 65536 * value;  //changed to int and factor 100
 }
 
-/**********************************************************
- * GetTemperature
- *  Gets the current temperature from the sensor.
- *
- * @return float - The temperature in Deg C
- **********************************************************/
-//float SHT2xClass::GetTemperature(void)
-//{
-//    float value = readSensor(eTempHoldCmd);
-//    if (value == 0) {
-//        return -273;                    // Roughly Zero Kelvin indicates an error
-//    }
-//    return -46.85 + 175.72 / 65536.0 * value;
-//}
 int SHT2xClass::GetTemperature(void)
 {
-  unsigned int value = readSensor(eTempHoldCmd);
-  if (value == 0) {
-    return -273;                    // Roughly Zero Kelvin indicates an error
+  int value = readSensor(eTempHoldCmd);
+  if (value == 0 || (value & 0x2)) {
+    return -27300;                    // Roughly Zero Kelvin indicates an error
   }
-  value = 17600 * value;
+
+  value = value & 0xFFFC; //remove last two status Bits
+  value = 17572 * value;
   value = value / 65536;
-  value = value - 4700;
-  return value; //-4700 + 17600 / 65536 * value;	//changed to int and factor 100
+  value = value - 4685;
+  return value; //-4685 + 17572 / 65536 * value;	//changed to int and factor 100
 }
 
-/**********************************************************
- * GetDewPoint
- *  Gets the current dew point based on the current humidity and temperature
- *
- * @return float - The dew point in Deg C
- **********************************************************/
 float SHT2xClass::GetDewPoint(void)
 {
   float humidity = GetHumidity();
   float temperature = GetTemperature();
 
   // Calculate the intermediate value 'gamma'
-  float gamma = log(humidity / 100) + WATER_VAPOR * temperature / (BAROMETRIC_PRESSURE + temperature);
+  float gamma = logf(humidity / 100) + WATER_VAPOR * temperature / (BAROMETRIC_PRESSURE + temperature);
   // Calculate dew point in Celsius
   float dewPoint = BAROMETRIC_PRESSURE * gamma / (WATER_VAPOR - gamma);
 
   return dewPoint;
 }
 
-/******************************************************************************
- * Private Functions
- ******************************************************************************/
-
 uint16_t SHT2xClass::readSensor(uint8_t command)
 {
   uint8_t result[3];
-  //result[0] = command;
-  //if( i2c_sht2x->Write(eSHT2xAddress, (const char*) &command, sizeof(command)) == false){
 
-  // wenn kein Byte versendet werden konnte
-  if(Chip_I2C_MasterSend(I2C0, eSHT2xAddress, &command, sizeof(command)) == 0){
-    i2c_lpcopen_init();
-    //i2c_sht2x->I2CInit();
-    return 0;
+  uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
+
+  if (!initialized)
+  {
+    Init();
   }
 
-  uint32_t timeout = millis() + 300;       // Don't hang here for more than 300ms
+  if (initialized)
+  {
+    // loop to receive measurement result within the timeout period
+    while (Chip_I2C_MasterCmdRead(I2C0, eSHT2xAddress, command, result, 3) < 3){
+      if ((millis() - timeout) > 0) {
+        i2c_lpcopen_init();
+        return 0;
+      }
+    }
 
-
-  //while (i2c_sht2x->Read(eSHT2xAddress, (char*) result, 3, 0) == false) {
-  // so lange, wei kein Byte empfangen wurde
-  while (Chip_I2C_MasterCmdRead(I2C0, eSHT2xAddress, command, result, 3) == 0){
-    if ((millis() - timeout) > 0) {
-      //i2c_sht2x->I2CInit();
-      i2c_lpcopen_init();
+    // CRC check
+    if (crc8(result, 2) != result[2])
+    {
       return 0;
     }
-  }
 
-  return ((result[0] << 8) | (result[1] << 0));
+    // Concatenate result Bytes
+    return ((result[0] << 8) | (result[1] << 0));
+  }
+  else
+  {
+    return 0;
+  }
 }
 
-//SHT2xClass SHT2x;
+uint8_t SHT2xClass::crc8(const uint8_t *data, uint8_t len)
+{
+  // CRC-8 formula from page 14 of SHT spec pdf
+  // Sensirion_Humidity_Sensors_SHT2x_CRC_Calculation.pdf
+  const uint8_t POLY = 0x31;
+  uint8_t crc = 0x00;
+
+  for (uint8_t j = len; j; --j)
+  {
+    crc ^= *data++;
+
+    for (uint8_t i = 8; i; --i)
+    {
+      crc = (crc & 0x80) ? (crc << 1) ^ POLY : (crc << 1);
+    }
+  }
+  return crc;
+}

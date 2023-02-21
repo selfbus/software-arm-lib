@@ -1,0 +1,35 @@
+<#--
+This file tells the linker to create a ".selfbusSection" section in flash and to keep it, even if not referenced
+
+
+original idea: https://mcuoneclipse.com/2019/10/06/linking-bootloader-applications-with-eclipse-and-freemarker-scripts/
+
+Take a lot on [MCUxpresso-Installdir]/MCUXpressoIDE[VERSION]/ide/Wizards/linker/*.ldt
+to get a idea of other possible linkerscripts
+-->
+
+
+<#if configMemory?has_content>
+<#list configMemory as memory>
+    <#if memory.flash>
+    /* placing Selfbus named flash section at given address: */
+        .text : ALIGN(4)
+        {
+            __selfbus_first_sector = .;         /* create symbol for start of selfbus section */
+            FILL(0xff)                          /* fill with 0xff */
+            KEEP(*(.selfbusSection))            /* keep .selfbusSection variables even if not referenced */
+            LONG(LOADADDR(.text));
+            PROVIDE(__selfbus_image_first_sector = .);
+            LONG(LOADADDR(.data) + SIZEOF(.data) - LOADADDR(.text));
+            PROVIDE(__selfbus_image_size = .);
+            
+            <#--
+            LONG(LOADADDR(.text));
+            LONG(    ADDR(.text));
+            LONG(LOADADDR(.data) + SIZEOF(.data) - LOADADDR(.text));
+            -->
+            __selfbus_sector_end = .;   /* create symbol for end of selfbus section */
+        } > ${memory.name}
+    </#if>
+</#list>
+</#if>

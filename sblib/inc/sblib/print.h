@@ -66,6 +66,18 @@ public:
     int print(int value, Base base = DEC, int digits = -1);
 
     /**
+     * Print a zero terminated string followed by a number.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int print(const char* str, int value, Base base = DEC, int digits = -1);
+
+    /**
      * Print an unsigned number.
      *
      * @param value - the number to print
@@ -74,7 +86,38 @@ public:
      *
      * @return The number of bytes that were written.
      */
-    int print(unsigned int value, Base base = DEC, int digits = -1);
+    int print(uintptr_t value, Base base = DEC, int digits = -1);
+
+    /**
+     * Print a pointer.
+     *
+     * @param ptr - the pointer to print
+     *
+     * @return The number of bytes that were written.
+     */
+    int print(const void * ptr);
+
+    /**
+     * Print a zero terminated string followed by an unsigned number.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int print(const char* str, uintptr_t value, Base base = DEC, int digits = -1);
+
+    /**
+     * Print a zero terminated string followed by a pointer.
+     *
+     * @param str - the string to print
+     * @param ptr - the pointer to print
+     *
+     * @return The number of bytes that were written.
+     */
+    int print(const char* str, const void * ptr);
 
     /**
      * Print a new line by sending a carriage return '\r' (ASCII 13) followed
@@ -105,6 +148,18 @@ public:
     int println(int value, Base base = DEC, int digits = -1);
 
     /**
+     * Print a zero terminated string followed by a number and a new line.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int println(const char* str, int value, Base base = DEC, int digits = -1);
+
+    /**
      * Print an unsigned number followed by a new line.
      *
      * @param value - the number to print
@@ -113,7 +168,38 @@ public:
      *
      * @return The number of bytes that were written.
      */
-    int println(unsigned int value, Base base = DEC, int digits = -1);
+    int println(uintptr_t value, Base base = DEC, int digits = -1);
+
+    /**
+     * Print a pointer followed by a new line.
+     *
+     * @param ptr - the pointer to print
+     *
+     * @return The number of bytes that were written.
+     */
+    int println(const void * ptr);
+
+    /**
+     * Print a zero terminated string followed by an unsigned number and a new line.
+     *
+     * @param str - the string to print
+     * @param value - the number to print
+     * @param base - the base of the number, default: DEC
+     * @param digits - output at least this number of digits (optional)
+     *
+     * @return The number of bytes that were written.
+     */
+    int println(const char* str, uintptr_t value, Base base = DEC, int digits = -1);
+
+    /**
+     * Print a zero terminated string followed by a pointer and a new line.
+     *
+     * @param str - the string to print
+     * @param ptr - the pointer to print
+     *
+     * @return The number of bytes that were written.
+     */
+    int println(const char* str, const void * ptr);
 
     /**
      * Write a zero terminated string.
@@ -161,6 +247,16 @@ inline int Print::print(const char* str)
     return this->write(str);
 }
 
+inline int Print::print(const void * ptr)
+{
+    return print((uintptr_t)ptr, HEX, sizeof(void *));
+}
+
+inline int Print::print(const char* str, const void * ptr)
+{
+    return print(str, (uintptr_t)ptr, HEX, sizeof(void *));
+}
+
 inline int Print::println(const char* str)
 {
     return this->write(str) + println();
@@ -171,9 +267,19 @@ inline int Print::println(int value, Base base, int digits)
     return print(value, base, digits) + println();
 }
 
-inline int Print::println(unsigned int value, Base base, int digits)
+inline int Print::println(uintptr_t value, Base base, int digits)
 {
     return print(value, base, digits) + println();
+}
+
+inline int Print::println(const void * ptr)
+{
+    return print(ptr) + println();
+}
+
+inline int Print::println(const char* str, const void * ptr)
+{
+    return print(str, ptr) + println();
 }
 
 #endif /*sblib_print_h*/

@@ -34,14 +34,15 @@
 #define CCS_811_ADDR            0x5A   // when I2C_ADDR pin is LOW
 //#define CCS_811_ADDR            0x5B   // when I2C_ADDR pin is HIGH
 
-const uint8_t STATUS = 		0x00;
+const uint8_t STATUS = 		    0x00;
 const uint8_t MEAS_MODE =     	0x01;
-const uint8_t ALG_RESULT_DATA =0x02;
+const uint8_t ALG_RESULT_DATA = 0x02;
 const uint8_t ENV_DATA =		0x05;
 const uint8_t APP_START =     	0xF4;
+const uint8_t BASELINE_REG =    0x11;
 const uint8_t HW_ID =	        0x20;
-const uint8_t ERROR_ID =       0xE0;
-const uint8_t SW_RESET =       0xFF;
+const uint8_t ERROR_ID =        0xE0;
+const uint8_t SW_RESET =        0xFF;
 
 class CCS811Class
 {
@@ -50,10 +51,13 @@ public:
   bool begin(uint8_t I2C_ADDR, int WAKE_PIN);
   char readStatus(void);
   char readHW_ID(void);
+  uint16_t getBaseline(void);
+  void setBaseline(uint16_t baseline);
   char readErrorID(char _status);
   int readTVOC(void);
   int readCO2(void);
-  void getData(void);
+  void setMode(uint8_t modeNumber);
+  bool getData(void);
   void compensate(float t, float rh);
   void _digitalWrite(int WAKE_PIN, bool VAL);
   void reset(void);

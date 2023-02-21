@@ -1,5 +1,5 @@
 PWM blink example
--------------------
+=================
 
 This example application flashes a LED on digital pin PIO2.6
 using the PWM output of the 16bit timer #1.

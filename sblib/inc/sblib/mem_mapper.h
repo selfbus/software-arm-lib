@@ -13,6 +13,7 @@
 #ifndef SBLIB_MEM_MAPPER_H_
 #define SBLIB_MEM_MAPPER_H_
 
+#include <sblib/types.h>
 #include <sblib/platform.h>
 
 #define MEM_MAPPER_SUCCESS         0
@@ -21,6 +22,7 @@
 #define MEM_MAPPER_OUT_OF_MEMORY   -4
 #define MEM_MAPPER_INVALID_LENGTH  -8
 
+///\todo class Memory as base class for MemMapper
 class MemMapper
 {
 public:
@@ -178,13 +180,22 @@ public:
      */
     virtual bool isMapped(int virtAddress);
 
+    /**
+     * Query about range mapping
+     *
+     * @param virtStartAddress - the virtual start address of the data block
+     * @param virtEndAddress - the virtual end address of the data block
+     * @return true if virtual address range is mapped
+     */
+    virtual bool isMappedRange(int virtStartAddress, int virtEndAddress);
+
 private:
     int allocatePage(int virtPage);
     int getFlashPageNum(int virtAddress) const;
     unsigned int getUIntX(int virtAddress, int length);
     int setUIntX(int virtAddress, int length, int val);
 
-    unsigned int flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
+    uint8_t * flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
 
     unsigned int flashSize;

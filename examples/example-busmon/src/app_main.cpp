@@ -1,17 +1,21 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   This is a bus monitor that outputs all received telegrams to the serial port.
- *          The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.
- *          Tx-pin is PIO1.7, Rx-pin is PIO1.6
- *          In addition, one can send telegram on the bus via the serial port by sending
- *          a sequence of bytes. The incoming data from the serial line should be in
- *          following byte-format:
- *          CC aa bb cc dd ee
- *          CC             the number of telegram-bytes to be send
- *          aa,bb,cc,dd,ee the telegram data (without the checksum)
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
+ * @defgroup SBLIB_EXAMPLE_SERIAL_BUS_1 Serial Bus Monitor Example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief    Bus monitor that outputs all received telegrams to the serial port
+ * @details  This is a bus monitor that outputs all received telegrams to the serial port.<br/>
+ *           The serial port is used with 115200 baud, 8 data bits, no parity, 1 stop bit.<br/>
+ *           Tx-pin is PIO1.7, Rx-pin is PIO1.6<br/>
+ *           In addition, one can send telegram on the bus via the serial port by sending
+ *           a sequence of bytes.<br/>
+ *           The incoming data from the serial line should be in following byte-format:<br />
+ *           - CC aa bb cc dd ee<br />
+ *           - CC             the number of telegram-bytes to be send<br />
+ *           - aa, bb, cc, dd, ee the telegram data (without the checksum)<br />
  *
- *          needs BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
@@ -24,25 +28,26 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/eib.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/serial.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/timeout.h>
-#include <sblib/eib/sblib_default_objects.h>
 
-Timeout blinky;
+Timeout blinky; ///< Timeout to blink the RUN Led
+
+BCU1 bcu = BCU1();
 
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     bcu.begin(2, 1, 1); // ABB, dummy something device
 
     // Disable telegram processing by the lib
-    if (userRam.status & BCU_STATUS_TL)
+    if (bcu.userRam->status() & BCU_STATUS_TRANSPORT_LAYER)
     {
-        userRam.status ^= BCU_STATUS_TL | BCU_STATUS_PARITY;
+        bcu.userRam->status() ^= BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_PARITY;
     }
 
     serial.begin(115200); // Tx: PIO1.7, Rx: PIO1.6
@@ -52,6 +57,7 @@ void setup()
     pinMode(PIN_RUN, OUTPUT);  // Run LED
     blinky.start(1);
     bcu.setOwnAddress(0x1140); // 1.1.64
+    return (&bcu);
 }
 
 int receiveCount = -1;
@@ -70,15 +76,15 @@ void loop()
     }
 
     // handle the incoming data from the KNX-bus
-    if (bus.telegramReceived())
+    if (bcu.bus->telegramReceived())
     {
-		serial.print(bus.telegramLen, HEX, 2);
-		for (int i = 0; i < bus.telegramLen; ++i)
+        serial.print(bcu.bus->telegramLen, HEX, 2);
+		for (int i = 0; i < bcu.bus->telegramLen; ++i)
 		{
-			serial.print(bus.telegram[i], HEX, 2);
+			serial.print(bcu.bus->telegram[i], HEX, 2);
 		}
 		serial.println();
-        bus.discardReceivedTelegram();
+		bcu.bus->discardReceivedTelegram();
 
         digitalWrite(PIN_INFO, !digitalRead(PIN_INFO));
     }
@@ -96,7 +102,7 @@ void loop()
             sendTelBuffer[tLength++] = serial.read();
             if (tLength == (receiveCount & 0x7F))
             {
-                bus.sendTelegram(sendTelBuffer, tLength);
+                bcu.bus->sendTelegram(sendTelBuffer, tLength);
                 serial.write (0xAD);
                 receiveCount = -1;
             }
@@ -114,3 +120,4 @@ void loop_noapp()
 {
 
 }
+/** @}*/

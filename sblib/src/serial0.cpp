@@ -10,12 +10,10 @@
 
 #include <sblib/serial.h>
 #include <sblib/digital_pin.h>
+#include <sblib/core.h>
+#include <sblib/libconfig.h>
 
-#if defined (__LPC11XX__)
-Serial serial(PIO1_6, PIO1_7);
-#elif defined (__LPC11UXX__)
-Serial serial(PIO0_18, PIO0_19);
-#endif
+Serial serial(SERIAL_RX_PIN, SERIAL_TX_PIN);
 
 extern "C" void UART_IRQHandler()
 {

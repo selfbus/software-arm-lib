@@ -19,15 +19,15 @@
 
 
 MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAddPage) :
-        flashBase(flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
+        flashBase(FLASH_BASE_ADDRESS + flashBase), flashSize(flashSize), autoAddPage(autoAddPage)
 {
     flashSizePages = flashSize / FLASH_PAGE_SIZE;
-    flashBasePage = ((unsigned int) flashBase) / FLASH_PAGE_SIZE;
+    flashBasePage = iapPageOfAddress(this->flashBase);
     lastAllocated = 0; // means: nothing allocated in this run
     writePage = 0;
     allocTableModified = false;
     flashMemModified = false;
-    memcpy(allocTable, (byte *)flashBase, FLASH_PAGE_SIZE);
+    memcpy(allocTable, this->flashBase, FLASH_PAGE_SIZE);
     // Quick check if there is more than one zero on the allocTable, a certain
     // sign of table corruption. In this case, clear the table (set all 0xff).
     // This is necessary because a corrupted table leads to all sorts of
@@ -69,7 +69,7 @@ int MemMapper::doFlash(void) const
         {
             fatalError();
         }
-        if (iapProgram((byte *)flashBase, allocTable, FLASH_PAGE_SIZE) != IAP_SUCCESS)
+        if (iapProgram(flashBase, allocTable, FLASH_PAGE_SIZE) != IAP_SUCCESS)
         {
             fatalError();
         }
@@ -82,7 +82,7 @@ int MemMapper::doFlash(void) const
         {
             fatalError();
         }
-        if (iapProgram((byte *) (writePage << 8), writeBuf, FLASH_PAGE_SIZE)
+        if (iapProgram(iapAddressOfPage(writePage), writeBuf, FLASH_PAGE_SIZE)
                 != IAP_SUCCESS)
         {
             fatalError();
@@ -166,12 +166,12 @@ int MemMapper::getFlashPageNum(int virtAddress) const
 {
     int virtPage = virtAddress >> 8;
 
-    if (virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
+    if ((virtPage < 0) || (virtPage >= FLASH_PAGE_SIZE))
     {
         return MEM_MAPPER_INVALID_ADDRESS;
     }
 
-    return allocTable[virtPage] ^ 0xff;
+    return (allocTable[virtPage] ^ 0xff);
 }
 
 int MemMapper::writeMem(int virtAddress, byte data)
@@ -187,7 +187,7 @@ int MemMapper::writeMem(int virtAddress, byte data)
         writePage = flashPageNum;
         if (writePage != 0)
         { // swap flash page into write buffer
-            memcpy(writeBuf, (byte *)(writePage << 8), FLASH_PAGE_SIZE);
+            memcpy(writeBuf, iapAddressOfPage(writePage), FLASH_PAGE_SIZE);
         }
     }
 
@@ -245,7 +245,7 @@ int MemMapper::readMem(int virtAddress, byte &data, bool forceFlash)
         data = writeBuf[virtAddress & 0xff];
     } else
     {
-        data = ((byte*) (flashPageNum << 8))[virtAddress & 0xff];
+        data = iapAddressOfPage(flashPageNum)[virtAddress & 0xff];
     }
     return MEM_MAPPER_SUCCESS;
 }
@@ -267,7 +267,17 @@ int MemMapper::readMemPtr(int virtAddress, byte *data, int length,
 
 bool MemMapper::isMapped(int virtAddress)
 {
-    return getFlashPageNum(virtAddress) > 0 || autoAddPage ? true : false;
+    if (autoAddPage)
+    {
+        return (true);
+    }
+    int pageNum = getFlashPageNum(virtAddress);
+    return ((pageNum != MEM_MAPPER_INVALID_ADDRESS) && (pageNum != 0));
+}
+
+bool MemMapper::isMappedRange(int virtStartAddress, int virtEndAddress)
+{
+    return (isMapped(virtStartAddress) && isMapped(virtEndAddress));
 }
 
 byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash) const
@@ -289,7 +299,7 @@ byte* MemMapper::memoryPtr(int virtAddress, bool forceFlash) const
     {
         return writeBuf + (virtAddress & 0xff);
     }
-    return ((byte*) (flashPageNum << 8) + (virtAddress & 0xff));
+    return (iapAddressOfPage(flashPageNum) + (virtAddress & 0xff));
 }
 
  unsigned char MemMapper::getUInt8(int virtAddress)

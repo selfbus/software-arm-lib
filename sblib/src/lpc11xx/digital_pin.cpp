@@ -147,18 +147,18 @@ void pinInterruptMode(int pin, int mode)
     pinMode(pin, INPUT);
 
     /* Set the level/edge configuration */
-    if (mode & 0x100) port->IS  |=  mask;
+    if (mode & 0x0100) port->IS  |=  mask;
     else              port->IS  &= ~mask;
 
     /* Set the both edge configuration */
-    if (mode & 0x010) port->IBE |=  mask;
+    if (mode & 0x0010) port->IBE |=  mask;
     else              port->IBE &= ~mask;
 
     /* Set the edge/level type configuration */
-    if (mode & 0x100) port->IEV |=  mask;
+    if (mode & 0x0001) port->IEV |=  mask;
     else              port->IEV &= ~mask;
 
     /* Enable the ionterrupt for this pin */
-    if (mode & 0x100) port->IE  |=  mask;
-    else              port->IE  &= ~mask;
+    if (mode & 0x1000) port->IE  |=  mask;
+    else               port->IE  &= ~mask;
 }

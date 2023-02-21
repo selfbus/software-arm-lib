@@ -1,96 +1,193 @@
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @addtogroup SBLIB_BOOTLOADER_MAIN Bootloader
+ * @ingroup SBLIB_BOOTLOADER
+ * @brief   Bootloader main program
+ * @details
+ *
+ * @{
+ *
+ * @file   bootloader.cpp
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @bug No known bugs.
+ ******************************************************************************/
+
 /*
- *  BootLoader.c - The bootloader.
- *
- *  Copyright (c) 2015 Martin Glueck <martin@mangari.org>
- *  Copyright (c) 2021 Stefan Haller
- *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
- */
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
 
 #include <sblib/main.h>
-
-#include <sblib/eib.h>
-#include <sblib/timeout.h>
-#include <sblib/internal/variables.h>
-#include <sblib/io_pin_names.h>
+#include <sblib/digital_pin.h>
+#include <sblib/internal/iap.h> // for IAP_SUCCESS
+#include <sblib/eib/apci.h>
+#include <sblib/hardware_descriptor.h>
+#include "boot_descriptor_block.h"
 #include "bcu_updater.h"
-#include "update.h"
+#include "dump.h"
 
-static BcuUpdate _bcu = BcuUpdate();
-BcuBase& bcu = _bcu;
+#ifdef DEBUG
+#   include <sblib/serial.h>
+#   include "flash.h"
+#endif
 
-// The EIB bus access object
-Bus bus(timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0);
+// bootloader specific settings
+#define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
+#define RUN_MODE_BLINK_IDLE (1000)     //!< while idle/disconnected, programming and run led blinking time in milliseconds
+#define BL_RESERVED_RAM_START (0x10000000) //!< RAM start address for bootloader
+#define BL_DEFAULT_VECTOR_TABLE_SIZE (192 / sizeof(unsigned int)) //!< vectortable size to copy prior application start
 
-#include <boot_descriptor_block.h>
-#include "sblib/digital_pin.h"
-#include "sblib/io_pin_names.h"
-#include <sblib/serial.h>
+// KNX/EIB specific settings
+#define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
+#define MANUFACTURER 0x04 //!< Manufacturer ID -> Jung
+#define DEVICETYPE 0x2060 //!< Device Type -> 2138.10
+#define APPVERSION 0x01   //!< Application Version -> 0.1
 
-Timeout blinky;
+BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
+
+Timeout runModeTimeout;              //!< running mode LED blinking timeout
+bool blinky = false;
+
+uint32_t getProgrammingButton()
+{
+#ifdef ALTERNATIVE_PROGRAMMING_BUTTON
+    return (PIO2_8);
+#else
+    return (hwPinProgButton());
+#endif
+}
 
 /**
- * Setup the library.
+ * @brief Configures the system timer to call SysTick_Handler once every 1 msec.
+ *
  */
-static inline void lib_setup()
+static void lib_setup()
 {
-    // Configure the system timer to call SysTick_Handler once every 1 msec
     SysTick_Config(SystemCoreClock / 1000);
     systemTime = 0;
 }
 
-void setup()
+/**
+ * @brief Starts BCU with @ref DEFAULT_BL_KNX_ADDRESS (15.15.192) as a Jung 2138.10 device, version 0.1<br>
+ *        Sets @ref PIN_RUN as output and in debug build also @ref PIN_INFO as output
+ *
+ */
+BcuBase* setup()
 {
-    bcu.begin(4, 0x2060, 1); // We are a "Jung 2138.10" device, version 0.1
-    //pinMode(PIN_INFO, OUTPUT);
+// setup LED's for debug
+#if defined(DEBUG) && (!(defined(TS_ARM)))
+    pinMode(PIN_INFO, OUTPUT);
+    digitalWrite(PIN_INFO, false);  // Turn off info LED
     pinMode(PIN_RUN, OUTPUT);
+#endif
 
-    //digitalWrite(PIN_INFO, false);	// Turn Off info LED
+// setup serial port for debug
+#ifdef DEBUG
+#   ifdef TS_ARM
+        serial.setRxPin(PIO3_1);
+        serial.setTxPin(PIO3_0);
+#   else
+        serial.setRxPin(PIO2_7);
+        serial.setTxPin(PIO2_8);
+#   endif
+    if (!serial.enabled())
+    {
+        serial.begin(115200);
+    }
+#endif
 
+    bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
+    bcu.setProgPin(getProgrammingButton());
+    runModeTimeout.start(1);
 
-    blinky.start(1);
-    bcu.setOwnAddress(0xFFC0);		// 15.15.192 default updater PA
-    extern byte userEepromModified;
-    userEepromModified = 0;
+#ifdef DEBUG
+    int physicalAddress = bcu.ownAddress();
+    serial.println("=========================================================");
+    serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
+    serial.println(", DEBUG MODE :-)");
+    serial.print("Build: ");
+    serial.print(__DATE__);
+    serial.print(" ");
+    serial.println(__TIME__);
+    serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
+    serial.print("Flash      (start,end,size) : 0x", flashFirstAddress());
+    serial.print(" 0x", flashLastAddress());
+    serial.println(" 0x", flashSize(), HEX, 6);
+    serial.print("Bootloader (start,end,size) : 0x", bootLoaderFirstAddress());
+    serial.print(" 0x", bootLoaderLastAddress());
+    serial.println(" 0x", bootLoaderSize(), HEX, 6);
+    serial.println("Firmware (start)            : 0x", applicationFirstAddress());
+    serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress());
+    serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
+    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
+    serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
+    serial.print("physical address            : ");
+    dumpKNXAddress(physicalAddress);
+    serial.println();
+    serial.println("=================================================== by sh");
+#endif
+
+    // finally start the bcu
+    bcu.begin();
+    return &bcu;
 }
 
+/**
+ * @brief Handles bus.idle(), LED status and MCU's reset (if requested by KNX-telegram), called from run_updater(...)
+ *
+ */
 void loop()
 {
-	//bool blink_state = false;
-    if (blinky.expired())
+    if (runModeTimeout.expired())
     {
         if (bcu.directConnection())
-            blinky.start(250);
+        {
+            runModeTimeout.start(RUN_MODE_BLINK_CONNECTED);
+        }
         else
-            blinky.start(1000);
-        //blink_state = !blink_state;
-        digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
+        {
+#if defined(DEBUG) && (!(defined(TS_ARM)))
+            digitalWrite(PIN_INFO, false);  // Turn Off info LED
+#endif
+            runModeTimeout.start(RUN_MODE_BLINK_IDLE);
+        }
+        blinky = !blinky;
     }
-    digitalWrite(PIN_PROG, digitalRead(PIN_RUN));
 
-    // Check if there is data to flash when bus is idle
-    if(bus.idle())
-    	request_flashWrite(NULL, 0);
+    digitalWrite(getProgrammingButton(), blinky);
 
-    // Check if restart request is pending
-    if (restartRequestExpired())
-    	NVIC_SystemReset();
+#if defined(DEBUG) && (!(defined(TS_ARM)))
+    digitalWrite(PIN_RUN, blinky);
+#endif
 }
 
-void jumpToApplication(unsigned int start)
+/**
+ * @brief Starts the application by coping application's stack top and vectortable to ram, remaps it and calls Reset vector of it
+ *
+ * @param start     Start address of application
+ */
+static void jumpToApplication(uint8_t * start)
 {
+#ifndef IAP_EMULATION
     unsigned int StackTop = *(unsigned int *) (start);
     unsigned int ResetVector = *(unsigned int *) (start + 4);
     unsigned int * rom = (unsigned int *) start;
-    unsigned int * ram = (unsigned int *) 0x10000000;
+    unsigned int * ram = (unsigned int *) BL_RESERVED_RAM_START;
     unsigned int i;
-    // copy the first 200 bytes of the "application" (the vector table)
+    // copy the first 192 bytes (vector table) of the "application"
     // into the RAM and than remap the vector table inside the RAM
-    for (i = 0; i < 50; i++, rom++, ram++)
+
+    d3(serial.println("Vectortable Size: ", (unsigned int) (BL_DEFAULT_VECTOR_TABLE_SIZE * sizeof(start)), HEX, 4););
+
+    for (i = 0; i < BL_DEFAULT_VECTOR_TABLE_SIZE; i++, rom++, ram++)
+    {
         *ram = *rom;
+    }
     LPC_SYSCON->SYSMEMREMAP = 0x01;
+    // DO NOT use a __DSB here, even if the user manual UM10398 28.4.2.4 states it, otherwise application won't start.
 
     /* Normally during RESET the stack pointer will be loaded
      * with the value stored location 0x0. Since the vector
@@ -100,29 +197,26 @@ void jumpToApplication(unsigned int start)
     asm volatile ("mov SP, %0" : : "r" (StackTop));
     /* Once the stack is setup we jump to the application reset vector */
     asm volatile ("bx      %0" : : "r" (ResetVector));
+#endif
 }
 
-void run_updater()
+
+/**
+ * @brief The real "main()" of the bootloader. Calls libsetup() to initialize the Selfbus library
+ *        and setup() to initialize itself. Handles loop() of the BCU and itself.
+ *
+ * @param programmingMode if true bootloader enables BCU programming mode active, otherwise not.
+ */
+static void run_updater(bool programmingMode)
 {
     lib_setup();
     setup();
 
-#ifdef DUMP_TELEGRAMS
-    //serial.setRxPin(PIO3_1);
-    //serial.setTxPin(PIO3_0);
-    serial.begin(19200);
-    serial.clearBuffers();
-    serial.println("=======================================================");
-    serial.print("Selfbus KNX Bootloader V");
-    serial.print(BL_IDENTITY, HEX, 4);
-    serial.print(", DEBUG MODE :-)\n\rBuild: ");
-    serial.print(__DATE__);
-    serial.print(" ");
-    serial.print(__TIME__);
-    serial.print(" Features: 0x");
-    serial.println(BL_FEATURES, HEX, 4);
-    serial.println("------------------------------------------------- by sh");
-#endif
+    if (programmingMode)
+    {
+        //((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
+        bcu.setProgrammingMode(programmingMode);
+    }
 
     while (1)
     {
@@ -131,33 +225,47 @@ void run_updater()
     }
 }
 
-int main(void)
+/**
+ * @brief Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.<br/>
+ *        If no "magic word" is present it checks for a valid application to start,<br>
+ *        otherwise starts in bootloader mode
+ *
+ * @return never returns
+ */
+#ifndef IAP_EMULATION
+    int main()
+#else
+    int alt_main()
+#endif
 {
     // Updater request from application by setting magicWord
-	unsigned int * magicWord = (unsigned int *) 0x10000000;
-    if (*magicWord == 0x5E1FB055)
+  	unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+ 	if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
         *magicWord = 0;	// avoid restarting BL after flashing
-        run_updater();
+        run_updater(true);
     }
     *magicWord = 0;		// wrong magicWord, delete it
 
-    // Enter Updater when prog button pressed at power up
-    pinMode(PIN_PROG, INPUT | PULL_UP);
-    if (!digitalRead(PIN_PROG))
+    // Enter Updater when programming button was pressed at power up
+    pinMode(getProgrammingButton(), INPUT | PULL_UP);
+    if (!digitalRead(getProgrammingButton()))
     {
-        run_updater();
+        run_updater(true);
     }
 
     // Start main application at address
-    AppDescriptionBlock * block = (AppDescriptionBlock *) FIRST_SECTOR;
-    block--;
-    for (int i = 0; i < 2; i++, block--) // Do we really need to search of the correct block? Assume it's always fix, isn't it?
+    AppDescriptionBlock * block = (AppDescriptionBlock *) bootDescriptorBlockAddress();
+    for (int i = 0; i < BOOT_BLOCK_COUNT; i++, block--)
     {
         if (checkApplication(block))
+        {
             jumpToApplication(block->startAddress);
+        }
     }
     // Start updater in case of error
-    run_updater();
-    return 0;
+    run_updater(false);
+    return (0);
 }
+
+/** @}*/

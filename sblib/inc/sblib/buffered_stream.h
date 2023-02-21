@@ -92,4 +92,4 @@ ALWAYS_INLINE bool BufferedStream::writeBufferFull()
     return ((writeTail + 1) & BufferedStream::BUFFER_SIZE_MASK) == writeHead;
 }
 
-#endif //sblib_buffered_stream_h
+#endif /* sblib_buffered_stream_h */

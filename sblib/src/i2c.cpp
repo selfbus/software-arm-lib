@@ -103,7 +103,7 @@ static void i2c_app_init(I2C_ID_T id, int speed)
 	Chip_I2C_SetClockRate(id, speed);
 
 	/* Set default mode to interrupt */
-	i2c_set_mode(id, 0);
+	i2c_set_mode(id, true);
 }
 
 
@@ -161,8 +161,6 @@ struct i2c_slave_interface {
 	I2C_XFER_T *xfer;
 	I2C_EVENTHANDLER_T event;
 };
-
-void* test =0;
 
 /* I2C interfaces */
 static struct i2c_interface i2c[I2C_NUM_INTERFACE] = {

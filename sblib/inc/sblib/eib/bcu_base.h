@@ -1,7 +1,6 @@
 /*
- *  bcubase.h - BCU specific stuff.
+ *  bcu_base.h - Minimum stuff for a BCU
  *
- *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
@@ -11,106 +10,43 @@
 #define sblib_BcuBase_h
 
 #include <sblib/types.h>
-#include <sblib/eib/bus.h>
-#include <sblib/eib/bcu_type.h>
-#include <sblib/eib/properties.h>
-#include <sblib/eib/user_memory.h>
 #include <sblib/utils.h>
+#include <sblib/eib/userRam.h>
+#include <sblib/eib/addr_tables.h>
+#include <sblib/eib/com_objects.h>
+#include <sblib/timer.h>
+#include <sblib/debounce.h>
+#include <sblib/eib/knx_tlayer4.h>
 
-
-// Rename the method begin_BCU() of the class BCU to indicate the BCU type. If you get a
-// link error then the library's BCU_TYPE is different from the application's BCU_TYPE.
-#define begin_BCU  CPP_CONCAT_EXPAND(begin_,BCU_NAME)
-
-class BcuBase;
-
-/**
- * The EIB bus coupling unit.
- */
-extern BcuBase& bcu;
-
+class Bus;
 
 /**
- * Class for controlling all BCU related things.
- *
- * In order to use the EIB bus, you need to call bcu.begin() once in your application's
- * setup() function.
+ * Class for controlling minimum BCU related things.
  */
-class BcuBase
+class BcuBase: public TLayer4
 {
 public:
-	BcuBase();
+    Bus* bus;
+    BcuBase(UserRam* userRam, AddrTables* addrTables);
+    BcuBase() = delete;
+    ~BcuBase() = default;
 
-    /**
-     * Begin using the EIB bus coupling unit, and set the  manufacturer-ID, device type,
-     * and program version.
-     *
-     * @param manufacturer - the manufacturer ID (16 bit)
-     * @param deviceType - the device type (16 bit)
-     * @param version - the version of the application program (8 bit)
-     */
-    void begin(int manufacturer, int deviceType, int version);
-
-    /**
-     * Set RxPin of board, must be called before begin method
-     * @param rxPin pin definition
-     */
-    void setRxPin(int rxPin) {
-        bus.rxPin=rxPin;
-    }
-    /**
-     * Set TxPin of board, must be called before begin method
-     * @param txPin pin definition
-     */
-    void setTxPin(int txPin) {
-        bus.txPin=txPin;
-    }
-    /**
-     * Set timer class, must be called before begin method
-     * @param timer
-     */
-    void setTimer(Timer& timer) {
-        bus.timer=timer;
-    }
-    /**
-     * Set capture channel of processor, must be called before begin method
-     * @param capture channel definition of processor
-     */
-    void setCaptureChannel(TimerCapture captureChannel) {
-        bus.captureChannel=captureChannel;
-    }
     /**
      * Set ProgPin of board, must be called before begin method
      * @param progPin Pin definition
      */
-    void setProgPin(int prgPin) {
-        progPin=prgPin;
-        setFatalErrorPin(progPin);
-    }
+    void setProgPin(int prgPin);
+
     /**
      * Set ProgPin output inverted, must be called before begin method
      * @param progPin output inverted
      */
-    void setProgPinInverted(int prgPinInv) {
-        progPinInv=prgPinInv;
-    }
+    void setProgPinInverted(int prgPinInv);
+
     /**
      * End using the EIB bus coupling unit.
      */
-    virtual void end();
-
-    /**
-     * Set our own physical address. Normally the physical address is set by ETS when
-     * programming the device.
-     *
-     * @param addr - the physical address
-     */
-    void setOwnAddress(int addr);
-
-    /**
-     * Get our own physical address.
-     */
-    int ownAddress() const;
+    void end();
 
     /**
      * Test if the programming mode is active. This is also indicated
@@ -127,40 +63,16 @@ public:
      *
      * @return True if the user application is active, false if not.
      */
-    bool applicationRunning() const;
-
-    /**
-     * Test if a direct data connection is open.
-     *
-     * @return True if a connection is open, false if not.
-     */
-    bool directConnection() const;
-
-    /**
-     * Process the received telegram from bus.telegram.
-     * Called by main()
-     */
-    virtual void processTelegram();
-
-    /**
-     * Get the mask version.
-     * Usually 0x0012 for BCU1, 0x0020 for BCU2.
-     */
-    int maskVersion() const;
+    virtual bool applicationRunning() const = 0;
 
     /**
      * The BCU's main processing loop. This is like the application's loop() function,
      * and is called automatically by main() when the BCU is activated with bcu.begin().
      */
-    virtual void loop();
+    virtual void loop() override;
 
     /**
-     * A buffer for sending telegrams. This buffer is considered library private
-     * and should rather not be used by the application program.
-     */
-    byte sendTelegram[Bus::TELEGRAM_SIZE];
-
-    /**
+     *
      * The pin where the programming LED + button are connected. The default pin
      * is PIO2_0. This variable may be changed in setup(), if required. If set
      * to 0, the programming LED + button are not handled by the library.
@@ -173,85 +85,39 @@ public:
      */
     int progPinInv;
 
+    /**
+      * @brief Performs a system reset by calling @ref NVIC_SystemReset
+      * @warning This function will never return.
+      */
+    virtual void softSystemReset();
+
+    UserRam* userRam;
+    AddrTables* addrTables;
+    ComObjects* comObjects;
+
+    virtual int maxTelegramSize();
+
 protected:
-    // The method begin_BCU() is renamed during compilation to indicate the BCU type.
-    // If you get a link error then the library's BCU_TYPE is different from your application's BCU_TYPE.
-    void begin_BCU(int manufacturer, int deviceType, int version);
-    /*
+    /**
      * Special initialization for the BCU
      */
-    virtual void _begin();
+    virtual void _begin() override;
 
     /**
-     * Creates a len_hash wide hash of the uid.
-     * Hash will be generated in provided hash buffer
+     * @brief Set or unset the programming mode of the bcu
      *
-     * @param uid - LPC-serial (128bit GUID) returned by iapReadUID() which will be hashed
-     * @param len_uid - size of uid  (normally 16 byte)
-     * @param hash - buffer for generated hash
-     * @param len_hash - size of provided hash buffer (normally 6byte/48bit for EIB)
-     * @return True if hash successfully created, false if not.
+     * @param  new programming button state
+     * @return true if successful, otherwise false
      */
-    int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
+    bool setProgrammingMode(bool newMode);
+
+    void sendApciIndividualAddressReadResponse();
 
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
-    bool enabled;                  //!< The BCU is enabled. Set by bcu.begin().
-    int  connectedAddr;            //!< Remote address of the connected partner.
-    byte sendCtrlTelegram[8];      //!< A short buffer for connection control telegrams.
-    int  connectedSeqNo;           //!< Sequence number for connected data telegrams.
-    unsigned int connectedTime;    //!< System time of the last connected telegram.
-    bool incConnectedSeqNo;        //!< True if the sequence number shall be incremented on ACK.
-    int lastAckSeqNo;              //!< Last acknowledged sequence number
+
+    void discardReceivedTelegram();
+    void send(unsigned char* telegram, unsigned short length);
+
 };
 
-
-//
-//  Inline functions
-//
-
-inline void BcuBase::begin(int manufacturer, int deviceType, int version)
-{
-    begin_BCU(manufacturer, deviceType, version);
-}
-
-inline bool BcuBase::programmingMode() const
-{
-    return (userRam.status & BCU_STATUS_PROG) == BCU_STATUS_PROG;
-}
-
-inline int BcuBase::ownAddress() const
-{
-    return bus.ownAddr;
-}
-
-inline bool BcuBase::applicationRunning() const
-{
-    if (!enabled)
-        return false;
-
-#if BCU_TYPE == BCU1_TYPE
-    return (userRam.status & (BCU_STATUS_PROG|BCU_STATUS_AL)) == BCU_STATUS_AL &&
-        userRam.runState == 1 && userEeprom.runError == 0xff; // ETS sets the run error to 0 when programming
-#else
-    return userRam.runState == 1 &&
-        userEeprom.loadState[OT_ADDR_TABLE] == LS_LOADED &&  // Address table object
-        userEeprom.loadState[OT_ASSOC_TABLE] == LS_LOADED && // Association table object &
-        userEeprom.loadState[OT_APPLICATION] == LS_LOADED;   // Application object. All three in State "Loaded"
-#endif
-}
-
-inline int BcuBase::maskVersion() const
-{
-    return MASK_VERSION;
-}
-
-inline bool BcuBase::directConnection() const
-{
-    return connectedAddr != 0;
-}
-
-#ifndef INSIDE_BCU_CPP
-#   undef begin_BCU
-#endif
-
-#endif /*sblib_bcu_h*/
+#endif /*sblib_BcuBase_h*/

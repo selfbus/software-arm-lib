@@ -78,7 +78,7 @@ public:
 		return timeout != Timeout::STOPPED;
 	}
 
-	/** Returns if the timeout is clrrently stopped
+	/** Returns if the timeout is currently stopped
 	 *
 	 * @return If the time as been stopped
 	 */

@@ -13,14 +13,24 @@
 #ifndef SBLIB_USR_CALLBACK_H_
 #define SBLIB_USR_CALLBACK_H_
 
-#define USR_CALLBACK_RESET         1
-#define USR_CALLBACK_FLASH         2
-#define USR_CALLBACK_BCU_END       3
+#include <stdint.h>
+
+enum class UsrCallbackType : uint8_t {
+    reset = 1, //!< Wird aufgerufen direkt vor einem µC-Reset
+    flash = 2, //!< Wird aufgerufen allgemein wenn Änderungen am User_Eeprom vorgenommen worden sind
+    bcu_end = 3, //!< Kommt eigentlich nicht vor, wird bislang nicht mal bei einem Busspannungsausfall aufgerufen. Es können aber die Schritte wie bei den anderen Fällen ausgeführt werden.
+    recallAppStartup = 4,
+    recallAppInit = 5,
+    recallAppOther = 6,
+    storeAppDownload = 0x80,
+    storeAppBusVoltageFail = 0x81
+};
 
 class UsrCallback
 {
 public:
-    virtual void Notify(int type)=0;
+
+    virtual void Notify(UsrCallbackType type)=0;
 };
 
 #endif

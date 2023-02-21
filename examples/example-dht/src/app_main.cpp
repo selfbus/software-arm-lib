@@ -1,10 +1,14 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application which will demonstrate how to read Temperature and
- *          Humidity from one or more DHT22 sensors a timer and the timer interrupt.
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
+ * @defgroup SBLIB_EXAMPLE_DHT22_1 DHT22 example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Read temperature and humidity from one or more DHT22 sensors using a timer and the timer interrupt.
+ * @details A simple application which will demonstrate how to read Temperature and
+ *          Humidity from one or more DHT22 sensors a timer and the timer interrupt.<br />
  *
- *          needs BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -16,11 +20,11 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/sensors/dht.h>
 
+BCU1 bcu = BCU1();
 
 DHT dht;  ///< DHT 1st sensor
 // DHT dht1; ///< DHT 2nd sensor
@@ -49,7 +53,7 @@ extern "C" void TIMER32_0_IRQHandler()
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     // initialize the DHT22 sensors
     dht.DHTInit(DHT_PIN, DHT22);
@@ -71,6 +75,7 @@ void setup()
     timer32_0.matchMode(MAT1, RESET | INTERRUPT);       // On match of MAT1, generate an interrupt and reset the timer
     timer32_0.match(MAT1, READ_TIMER);                  // Match MAT1 when the timer reaches this value (in milliseconds)
     timer32_0.start();                                  // Start now the timer
+    return (&bcu);
 }
 
 /**
@@ -111,3 +116,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

@@ -12,6 +12,7 @@
 
 #include <sblib/platform.h>
 #include <sblib/types.h>
+#include <stdint.h>
 
 
 /**
@@ -83,7 +84,7 @@
  * @param low - the low byte.
  * @return The bytes combined as word.
  */
-int makeWord(byte high, byte low);
+uint16_t makeWord(byte high, byte low);
 
 /**
  * Reverse the byte order of an integer.
@@ -106,9 +107,9 @@ unsigned short reverseByteOrder(unsigned short val);
 //  Inline functions
 //
 
-inline int makeWord(byte high, byte low)
+inline uint16_t makeWord(byte high, byte low)
 {
-    return (high << 8) | low;
+    return ((uint16_t)((high << 8) | low));
 }
 
 inline unsigned int reverseByteOrder(unsigned int val)

@@ -1,20 +1,20 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple example for SPI.
- *          This example configures SPI for output and sends a byte every second.
- *
- *          We use SPI port 0 in this example.
- *
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
+ * @defgroup SBLIB_EXAMPLE_SPI_1 SPI example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Configures SPI for output and sends a byte every second.
+ * @details A simple example for SPI. This example configures SPI for output and sends a byte every second.
+ *          We use SPI port 0 in this example.<br/>
  *          Pinout:
+ *              - PIO0_2:  SSEL0
+ *              - PIO0_9:  MOSI0
+ *              - PIO2_11: SCK0
  *
- *          PIO0_2:  SSEL0
- *          PIO0_9:  MOSI0
- *          PIO2_11: SCK0
+ * @{
  *
- *          needs BCU1 version of the sblib library
- *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -24,8 +24,7 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/ioports.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/spi.h>
@@ -35,10 +34,12 @@ SPI spi(SPI_PORT_0);
 // #define BLINK_PIN PIN_IO2
 #define BLINK_PIN PIN_INFO
 
+BCU1 bcu = BCU1();
+
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
     pinMode(BLINK_PIN,  OUTPUT);
 
@@ -48,6 +49,7 @@ void setup()
 
     spi.setClockDivider(128);
     spi.begin();
+    return (&bcu);
 }
 
 /**
@@ -75,3 +77,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

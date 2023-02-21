@@ -1,0 +1,48 @@
+<#--
+original idea: https://mcuoneclipse.com/2019/10/06/linking-bootloader-applications-with-eclipse-and-freemarker-scripts/ 
+and https://mcuoneclipse.com/2016/11/01/getting-the-memory-range-of-sections-with-gnu-linker-files/#more-19909
+
+This file is included into the main.ld file
+For bus updater bootloader applications, the build configuration name must start with "Flashstart "
+
+Take a lot on [MCUxpresso-Installdir]/MCUXpressoIDE[VERSION]/ide/Wizards/linker/*.ldt
+to get a idea of other possible linkerscripts
+-->
+
+/* placing Selfbus named flash section at given address: */
+SECTIONS
+{
+    .selfbusSectionBlock  : <#-- ALIGN(4) -->
+    {
+      __SELFBUS_FIRST_SECTOR = .;  /* create symbol for start of section */
+      KEEP(*(.selfbusSection)) /* keep my variable even if not referenced */
+      __SELFBUS_SECTION_END = .; /* create symbol for end of section */
+    }
+}
+
+<#--
+<?xml version="1.0" encoding="UTF-8"?>
+<TargetConfig>
+    <Properties property_2="LPC11_12_13_64K_8K.cfx" property_3="NXP" property_4="LPC1115/303" property_count="5" version="100300"/>
+    <infoList vendor="NXP">
+        <info chip="LPC1115/303" flash_driver="LPC11_12_13_64K_8K.cfx" match_id="0x00050080" name="LPC1115/303" stub="crt_emu_lpc11_13_nxp">
+            <chip>
+                <name>LPC1115/303</name>
+                <family>LPC11xx</family>
+                <vendor>NXP (formerly Philips)</vendor>
+                <reset board="None" core="Real" sys="Real"/>
+                <clock changeable="TRUE" freq="12MHz" is_accurate="TRUE"/>
+                <memory can_program="true" id="Flash" is_ro="true" type="Flash"/>
+                <memory id="RAM" type="RAM"/>
+                <memory id="Periph" is_volatile="true" type="Peripheral"/>
+                <memoryInstance derived_from="Flash" id="MFlash64" location="0x0" size="0x10000"/>
+                <memoryInstance derived_from="RAM" id="RamLoc8" location="0x10000000" size="0x2000"/>
+            </chip>
+            <processor>
+                <name gcc_name="cortex-m0">Cortex-M0</name>
+                <family>Cortex-M</family>
+            </processor>
+        </info>
+    </infoList>
+</TargetConfig>
+-->

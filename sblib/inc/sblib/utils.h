@@ -11,7 +11,9 @@
 #define sblib_utils_h
 
 #include <sblib/types.h>
+#include <sblib/libconfig.h>
 
+#define HIGH_BYTE(x) ((uint8_t)(x >> 8))  ///\todo create new macro "secondByte" in bits.h
 
 /**
  * Copy from src to dest with reversing the byte order.
@@ -35,6 +37,24 @@ void fatalError();
 void setFatalErrorPin(int newPin);
 
 /**
+ * Set the KNX Tx-Pin for fatalError() and a hardware fault
+ * @param newTxPin - the new KNX-Tx Pin
+ */
+void setKNX_TX_Pin(int newTxPin);
+
+/**
+ * Creates a len_hash wide hash of the uid.
+ * Hash will be generated in provided hash buffer
+ *
+ * @param uid - LPC-serial (128bit GUID) returned by iapReadUID() which will be hashed
+ * @param len_uid - size of uid  (normally 16 byte)
+ * @param hash - buffer for generated hash
+ * @param len_hash - size of provided hash buffer (normally 6byte/48bit for EIB)
+ * @return True if hash successfully created, false if not.
+ */
+int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
+
+/**
  * Get the offset of a field in a class, structure or type.
  *
  * @param type - the class, structure or type.
@@ -51,7 +71,7 @@ void setFatalErrorPin(int newPin);
  *
  *        OFFSET_OF(ex,c) returns 2
  */
-#define OFFSET_OF(type, field)  ((unsigned int) &(((type *) 0)->field))
+#define OFFSET_OF(type, field)  (offsetof(type, field))
 
 /**
  * Include the C++ code snippet if DEBUG is defined, do not include the code
@@ -67,7 +87,49 @@ void setFatalErrorPin(int newPin);
 #  define IF_DEBUG(code)
 #endif
 
+// Enable informational debug statements
+#if defined(DUMP_MEM_OPS)
+#   define DB_MEM_OPS(x) IF_DEBUG(x)
+#else
+#   define DB_MEM_OPS(x)
+#endif
 
+/**
+ * Include the C++ code snippet if DUMP_PROPERTIES is defined, do not include the code
+ * if DUMP_PROPERTIES is not defined.
+ *
+ * @param code - the C++ code to include
+ *
+ * @brief Example:  IF_DUMP_PROPERTIES(fatalError())
+ */
+#if defined(DUMP_PROPERTIES)
+#   define DB_PROPERTIES(code) IF_DEBUG(code)
+#else
+#   define DB_PROPERTIES(code)
+#endif
+
+#if defined(DUMP_COM_OBJ)
+#   define DB_COM_OBJ(x) x
+#else
+#   define DB_COM_OBJ(x)
+#endif
+
+#if !defined(INCLUDE_SERIAL)
+#   undef DB_MEM_OPS
+#   define DB_MEM_OPS(x)
+#   undef DB_PROPERTIES
+#   define DB_PROPERTIES(x)
+#   undef DB_COM_OBJ
+#   define DB_COM_OBJ(x)
+#endif
+
+/*
+#ifdef DUMP_PROPERTIES
+#  define IF_DUMP_PROPERTIES(code) code
+#else
+#  define IF_DUMP_PROPERTIES(code)
+#endif
+*/
 /**
  * Concatenate two strings.
  * C preprocessor macros are not expanded.
@@ -75,7 +137,7 @@ void setFatalErrorPin(int newPin);
  * @param str1 - the first string
  * @param str2 - the second string
  *
- * @brief Example:  CPP_CONCAT(begin_,BCU_NAME) results in begin_BCU_NAME
+ * @brief Example:  CPP_CONCAT(example_,BCU_NAME) results in example_BCU_NAME
  */
 #define CPP_CONCAT(str1,str2)  str1 ## str2
 
@@ -86,7 +148,7 @@ void setFatalErrorPin(int newPin);
  * @param str1 - the first string
  * @param str2 - the second string
  *
- * @brief Example:  CPP_QUOTE_EXPAND(begin_,BCU_NAME) results in begin_BCU2  (if BCU_NAME is defined as BCU2)
+ * @brief Example:  CPP_QUOTE_EXPAND(example_,BCU_NAME) results in example_BCU2  (if BCU_NAME is defined as BCU2)
  */
 #define CPP_CONCAT_EXPAND(str1,str2) CPP_CONCAT(str1,str2)
 

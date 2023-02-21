@@ -13,28 +13,31 @@
 
 /**
  * An invalid 2 byte float (DPT9/EIS5).
- * To be used for dptToFloat() and dptFromFloat().
+ * To be used for floatToDpt9() and dpt9ToFloat().
+ * @note KNX Spec. 2.1 3/7/2 3.10 p.32 value 0x7FFF shall denote invalid data
  */
-#define INVALID_DPT_FLOAT  2147483647U
+#define INVALID_DPT_FLOAT  0x7fff
 
 /**
- * Convert a value from int to 2 byte float (DPT9/EIS5). The possible range
- * of the values is -67108864 to 67076096.
+ * Convert a "float" value to 2 byte DPT9.xxx
+ * @details The possible range of the values is -67108864 to 67076096.
  *
  * @param value - the value to convert.
- *                Use INVALID_DPT_FLOAT for the DPT9 "invalid data" value.
+ *                Use @ref INVALID_DPT_FLOAT for the DPT9 "invalid data" value.
  * @return The 2 byte float (DPT9/EIS5).
+ * @note KNX Spec. 2.1 3/7/2 3.10 p.32 for details on DPT9.xxx
  */
-unsigned short dptToFloat(int value);
+unsigned short floatToDpt9(int value);
 
 /**
- * Convert a value from 2 byte float (DPT9/EIS5) to integer.
+ * Convert a DPT9.xxx to integer.
  *
  * @param dptValue - the 2 byte float (DPT9/EIS5) to convert
- * @return The value as integer, or INVALID_DPT_FLOAT for the
+ * @return The value as integer, or @ref INVALID_DPT_FLOAT for the
  *         DPT9 "invalid data" value.
+ * @note KNX Spec. 2.1 3/7/2 3.10 p.32 for details on DPT9.xxx
  */
-int dptFromFloat(unsigned short dptValue);
+int dpt9ToFloat(unsigned short dptValue);
 
 
 #endif /*sblib_datapoint_types_h*/

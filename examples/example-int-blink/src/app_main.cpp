@@ -1,10 +1,13 @@
 /*****************************************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application that blinks the Info LED of the 4TE-ARM Controller (on pin PIO2.6)
- *          using a timer and its timer interrupt.
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
+ * @defgroup SBLIB_EXAMPLE_TIMER_INTERRUPT_1 Timer interrupt blinking example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief Blinks the Info LED of the 4TE-ARM Controller (on pin PIO2.6)
+ *        using a timer and its timer interrupt.
  *
- *          needs BCU1 version of the sblib library
+ * @{
  *
+ * @file   app_main.cpp
  * @author Stefan Taferner <stefan.taferner@gmx.at> Copyright (c) 2014
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
  * @bug No known bugs.
@@ -16,13 +19,14 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#include <sblib/core.h>
-#include <sblib/eib/sblib_default_objects.h>
+#include <sblib/eibBCU1.h>
 #include <sblib/io_pin_names.h>
 
 #define BLINK_LED PIN_INFO ///> Info LED of the 4TE-ARM Controller
 
-/*
+BCU1 bcu = BCU1();
+
+/**
  * Handler for the timer interrupt.
  */
 extern "C" void TIMER32_0_IRQHandler()
@@ -37,7 +41,7 @@ extern "C" void TIMER32_0_IRQHandler()
 /**
  * Initialize the application.
  */
-void setup()
+BcuBase* setup()
 {
 	pinMode(BLINK_LED, OUTPUT);
 	pinMode(PIN_RUN, OUTPUT);	// Run LED
@@ -58,6 +62,8 @@ void setup()
     timer32_0.match(MAT1, 500);
 
     timer32_0.start();
+
+    return (&bcu);
 }
 
 /**
@@ -76,3 +82,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/

@@ -1,173 +1,119 @@
-/*
- * BCUUpdate.cpp
+/**************************************************************************//**
+ * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
+ * @addtogroup SBLIB_BOOTLOADER_BCU Bus coupling unit (BCU)
+ * @ingroup SBLIB_BOOTLOADER
  *
- *  Created on: 15.07.2015
- *      Author: glueck
- */
+ * @{
+ *
+ * @brief Implementation of the Bootloader's bus coupling unit (BCU 1)
+ *
+ * @file   bcu_updater.cpp
+ * @author Martin Glueck <martin@mangari.org> Copyright (c) 2015
+ * @author Stefan Haller Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
+ * @bug No known bugs.
+ ******************************************************************************/
 
+/*
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License version 3 as
+ published by the Free Software Foundation.
+ -----------------------------------------------------------------------------*/
+
+#include <sblib/eib/knx_lpdu.h>
+#include <sblib/eib/knx_tpdu.h>
+#include <sblib/eib/apci.h>
+#include <sblib/digital_pin.h>
 #include "bcu_updater.h"
+#include "dump.h"
 
-#ifdef DUMP_TELEGRAMS1
-#define d(x) {serial.println(x);}
-#else
-#define d(x)
+#ifdef DEBUG
+#   define DEFAULT_COUNT_TO_FAIL (30)
+    int defaultCountToFail = DEFAULT_COUNT_TO_FAIL;
+    int countToFail = defaultCountToFail;
+
+    bool checkCountToFail()
+    {
+        return (false); ///\done uncomment on release
+        // ok lets drop connection for debugging
+        countToFail--;
+        if (countToFail)
+        {
+            return (false);
+        }
+        defaultCountToFail++;
+        countToFail = defaultCountToFail;
+        return (true);
+    }
 #endif
 
-void BcuUpdate::processTelegram()
+BcuUpdate::BcuUpdate() : BcuUpdate(new UserRamUpdater())
 {
-    unsigned short destAddr = (bus.telegram[3] << 8) | bus.telegram[4];
-    unsigned char tpci = bus.telegram[6] & 0xc3; // Transport control field (see KNX 3/3/4 p.6 TPDU)
-    unsigned short apci = ((bus.telegram[6] & 3) << 8) | bus.telegram[7];
-
-    if ((bus.telegram[5] & 0x80) == 0) // a physical destination address
-    {
-        if (destAddr == bus.ownAddress()) // it's our physical address
-        {
-            if (tpci & 0x80)  // A connection control command
-            {
-                d("procC-Tel\n");
-                processConControlTelegram(bus.telegram[6]);
-            }
-            else
-            {
-                d("procD-Tel\n");
-                processDirectTelegram(apci);
-            }
-        }
-    }
-    // At the end: discard the received telegram
-    bus.discardReceivedTelegram();
 }
 
-extern unsigned char handleMemoryRequests(int apciCmd, bool * sendTel,
-        unsigned char * data);
-
-void BcuUpdate::processDirectTelegram(int apci)
+BcuUpdate::BcuUpdate(UserRamUpdater* userRamUpdater) :
+    BcuBase(userRamUpdater, nullptr)
 {
-    const int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
-    const int senderSeqNo = bus.telegram[6] & 0x3c;
-    unsigned char sendAck = 0;
-    bool sendTel = false;
+}
 
-    if (connectedAddr != senderAddr) // ensure that the sender is correct
-        return;
-
-    connectedTime = systemTime;
-    sendTelegram[6] = 0;
-
-    int apciCmd = apci & APCI_GROUP_MASK;
-    if ((apciCmd == APCI_MEMORY_READ_PDU) | (apciCmd == APCI_MEMORY_WRITE_PDU))
+unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
+        bool * sendResponse, unsigned char * telegram, uint8_t telLength)
+{
+    switch(apciCmd)
     {
-        d("R/W DATA\n");
-        sendAck = handleMemoryRequests(apciCmd, &sendTel, &bus.telegram[7]);
-    }
-    else if (apci == APCI_RESTART_PDU)
-        NVIC_SystemReset();  // Software Reset
-    else
-        sendAck = T_NACK_PDU;  // Command not supported
+        case APCI_MEMORY_WRITE_PDU:
+#ifdef DEBUG
+            if (checkCountToFail())
+            {
+                sendConControlTelegram(T_DISCONNECT_PDU, senderAddr, 0);
+                *sendResponse = false;
+                return (0);
+            }
+#endif
+            *sendResponse = true;
+            return (handleApciMemoryWriteRequest(&telegram[7])); ///\todo this 7 is not consistent with other telegram handling in sblib
 
-    if (sendTel)
-        sendAck = T_ACK_PDU;
+        case APCI_BASIC_RESTART_PDU:
+            dump2(serial.println("APCI_BASIC_RESTART_PDU"));
+            d3(
+                serial.println();serial.println();serial.println();
+                serial.println("disconnectCount ", disconnectCount);
 
-    if (sendAck)
-    {
-        d("TX-ACK\n");
-        sendConControlTelegram(sendAck, senderSeqNo);
-    }
-    else
-        sendCtrlTelegram[0] = 0;
+                ///\todo remove after fix and on release
+                serial.println("repeated ", repeatedTelegramCount);
+                serial.println("ignored  ", repeatedIgnoredTelegramCount);
+                ///\todo end of remove after fix and on release
 
-    if (sendTel)
-    {
-        sendTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-        // 1+2 contain the sender address, which is set by bus.sendTelegram()
-        sendTelegram[3] = connectedAddr >> 8;
-        sendTelegram[4] = connectedAddr;
+                serial.println();serial.println();serial.println();
+                serial.flush();  // give time to send serial data
+            );
+            NVIC_SystemReset();
+            return (T_ACK_PDU);
 
-        if (sendTelegram[6] & 0x40) // Add the sequence number if applicable
-        {
-            sendTelegram[6] &= ~0x3c;
-            sendTelegram[6] |= connectedSeqNo;
-            incConnectedSeqNo = true;
-        }
-        else
-            incConnectedSeqNo = false;
-        d("TX-DATA\n");
-        bus.sendTelegram(sendTelegram, telegramSize(sendTelegram));
+        default:
+            return (T_NACK_PDU);
     }
 }
 
-void BcuUpdate::processConControlTelegram(int tpci)
+void BcuUpdate::begin()
 {
-    int senderAddr = (bus.telegram[1] << 8) | bus.telegram[2];
-
-    if (tpci & 0x40)  // An acknowledgement
-    {
-        tpci &= 0xc3;
-        if (tpci == T_ACK_PDU) // A positive acknowledgement
-        {
-            int curSeqNo = bus.telegram[6] & 0x3c;
-            if (incConnectedSeqNo && connectedAddr == senderAddr && lastAckSeqNo !=  curSeqNo)
-            {
-                d("RX-ACK\n");
-                connectedSeqNo += 4;
-                connectedSeqNo &= 0x3c;
-                incConnectedSeqNo = false;
-                lastAckSeqNo = curSeqNo;
-            }
-        }
-        else if (tpci == T_NACK_PDU)  // A negative acknowledgement
-        {
-            if (connectedAddr == senderAddr)
-            {
-                d("RX-NACK\n");
-                sendConControlTelegram(T_DISCONNECT_PDU, 0);
-                connectedAddr = 0;
-                incConnectedSeqNo = false;
-            }
-        }
-
-        incConnectedSeqNo = true;
-    }
-    else  // A connect/disconnect command
-    {
-        if (tpci == T_CONNECT_PDU)  // Open a direct data connection
-        {
-            if (connectedAddr == 0 || connectedAddr == senderAddr)
-            {
-                connectedTime = systemTime;
-                connectedAddr = senderAddr;
-                connectedSeqNo = 0;
-                incConnectedSeqNo = false;
-                d("RX-CON\n");
-                bus.setSendAck(0);
-
-            }
-        }
-        else if (tpci == T_DISCONNECT_PDU)  // Close the direct data connection
-        {
-            if (connectedAddr == senderAddr)
-            {
-                connectedAddr = 0;
-                bus.setSendAck(0);
-                d("RX-DIS\n");
-            }
-        }
-    }
+    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
+    userRam->runState() = 1;
+    BcuBase::_begin();
 }
 
-void BcuUpdate::sendConControlTelegram(int cmd, int senderSeqNo)
+bool BcuUpdate::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
 {
-    if (cmd & 0x40)  // Add the sequence number if the command shall contain it
-        cmd |= senderSeqNo & 0x3c;
-
-    sendCtrlTelegram[0] = 0xb0 | (bus.telegram[0] & 0x0c); // Control byte
-    // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    sendCtrlTelegram[3] = connectedAddr >> 8;
-    sendCtrlTelegram[4] = connectedAddr;
-    sendCtrlTelegram[5] = 0x60;
-    sendCtrlTelegram[6] = cmd;
-
-    bus.sendTelegram(sendCtrlTelegram, 7);
+    if (apciCmd == APCI_INDIVIDUAL_ADDRESS_READ_PDU)
+    {
+        sendApciIndividualAddressReadResponse();
+    }
+    return (true);
 }
 
+bool BcuUpdate::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t groupAddress, unsigned char *telegram, uint8_t telLength)
+{
+    return (true);
+}
+
+/** @}*/

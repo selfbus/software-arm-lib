@@ -252,4 +252,4 @@ class OneWire
 #endif
 };
 
-#endif /* 1wire_h */
+#endif /* onewire_h */

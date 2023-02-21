@@ -10,6 +10,19 @@
 #ifndef sblib_platform_h
 #define sblib_platform_h
 
+// Per Herb Sutter, the register keyword did not have any effect on C++ programs at all:
+//
+//     https://www.drdobbs.com/keywords-that-arent-or-comments-by-anoth/184403859
+//
+// That was back in 2003, but ARM still used the keyword in CMSIS. Nowadays, with C++17
+// using register yields the following
+//
+//     warning: ISO C++17 does not allow 'register' storage class specifier [-Wregister]
+//
+// As compiler output is indeed exactly the same, regardless of whether register is
+// specified or not, it's ok to hide it from the compiler with the preprocessor's help.
+#define register
+
 #if defined(__LPC11XX__)
 #include <LPC11xx.h>
 /**
@@ -53,22 +66,19 @@ unsigned int* ioconPointer(int port, int pinNum);
 
 
 #ifdef IAP_EMULATION
-  extern unsigned char FLASH[];
-# define LPC_FLASH_BASE (intptr_t)FLASH
+  extern uint8_t FLASH[];
+# define LPC_FLASH_BASE (FLASH)
 #else
 #ifndef LPC_FLASH_BASE
   #define LPC_FLASH_BASE 0
 #endif
 #endif
 
-/**
- * The base address of the flash.
- */
-# define FLASH_BASE_ADDRESS ((unsigned char *)LPC_FLASH_BASE)
-/**
-* The size of a flash sector in bytes.
-*/
-#define FLASH_SECTOR_SIZE 0x1000
-#define FLASH_PAGE_SIZE 0x100
+#define FLASH_BASE_ADDRESS   ((uint8_t *)LPC_FLASH_BASE) //!< The base address of the flash
+
+#define FLASH_SECTOR_SIZE    (0x1000)              //!< The size of a flash sector in bytes
+#define FLASH_PAGE_SIZE      (0x100)               //!< The size of a flash page in bytes
+#define FLASH_PAGE_ALIGNMENT (FLASH_PAGE_SIZE - 1) //!< Page alignment which is allowed to flash
+#define FLASH_RAM_BUFFER_ALIGNMENT (4)             //!< MCU's RAM buffer alignment which is allowed to flash
 
 #endif /*sblib_platform_h*/

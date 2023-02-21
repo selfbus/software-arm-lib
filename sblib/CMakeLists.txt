@@ -19,7 +19,7 @@ set_property(CACHE BusType PROPERTY STRINGS BCU_TYPE=10 BCU_TYPE=20 BIM112)
 
 set(LOGGING OFF CACHE BOOL "Whether to through the serial port")
 
-add_definitions(-DSPI_BLOCK_TRANSFER -DSERIAL_WRITE_DIRECT -D${BusType} )
+add_definitions(-DSERIAL_WRITE_DIRECT -D${BusType} )
 
 add_subdirectory(${SBLPC_DIR} CMSIS_CORE_LPC11xx)
 
@@ -37,7 +37,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/eib/properties.h
         inc/sblib/eib/property_types.h
         inc/sblib/eib/sblib_default_objects.h
-        inc/sblib/eib/telegram.h
         inc/sblib/eib/types.h
         inc/sblib/eib/user_memory.h
         inc/sblib/i2c/bh1750.h
@@ -59,7 +58,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/buffered_stream.h
         inc/sblib/core.h
         inc/sblib/debounce.h
-        inc/sblib/debug.h
         inc/sblib/digital_pin.h
         inc/sblib/eib.h
         inc/sblib/i2c.h
@@ -72,7 +70,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/onewire.h
         inc/sblib/platform.h
         inc/sblib/print.h
-        inc/sblib/printable.h
         inc/sblib/serial.h
         inc/sblib/spi.h
         inc/sblib/stream.h
@@ -91,7 +88,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         src/eib/properties.cpp
         src/eib/property_defs.cpp
         src/eib/property_types.cpp
-        src/eib/telegram.cpp
         src/eib/user_memory.cpp
         src/i2c/bh1750.cpp
         src/i2c/ds3231.cpp
@@ -114,7 +110,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         src/arrays.cpp
         src/buffered_stream.cpp
         src/debounce.cpp
-        src/debug.cpp
         src/digital_pin_shift.cpp
         src/i2c.cpp
         src/iap.cpp

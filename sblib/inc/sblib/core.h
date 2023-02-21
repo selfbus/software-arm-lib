@@ -15,6 +15,7 @@
 #include <sblib/debounce.h>
 #include <sblib/digital_pin.h>
 #include <sblib/interrupt.h>
+#include <sblib/libconfig.h>
 #include <sblib/main.h>
 #include <sblib/math.h>
 #include <sblib/timer.h>

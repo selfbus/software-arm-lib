@@ -58,18 +58,17 @@
 // The SPI port registers
 static LPC_SSP_TypeDef* const ports[2] = { LPC_SSP0, LPC_SSP1 };
 
-
-SPI::SPI(int portNum, int mode)
-:port(*ports[portNum])
+SPI::SPI(int spiPort, int mode)
+:port(*ports[spiPort])
 ,clockDiv(100)
 {
     // Enable AHB clock to the GPIO domain.
     LPC_SYSCON->SYSAHBCLKCTRL |= (1<<6);
 
     // Disable reset of the SSP peripheral
-    LPC_SYSCON->PRESETCTRL |= (1 << (portNum * 2));
+    LPC_SYSCON->PRESETCTRL |= (1 << (spiPort * 2));
 
-    if (portNum == 0) // SPI port 0
+    if (spiPort == 0) // SPI port 0
     {
         // Enable the clock for the SPI port
         LPC_SYSCON->SYSAHBCLKCTRL |= 1 << 11;
@@ -135,8 +134,6 @@ int SPI::transfer(int val, SpiTransferMode transferMode)
     // Return read value
     return port.DR;
 }
-
-#ifdef SPI_BLOCK_TRANSFER
 
 static SPI * instances[2];
 
@@ -236,4 +233,3 @@ void SSP1_IRQHandler (void)
 }
 
 }
-#endif

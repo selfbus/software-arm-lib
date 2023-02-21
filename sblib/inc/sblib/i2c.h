@@ -1,4 +1,4 @@
-/*
+/**
  * @brief LPC11xx I2C driver
  *
  * @note

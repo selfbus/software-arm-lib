@@ -334,4 +334,4 @@ inline bool Stream::findUntil(const byte* target, int targetLen, const char* ter
     return findUntil((const char*) target, targetLen, terminate, termLen);
 }
 
-#endif /*sblib_print_h*/
+#endif /*sblib_stream_h*/

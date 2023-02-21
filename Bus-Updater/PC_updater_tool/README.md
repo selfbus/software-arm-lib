@@ -1,3 +1,1 @@
-Verwendete IDE: IntelliJ IDEA Community 2020.2
-
-Erzeuge JAR Datei: Build -> Build Artifacts
+[see source/README.md](source/README.md)

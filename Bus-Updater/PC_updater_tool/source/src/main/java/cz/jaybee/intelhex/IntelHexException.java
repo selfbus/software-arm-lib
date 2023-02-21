@@ -30,6 +30,7 @@ package cz.jaybee.intelhex;
  *
  * @author Jan Breuer
  */
+@SuppressWarnings("serial")
 public class IntelHexException extends Exception {
 
     public IntelHexException() {

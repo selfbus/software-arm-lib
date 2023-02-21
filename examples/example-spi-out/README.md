@@ -1,5 +1,5 @@
 SPI example
-========================
+===========
 
 A simple example for SPI.
 This example configures SPI for output and sends a byte every second.

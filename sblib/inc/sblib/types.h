@@ -10,6 +10,8 @@
 #ifndef sblib_types_h
 #define sblib_types_h
 
+#include <stdint.h>
+
 /**
  * An unsigned 1 byte value.
  */
@@ -194,5 +196,14 @@ enum TimerPWM
 #else
 #define ALWAYS_INLINE inline
 #endif
+
+/**
+ * For compatibility across different language versions: GNU C++ has BIG_ENDIAN and LITTLE_ENDIAN
+ * whereas ISO C++ has _BIG_ENDIAN and _LITTLE_ENDIAN.
+ */
+#if !defined ( BIG_ENDIAN )
+#define BIG_ENDIAN _BIG_ENDIAN
+#define LITTLE_ENDIAN _LITTLE_ENDIAN
+#endif /* BIG_ENDIAN */
 
 #endif /*sblib_types_h*/

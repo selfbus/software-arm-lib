@@ -9,6 +9,9 @@
 #ifndef SBLIB_IO_PIN_NAMES_H_
 #define SBLIB_IO_PIN_NAMES_H_
 
+#include <sblib/ioports.h>
+
+
 #if defined (__LPC11XX_IO16__)
 	#define PIN_PROG 	PIO2_11
 	#define PIN_INFO 	PIO1_0
@@ -47,6 +50,16 @@
 	#define PIN_IO13 	PIO1_5
 	#define PIN_IO14 	PIO1_7
 	#define PIN_IO15 	PIO1_6
+
+    #define PIN_SSEL0   PIO0_2
+    #define PIN_SCK0    PIO0_6 // alternative PIO0_10, PIO2_11 configured in IOCON_SCK_LOC
+    #define PIN_MISO0   PIO0_8
+    #define PIN_MOSI0   PIO0_9
+
+    #define PIN_SSEL1   PIO2_0 // alternative PIO2_4 configured in IOCON_SSEL1_LOC
+    #define PIN_SCK1    PIO2_1 // alternative PIO3_2 configured in IOCON_SCK1_LOC
+    #define PIN_MISO1   PIO2_2 // alternative PIO1_10 configured in IOCON_MISO1_LOC
+    #define PIN_MOSI1   PIO2_3 // alternative PIO1_9 configured in IOCON_MOSI1_LOC
 
 	#define PIN_LT1 	PIO2_1
 	#define PIN_LT2 	PIO0_3
