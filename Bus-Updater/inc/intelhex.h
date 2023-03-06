@@ -26,7 +26,7 @@
 #define HEX_DEFAULT_BYTES_PER_LINE (16) //!< default byte number per line in resulting hex stream
 
 /**
- * @brief Sends the data to the serial port in Intel(R) hex file format
+ * Sends the data to the serial port in Intel(R) hex file format
  *
  * @param serialPort    The Serial port object to dump the hex content to
  * @param data          Data to dump in Intel(R) hex format to the serial port

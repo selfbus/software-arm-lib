@@ -25,7 +25,7 @@
 #include "upd_protocol.h"
 
 /**
- * @brief Erases if allowed the requested page range, startPage must be lower or equal endPage.
+ * Erases if allowed the requested page range, startPage must be lower or equal endPage.
  *
  * @param startPage Start page number to be erased
  * @param endPage   End page number to be erased
@@ -35,7 +35,7 @@ UDP_State erasePageRange(unsigned int startPage, unsigned int endPage);
 
 
 /**
- * @brief   Erases the entire flash area starting behind the bootloader itself
+ * Erases the entire flash area starting behind the bootloader itself
  *
  * @return  @ref UDP_IAP_SUCCESS if successful, otherwise a @ref UDP_State
  * @warning Function can take up to ~2 seconds to return.
@@ -44,7 +44,7 @@ UDP_State erasePageRange(unsigned int startPage, unsigned int endPage);
 UDP_State eraseFullFlash();
 
 /**
- * @brief Erases if allowed the requested address range.
+ * Erases if allowed the requested address range.
  *
  * @param startAddress  start address of flash range to erase
  * @param endAddress    end address of flash range to erase
@@ -56,7 +56,7 @@ UDP_State eraseFullFlash();
 UDP_State eraseAddressRange(uint8_t * startAddress, const uint8_t * endAddress, const bool rangeCheck = true);
 
 /**
- * @brief Checks if the address range is allowed to be programmed
+ * Checks if the address range is allowed to be programmed
  *
  * @param start            start of the address range to check
  * @param length           length of the address range
@@ -67,7 +67,7 @@ UDP_State eraseAddressRange(uint8_t * startAddress, const uint8_t * endAddress, 
 bool addressAllowedToProgram(uint8_t * start, unsigned int length, bool isBootDescriptor = false);
 
 /**
- * @brief Programs the specified number of bytes from the RAM to the specified location
+ * Programs the specified number of bytes from the RAM to the specified location
  *        inside the FLASH.
  * @param address start address of inside the FLASH
  * @param ram     start address of the buffer containing the data

@@ -23,7 +23,7 @@
 #define _CRC32_H_
 
 /**
- * @brief Calculates the crc32 of provided buffer data
+ * Calculates the crc32 of provided buffer data
  *
  * @param startCrc32 crc to start with (if unsure use 0xFFFFFFFF)
  * @param data       buffer to calculate the crc32 of
