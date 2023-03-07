@@ -18,9 +18,9 @@ extern const __attribute__((aligned(16))) uint8_t incbin_bl_start[];
 extern const uint8_t incbin_bl_end[];
 
 #define BOOTLOADER_FLASH_STARTADDRESS ((uint8_t *) 0x0)    //!< Flash start address of the bootloader
-#define LOADERLOADER_VERSION          (0x0001)             //!< boot loader loader Version 0.01
+#define LOADERLOADER_VERSION          (0x0090)             //!< Boot loader loader Version 0.90
 
-APP_VERSION("SBloader", "0", "80");
+APP_VERSION("SBloader", "0", "90");
 
 void setup()
 {

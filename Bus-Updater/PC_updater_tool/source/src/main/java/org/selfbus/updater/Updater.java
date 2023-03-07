@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 
+import static org.selfbus.updater.Utils.shortenPath;
 import static org.selfbus.updater.Utils.tcpConnection;
 
 /**
@@ -402,9 +403,9 @@ public class Updater implements Runnable {
                 else {
                     resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash(), cliOptions.logStatistics());
                 }
-                printStatisticData(flashTimeStart, resultTotal);
                 logger.info("\nRequesting Bootloader statistic...");
                 dm.requestBootLoaderStatistic();
+                printStatisticData(flashTimeStart, resultTotal);
             }
             else {
                 logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH , ConColors.RED, ConColors.RESET);
@@ -416,6 +417,7 @@ public class Updater implements Runnable {
                     newFirmware.startAddress() + appVersionAddress);
             logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
+            logger.info("\nFinished programming {}{}{}\n", ConColors.BRIGHT_YELLOW, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
             dm.restartProgrammingDevice();
 

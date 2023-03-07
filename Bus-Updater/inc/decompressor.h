@@ -24,6 +24,7 @@
 #define _DECOMPRESSOR_H_
 
 #include <stdint.h>
+#include "upd_protocol.h"
 #include "boot_descriptor_block.h"
 
 #define REMEMBER_OLD_PAGES_COUNT 2	// There seems to be a RAM leak/overflow somewhere, 2 seems to work for the moment!
@@ -53,8 +54,8 @@ class Decompressor
         int bytesToFlash = 0;
         int rawLength = 0;
         State state = State::EXPECT_COMMAND_BYTE;
-        __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) uint8_t* startAddrOfPageToBeFlashed = 0;
-        uint8_t* startAddrOfFlash = 0;
+        __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) uint8_t * startAddrOfPageToBeFlashed = 0;
+        uint8_t * startAddrOfFlash = 0;
 
 	public:
 		Decompressor(AppDescriptionBlock* BaseAddress);
@@ -77,7 +78,7 @@ class Decompressor
 
 		void putByte(uint8_t data);
 
-		int pageCompletedDoFlash();
+		UDP_State pageCompletedDoFlash();
 
 		uint32_t getCrc32();
 

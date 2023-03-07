@@ -102,7 +102,7 @@ char* getAppVersion(AppDescriptionBlock * block)
 {
     void * appVersionAddress = (void *)(block->appVersionAddress);
     if ((appVersionAddress >= applicationFirstAddress()) &&
-        (appVersionAddress < flashLastAddress() - sizeof(block->appVersionAddress)))
+        (appVersionAddress < flashLastAddress()))
     {
         return (block->appVersionAddress);
     }

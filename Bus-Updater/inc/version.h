@@ -22,9 +22,9 @@
 #ifndef VERSION_H_
 #define VERSION_H_
 
-#define BL_IDENTITY (0x1080) //!< boot loader Version 0.80, (change also APP_VERSION in BootloaderLoader's app_main.cpp)
+#define BL_IDENTITY (0x1090) //!< boot loader Version 0.90, (change also APP_VERSION in BootloaderLoader's app_main.cpp)
 #define UPDATER_MIN_MAJOR_VERSION (0) //!< minimum required major version of the Selfbus Updater we are talking to
-#define UPDATER_MIN_MINOR_VERSION (66) //!< minimum required minor version of the Selfbus Updater we are talking to
+#define UPDATER_MIN_MINOR_VERSION (90) //!< minimum required minor version of the Selfbus Updater we are talking to
 
 
 #endif /* VERSION_H_ */

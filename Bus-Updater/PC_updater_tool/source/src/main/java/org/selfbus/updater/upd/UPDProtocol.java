@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 public final class UPDProtocol {
     private static final Logger logger = LoggerFactory.getLogger(UPDProtocol.class.getName());
 
+    public static final int COMMAND_POSITION = 2;
+    public static final int DATA_POSITION = 3;
     public static final int UID_LENGTH_USED = 12;     //!< uid/guid length of the mcu used for unlocking/flashing
     public static final int UID_LENGTH_MAX = 16;      //!< uid/guid length of the mcu
 
@@ -22,17 +24,17 @@ public final class UPDProtocol {
     }
 
     public static long checkResult(byte[] result, boolean verbose) {
-        if (result[3] != UPDCommand.SEND_LAST_ERROR.id) {
-            logger.error("checkResult called on other than UPDCommand.SEND_LAST_ERROR.id=0x{}, result[3]=0x{}",
-                    String.format("%04X", UPDCommand.SEND_LAST_ERROR.id),
-                    String.format("%04X", result[3]));
+        if (result[COMMAND_POSITION] != UPDCommand.SEND_LAST_ERROR.id) {
+            logger.error("checkResult called on other than UPDCommand.SEND_LAST_ERROR.id=0x{}, result[{}]=0x{}",
+                    String.format("%02X", UPDCommand.SEND_LAST_ERROR.id),
+                    COMMAND_POSITION,
+                    String.format("%02X", result[COMMAND_POSITION]));
             return 0;
         }
 
-        UDPResult udpResult = UDPResult.fromByteArray(result, 4);
-
+        UDPResult udpResult = UDPResult.valueOfIndex(result[DATA_POSITION]);
         if (udpResult.isError()) {
-            logger.error("{}{} resultCode=0x{}{}", ConColors.BRIGHT_RED, udpResult, String.format("%04X", udpResult.id), ConColors.RESET);
+            logger.error("{}{} resultCode=0x{}{}", ConColors.BRIGHT_RED, udpResult, String.format("%02X", udpResult.id), ConColors.RESET);
         } else {
             if (verbose) {
                 ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);

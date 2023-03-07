@@ -64,9 +64,7 @@ dump2(
 uint16_t disconnectCount = 0; //!< number of disconnects since system reset
 
 ///\todo remove after bugfix and on release
-uint16_t repeatedTelegramCount = 0;
 uint16_t repeatedIgnoredTelegramCount = 0;
-uint16_t invalidCheckSum = 0;
 ///\todo end of remove after bugfix and on release
 
 void dumpTelegramBytes(bool tx, const unsigned char * telegram, const uint8_t length, const bool newLine = true)
@@ -267,9 +265,7 @@ void TLayer4::_begin()
     disconnectCount = 0;
     lastTelegram[0] = 0;
     lastTelegramLength = 0;
-    repeatedTelegramCount = 0;
     repeatedIgnoredTelegramCount = 0;
-    invalidCheckSum = 0;
 }
 
 bool TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)

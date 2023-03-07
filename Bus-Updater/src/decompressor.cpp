@@ -77,10 +77,10 @@ void Decompressor::resetStateMachine()
 	state = State::EXPECT_COMMAND_BYTE;
 }
 
-int Decompressor::pageCompletedDoFlash()
+UDP_State Decompressor::pageCompletedDoFlash()
 {
 	// backup old page content, flash new content from scratchpad RAM to flash
-	static unsigned int lastError = 0;
+    UDP_State result = UDP_IAP_SUCCESS;
 
 	// Keep a copy of the last couple of flash pages in a RAM buffer for the differ
 	// RAM buffer size is set by REMEMBER_OLD_PAGES_COUNT * FLASH_PAGE_SIZE
@@ -93,22 +93,20 @@ int Decompressor::pageCompletedDoFlash()
 	// Check if flash page is identical or if we need to flash it
 	d1("Diff - Compare Page ");
 	d2(getFlashPageNumberToBeFlashed(), DEC,2);
-	lastError = memcmp(startAddrOfPageToBeFlashed, scratchpad, bytesToFlash);
-	if (lastError)
+	if (memcmp(startAddrOfPageToBeFlashed, scratchpad, bytesToFlash) != 0)
 	{
 		// erase the page to be flashed
 		d1(" different, Erase Page");
 		//d2(getFlashPageNumberToBeFlashed(), DEC,2);
 
-		lastError = erasePageRange(getFlashPageNumberToBeFlashed(), getFlashPageNumberToBeFlashed());
-		//lastError = UDP_IAP_SUCCESS; // Dry RUN! for debug
+		result = erasePageRange(getFlashPageNumberToBeFlashed(), getFlashPageNumberToBeFlashed());
+		//result = UDP_IAP_SUCCESS; // Dry RUN! for debug
 
 		// proceed to flash the decompressed page stored in the scratchpad RAM
 		d1("Diff - Program Page at Address 0x");
 		d2ptr(startAddrOfPageToBeFlashed);
-		lastError = executeProgramFlash(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
-		//lastError = iapProgram(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
-		//lastError = UDP_IAP_SUCCESS; // Dry RUN! for debug
+		result = executeProgramFlash(startAddrOfPageToBeFlashed, scratchpad, FLASH_PAGE_SIZE);
+		//result = UDP_IAP_SUCCESS; // Dry RUN! for debug
 	}
 	else
 	{
@@ -119,11 +117,11 @@ int Decompressor::pageCompletedDoFlash()
 	startAddrOfPageToBeFlashed += FLASH_PAGE_SIZE;
 	// reinitialize scratchpad
 	bytesToFlash = 0;
-	memset(scratchpad, 0, sizeof scratchpad);
-	//d1("LAST_ERROR = 0x");
-	//d2(lastError,HEX,2);
+	memset(scratchpad, 0, sizeof(scratchpad));
+	//d1("result = 0x");
+	//d2(result,HEX,2);
 	//dline("");
-	return (lastError);
+	return (result);
 }
 
 void Decompressor::putByte(uint8_t data)

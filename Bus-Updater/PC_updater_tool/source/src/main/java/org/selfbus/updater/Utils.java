@@ -29,9 +29,16 @@ public class Utils {
                ((long) (stream[offset + 3] & 0xFF) << 24);
     }
 
+    public static short streamToShort(byte[] stream, int offset) {
+        return (short) ((stream[offset] & 0xFF) | ((stream[offset + 1] & 0xFF) << 8));
+    }
     public static void longToStream(byte[] stream, int offset, long val) {
         stream[offset + 3] = (byte) (val >> 24);
         stream[offset + 2] = (byte) (val >> 16);
+        stream[offset + 1] = (byte) (val >> 8);
+        stream[offset] = (byte) (val);
+    }
+    public static void shortToStream(byte[] stream, int offset, short val) {
         stream[offset + 1] = (byte) (val >> 8);
         stream[offset] = (byte) (val);
     }

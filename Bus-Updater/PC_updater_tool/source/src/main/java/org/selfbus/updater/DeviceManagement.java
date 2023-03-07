@@ -3,6 +3,7 @@ package org.selfbus.updater;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
@@ -19,6 +20,8 @@ import java.time.Duration;
 import java.util.Arrays;
 
 import static org.selfbus.updater.Mcu.TL4_CONNECTION_TIMEOUT_MS;
+import static org.selfbus.updater.upd.UPDProtocol.COMMAND_POSITION;
+import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 
 /**
  * Provides methods to send firmware update telegrams to the bootloader (MCU)
@@ -105,19 +108,19 @@ public final class DeviceManagement {
         logger.info("\nRequesting UID from {}...", progDestination.getAddress());
         //byte[] result = m.sendUpdateData(dest, UPDCommand.REQUEST_UID.id, new byte[0]);
         byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
-        if (result[3] != UPDCommand.RESPONSE_UID.id) {
+        if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_UID.id) {
             UPDProtocol.checkResult(result, true);
             restartProgrammingDevice();
-            throw new UpdaterException(String.format("Requesting UID failed! result[3]=0x%02X", result[3]));
+            throw new UpdaterException(String.format("Requesting UID failed! result[%d]=0x%02X", COMMAND_POSITION, result[COMMAND_POSITION]));
         }
 
         byte[] uid;
         if ((result.length >= UPDProtocol.UID_LENGTH_USED) && (result.length <= UPDProtocol.UID_LENGTH_MAX)){
-            uid = Arrays.copyOfRange(result, 4, UPDProtocol.UID_LENGTH_USED + 4);
+            uid = Arrays.copyOfRange(result, DATA_POSITION, UPDProtocol.UID_LENGTH_USED + DATA_POSITION);
             logger.info("  got: {} length {}", Utils.byteArrayToHex(uid), uid.length);
             return uid;
         } else {
-            uid = Arrays.copyOfRange(result, 4, result.length - 4);
+            uid = Arrays.copyOfRange(result, DATA_POSITION, result.length - DATA_POSITION);
             logger.error("Request UID failed {} result.length={}, UID_LENGTH_USED={}, UID_LENGTH_MAX={}",
                     Utils.byteArrayToHex(uid),uid.length, UPDProtocol.UID_LENGTH_USED, UPDProtocol.UID_LENGTH_MAX);
             restartProgrammingDevice();
@@ -134,22 +137,22 @@ public final class DeviceManagement {
         Utils.longToStream(telegram, 4 , ToolInfo.versionMinor());
 
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BL_IDENTITY, telegram, MAX_UPD_COMMAND_RETRY).data();
-        if (result[3] != UPDCommand.RESPONSE_BL_IDENTITY.id)
+        if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BL_IDENTITY.id)
         {
-            if (result[3] == UPDCommand.RESPONSE_BL_VERSION_MISMATCH.id) {
-                long minMajorVersion = Utils.streamToLong(result, 4);
-                long minMinorVersion = Utils.streamToLong(result, 8);
-                logger.error("{}Selfbus Updater version {} not compatible. Please update to version {}.{} or higher.{}",
+            if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_BL_VERSION_MISMATCH.id) {
+                long minMajorVersion = Utils.streamToLong(result, DATA_POSITION);
+                long minMinorVersion = Utils.streamToLong(result, DATA_POSITION + 4);
+                logger.error("{}Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.{}",
                         ConColors.RED, ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ConColors.RESET);
             }
             else {
                 UPDProtocol.checkResult(result);
             }
             restartProgrammingDevice();
-            throw new UpdaterException(String.format("Requesting Bootloader Identity failed! result[3]=0x%02X", result[3]));
+            throw new UpdaterException("Requesting Bootloader Identity failed!");
         }
 
-        BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, 4, result.length));
+        BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
         logger.info("  Device Bootloader: {}{}{}", ConColors.BRIGHT_YELLOW, bl, ConColors.RESET);
         if (bl.versionMajor() < ToolInfo.minMajorVersionBootloader())
         {
@@ -168,35 +171,34 @@ public final class DeviceManagement {
     public BootDescriptor requestBootDescriptor()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting Boot Descriptor...");
-        //byte[] result = m.sendUpdateData(dest, UPDCommand.REQUEST_BOOT_DESC.id, new byte[] {0});
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
-        if (result[3] != UPDCommand.RESPONSE_BOOT_DESC.id) {
+        if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
             restartProgrammingDevice();
-            throw new UpdaterException(String.format("Boot descriptor request failed! result[3]=0x%02X", result[3]));
+            throw new UpdaterException(String.format("Boot descriptor request failed! result[%d]=0x%02X, result[%d]=0x%02X",
+                    COMMAND_POSITION, result[COMMAND_POSITION],
+                    DATA_POSITION, result[DATA_POSITION]));
         }
-        BootDescriptor bootDescriptor = BootDescriptor.fromArray(Arrays.copyOfRange(result, 4, result.length));
+        BootDescriptor bootDescriptor = BootDescriptor.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
         logger.info("  Current firmware: {}", bootDescriptor);
         return bootDescriptor;
     }
 
     public String requestAppVersionString()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
-        if (result[3] != UPDCommand.APP_VERSION_RESPONSE.id){
+        byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[]{0}, MAX_UPD_COMMAND_RETRY).data();
+        if (result[COMMAND_POSITION] != UPDCommand.APP_VERSION_RESPONSE.id){
             UPDProtocol.checkResult(result);
             return null;
         }
-        return new String(result,4,result.length - 4);	// Convert 12 bytes to string starting from result[4];
+        return new String(result,DATA_POSITION,result.length - DATA_POSITION);	// Convert 12 bytes to string starting from result[DATA_POSITION];
     }
 
     public void unlockDeviceWithUID(byte[] uid)
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nUnlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
-
-        //byte[] result = m.sendUpdateData(dest, UPDCommand.UNLOCK_DEVICE.id, uid);
         byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, MAX_UPD_COMMAND_RETRY).data();
-        if (UPDProtocol.checkResult(result) != 0) {
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Selfbus update failed.");
         }
@@ -209,9 +211,8 @@ public final class DeviceManagement {
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
         logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
-        // byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_ADDRESS_RANGE.id, telegram);
         byte[] result = sendWithRetry(UPDCommand.ERASE_ADDRESS_RANGE, telegram, MAX_UPD_COMMAND_RETRY).data();
-        if (UPDProtocol.checkResult(result) != 0) {
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Erasing firmware address range failed.");
         }
@@ -219,9 +220,8 @@ public final class DeviceManagement {
 
     public void eraseFlash()
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
-        // byte[] result = mc.sendUpdateData(pd, UPDCommand.ERASE_COMPLETE_FLASH.id, new byte[] {0});
         byte[] result = sendWithRetry(UPDCommand.ERASE_COMPLETE_FLASH, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
-        if (UPDProtocol.checkResult(result) != 0) {
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Deleting the entire flash failed.");
         }
@@ -233,7 +233,11 @@ public final class DeviceManagement {
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
         // sendWithRetry will always time out, because the mcu is busy dumping the flash
-        sendWithRetry(UPDCommand.DUMP_FLASH, telegram, 0);
+        byte[] result = sendWithRetry(UPDCommand.DUMP_FLASH, telegram, 0).data();
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
+            restartProgrammingDevice();
+            throw new UpdaterException("Flash dumping failed.");
+        }
     }
 
     public ResponseResult doFlash(byte[] data, int maxRetry, int delay)
@@ -262,7 +266,7 @@ public final class DeviceManagement {
                 continue;
             }
 
-            if (UPDProtocol.checkResult(tmp.data(), false) != 0) {
+            if (UPDProtocol.checkResult(tmp.data(), false) != UDPResult.IAP_SUCCESS.id) {
                 restartProgrammingDevice();
                 throw new UpdaterException("doFlash failed.");
             }
@@ -290,14 +294,14 @@ public final class DeviceManagement {
             Thread.sleep(delay);
         }
         int crc32Value = Utils.crc32Value(streamBootDescriptor);
-        byte[] programBootDescriptor = new byte[9];
+        byte[] programBootDescriptor = new byte[8];
         Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
         Utils.longToStream(programBootDescriptor, 4, crc32Value);
         System.out.println();
         logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
                 Integer.toHexString(crc32Value), streamBootDescriptor.length);
         ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
-        if (UPDProtocol.checkResult(programResult.data()) != 0) {
+        if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Updating boot descriptor failed.");
         }
@@ -311,14 +315,17 @@ public final class DeviceManagement {
     public void requestBootLoaderStatistic()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
 
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
-        if (result[3] == UPDCommand.RESPONSE_STATISTIC.id)
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[] {(byte)0xfe}, MAX_UPD_COMMAND_RETRY).data();
+        if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)
         {
-            BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, 4, result.length));
+            BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
             logger.info("  {}{}{}", ConColors.BRIGHT_YELLOW, blStatistic, ConColors.RESET);
         }
         else {
-            logger.warn("  {}{}{}", ConColors.RED, String.format("Requesting Bootloader statistic failed! result[3]=0x%02X", result[3]), ConColors.RESET);
+            logger.warn("  {}{}{}", ConColors.RED,
+                    String.format("Requesting Bootloader statistic failed! result[%d]=0x%02X, result[%d]=0x%02X",
+                            COMMAND_POSITION, result[COMMAND_POSITION],
+                            DATA_POSITION, result[DATA_POSITION]), ConColors.RESET);
         }
     }
 
