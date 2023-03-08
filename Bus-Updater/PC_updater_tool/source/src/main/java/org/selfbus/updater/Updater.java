@@ -296,7 +296,7 @@ public class Updater implements Runnable {
 
             logger.info("Telegram priority: {}", cliOptions.priority());
 
-            //for option -device restart the device in bootloader mode
+            //for option --device restart the device in bootloader mode
             if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
                 dm.checkDeviceInProgrammingMode(null); // check that before no device is in programming mode
                 dm.restartDeviceToBootloader(link, cliOptions.device());
@@ -417,7 +417,11 @@ public class Updater implements Runnable {
                     newFirmware.startAddress() + appVersionAddress);
             logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
-            logger.info("\nFinished programming {}{}{}\n", ConColors.BRIGHT_YELLOW, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
+            String deviceInfo = cliOptions.progDevice().toString();
+            if (cliOptions.device() != null) {
+                deviceInfo = cliOptions.device().toString();
+            }
+            logger.info("\nFinished programming {}device {} with {}{}\n", ConColors.BRIGHT_YELLOW, deviceInfo, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
             dm.restartProgrammingDevice();
 
