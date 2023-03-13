@@ -279,6 +279,12 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
         // update the application
         // as a simple method we use the unique ID of the CPU itself
         // only if this UID (GUID) is known, the device will be unlocked
+        if ((size =! UID_LENGTH_USED))
+        {
+            setLastError(UDP_UID_MISMATCH);
+            return (T_ACK_PDU);
+        }
+
         byte uid[IAP_UID_LENGTH];
         lastError = iapResult2UDPState(iapReadUID(uid));
         if (lastError != UDP_IAP_SUCCESS)
@@ -288,7 +294,7 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
             return (T_ACK_PDU);
         }
 
-        if (memcmp(uid, data, min(size, UID_LENGTH_USED)) != 0)
+        if (memcmp(uid, data, size) != 0)
         {
             if (UID_LENGTH_USED % sizeof(uint32_t) != 0)
             {
@@ -307,7 +313,7 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
                 data[i+3] = reversed & 0xff;
             }
 
-            if (memcmp(uid, data, min(size, UID_LENGTH_USED)) != 0)
+            if (memcmp(uid, data, size) != 0)
             {
                 // uid is still not correct, finally decline access
                 setLastError(UDP_UID_MISMATCH);
