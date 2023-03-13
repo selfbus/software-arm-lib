@@ -923,11 +923,8 @@ unsigned char handleApciUsermsgManufacturer(uint8_t * data, uint32_t size)
 
             default:
                 // device is locked -> command not allowed, send lastError and return
-                if (!getDeviceUnlocked())
-                {
-                    setLastError(UDP_DEVICE_LOCKED);
-                    return (T_ACK_PDU);
-                }
+                setLastError(UDP_DEVICE_LOCKED);
+                return (T_ACK_PDU);
         }
     }
 
