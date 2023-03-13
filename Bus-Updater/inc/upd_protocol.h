@@ -69,6 +69,7 @@
 
 #include <sblib/types.h>
 #include <sblib/internal/iap.h>
+#include "boot_descriptor_block.h"
 
 #define UID_LENGTH_USED (12)            //!< Length of the mcu's UID (guid) used by the PC Updater Tool
 const uint8_t idxInvalidUPDCommand = 0; //!< Array index of the @ref UPD_INVALID command in @ref updCommands
@@ -132,11 +133,11 @@ const struct UPD_Command {
     {UPD_RESPONSE_STATISTIC, 4, 4},
     {UPD_GET_LAST_ERROR, 0, 0}, // not used in PC Updater Tool
     {UPD_SEND_LAST_ERROR, 1, 1},
-    {UPD_UNLOCK_DEVICE, 0, 12},
+    {UPD_UNLOCK_DEVICE, UID_LENGTH_USED, UID_LENGTH_USED},
     {UPD_REQUEST_UID, 0, 0},
     {UPD_RESPONSE_UID, UID_LENGTH_USED, UID_LENGTH_USED},
     {UPD_APP_VERSION_REQUEST, 1, 1},
-    {UPD_APP_VERSION_RESPONSE, 12, 12},
+    {UPD_APP_VERSION_RESPONSE, BL_ID_STRING_LENGTH - 1, BL_ID_STRING_LENGTH - 1},
     {UPD_REQUEST_BOOT_DESC, 0, 1},
     {UPD_RESPONSE_BOOT_DESC, 12, 12},
     {UPD_REQUEST_BL_IDENTITY, 8, 8},
