@@ -60,7 +60,7 @@ BcuUpdate::BcuUpdate(UserRamUpdater* userRamUpdater) :
 unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
         bool * sendResponse, unsigned char * telegram, uint8_t telLength)
 {
-    uint32_t offset = 7; ///\todo this offset is not consistent with other telegram handling in sblib
+    uint32_t offset = 8;
     uint32_t dataLength = telLength - offset - 1; // -1 exclude knx checksum
     uint32_t endDelay;
 
@@ -70,8 +70,6 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderA
             *sendResponse = true;
             return (handleDeprecatedApciMemoryWrite());
         case APCI_USERMSG_MANUFACTURER_0:
-            offset++;
-            dataLength--;
             *sendResponse = true;
             return (handleApciUsermsgManufacturer(&telegram[offset], dataLength));
 
