@@ -1,5 +1,7 @@
 package org.selfbus.updater.bootloader;
 
+import org.selfbus.updater.Utils;
+
 public class BootloaderStatistic {
     private final int disConnectCount;
     private final int repeatedIgnoredTelegramCount;
@@ -11,8 +13,8 @@ public class BootloaderStatistic {
     }
 
     public static BootloaderStatistic fromArray(byte[] parse) {
-        int disConnectCount = (parse[0] & 0xFF) + ((parse[1] & 0xFF) << 8);
-        int repeatedIgnoredTelegramCount = (parse[2] & 0xFF) + ((parse[3] & 0xFF) << 8);;
+        int disConnectCount = Utils.streamToShort(parse, 0);
+        int repeatedIgnoredTelegramCount = Utils.streamToShort(parse, 2);
         return new BootloaderStatistic(disConnectCount, repeatedIgnoredTelegramCount);
     }
 
