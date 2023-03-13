@@ -518,8 +518,8 @@ static unsigned char updRequestBootloaderIdentity(uint8_t * data)
 {
     uint32_t majorVersionUpdater = streamToUIn32(data);
     uint32_t minorVersionUpdater = streamToUIn32(data + 4);
-    bool versionMatch = (majorVersionUpdater >= UPDATER_MIN_MAJOR_VERSION) &&
-            (minorVersionUpdater >= UPDATER_MIN_MINOR_VERSION);
+    bool versionMatch = (majorVersionUpdater > UPDATER_MIN_MAJOR_VERSION) ||
+              ((majorVersionUpdater == UPDATER_MIN_MAJOR_VERSION) && (minorVersionUpdater >= UPDATER_MIN_MINOR_VERSION));
 
     if (!versionMatch)
     {
@@ -546,7 +546,7 @@ static unsigned char updRequestBootloaderIdentity(uint8_t * data)
     ptrToStream(bcu.sendTelegram + 9 + sizeof(bootloaderIdentity) + sizeof(bootloaderFeatures), appFirstAddress);     // application first possible start address
     d3(serial.print("BL ID 0x", (unsigned int)bootloaderIdentity, HEX, 8));
     d3(serial.print("    BL feature 0x", (unsigned int)bootloaderFeatures, HEX, 8));
-    d3(serial.println("    FW start   0x", (unsigned int)appFirstAddress, HEX, 8));
+    d3(serial.println("    FW start   0x", (uintptr_t)appFirstAddress, HEX, 8));
 
     return (T_ACK_PDU);
 }
