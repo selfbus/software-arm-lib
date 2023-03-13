@@ -106,8 +106,7 @@ public final class DeviceManagement {
     public byte[] requestUIDFromDevice()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting UID from {}...", progDestination.getAddress());
-        //byte[] result = m.sendUpdateData(dest, UPDCommand.REQUEST_UID.id, new byte[0]);
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[0], MAX_UPD_COMMAND_RETRY).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_UID.id) {
             UPDProtocol.checkResult(result, true);
             restartProgrammingDevice();
@@ -220,7 +219,7 @@ public final class DeviceManagement {
 
     public void eraseFlash()
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
-        byte[] result = sendWithRetry(UPDCommand.ERASE_COMPLETE_FLASH, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.ERASE_COMPLETE_FLASH, new byte[0], MAX_UPD_COMMAND_RETRY).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Deleting the entire flash failed.");
@@ -315,7 +314,7 @@ public final class DeviceManagement {
     public void requestBootLoaderStatistic()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
 
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[] {(byte)0xfe}, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], MAX_UPD_COMMAND_RETRY).data();
         if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)
         {
             BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));

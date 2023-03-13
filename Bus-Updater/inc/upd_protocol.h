@@ -75,7 +75,7 @@ const uint8_t idxInvalidUPDCommand = 0; //!< Array index of the @ref UPD_INVALID
 const uint8_t updCommandCount = 25;     //!< Total number of @ref UPD_Code commands (used by @ref UPD_Command), adjust when new commands are introduced.
 
 /**
- * Control commands for flash process with @ref APCI_USERMSG_MANUFACTURER_5 and @ref APCI_USERMSG_MANUFACTURER_6
+ * Control commands for flash process with @ref APCI_USERMSG_MANUFACTURER_0 and @ref APCI_USERMSG_MANUFACTURER_6
  */
 enum UPD_Code : uint8_t
 {
@@ -119,21 +119,21 @@ const struct UPD_Command {
 } updCommands[updCommandCount] =
 {
     {UPD_INVALID, 0, 0},     // needs to be always at index 0 because it's used as a invalid return value of code2UPDCommand, see @ref idxInvalidUPDCommand
-    {UPD_SEND_DATA, 2, 255}, // at least byte index and one byte, max. 255 for extended frames support
+    {UPD_SEND_DATA, 2, 254}, // at least byte index and one byte, max. 254 for extended frames support
     {UPD_PROGRAM, 10, 10},
     {UPD_UPDATE_BOOT_DESC, 8, 8},
-    {UPD_SEND_DATA_TO_DECOMPRESS, 1, 255}, // max. 255 for extended frames support
+    {UPD_SEND_DATA_TO_DECOMPRESS, 1, 254}, // max. 254 for extended frames support
     {UPD_PROGRAM_DECOMPRESSED_DATA, 4, 4},
-    {UPD_ERASE_COMPLETE_FLASH, 1, 1}, // dummy byte
+    {UPD_ERASE_COMPLETE_FLASH, 0, 0},
     {UPD_ERASE_ADDRESSRANGE, 8, 8},
     {UPD_REQ_DATA, 3, 3}, // not implemented, maybe flash address (2 bytes ) and count (1 byte)?
     {UPD_DUMP_FLASH, 8, 8},
-    {UPD_REQUEST_STATISTIC, 1, 1}, // dummy byte
+    {UPD_REQUEST_STATISTIC, 0, 0},
     {UPD_RESPONSE_STATISTIC, 4, 4},
     {UPD_GET_LAST_ERROR, 0, 0}, // not used in PC Updater Tool
     {UPD_SEND_LAST_ERROR, 1, 1},
     {UPD_UNLOCK_DEVICE, 0, 12},
-    {UPD_REQUEST_UID, 1, 1}, // dummy byte
+    {UPD_REQUEST_UID, 0, 0},
     {UPD_RESPONSE_UID, UID_LENGTH_USED, UID_LENGTH_USED},
     {UPD_APP_VERSION_REQUEST, 1, 1},
     {UPD_APP_VERSION_RESPONSE, 12, 12},
@@ -146,7 +146,7 @@ const struct UPD_Command {
 };
 
 /**
- * Control responses to @ref UPD_Command for flash process with @ref APCI_USERMSG_MANUFACTURER_5 and @ref APCI_USERMSG_MANUFACTURER_6
+ * Control responses to @ref UPD_Command for flash process with @ref APCI_USERMSG_MANUFACTURER_0 and @ref APCI_USERMSG_MANUFACTURER_6
  */
 enum UDP_State : uint8_t
 {
