@@ -35,10 +35,6 @@
  *
  *    -@ref UPD_REQ_DATA (not implemented)
  *
- *    -@ref UPD_GET_LAST_ERROR
- *      - Returns the last @ref UDP_State
- *      .
- *
  *    -Workflow:
  *      -# unlock the device with @ref UPD_UNLOCK_DEVICE
  *      -# erase the address range which needs to be programmed (@ref UPD_ERASE_ADDRESSRANGE)
@@ -93,8 +89,7 @@ enum UPD_Code : uint8_t
                                             //!< works only with DEBUG version of bootloader @note device must be unlocked
     UPD_REQUEST_STATISTIC = 0xdf,           //!< Return some statistic data for the active connection
     UPD_RESPONSE_STATISTIC = 0xde,          //!< Response for @ref UPD_STATISTIC_RESPONSE containing the statistic data
-    UPD_GET_LAST_ERROR = 0xdd,              //!< Returns last error
-    UPD_SEND_LAST_ERROR = 0xdc,             //!< Response for @ref UPD_GET_LAST_ERROR containing the last error
+    UPD_SEND_LAST_ERROR = 0xdc,             //!< Response containing the last error
 
     UPD_UNLOCK_DEVICE = 0xbf,               //!< Unlock the device for operations, which are only allowed on a unlocked device
     UPD_REQUEST_UID = 0xbe,                 //!< Return the 12 byte shorten UID (GUID) of the mcu @note device must be unlocked
@@ -131,7 +126,6 @@ const struct UPD_Command {
     {UPD_DUMP_FLASH, 8, 8},
     {UPD_REQUEST_STATISTIC, 0, 0},
     {UPD_RESPONSE_STATISTIC, 4, 4},
-    {UPD_GET_LAST_ERROR, 0, 0}, // not used in PC Updater Tool
     {UPD_SEND_LAST_ERROR, 1, 1},
     {UPD_UNLOCK_DEVICE, UID_LENGTH_USED, UID_LENGTH_USED},
     {UPD_REQUEST_UID, 0, 0},

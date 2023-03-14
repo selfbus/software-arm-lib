@@ -22,8 +22,7 @@ public enum UPDCommand {
     DUMP_FLASH((byte)0xe7, "DUMP_FLASH"),                               //!< DUMP the flash of a given address range (data[0-3] - data[4-7]) to serial port of the mcu, works only with DEBUG version of bootloader
     REQUEST_STATISTIC((byte)0xdf, "STATISTIC_REQUEST"),                 //!< Return some statistic data for the active connection
     RESPONSE_STATISTIC((byte)0xde, "STATISTIC_RESPONSE"),               //!< Response for @ref UPD_STATISTIC_RESPONSE containing the statistic data
-    GET_LAST_ERROR((byte)0xdd, "GET_LAST_ERROR"),                       //!< Returns last error
-    SEND_LAST_ERROR((byte)0xdc, "SEND_LAST_ERROR"),                     //!< Response for @ref GET_LAST_ERROR containing the last error
+    SEND_LAST_ERROR((byte)0xdc, "SEND_LAST_ERROR"),                     //!< Response containing the last error
     UNLOCK_DEVICE((byte)0xbf, "UNLOCK_DEVICE"),                         //!< Unlock the device for operations, which are only allowed on a unlocked device
     REQUEST_UID((byte)0xbe, "REQUEST_UID"),                             //!< Return the 12 byte shorten UID (GUID) of the mcu @note device must be unlocked
     RESPONSE_UID((byte)0xbd, "RESPONSE_UID"),                           //!< Response for @ref REQUEST_UID containing the first 12 bytes of the UID

@@ -57,7 +57,6 @@ static uint8_t __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[
 // Try to avoid direct access to these global variables.
 // It's better to use their get, set and reset functions
 static unsigned int deviceLocked = DEVICE_LOCKED;   //!< current device locking state @note Better use GetDeviceUnlocked() & setDeviceLockState()
-static UDP_State lastError = UDP_IAP_SUCCESS;       //!< last error while processing a UDP command
 static unsigned int ramLocation = 0;                //!< current location of the ramBuffer processed
 static unsigned int bytesReceived = 0;              //!< number of bytes received by UPD_SEND_DATA since last reset()
 static unsigned int bytesFlashed = 0;               //!< number of bytes flashed by UPD_PROGRAM since last reset()
@@ -243,14 +242,12 @@ static bool getProgButtonState()
  */
 static void setLastError(UDP_State errorToSet)
 {
-    lastError = errorToSet;
     prepareReturnTelegram(bcu.sendTelegram, 1, UPD_SEND_LAST_ERROR);
-    bcu.sendTelegram[9] = lastError;
+    bcu.sendTelegram[9] = errorToSet;
 }
 
 void resetUPDProtocol(void)
 {
-    lastError = UDP_IAP_SUCCESS;
     ramLocation = 0;
     bytesReceived = 0;
     bytesFlashed = 0;
@@ -259,7 +256,7 @@ void resetUPDProtocol(void)
 
 /**
  * Handles the @ref UPD_UNLOCK_DEVICE command.
- *        The device is unlocked if the programming mode is active or the provided UID (guid) is valid.
+ * The device is unlocked if the programming mode is active or the provided UID (guid) is valid.
  *
  * @param data    buffer for the UID
  * @param size    size of the buffer
@@ -268,65 +265,57 @@ void resetUPDProtocol(void)
  */
 static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
 {
-    if (getProgButtonState())
-    { // the operator has physical access to the device -> we unlock it
-        setDeviceLockState(DEVICE_UNLOCKED);
-        setLastError(UDP_IAP_SUCCESS);
-        dline(" by Button");
+    // we need to ensure that only authorized operators can
+    // update the application
+    // as a simple method we use the unique ID of the CPU itself
+    // only if this UID (GUID) is known, the device will be unlocked
+    if ((size =! UID_LENGTH_USED))
+    {
+        setLastError(UDP_UID_MISMATCH);
+        return (T_ACK_PDU);
     }
-    else
-    {   // we need to ensure that only authorized operators can
-        // update the application
-        // as a simple method we use the unique ID of the CPU itself
-        // only if this UID (GUID) is known, the device will be unlocked
-        if ((size =! UID_LENGTH_USED))
+
+    byte uid[IAP_UID_LENGTH];
+    UDP_State error = iapResult2UDPState(iapReadUID(uid));
+    if (error != UDP_IAP_SUCCESS)
+    {
+        // could not read UID of mcu
+        setLastError(error);
+        return (T_ACK_PDU);
+    }
+
+    if (memcmp(uid, data, size) != 0)
+    {
+        if (UID_LENGTH_USED % sizeof(uint32_t) != 0)
         {
             setLastError(UDP_UID_MISMATCH);
             return (T_ACK_PDU);
         }
-
-        byte uid[IAP_UID_LENGTH];
-        lastError = iapResult2UDPState(iapReadUID(uid));
-        if (lastError != UDP_IAP_SUCCESS)
-        {
-            // could not read UID of mcu
-            setLastError(lastError);
-            return (T_ACK_PDU);
+        // uid is not correct,
+        // but as a last chance we convert the uid from big-endian to little-endian as displayed by Flashmagic
+        uint32_t reversed;
+        for (uint8_t i = 0; i < UID_LENGTH_USED; i=i+sizeof(uint32_t))
+        { ///\todo this should be reworked, maybe somehow with __REV
+            reversed = streamToUIn32(&data[i]);
+            data[i] = reversed >> 24;
+            data[i+1] = reversed >> 16;
+            data[i+2] = reversed >> 8;
+            data[i+3] = reversed & 0xff;
         }
 
         if (memcmp(uid, data, size) != 0)
         {
-            if (UID_LENGTH_USED % sizeof(uint32_t) != 0)
-            {
-                setLastError(UDP_UID_MISMATCH);
-                return (T_ACK_PDU);
-            }
-            // uid is not correct,
-            // but as a last chance we convert the uid from big-endian to little-endian as displayed by Flashmagic
-            uint32_t reversed;
-            for (uint8_t i = 0; i < UID_LENGTH_USED; i=i+sizeof(uint32_t))
-            { ///\todo this should be reworked, maybe somehow with __REV
-                reversed = streamToUIn32(&data[i]);
-                data[i] = reversed >> 24;
-                data[i+1] = reversed >> 16;
-                data[i+2] = reversed >> 8;
-                data[i+3] = reversed & 0xff;
-            }
-
-            if (memcmp(uid, data, size) != 0)
-            {
-                // uid is still not correct, finally decline access
-                setLastError(UDP_UID_MISMATCH);
-                return (T_ACK_PDU);
-            }
+            // uid is still not correct, finally decline access
+            setLastError(UDP_UID_MISMATCH);
+            return (T_ACK_PDU);
         }
-
-        // we can now unlock the device
-        setDeviceLockState(DEVICE_UNLOCKED);
-        setLastError(UDP_IAP_SUCCESS);
-        dline(" by UID");
-        resetUPDProtocol();
     }
+
+    // we can now unlock the device
+    setDeviceLockState(DEVICE_UNLOCKED);
+    setLastError(UDP_IAP_SUCCESS);
+    dline(" by UID");
+    resetUPDProtocol();
     return (T_ACK_PDU);
 }
 
@@ -657,17 +646,6 @@ static unsigned char updRequestUID()
 }
 
 /**
- * Handles the @ref UPD_GET_LAST_ERROR command. Copies the last error to the return telegram.
- *
- * @return        always T_ACK_PDU
- */
-static unsigned char updGetLastError()
-{
-    setLastError(lastError);
-    return (T_ACK_PDU);
-}
-
-/**
  * Handles all unknown UPD/UDP commands.
  *
  * @post          calls setLastErrror with @ref UDP_UNKNOWN_COMMAND
@@ -924,7 +902,6 @@ unsigned char handleApciUsermsgManufacturer(uint8_t * data, uint32_t size)
             case UPD_UNLOCK_DEVICE:
             case UPD_REQUEST_UID:
             case UPD_APP_VERSION_REQUEST:
-            case UPD_GET_LAST_ERROR:
                 break;
 
             default:
@@ -945,9 +922,6 @@ unsigned char handleApciUsermsgManufacturer(uint8_t * data, uint32_t size)
 
         case UPD_APP_VERSION_REQUEST:
             return (updAppVersionRequest(data));
-
-        case UPD_GET_LAST_ERROR:
-            return (updGetLastError());
 
         case UPD_SEND_DATA:
             return (updSendData(data, size));
