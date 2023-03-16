@@ -68,6 +68,11 @@
 #include "boot_descriptor_block.h"
 
 #define UID_LENGTH_USED (12)            //!< Length of the mcu's UID (guid) used by the PC Updater Tool
+
+static_assert(UID_LENGTH_USED > 0, "UID_LENGTH_USED must be greater then 0");
+static_assert(UID_LENGTH_USED <= IAP_UID_LENGTH, "UID_LENGTH_USED must be less than or equal to IAP_UID_LENGTH");
+static_assert(UID_LENGTH_USED % sizeof(uint32_t) == 0, "UID_LENGTH_USED must be multiple of sizeof(uint32_t)");
+
 const uint8_t idxInvalidUPDCommand = 0; //!< Array index of the @ref UPD_INVALID command in @ref updCommands
 const uint8_t updCommandCount = 25;     //!< Total number of @ref UPD_Code commands (used by @ref UPD_Command), adjust when new commands are introduced.
 

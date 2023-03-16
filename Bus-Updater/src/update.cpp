@@ -286,13 +286,7 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
 
     if (memcmp(uid, data, size) != 0)
     {
-        if (UID_LENGTH_USED % sizeof(uint32_t) != 0)
-        {
-            setLastError(UDP_UID_MISMATCH);
-            return (T_ACK_PDU);
-        }
-        // uid is not correct,
-        // but as a last chance we convert the uid from big-endian to little-endian as displayed by Flashmagic
+        // uid is not correct, as a last chance we convert the uid from big-endian to little-endian as displayed by Flashmagic
         uint32_t reversed;
         for (uint8_t i = 0; i < UID_LENGTH_USED; i=i+sizeof(uint32_t))
         { ///\todo this should be reworked, maybe somehow with __REV
