@@ -269,7 +269,7 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
     // update the application
     // as a simple method we use the unique ID of the CPU itself
     // only if this UID (GUID) is known, the device will be unlocked
-    if ((size =! UID_LENGTH_USED))
+    if ((UID_LENGTH_USED != size))
     {
         setLastError(UDP_UID_MISMATCH);
         return (T_ACK_PDU);
