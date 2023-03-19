@@ -3,12 +3,12 @@ package org.selfbus.updater.bootloader;
 import org.selfbus.updater.Utils;
 
 public class BootloaderStatistic {
-    private final int disConnectCount;
+    private final int disconnectCount;
     private final int repeatedIgnoredTelegramCount;
 
 
-    public BootloaderStatistic(int disConnectCount, int repeatedIgnoredTelegramCount) {
-        this.disConnectCount = disConnectCount;
+    public BootloaderStatistic(int disconnectCount, int repeatedIgnoredTelegramCount) {
+        this.disconnectCount = disconnectCount;
         this.repeatedIgnoredTelegramCount = repeatedIgnoredTelegramCount;
     }
 
@@ -20,15 +20,15 @@ public class BootloaderStatistic {
 
     public String toString() {
         return String.format("#Disconnect: %d #Repeated ignored: %d",
-                              disConnectCount(), repeatedIgnoredTelegramCount());
+                              getDisconnectCount(), getRepeatedIgnoredTelegramCount());
     }
 
-    public long disConnectCount()
+    public long getDisconnectCount()
     {
-        return disConnectCount;
+        return disconnectCount;
     }
 
-    public long repeatedIgnoredTelegramCount()
+    public long getRepeatedIgnoredTelegramCount()
     {
         return repeatedIgnoredTelegramCount;
     }
