@@ -5,7 +5,7 @@ package org.selfbus.updater;
  */
 public final class Mcu {
     /** Maximum payload one APCI_USERMSG_MANUFACTURER_0/APCI_USERMSG_MANUFACTURER_6 can handle */
-    public static final int MAX_PAYLOAD = 11;
+    public static final int MAX_PAYLOAD = 12;
     ///\todo get rid of this, the MCU should handle this by it self or report us the size
     /** Maximum length a asdu can be in a standard frame */
     public static final int MAX_ASDU_LENGTH = 14;

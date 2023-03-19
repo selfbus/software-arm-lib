@@ -412,7 +412,7 @@ static unsigned char updEraseFullFlash()
  */
 static unsigned char updSendData(uint8_t * data, uint32_t nCount)
 {
-    ramLocation = data[0]; // Current Byte position as message number with 11 Bytes payload each
+    ramLocation = data[0]; // Current Byte position as message number with 12 Bytes payload each
     nCount --;             // 1 Bytes abziehen, da diese für die Nachrichtennummer verwendet wird
 
     if ((ramLocation + nCount) > sizeof(ramBuffer)/sizeof(ramBuffer[0])) // enough space left?
