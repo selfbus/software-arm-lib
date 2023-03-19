@@ -73,8 +73,7 @@ static_assert(UID_LENGTH_USED > 0, "UID_LENGTH_USED must be greater then 0");
 static_assert(UID_LENGTH_USED <= IAP_UID_LENGTH, "UID_LENGTH_USED must be less than or equal to IAP_UID_LENGTH");
 static_assert(UID_LENGTH_USED % sizeof(uint32_t) == 0, "UID_LENGTH_USED must be multiple of sizeof(uint32_t)");
 
-const uint8_t idxInvalidUPDCommand = 0; //!< Array index of the @ref UPD_INVALID command in @ref updCommands
-const uint8_t updCommandCount = 25;     //!< Total number of @ref UPD_Code commands (used by @ref UPD_Command), adjust when new commands are introduced.
+constexpr uint8_t idxInvalidUPDCommand = 0; //!< Array index of the @ref UPD_INVALID command in @ref updCommands
 
 /**
  * Control commands for flash process with @ref APCI_USERMSG_MANUFACTURER_0 and @ref APCI_USERMSG_MANUFACTURER_6
@@ -117,7 +116,7 @@ const struct UPD_Command {
     UPD_Code code;
     uint8_t minBytes;
     uint8_t maxBytes;
-} updCommands[updCommandCount] =
+} updCommands[] =
 {
     {UPD_INVALID, 0, 0},     // needs to be always at index 0 because it's used as a invalid return value of code2UPDCommand, see @ref idxInvalidUPDCommand
     {UPD_SEND_DATA, 2, 254}, // at least byte index and one byte, max. 254 for extended frames support
