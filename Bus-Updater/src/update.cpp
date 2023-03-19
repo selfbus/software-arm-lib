@@ -173,7 +173,17 @@ uint16_t streamToUShort16(uint8_t * buffer)
  */
 static void prepareReturnTelegram(uint8_t * retTelegram, unsigned int count, unsigned char cmd)
 {
-    retTelegram[5] = 0x60 + count + 2; // routing count in high nibble + response length in low nibble
+    count += 2; // +1 byte because counting starts including retTelegram[7] (KNX Spec 2.1 3/3/3 2.1 NPDU p.6)
+                // +1 byte for cmd (retTelegram[8])
+    if (count > 0x0f) ///\todo maybe won't work with extended frames
+    {
+#ifdef DEBUG
+        fatalError();
+#else
+        count &= 0x0f; // make sure not to mess up with routing count in release-build
+#endif
+    }
+    retTelegram[5] = 0x60 + count; // routing count in high nibble + response length in low nibble
     setApciCommand(retTelegram, APCI_USERMSG_MANUFACTURER_6, 0);
     retTelegram[8] = cmd;
 }
