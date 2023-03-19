@@ -329,14 +329,13 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
  * Handles the @ref UPD_APP_VERSION_REQUEST command and sends a @ref UPD_APP_VERSION_RESPONSE
  *        The response contains the address of the AppVersion string
  *
- * @param data    data[0] contains index of appversion to retrieve
  * @post          sets lastError to @ref UDP_IAP_SUCCESS if successful, otherwise to @ref UDP_WRONG_DESCRIPTOR_BLOCK
  * @return        always @ref T_ACK_PDU
  */
-static unsigned char updAppVersionRequest(uint8_t * data)
+static unsigned char updAppVersionRequest()
 {
     char* appversion;
-    appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - (1 + data[0]) * BOOT_BLOCK_DESC_SIZE));
+    appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - BOOT_BLOCK_DESC_SIZE));
     prepareReturnTelegram(bcu.sendTelegram, BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
     memcpy(bcu.sendTelegram + 9, appversion, BL_ID_STRING_LENGTH - 1);
     d3(
@@ -933,7 +932,7 @@ unsigned char handleApciUsermsgManufacturer(uint8_t * data, uint32_t size)
             return (updRequestUID());
 
         case UPD_APP_VERSION_REQUEST:
-            return (updAppVersionRequest(data));
+            return (updAppVersionRequest());
 
         case UPD_SEND_DATA:
             return (updSendData(data, size));

@@ -123,8 +123,7 @@ BcuBase* setup()
     serial.println("Firmware (start)            : 0x", applicationFirstAddress());
     serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress());
     serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
-    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
-    serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
+    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE, HEX, 6);
     serial.print("physical address            : ");
     dumpKNXAddress(physicalAddress);
     serial.println();
@@ -257,12 +256,9 @@ static void run_updater(bool programmingMode)
 
     // Start main application at address
     AppDescriptionBlock * block = (AppDescriptionBlock *) bootDescriptorBlockAddress();
-    for (int i = 0; i < BOOT_BLOCK_COUNT; i++, block--)
+    if (checkApplication(block))
     {
-        if (checkApplication(block))
-        {
-            jumpToApplication(block->startAddress);
-        }
+        jumpToApplication(block->startAddress);
     }
     // Start updater in case of error
     run_updater(false);

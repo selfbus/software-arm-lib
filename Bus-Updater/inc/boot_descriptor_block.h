@@ -44,8 +44,6 @@
 #define BL_ID_STRING_LENGTH  13                 //!< length of boot loader identity string
 
 #define BOOT_BLOCK_DESC_SIZE FLASH_PAGE_SIZE    //!< 1 flash page
-#define BOOT_BLOCK_COUNT 1                      //!< Number of applications supported (application description blocks)
-                                                //!< @warning @ref BOOT_BLOCK_COUNT other's than 1 are not tested!
 
 extern char bl_id_string[BL_ID_STRING_LENGTH]; //!< default bootloader identity "string" used in @ref getAppVersion()
 

@@ -167,11 +167,10 @@ unsigned int flashSize(void)
 
 uint8_t * applicationFirstAddress(void)
 {
-    // replacement for #define APPLICATION_FIRST_SECTOR //!< where the application starts (BL size) + (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT)
     uint8_t * appFirstAddress = bootLoaderFirstAddress() + bootLoaderSize();
-    // all boot descriptor block's are placed in front of the application,
-    // so we need for them space after bootloader and before the application
-    appFirstAddress += (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT);
+    // boot descriptor block is placed in front of the application,
+    // so we need space after bootloader and before the application
+    appFirstAddress += BOOT_BLOCK_DESC_SIZE;
     // align to the next flash page
     void * ptr = appFirstAddress;
     std::size_t space = FLASH_PAGE_ALIGNMENT;
@@ -181,14 +180,12 @@ uint8_t * applicationFirstAddress(void)
 
 uint8_t * bootDescriptorBlockAddress(void)
 {
-    // replacement for #define BOOT_DSCR_ADDRESS  (APPLICATION_FIRST_SECTOR - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT))
     // boot descriptor block is placed in front of the application
-    return (applicationFirstAddress() - (BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT));
+    return (applicationFirstAddress() - BOOT_BLOCK_DESC_SIZE);
 }
 
 unsigned int bootDescriptorBlockPage(void)
 {
-    // replacement for #define BOOT_BLOCK_PAGE   ((APPLICATION_FIRST_SECTOR / BOOT_BLOCK_DESC_SIZE) - 1) //!< flash page number of the application description block
     // every boot descriptor block is placed in front of the application, so subtract all of them
     return iapPageOfAddress(bootDescriptorBlockAddress());
 }

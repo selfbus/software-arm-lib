@@ -170,7 +170,7 @@ public final class DeviceManagement {
     public BootDescriptor requestBootDescriptor()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting Boot Descriptor...");
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[] {0}, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], MAX_UPD_COMMAND_RETRY).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
             restartProgrammingDevice();
@@ -185,7 +185,7 @@ public final class DeviceManagement {
 
     public String requestAppVersionString()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[]{0}, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[0], MAX_UPD_COMMAND_RETRY).data();
         if (result[COMMAND_POSITION] != UPDCommand.APP_VERSION_RESPONSE.id){
             UPDProtocol.checkResult(result);
             return null;
