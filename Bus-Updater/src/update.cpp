@@ -256,7 +256,7 @@ void resetUPDProtocol(void)
 
 /**
  * Handles the @ref UPD_UNLOCK_DEVICE command.
- * The device is unlocked if the programming mode is active or the provided UID (guid) is valid.
+ * The device is unlocked if the provided UID (guid) is valid.
  *
  * @param data    buffer for the UID
  * @param size    size of the buffer
@@ -272,6 +272,7 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
     if ((UID_LENGTH_USED != size))
     {
         setLastError(UDP_UID_MISMATCH);
+        dline(" size mismatch");
         return (T_ACK_PDU);
     }
 
@@ -281,6 +282,7 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
     {
         // could not read UID of mcu
         setLastError(error);
+        dline(" iapReadUID failed");
         return (T_ACK_PDU);
     }
 
@@ -301,6 +303,7 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
         {
             // uid is still not correct, finally decline access
             setLastError(UDP_UID_MISMATCH);
+            dline(" uid mismatch");
             return (T_ACK_PDU);
         }
     }
@@ -308,8 +311,8 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
     // we can now unlock the device
     setDeviceLockState(DEVICE_UNLOCKED);
     setLastError(UDP_IAP_SUCCESS);
-    dline(" by UID");
     resetUPDProtocol();
+    dline(" device unlocked");
     return (T_ACK_PDU);
 }
 
