@@ -110,15 +110,12 @@ public enum UDPResult {
      * @return Instance of the UPDResult from the given ID
      */
     public static UDPResult valueOfIndex(byte index) {
-        // UDPResult res = BY_INDEX.get(index);
-        UDPResult res = null;
         for (UDPResult e: values()) {
              if (e.id == index) {
-                 res = e;
-                 break;
+                 return e;
              }
         }
-        return Objects.requireNonNullElse(res, INVALID);
+        return INVALID;
     }
 
     @Override
