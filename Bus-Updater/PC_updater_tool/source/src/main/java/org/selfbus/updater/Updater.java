@@ -343,7 +343,7 @@ public class Updater implements Runnable {
             imageCache.writeToBinFile(cacheFileName);
 
             // Handle App Version Pointer
-            if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < newFirmware.length()) {  // manually provided and not in vector or outside file length
+            if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
                 String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Get app version pointers content
                 logger.info("  File App Version String is : {}{}{} manually specified at address 0x{}",
@@ -352,7 +352,7 @@ public class Updater implements Runnable {
             else {
                 // Search for AppVersion pointer in flash file if not set manually, Search magic bytes in image file
                 appVersionAddress = Bytes.indexOf(newFirmware.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
-                if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= newFirmware.length()) {
+                if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {
                     appVersionAddress = 0;		// missing, or not valid set to 0
                     logger.warn("  {}Could not find the App Version string, setting to 0. Please specify manually with {}{}",
                             ConColors.BRIGHT_RED, CliOptions.OPT_LONG_APP_VERSION_PTR, ConColors.RESET);

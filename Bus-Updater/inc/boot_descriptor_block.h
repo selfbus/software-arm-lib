@@ -72,10 +72,10 @@ typedef struct AppDescriptionBlock
 unsigned int checkApplication(AppDescriptionBlock * block);
 
 /**
- * Returns the address of function getAppversion() from the application
+ * Returns the address of the @ref APP_VERSION_STRING of the application starting after the magic identifier !AVP!@:
  *
  * @param block Application description block to get the address
- * @return      if valid, pointer to buffer of application version string (length BL_ID_STRING_LENGTH)
+ * @return      if valid, pointer to buffer of application version string (length @ref BL_ID_STRING_LENGTH)
  *              otherwise bl_id_string
  */
 char * getAppVersion(AppDescriptionBlock * block);
