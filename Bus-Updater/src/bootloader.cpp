@@ -106,8 +106,9 @@ BcuBase* setup()
 #ifdef DEBUG
     int physicalAddress = bcu.ownAddress();
     serial.println("=========================================================");
-    serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
-    serial.println(", DEBUG MODE :-)");
+    serial.print("Selfbus KNX Bootloader v", BOOTLOADER_MAJOR_VERSION);
+    serial.print(".", BOOTLOADER_MINOR_VERSION, DEC, 2);
+    serial.println(" DEBUG MODE :-)");
     serial.print("Build: ");
     serial.print(__DATE__);
     serial.print(" ");

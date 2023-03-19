@@ -19,13 +19,16 @@
  published by the Free Software Foundation.
  ---------------------------------------------------------------------------*/
 
-#ifndef VERSION_H_
-#define VERSION_H_
+#ifndef SB_BOOTLOADER_VERSION_H_
+#define SB_BOOTLOADER_VERSION_H_
 
-#define BL_IDENTITY (0x1090) //!< boot loader Version 0.90, (change also APP_VERSION in BootloaderLoader's app_main.cpp)
-#define UPDATER_MIN_MAJOR_VERSION (0) //!< minimum required major version of the Selfbus Updater we are talking to
-#define UPDATER_MIN_MINOR_VERSION (90) //!< minimum required minor version of the Selfbus Updater we are talking to
+#include <stdint.h>
 
+constexpr uint8_t BOOTLOADER_MAJOR_VERSION = 0; //!< Bootloader major version @note change also in BootloaderLoader's app_main.cpp
+constexpr uint8_t BOOTLOADER_MINOR_VERSION = 91; //!< Bootloader minor version @note change also in BootloaderLoader's app_main.cpp
 
-#endif /* VERSION_H_ */
+constexpr uint8_t UPDATER_MIN_MAJOR_VERSION = 0; //!< minimum required major version of the Selfbus Updater we are talking to
+constexpr uint8_t UPDATER_MIN_MINOR_VERSION = 91; //!< minimum required minor version of the Selfbus Updater we are talking to
+
+#endif /* SB_BOOTLOADER_VERSION_H_ */
 /** @}*/

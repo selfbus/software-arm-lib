@@ -17,10 +17,11 @@
 extern const __attribute__((aligned(16))) uint8_t incbin_bl_start[];
 extern const uint8_t incbin_bl_end[];
 
-#define BOOTLOADER_FLASH_STARTADDRESS ((uint8_t *) 0x0)    //!< Flash start address of the bootloader
-#define LOADERLOADER_VERSION          (0x0090)             //!< Boot loader loader Version 0.90
+#define BOOTLOADER_FLASH_STARTADDRESS ((uint8_t *) 0x0) //!< Flash start address of the bootloader
+constexpr uint8_t LOADERLOADER_MAJOR_VERSION = 0;       //!< Bootloader Loader major version @note change also in @ref APP_VERSION
+constexpr uint8_t LOADERLOADER_MINOR_VERSION = 91;       //!< Bootloader Loader minor Version @note change also in @ref APP_VERSION
 
-APP_VERSION("SBloader", "0", "90");
+APP_VERSION("SBloader", "0", "91");
 
 void setup()
 {
@@ -35,13 +36,15 @@ void setup()
             serial.begin(115200);
         }
         serial.println("=========================================================");
-        serial.print("Selfbus BootloaderLoader V", LOADERLOADER_VERSION, HEX, 4);
-        serial.println(", DEBUG MODE :-)");
+        serial.print("Selfbus BootloaderLoader v", LOADERLOADER_MAJOR_VERSION);
+        serial.print(".", LOADERLOADER_MINOR_VERSION, DEC, 3);
+        serial.println(" DEBUG MODE :-)");
         serial.print("Build: ");
         serial.print(__DATE__);
         serial.print(" ");
         serial.println(__TIME__);
         serial.println("---------------------------------------------------------");
+        serial.flush();
     );
 }
 

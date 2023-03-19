@@ -312,7 +312,6 @@ static unsigned char updUnlockDevice(uint8_t * data, uint32_t size)
     setDeviceLockState(DEVICE_UNLOCKED);
     setLastError(UDP_IAP_SUCCESS);
     resetUPDProtocol();
-    dline(" device unlocked");
     return (T_ACK_PDU);
 }
 
@@ -493,7 +492,7 @@ static unsigned char updProgram(uint8_t * data)
 }
 
 /**
- * Handles the @ref UPD_REQUEST_BL_IDENTITY command. Copies bootloader version (@ref BL_IDENTITY),
+ * Handles the @ref UPD_REQUEST_BL_IDENTITY command. Copies bootloader version (@ref BOOTLOADER_MAJOR_VERSION, @ref BOOTLOADER_MINOR_VERSION),
  *        bootloader features (@ref BL_FEATURES) and applications first possible start address (@ref applicationFirstAddress())
  *        to the return telegram.
  *
@@ -502,38 +501,44 @@ static unsigned char updProgram(uint8_t * data)
  */
 static unsigned char updRequestBootloaderIdentity(uint8_t * data)
 {
-    uint32_t majorVersionUpdater = streamToUIn32(data);
-    uint32_t minorVersionUpdater = streamToUIn32(data + 4);
+    uint8_t majorVersionUpdater = data[0];
+    uint8_t minorVersionUpdater = data[1];
     bool versionMatch = (majorVersionUpdater > UPDATER_MIN_MAJOR_VERSION) ||
               ((majorVersionUpdater == UPDATER_MIN_MAJOR_VERSION) && (minorVersionUpdater >= UPDATER_MIN_MINOR_VERSION));
 
+    uint8_t offset = 9;
     if (!versionMatch)
     {
         // version mismatch send the minimum requested major and minor version
-        uint32_t minMajorVersionUpdater = UPDATER_MIN_MAJOR_VERSION;
-        uint32_t minMinorVersionUpdater = UPDATER_MIN_MINOR_VERSION;
-        prepareReturnTelegram(bcu.sendTelegram, sizeof(minMajorVersionUpdater) + sizeof(minMinorVersionUpdater), UPD_RESPONSE_BL_VERSION_MISMATCH);
-        uInt32ToStream(bcu.sendTelegram + 9, minMajorVersionUpdater);
-        uInt32ToStream(bcu.sendTelegram + 9 + sizeof(minMajorVersionUpdater), minMinorVersionUpdater);
-
-        d3(serial.print("Updater version mismatch! Required ", (unsigned int)minMajorVersionUpdater));
-        d3(serial.print(".", (unsigned int)minMinorVersionUpdater));
-        d3(serial.print(" received: ", (unsigned int)majorVersionUpdater));
-        d3(serial.println(".", (unsigned int)minorVersionUpdater));
+        prepareReturnTelegram(bcu.sendTelegram, sizeof(UPDATER_MIN_MAJOR_VERSION) + sizeof(UPDATER_MIN_MINOR_VERSION), UPD_RESPONSE_BL_VERSION_MISMATCH);
+        bcu.sendTelegram[offset] = UPDATER_MIN_MAJOR_VERSION;
+        bcu.sendTelegram[offset + sizeof(UPDATER_MIN_MAJOR_VERSION)] = UPDATER_MIN_MINOR_VERSION;
+        d3(serial.print("Updater version mismatch! Required ", UPDATER_MIN_MAJOR_VERSION));
+        d3(serial.print(".", UPDATER_MIN_MINOR_VERSION));
+        d3(serial.print(" received: ", majorVersionUpdater));
+        d3(serial.println(".", minorVersionUpdater));
         return (T_ACK_PDU);
     }
 
-    uint32_t bootloaderIdentity = BL_IDENTITY;
     uint32_t bootloaderFeatures = BL_FEATURES;
     uint8_t * appFirstAddress = applicationFirstAddress();
-    prepareReturnTelegram(bcu.sendTelegram, 12, UPD_RESPONSE_BL_IDENTITY);
-    uInt32ToStream(bcu.sendTelegram + 9, bootloaderIdentity);  // Bootloader identity
-    uInt32ToStream(bcu.sendTelegram + 9 + sizeof(bootloaderIdentity), bootloaderFeatures);  // Bootloader features
-    ptrToStream(bcu.sendTelegram + 9 + sizeof(bootloaderIdentity) + sizeof(bootloaderFeatures), appFirstAddress);     // application first possible start address
-    d3(serial.print("BL ID 0x", (unsigned int)bootloaderIdentity, HEX, 8));
+    const uint32_t dataSize = sizeof(BOOTLOADER_MAJOR_VERSION) +
+                              sizeof(BOOTLOADER_MINOR_VERSION) +
+                              sizeof(bootloaderFeatures) +
+                              sizeof(appFirstAddress);
+
+    prepareReturnTelegram(bcu.sendTelegram, dataSize, UPD_RESPONSE_BL_IDENTITY);
+    bcu.sendTelegram[offset] = BOOTLOADER_MAJOR_VERSION;
+    offset += sizeof(BOOTLOADER_MAJOR_VERSION);
+    bcu.sendTelegram[offset] = BOOTLOADER_MINOR_VERSION;
+    offset += sizeof(BOOTLOADER_MINOR_VERSION);
+    uInt32ToStream(bcu.sendTelegram + offset, bootloaderFeatures);
+    offset += sizeof(bootloaderFeatures);
+    ptrToStream(bcu.sendTelegram + offset, appFirstAddress);
+    d3(serial.print("BL v", BOOTLOADER_MAJOR_VERSION, DEC));
+    d3(serial.print(".", BOOTLOADER_MINOR_VERSION, DEC, 2));
     d3(serial.print("    BL feature 0x", (unsigned int)bootloaderFeatures, HEX, 8));
     d3(serial.println("    FW start   0x", (uintptr_t)appFirstAddress, HEX, 8));
-
     return (T_ACK_PDU);
 }
 
