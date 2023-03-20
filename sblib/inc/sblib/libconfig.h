@@ -127,6 +127,7 @@
 #   undef LOGGING
 #   undef BH1750_DEBUG
 #   undef DEBUG_ACTIVE
+#   undef INCLUDE_SERIAL
 #endif
 
 // make sure if DEBUG_BUS_BITLEVEL is defined also DEBUG_BUS is defined

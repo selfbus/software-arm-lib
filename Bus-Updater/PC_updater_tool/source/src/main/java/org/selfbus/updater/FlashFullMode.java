@@ -1,5 +1,6 @@
 package org.selfbus.updater;
 
+import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
@@ -65,16 +66,16 @@ public class FlashFullMode {
 
             // flash the previously sent data
             int crc32 = Utils.crc32Value(txBuffer);
-            byte[] progPars = new byte[3 * 4];
-            Utils.longToStream(progPars, 0, txBuffer.length);
-            Utils.longToStream(progPars, 4, progAddress);
-            Utils.longToStream(progPars, 8, crc32);
+            byte[] progPars = new byte[2 + 4 + 4];
+            Utils.shortToStream(progPars, 0, (short)txBuffer.length);
+            Utils.longToStream(progPars, 2, progAddress);
+            Utils.longToStream(progPars, 6, crc32);
             System.out.println();
             logger.info("Program device at flash address 0x{} with {} bytes and CRC32 0x{}",
                     String.format("%04X", progAddress), String.format("%3d", txBuffer.length), String.format("%08X", crc32));
 
             resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, -1);
-            if (UPDProtocol.checkResult(resultProgramData.data()) != 0) {
+            if (UPDProtocol.checkResult(resultProgramData.data()) != UDPResult.IAP_SUCCESS.id) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("ProgramData update failed.");
             }

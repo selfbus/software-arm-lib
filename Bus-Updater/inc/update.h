@@ -2,7 +2,7 @@
  * @addtogroup SBLIB_BOOTLOADER Selfbus Bootloader
  * @defgroup SBLIB_KNX_TELEGRAM_HANDLER_1 KNX-Telegramhandler
  * @ingroup SBLIB_BOOTLOADER
- * @brief   Handles @ref APCI_MEMORY_READ_PDU and @ref APCI_MEMORY_WRITE_PDU for the update process
+ * @brief   Handles @ref APCI_USERMSG_MANUFACTURER_0 and @ref APCI_USERMSG_MANUFACTURER_6 for the update process
  * @details
  *
  * @{
@@ -27,20 +27,28 @@
 #define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
 #define RESET_DELAY_MS 500                 //!< Time in milliseconds a System reset should be delayed to
                                            //!< give the bcu enough time to send it's T_ACK_PDU
-#define UID_LENGTH_USED 12                 //!< length of the mcu UID (guid) used by the PC Updater Tool
 
 /**
- * @brief Handles KNX memory requests which encapsulate our UPD/UDP protocol
+ * Handles KNX @ref APCI_USERMSG_MANUFACTURER_0 which encapsulates our UPD/UDP protocol
  *
- * @param data      telegram buffer received from KNX bus
- * @return          always T_ACK_PDU, the real return value is encapsulated in bcu.sendTelegram[10-13]
+ * @param data      data buffer received from KNX bus
+ * @param size      size of data buffer
+ * @return          always T_ACK_PDU, the real return values are encapsulated in bcu.sendTelegram[9..]
  */
-unsigned char handleApciMemoryWriteRequest(unsigned char * data);
+unsigned char handleApciUsermsgManufacturer(uint8_t * data, uint32_t size);
 
 /**
  * @brief Resets the UPD/UDP protocol ramBuffer and global variables to default
  */
 void resetUPDProtocol(void);
+
+/**
+ * Handles deprecated KNX memory requests by sending the old @ref UPD_SEND_LAST_ERROR with old value of @ref UDP_NOT_IMPLEMENTED
+ *
+ * @return always T_ACK_PDU
+ */
+unsigned char handleDeprecatedApciMemoryWrite();
+
 
 #endif /* UPDATE_H_ */
 /** @}*/

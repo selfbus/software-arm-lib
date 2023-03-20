@@ -39,7 +39,6 @@ extern uint16_t telegramCount;   //!< number of telegrams since system reset
 extern uint16_t disconnectCount; //!< number of disconnects since system reset
 
 ///\todo remove after bugfix and on release
-extern uint16_t repeatedTelegramCount;
 extern uint16_t repeatedIgnoredTelegramCount;
 ///\todo end of remove after bugfix and on release
 

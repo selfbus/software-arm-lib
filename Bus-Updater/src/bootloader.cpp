@@ -38,7 +38,7 @@
 #define RUN_MODE_BLINK_CONNECTED (250) //!< while connected, programming and run led blinking time in milliseconds
 #define RUN_MODE_BLINK_IDLE (1000)     //!< while idle/disconnected, programming and run led blinking time in milliseconds
 #define BL_RESERVED_RAM_START (0x10000000) //!< RAM start address for bootloader
-#define BL_DEFAULT_VECTOR_TABLE_SIZE (192 / sizeof(unsigned int)) //!< vectortable size to copy prior application start
+#define BL_DEFAULT_VECTOR_TABLE_SIZE (192 / sizeof(uint32_t)) //!< vectortable size to copy prior application start
 
 // KNX/EIB specific settings
 #define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
@@ -106,8 +106,9 @@ BcuBase* setup()
 #ifdef DEBUG
     int physicalAddress = bcu.ownAddress();
     serial.println("=========================================================");
-    serial.print("Selfbus KNX Bootloader V", BL_IDENTITY, HEX, 4);
-    serial.println(", DEBUG MODE :-)");
+    serial.print("Selfbus KNX Bootloader v", BOOTLOADER_MAJOR_VERSION);
+    serial.print(".", BOOTLOADER_MINOR_VERSION, DEC, 2);
+    serial.println(" DEBUG MODE :-)");
     serial.print("Build: ");
     serial.print(__DATE__);
     serial.print(" ");
@@ -122,8 +123,7 @@ BcuBase* setup()
     serial.println("Firmware (start)            : 0x", applicationFirstAddress());
     serial.println("Boot descriptor (start)     : 0x", bootDescriptorBlockAddress());
     serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
-    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE * BOOT_BLOCK_COUNT, HEX, 6);
-    serial.println("Boot descriptor count       : ", BOOT_BLOCK_COUNT, DEC);
+    serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE, HEX, 6);
     serial.print("physical address            : ");
     dumpKNXAddress(physicalAddress);
     serial.println();
@@ -180,7 +180,7 @@ static void jumpToApplication(uint8_t * start)
     // copy the first 192 bytes (vector table) of the "application"
     // into the RAM and than remap the vector table inside the RAM
 
-    d3(serial.println("Vectortable Size: ", (unsigned int) (BL_DEFAULT_VECTOR_TABLE_SIZE * sizeof(start)), HEX, 4););
+    d3(serial.println("Vectortable Size: ", (unsigned int) (BL_DEFAULT_VECTOR_TABLE_SIZE * sizeof(uint32_t)), HEX, 4););
 
     for (i = 0; i < BL_DEFAULT_VECTOR_TABLE_SIZE; i++, rom++, ram++)
     {
@@ -256,12 +256,9 @@ static void run_updater(bool programmingMode)
 
     // Start main application at address
     AppDescriptionBlock * block = (AppDescriptionBlock *) bootDescriptorBlockAddress();
-    for (int i = 0; i < BOOT_BLOCK_COUNT; i++, block--)
+    if (checkApplication(block))
     {
-        if (checkApplication(block))
-        {
-            jumpToApplication(block->startAddress);
-        }
+        jumpToApplication(block->startAddress);
     }
     // Start updater in case of error
     run_updater(false);

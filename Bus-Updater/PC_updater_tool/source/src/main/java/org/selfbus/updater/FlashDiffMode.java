@@ -3,6 +3,7 @@ package org.selfbus.updater;
 import net.harawata.appdirs.AppDirsFactory;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.tests.flashdiff.FlashDiff;
+import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
@@ -15,6 +16,8 @@ import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import java.io.File;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.selfbus.updater.Mcu.MAX_PAYLOAD;
 
 /**
  * experimental (WIP) Provides differential flash mode for the bootloader (MCU)
@@ -100,7 +103,7 @@ public final class FlashDiffMode {
             // process compressed page
             //TODO check why 5 bytes are added to size in FlashDiff.java / generateDiff(...)
             logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size() - 5));
-            byte[] buf = new byte[12];
+            byte[] buf = new byte[MAX_PAYLOAD + 1];
             int i = 0;
             while (i < outputDiffStream.size()) {
                 // fill data for one telegram
@@ -112,21 +115,19 @@ public final class FlashDiffMode {
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
                 result.set(dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, -1));
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
-                if (UPDProtocol.checkResult(result.get().data(), false) != 0) {
+                if (UPDProtocol.checkResult(result.get().data(), false) != UDPResult.IAP_SUCCESS.id) {
                     dm.restartProgrammingDevice();
                     throw new UpdaterException("Selfbus update failed.");
                 }
             }
             // diff data of a single page transmitted
             // flash the page
-            byte[] progPars = new byte[3 * 4];
-            Utils.longToStream(progPars, 0, 0);
-            Utils.longToStream(progPars, 4, 0);
-            Utils.longToStream(progPars, 8, (int) crc32);
+            byte[] progPars = new byte[4];
+            Utils.longToStream(progPars, 0, (int) crc32);
             System.out.println();
             logger.info("Program device next page diff, CRC32 0x{}", String.format("%08X", crc32));
             result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, -1));
-            if (UPDProtocol.checkResult(result.get().data()) != 0) {
+            if (UPDProtocol.checkResult(result.get().data()) != UDPResult.IAP_SUCCESS.id) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }

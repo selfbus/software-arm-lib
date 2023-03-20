@@ -102,7 +102,7 @@ UDP_State erasePageRange(unsigned int startPage, unsigned int endPage)
         return (UDP_PAGE_NOT_ALLOWED_TO_ERASE);
     }
 
-    result = (UDP_State)iapErasePageRange(startPage, endPage);
+    result = iapResult2UDPState(iapErasePageRange(startPage, endPage));
     d3(
         if (result != UDP_IAP_SUCCESS)
         {
@@ -135,7 +135,7 @@ static UDP_State eraseSectorRange(unsigned int startSector, unsigned int endSect
         return (UDP_SECTOR_NOT_ALLOWED_TO_ERASE);
     }
 
-    result = (UDP_State)iapEraseSectorRange(startSector, endSector);
+    result = iapResult2UDPState(iapEraseSectorRange(startSector, endSector));
     d3(
         if (result != UDP_IAP_SUCCESS)
         {
@@ -265,7 +265,7 @@ UDP_State executeProgramFlash(uint8_t * address, const uint8_t * ram, unsigned i
         return (UDP_ADDRESS_NOT_ALLOWED_TO_FLASH);
     }
 
-    result = (UDP_State)iapProgram(address, ram, size);
+    result = iapResult2UDPState(iapProgram(address, ram, size));
     return (result);
 }
 
