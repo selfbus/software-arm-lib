@@ -153,16 +153,15 @@ public final class DeviceManagement {
 
         BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
         logger.info("  Device Bootloader: {}{}{}", ConColors.BRIGHT_YELLOW, bl, ConColors.RESET);
-        if (bl.versionMajor() < ToolInfo.minMajorVersionBootloader())
+
+        boolean versionsMatch = (bl.versionMajor() > ToolInfo.minMajorVersionBootloader()) ||
+                ((bl.versionMajor() == ToolInfo.minMajorVersionBootloader()) && (bl.versionMinor() >= ToolInfo.minMinorVersionBootloader()));
+
+        if (!versionsMatch)
         {
-            logger.error("{}Bootloader version {} not compatible, please update Bootloader to version {} or higher{}",
+            logger.error("{}Bootloader version {} is not compatible, please update Bootloader to version {} or higher{}",
                     ConColors.RED, bl.version(), ToolInfo.minVersionBootloader(), ConColors.RESET);
-            throw new UpdaterException("Bootloader major version not compatible!");
-        }
-        else if (bl.versionMinor() < ToolInfo.minMinorVersionBootloader()) {
-            logger.error("{}Bootloader version {} not compatible, please update Bootloader to version {} or higher{}",
-                    ConColors.RED, bl.version(), ToolInfo.minVersionBootloader(), ConColors.RESET);
-            throw new UpdaterException("Bootloader minor version not compatible!");
+            throw new UpdaterException("Bootloader version not compatible!");
         }
         return bl;
     }
