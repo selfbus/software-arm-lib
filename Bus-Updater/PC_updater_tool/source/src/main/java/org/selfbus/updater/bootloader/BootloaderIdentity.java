@@ -53,6 +53,6 @@ public class BootloaderIdentity {
     }
 
     public String version() {
-        return String.format("%d.%2d", versionMajor(), versionMinor()).replace(' ', '0');
+        return String.format("%d.%02d", versionMajor(), versionMinor());
     }
 }

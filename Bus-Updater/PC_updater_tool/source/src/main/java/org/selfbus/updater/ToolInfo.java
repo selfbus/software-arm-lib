@@ -35,7 +35,7 @@ public final class ToolInfo
      * @return version as string
      */
     public static String getVersion() {
-        return String.format("%d.%2d", versionMajor(), versionMinor()).replace(' ', '0');
+        return String.format("%d.%02d", versionMajor(), versionMinor());
     }
 
     /**
