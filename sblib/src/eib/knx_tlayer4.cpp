@@ -268,14 +268,10 @@ void TLayer4::_begin()
     repeatedIgnoredTelegramCount = 0;
 }
 
-bool TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
+void processTelegram(unsigned char *telegram, uint8_t telLength)
 {
-    bool telegramProcessed = processTelegramInternal(telegram, telLength);
-    if (telegramProcessed)
-    {
-        discardReceivedTelegram();
-    }
-    return (telegramProcessed);
+    processTelegramInternal(telegram, telLength);
+    discardReceivedTelegram();
 }
 
 bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength)

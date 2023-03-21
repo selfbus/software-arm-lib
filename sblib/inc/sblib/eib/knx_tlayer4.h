@@ -64,9 +64,8 @@ public:
      *
      * @param telegram  The telegram to process
      * @param telLength Length of the telegram
-     * @return True if telegram was processed successfully, otherwise false
      */
-    bool processTelegram(unsigned char *telegram, uint8_t telLength);
+    void processTelegram(unsigned char *telegram, uint8_t telLength);
 
     /**
      * Test if a connection-oriented connection is open.
