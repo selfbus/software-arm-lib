@@ -3,9 +3,6 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
- *
- *  last update: March 2021, Hora,  added some states and debug data definition
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -18,32 +15,6 @@
 
 #include <sblib/timer.h>
 #include <sblib/eib/types.h>
-
-// dump all received and sent telegrams out on the serial interface
-#if defined(INCLUDE_SERIAL)
-#   include <sblib/serial.h>
-#endif
-
-#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
-
-struct s_td {
-	unsigned short ts;   // state
-	unsigned int tt;     // system time
-	unsigned short tcv;  // capture value
-	unsigned short ttmv; // timer match value
-	unsigned short ttv;  // timer value
-	unsigned short tc;   // capture flag
-};
-
-#define tb_lngth 300
-
-extern volatile struct s_td td_b[tb_lngth];
-extern volatile unsigned int tb_in ;
-extern volatile unsigned int tb_out;
-extern volatile unsigned int tbd;
-extern volatile bool  tb_in_ov;
-
-#endif
 
 /**
  * Bus short acknowledgment frame: acknowledged
@@ -107,6 +78,12 @@ public:
      * This powers the bus off.
      */
     void end();
+
+    /**
+     * The Bus processing loop. This is like the application's loop() function,
+     * and is called automatically by main() when the BCU is activated with bcu.begin().
+     */
+    void loop();
 
     /**
      * Test if the bus is idle, no telegram is about to being sent or received.
@@ -177,13 +154,6 @@ public:
      * processed the telegram.
      */
     void discardReceivedTelegram();
-
-    /**
-     * Set weather the an acknowledgment from the last received byte should be sent.
-     * !!!!!!! critical as this could change the sendAck value during usage in the state machine (SM) - should not be used outside the bus SM!!
-     *  not needed as the SM should check the bit1 in the telegram header to check if the sender is requesting an ACK
-     */
-    void setSendAck(int newSendAck);
 
     /**
      * Set the number of tries that we do sent a telegram when it is not ACKed.
@@ -276,12 +246,6 @@ public:
       */
      volatile bool bus_rxstate_valid;
      volatile bool bus_txstate_valid;
-
-
-#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined (DUMP_TELEGRAMS)
-    Timer& ttimer = timer32_0;                //!< The debug timer for SM timing
-#endif
-
 
 private:
     /**
@@ -477,8 +441,4 @@ inline void Bus::end()
 {
 }
 
-inline void Bus::setSendAck(int newSendAck)
-{
-	this->sendAck = newSendAck;
-}
 #endif /*sblib_bus_h*/

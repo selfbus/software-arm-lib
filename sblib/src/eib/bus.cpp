@@ -18,7 +18,7 @@
  * 				- debugging  with high speed serial terminal interface (1.5Mbaud) at PIO2_7 and PIO2_8
  *
  * Functions supported by this module:
- *   - Supported frames:  standard data frame, acknowledge frame. Poll frame  and extended  frame are  not supported
+ *   - Supported frames:  standard data frame, acknowledge frame. Poll frame and extended frame are not supported
  *   - Bus-Busy detection for start of normal frames and ack-frames
  *   - Collision detection for all send bytes, no support for receiving of remaining telegram after collision, rx telegram is discarded.
  *   - Extended collision detection for Ack frame due to possible parallel sending of devices and bus delay
@@ -239,124 +239,39 @@
 #include <sblib/platform.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/bcu_base.h>
-
 #include <sblib/timer.h>
+#include <sblib/eib/bus_debug.h>
 
-// Enable informational debug statements
-#if defined(INCLUDE_SERIAL)
-#   define DB(x) x
-    //int hw_error =0; //XXX why this is here?
-#else
-#   define DB(x)
-#endif
-
-// pin output macros for debugging with e.g logic analyser - not used
+// pin output macros for debugging with e.g logic analyzer - not used
 #define D(x)
 
-// buffer to dump a rx telgramn on the serial line incl collision and rx-timing (in ms) info
-#ifdef DUMP_TELEGRAMS
-    volatile unsigned char telBuffer[32];
-    volatile unsigned int telLength = 0;
-    volatile unsigned char txtelBuffer[32];
-    volatile unsigned int txtelLength = 0;
-    volatile unsigned int tx_rep_count = 0;
-    volatile unsigned int tx_busy_rep_count = 0;
-    volatile unsigned int tx_telrxerror = 0;
-
-    volatile unsigned int telRXtime = 0; // time of the timeout after the last bit of the received telegram
-    volatile bool telcollision;
-    volatile unsigned int telrxerror = 0;
-    volatile unsigned int telRXStartTime = 0; // time when the reception  (startbit of first byte) of a telegram from bus started
-    volatile unsigned int telTXStartTime = 0; // time when the transmission (startbit of first byte)of a telegram to the bus started
-    volatile unsigned int telRXEndTime = 0; // time when the reception  (last stop bit) of a telegram from bus eneded
-    volatile unsigned int telTXEndTime = 0; // time when the transmission (last stop bi)of a telegram to the bus ended
-    volatile unsigned int telTXAck = 0; // ack send by L2
-    volatile unsigned int telRXWaitInitTime= 0; // Wait for 50 bit time after last RX/TX telegram, could be less- rx will be ignored
-    volatile unsigned int telRXWaitIdleTime = 0; // bus is in idle after 50 bit times, now wait for next start of RX/TX
-    volatile unsigned int telRXTelStartTime = 0; // Start Time of a telegram
-    volatile unsigned int telRXTelByteStartTime = 0; // Start Time of a byte within a telegram
-    volatile unsigned int telRXTelBitTimingErrorL = 0; // Bit error - falling rx edge was not in the expected window -late >33us
-    volatile unsigned int telRXTelBitTimingErrorE = 0; // Bit error - falling rx edge was not in the expected window -early -7us
-    //volatile unsigned int db_state= 2000;
-#   define DB_TELEGRAM(x) x
-#else
-#   define DB_TELEGRAM(x)
-#endif
-
-// buffer to dump interrupt event data on the serial line
-#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
-    volatile unsigned int b1=0, b2=0, b3=0, b4=0;
-    volatile unsigned short b5=0;
-    volatile struct s_td td_b[tb_lngth];
-    volatile unsigned int tb_in = 0;
-    volatile unsigned int tb_out = 0;
-    volatile unsigned int tbd = 0;
-    volatile bool  tb_in_ov = false;
-    volatile bool  rec_end = false;
-
-    extern Timer timer32_0;
-
-    // dump telegram data in buffer
-#   define tb2(s, ptc, t,  ptcv, pttv, pttmv,  i) td_b[i].ts=s; \
-            td_b[i].tt=t; td_b[i].tc=ptc; td_b[i].tcv=ptcv; td_b[i].ttv=pttv; td_b[i].ttmv=pttmv;  if ( ++i>=tb_lngth){ i=0; tb_in_ov = true;}
-    //dump a timer value
-    #define tb_t(s, t,  i ) td_b[i].ts=s+2000; td_b[i].tt=t; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-    // dump a hex value
-#   define tb_h(s, t,  i ) td_b[i].ts=s+4000; td_b[i].tt=t; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-    // dump a decimal value
-#   define tb_d(s, t,  i ) td_b[i].ts=s+5000; td_b[i].tt=t;  if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-
-#   ifdef DEBUG_BUS_BITLEVEL
-        //dump each interrupt with timer data
-#       define tbint(d1, d2, d3, d4, d5, d6,  i)  \
-            td_b[i].ts=d1; td_b[i].tt=d2; td_b[i].tc=d3; td_b[i].tcv=d4; td_b[i].ttv=d5; td_b[i].ttmv=d6;\
-             if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-#   else
-        //dump on bit level only first bit interrupt to reduce OVF
-#       define tbint(s, t, cf, cv, tv, tmv,  i) \
-            if (!( (s==8000 + RECV_BITS_OF_BYTE || s==8000 + SEND_BITS_OF_BYTE )&& !rec_end) ) {\
-                if(s==800 + RECV_WAIT_FOR_STARTBIT_OR_TELEND || s==8000 + SEND_BIT_0) rec_end = true; else rec_end=false;\
-                td_b[i].tt=t; td_b[i].tc=cf; td_b[i].tcv=cv; td_b[i].ttv=tv; td_b[i].ttmv=tmv; td_b[i].ts=s; \
-                if (++i>=tb_lngth){ i=0; tb_in_ov = true;} }
-#   endif
-#else
-    // no dump at all
-#    define tb2(s, ptc, t,  ptcv, pttv, pttmv,  i) ;
-#    define tb_t(s, t,  i ) ;
-#    define tb_h(s, t,  i ) ;
-#    define tb_d(s, t,  i ) ;
-#    define tbint(s, t, cf, cv, tv, tmv,  i) ;
-#endif
-
-
-
 /* L1/L2 msg header control field data bits meaning */
-#define ALLWAYS0       	   0          //  bit 0 is always 0
-#define ACK_REQ_FLAG       1          // 0 ack is requested - for TP-Bus ACK is mandatory for normal telegrams - always 0
-#define PRIO0_FLAG         2          // 00 system priority, 10 alarm prio, 01 high prio, 11 low prio
+#define ALWAYS0       	   0          // bit 0 is always 0
+#define ACK_REQ_FLAG       1          // 0 LL_ACK is requested - for TP-Bus ACK is mandatory for normal telegrams - always 0
+#define PRIO0_FLAG         2          // 00 system priority, 10 alarm priority, 01 high priority, 11 low priority
 #define PRIO1_FLAG         3          //
 #define ACK_FRAME_FLAG     4          // 1 frame is data or poll, 0 ack frame
 #define REPEAT_FLAG        5          // 1 not repeated, 0 repeated frame
 #define DATA_FRAME_FLAG    6          // 1 poll data frame, 0 data frame
 #define LONG_FRAME_FLAG    7          // 1,  short frame <=15 char, 0 long frame > 15 char
-#define HEADER_LENGHT      7          // eib msg header lenght by length indicator =0
+#define HEADER_LENGHT      7          // KNX msg header length by length indicator =0
 
 // telegram control byte bit definitions
-#define SB_TEL_NULL_FLAG        ( 1<< ALLWAYS0)
-#define SB_TEL_ACK_REQ_FLAG     ( 1<< ACK_REQ_FLAG)
-#define SB_TEL_PRIO0_FLAG       ( 1<< PRIO0_FLAG )
-#define SB_TEL_PRIO1_FLAG       ( 1<< PRIO1_FLAG)
-#define SB_TEL_ACK_FRAME_FLAG   ( 1<< ACK_FRAME_FLAG )
-#define SB_TEL_REPEAT_FLAG      ( 1<< REPEAT_FLAG)
-#define SB_TEL_DATA_FRAME_FLAG  ( 1<< DATA_FRAME_FLAG)
-#define SB_TEL_LONG_FRAME_FLAG  ( 1<< LONG_FRAME_FLAG)
-#define SB_TEL_PRIO_FLAG        ( SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
+#define SB_TEL_NULL_FLAG        (1 << ALWAYS0)
+#define SB_TEL_ACK_REQ_FLAG     (1 << ACK_REQ_FLAG)
+#define SB_TEL_PRIO0_FLAG       (1 << PRIO0_FLAG)
+#define SB_TEL_PRIO1_FLAG       (1 << PRIO1_FLAG)
+#define SB_TEL_ACK_FRAME_FLAG   (1 << ACK_FRAME_FLAG)
+#define SB_TEL_REPEAT_FLAG      (1 << REPEAT_FLAG)
+#define SB_TEL_DATA_FRAME_FLAG  (1 << DATA_FRAME_FLAG)
+#define SB_TEL_LONG_FRAME_FLAG  (1 << LONG_FRAME_FLAG)
+#define SB_TEL_PRIO_FLAG        (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG)
 
 // we accept only normal data frames for telegram processing
 #define VALID_DATA_FRAME_TYPE_MASK (SB_TEL_LONG_FRAME_FLAG | SB_TEL_DATA_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG | SB_TEL_ACK_REQ_FLAG | SB_TEL_NULL_FLAG)
 #define VALID_DATA_FRAME_TYPE_VALUE  (SB_TEL_LONG_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG )
 
-#define PREAMBLE_MASK  (( 1<< ALLWAYS0) | ( 1<< ACK_REQ_FLAG))
+#define PREAMBLE_MASK  (( 1<< ALWAYS0) | ( 1<< ACK_REQ_FLAG))
 
 #define PRIO_FLAG_HIGH	 (SB_TEL_PRIO0_FLAG)
 #define PRIO_FLAG_LOW	 (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
@@ -506,33 +421,40 @@ void Bus::begin()
 	pinMode(txPin, OUTPUT_MATCH);   // Configure bus output
 	pinMode(rxPin, INPUT_CAPTURE | HYSTERESIS);  // Configure bus input
 
-#if defined (DEBUG_BUS) || defined (DEBUG_BUS_BITLEVEL) || defined (DUMP_TELEGRAMS)
-	//we use 32bit timer 0 as debugging timer running with 1Mhz or system clock (48MHz)
-	ttimer.begin();
-	ttimer.start();
-	ttimer.noInterrupts();
-	ttimer.reset();
-	//	ttimer.prescaler(0);
-	ttimer.prescaler(TIMER_PRESCALER);
-
-	DB(serial.print("Bus begin - Timer prescaler: ", (unsigned int)TIMER_PRESCALER, DEC, 6));
-	DB(serial.print(" ttimer prescaler: ", ttimer.prescaler(), DEC, 6));
-	DB(serial.println(" ttimer value: ", ttimer.value(), DEC, 6));
-	DB(serial.print("nak retries: ", sendTriesMax, DEC, 6));
-	DB(serial.print(" busy retries: ", sendBusyTriesMax, DEC, 6));
-	DB(serial.print(" phy addr: ", PHY_ADDR_AREA(bcu->ownAddress()), DEC));
-	DB(serial.print(".", PHY_ADDR_LINE(bcu->ownAddress()), DEC));
-	DB(serial.print(".", PHY_ADDR_DEVICE(bcu->ownAddress()), DEC));
-	DB(serial.print(" (0x",  bcu->ownAddress(), HEX, 4));
-	DB(serial.println(")"));
-
-#ifdef USEPIO_FOR_TEL_END_IND
-#define USEPIO
-	pinMode(PIO1_4, OUTPUT);
-	digitalWrite(PIO1_4, 0);
+    DB_TELEGRAM(serial.println("DUMP_TELEGRAMS Bus telegram dump enabled."));
+#ifdef DEBUG_BUS
+    IF_DEBUG(serial.println("DEBUG_BUS dump enabled."));
 #endif
 
+#ifdef DEBUG_BUS_BITLEVEL
+    IF_DEBUG(serial.println("DEBUG_BUS_BITLEVEL dump enabled."));
 #endif
+
+    DB_BUS(
+        //we use 32bit timer 0 as debugging timer running with 1Mhz or system clock (48MHz)
+        ttimer.begin();
+        ttimer.start();
+        ttimer.noInterrupts();
+        ttimer.reset();
+        // ttimer.prescaler(0);
+        ttimer.prescaler(TIMER_PRESCALER);
+        serial.print("Bus begin - Timer prescaler: ", (unsigned int)TIMER_PRESCALER, DEC, 6);
+        serial.print(" ttimer prescaler: ", ttimer.prescaler(), DEC, 6);
+        serial.println(" ttimer value: ", ttimer.value(), DEC, 6);
+        serial.print("nak retries: ", sendTriesMax, DEC, 6);
+        serial.print(" busy retries: ", sendBusyTriesMax, DEC, 6);
+        serial.print(" phy addr: ", PHY_ADDR_AREA(bcu->ownAddress()), DEC);
+        serial.print(".", PHY_ADDR_LINE(bcu->ownAddress()), DEC);
+        serial.print(".", PHY_ADDR_DEVICE(bcu->ownAddress()), DEC);
+        serial.print(" (0x",  bcu->ownAddress(), HEX, 4);
+        serial.println(")");
+    ); // DB_BUS
+
+#ifdef PIO_FOR_TEL_END_IND
+    pinMode(PIO_FOR_TEL_END_IND, OUTPUT);
+    digitalWrite(PIO_FOR_TEL_END_IND, 0);
+#endif
+
 	//
 	// Init GPIOs for debugging ?? logic analyser???
 	//
@@ -608,7 +530,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 #ifdef DUMP_TELEGRAMS
 	unsigned int t;
 	t = ttimer.value();
-	serial.print("QSD: (", t, DEC, 8);
+	serial.print("QUE: (", t, DEC, 8); // queued to send
 	serial.print(") ");
 	for (int i = 0; i <= length; ++i)
 	{
@@ -718,8 +640,6 @@ void Bus::handleTelegram(bool valid)
 		}
 		telLength = nextByteIndex;
 		telcollision = collision;
-		telrxerror = rx_error;
-
 	}
 #endif
 
@@ -752,7 +672,7 @@ void Bus::handleTelegram(bool valid)
 		}
 		else
 		{
-			DB(serial.println(" Bus::handleTelegram not processed: 0x", destAddr, HEX));
+            DB_BUS(serial.println(" Bus::handleTelegram not processed: 0x", destAddr, HEX));
 		}
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
@@ -808,9 +728,13 @@ void Bus::handleTelegram(bool valid)
 					//if (! ( (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG)  ||   (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)) )
 					if (!(rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG) )
 					{
-						//if(destAddr != 0)  // test no ack for BC
-						sendAck = SB_BUS_ACK;
-						//need_to_send_ack_to_remote= true;
+					    sendAck = SB_BUS_ACK;
+					    if(destAddr == 0)
+					    {
+                            // test no ack for BC
+                            // sendAck = 0;
+					    }
+						//need_to_send_ack_to_remote = (sendAck != 0);
 					}
 				}
 				// we received a valid telegram need to send an ack/busy to remote - has priority, no rx/tx  in between
@@ -819,35 +743,40 @@ void Bus::handleTelegram(bool valid)
 					time = SEND_ACK_WAIT_TIME - PRE_SEND_TIME;
 				}
 			}
-		} //
+		}
 	}
 	else if (nextByteIndex == 1 && parity)   // Received a spike or a bus acknowledgment, only parity, no checksum
 	{
 		currentByte &= 0xff;
 		tb_h( 907, currentByte, tb_in);
+		if ((currentByte == SB_BUS_ACK) && ((rx_error & RX_CHECKSUM_ERROR) == RX_CHECKSUM_ERROR))
+        {
+            // received a ACK so clear checksum bit previously set in Isr Bus::timerInterruptHandler
+            rx_error &= ~RX_CHECKSUM_ERROR;
+        }
+
 		//  did we send a telegram ( sendTries>=1 and the received telegram is ACK or repetition max  -> send next telegram
-		if ( wait_for_ack_from_remote) {
+		if (wait_for_ack_from_remote) {
 			if ((currentByte == SB_BUS_ACK ) ||  sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax)
 			{ // last sending to remote was ok or max retry, prepare for next tx telegram
 				if ( sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax) tx_error|= TX_RETRY_ERROR;
 				tb_h( 906, tx_error, tb_in);
 				sendNextTelegram();
-
-			}else if ( currentByte == SB_BUS_BUSY)
+			}
+			else if (currentByte == SB_BUS_BUSY)
 			{
 				time = BUSY_WAIT_150BIT - PRE_SEND_TIME;
 				tx_error |=TX_REMOTE_BUSY_ERROR;
 				busy_wait_from_remote = true;
 				repeatTelegram = true;
-
-			} else
+			}
+			else
 			{// we received nack or wrong ack, need to repeat last telegram
 				tx_error |= TX_NACK_ERROR;
 				busy_wait_from_remote = false;
 				repeatTelegram = true;
 			}
 		}
-
 	}
 	else if (collision) // A collision occurred during sending. Ignore the received bytes
 	{
@@ -857,12 +786,15 @@ void Bus::handleTelegram(bool valid)
 	{
 		rx_error |=RX_INVALID_TELEGRAM_ERROR;
 	}
+
+    DB_TELEGRAM(telrxerror = rx_error);
+
 	tb_d( 901, state, tb_in);	tb_d( 902, sendTries, tb_in);	tb_d( 903, sendBusyTries, tb_in);tb_h( 904, sendAck, tb_in);
 	tb_h( 905, rx_error, tb_in); tb_d( 910, telegramLen, tb_in);tb_d( 911, nextByteIndex, tb_in);
 
 #endif
 #ifdef BUSMONITOR
-	rx_error =0;
+	rx_error = 0;
 #endif
 
 
@@ -920,12 +852,12 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	D(digitalWrite(PIO3_1, 0));           // orange
 	D(digitalWrite(PIO1_5, 0));           // yellow
 
-#ifdef USEPIO
-	digitalWrite(PIO1_4, 0);           // rest PIO
+#ifdef PIO_FOR_TEL_END_IND
+    digitalWrite(PIO_FOR_TEL_END_IND, 0);           // rest PIO
 #endif
 
 	//D(digitalWrite(PIO2_8, 0));           // blue
-	//    D(digitalWrite(PIO2_9, 0));           //
+	//D(digitalWrite(PIO2_9, 0));           //
 
 	// debug processing takes about 7-8us
 	tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
@@ -1012,9 +944,9 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
                 }
 #ifdef DUMP_TELEGRAMS
 		telRXEndTime= ttimer.value() - timer.value(); // timer was restarted at end of last stop bit -
-#ifdef USEPIO
-		digitalWrite(PIO1_4, 1);           // set Pin to high till next interrupt as end of Tel indication
-#endif
+#   ifdef PIO_FOR_TEL_END_IND
+		digitalWrite(PIO_FOR_TEL_END_IND, 1);           // set Pin to high till next interrupt as end of Tel indication
+#   endif
 #endif
 
 				handleTelegram(valid && !checksum);
@@ -1096,7 +1028,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 				//report timing error for debugging
 #ifdef DUMP_TELEGRAMS
-		telRXTelBitTimingErrorL= time;
+		telRXTelBitTimingErrorLate = time;
 #endif
 			}
 			bitMask <<= 1; //next bit or stop bit
@@ -1107,7 +1039,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
 			// report timing error for debugging
 #ifdef DUMP_TELEGRAMS
-		telRXTelBitTimingErrorE= time;
+		telRXTelBitTimingErrorEarly = time;
 #endif
 		}
 
@@ -1182,9 +1114,9 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		sendTelegramLen = 0;
 
 #ifdef DUMP_TELEGRAMS
-			telTXAck = sendAck;
-			// set starttime of sending telegram
-			telTXStartTime = ttimer.value() + PRE_SEND_TIME;
+        telTXAck = sendAck;
+        // set starttime of sending telegram
+        telTXStartTime = ttimer.value() + PRE_SEND_TIME;
 #endif
 
 		//set timer for TX process: init PWM pulse generation, interrupt at pulse end and cap event (pulse start)
@@ -1266,7 +1198,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			}
 			else  // Send nothing:  wait PRE_SEND_TIME before we set the bus to idle state
 			{
-				DB(
+			    DB_BUS(
 				   if (sendCurTelegram != 0)
 				   {
 				       tb_h( state+ 900,sendCurTelegram[0], tb_in);
@@ -1585,4 +1517,19 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	}
 
 	timer.resetFlags();
+}
+
+void Bus::loop()
+{
+    ///\todo implement enabled property
+    /*
+    if (!enabled)
+    {
+        return;
+    }
+    */
+    DB_TELEGRAM(dumpTelegrams());
+#if defined (DEBUG_BUS) || defined (DEBUG_BUS_BITLEVEL)
+    debugBus();
+#endif
 }

@@ -54,10 +54,13 @@ void BcuBase::_begin()
 
 void BcuBase::loop()
 {
+    bus->loop();
     TLayer4::loop();
     bool telegramInQueu = bus->telegramReceived();
     telegramInQueu &= (!bus->sendingTelegram());
-	if (telegramInQueu && (bus->state == Bus::IDLE) && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+
+    bool busOK = (bus->state == Bus::IDLE) || (bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE);
+    if (telegramInQueu && busOK && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
 	{
         processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
@@ -103,14 +106,6 @@ void BcuBase::sendApciIndividualAddressReadResponse()
     setDestinationAddress(sendTelegram, 0x0000); // Zero target address, it's a broadcast
     sendTelegram[5] = 0xe0 + 1; // address type & routing count in high nibble + response length in low nibble
     setApciCommand(sendTelegram, APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU, 0);
-
-    // on a productive bus without this delay, a lot of "more than one device is in programming mode" errors can occur
-    // 03.03.2022 tested 10 different licensed KNX-devices (MDT, Gira, Siemens, Merten), only one MDT line-coupler had also this problem
-    // other devices responded with a delay of 8-40 milliseconds, so we go for ~5ms + 2*4ms = ~13ms
-    // 4.000usec is max. we can delay with delayMicroseconds, so call it twice
-    delayMicroseconds(MAX_DELAY_MICROSECONDS);
-    delayMicroseconds(MAX_DELAY_MICROSECONDS);
-    delayMicroseconds(MAX_DELAY_MICROSECONDS - ((systemTime % (MAX_DELAY_MICROSECONDS/100)) * 10)); // "randomize response delay"
     bus->sendTelegram(sendTelegram, 8);
 }
 
