@@ -20,7 +20,7 @@ a lower level by a call of the CMSIS `void NVIC_SetPriority (IRQn_t IRQn, uint32
 and a prio >0 (0 is the highest level for periph.).
 
 Support for debugging and dumping of data on the serial line - configuration is in the `libconfig.h` header
-and serial support need to be started with a high baud rate (recommended 1.5Mb) in the app module. Usage of timer32_0 for time measurement on bit/byte level
+and serial support need to be started with a high baud rate (recommended 1.5Mb) in the app module. Debugging usages timer32_0 for time measurement on bit/byte level
 
 Compile time switches: see `libconfig.h` 
 

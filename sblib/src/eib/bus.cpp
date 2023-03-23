@@ -680,7 +680,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			{
 				if (checksum)
                 {
-                    rx_error |= RX_CHECKSUM_ERROR; ///\todo 0xCC (short ACKs, maybe also NAK and BUSY?) are flagged with a checksum_error
+                    rx_error |= RX_CHECKSUM_ERROR;
                 }
 #ifdef DUMP_TELEGRAMS
 		telRXEndTime= ttimer.value() - timer.value(); // timer was restarted at end of last stop bit -
