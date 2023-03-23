@@ -22,9 +22,6 @@
 #include <sblib/timer.h>
 #include <sblib/eib/bus_debug.h>
 
-// pin output macros for debugging with e.g logic analyzer - not used
-#define D(x)
-
 /* L1/L2 msg header control field data bits meaning */
 #define ALWAYS0       	   0          // bit 0 is always 0
 #define ACK_REQ_FLAG       1          // 0 LL_ACK is requested - for TP-Bus ACK is mandatory for normal telegrams - always 0
@@ -234,29 +231,6 @@ void Bus::begin()
     pinMode(PIO_FOR_TEL_END_IND, OUTPUT);
     digitalWrite(PIO_FOR_TEL_END_IND, 0);
 #endif
-
-	//
-	// Init GPIOs for debugging ?? logic analyser???
-	//
-	D(digitalWrite(PIO3_1, 1));
-	D(digitalWrite(PIO3_0, 1));
-
-	D(pinMode(PIO1_5, OUTPUT));
-	D(pinMode(PIO1_4, OUTPUT));
-	D(pinMode(PIO0_6, OUTPUT));
-	D(pinMode(PIO0_7, OUTPUT));
-	//D(pinMode(PIO2_8, OUTPUT));
-	//D(pinMode(PIO2_9, OUTPUT));
-
-	D(digitalWrite(PIO3_0, 0));
-	D(digitalWrite(PIO3_1, 0));
-	D(digitalWrite(PIO1_5, 0));
-	D(digitalWrite(PIO1_4, 0));
-	D(digitalWrite(PIO0_6, 0));
-	D(digitalWrite(PIO0_7, 0));
-	//D(digitalWrite(PIO2_8, 0));
-	//D(digitalWrite(PIO2_9, 0));
-	//D(digitalWrite(PIO2_10, 0));
 }
 
 
@@ -408,7 +382,6 @@ void Bus::handleTelegram(bool valid)
 	b4= nextByteIndex;
 	b5= ( collision + (valid ? 2 : 0));
 	tb2( 9000, b5,  b1, b2, b3, b4, tb_in);
-	//    D(digitalWrite(PIO1_4, 1));         // purple: end of telegram
 #endif
 
 #ifdef DUMP_TELEGRAMS
@@ -511,7 +484,7 @@ void Bus::handleTelegram(bool valid)
 					    sendAck = SB_BUS_ACK;
 					    if(destAddr == 0)
 					    {
-                            // test no ack for BC
+                            // test no ack for broadcasts
                             // sendAck = 0;
 					    }
 						//need_to_send_ack_to_remote = (sendAck != 0);
@@ -621,23 +594,13 @@ void Bus::sendNextTelegram()
  */
 __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 {
-	D(static unsigned short tick = 0);
 	volatile bool timeout;
 	volatile int time;
 	unsigned int dt, tv, cv;
 
-	// Debug output
-	D(digitalWrite(PIO0_6, ++tick & 1));  // brown: interrupt tick
-	D(digitalWrite(PIO3_0, state==Bus::SEND_BIT_0)); // red
-	D(digitalWrite(PIO3_1, 0));           // orange
-	D(digitalWrite(PIO1_5, 0));           // yellow
-
 #ifdef PIO_FOR_TEL_END_IND
     digitalWrite(PIO_FOR_TEL_END_IND, 0);           // rest PIO
 #endif
-
-	//D(digitalWrite(PIO2_8, 0));           // blue
-	//D(digitalWrite(PIO2_9, 0));           //
 
 	// debug processing takes about 7-8us
 	tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
@@ -688,7 +651,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 #ifdef DUMP_TELEGRAMS
 		// correct the timer start value by the process time (about 13us) we had since the capture event
-		//unsigned int dt, tv, cv;
 		tv=timer.value(); cv= timer.capture(captureChannel);
 		if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
 		else dt = (0xffff-cv) +tv;
@@ -713,8 +675,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		// we expect that the timer was restarted by the end of the last frame (end of stop bit) and not restarted by a cap event
 		// timer will be pre-set with for the capture timing (few us), mode reset, interrupt, macht of frame time (11bits), capture interrupt
 	case Bus:: RECV_WAIT_FOR_STARTBIT_OR_TELEND:
-		D(digitalWrite(PIO3_1, 1));   // orange
-
 		if (!timer.flag(captureChannel))  // No start bit: then it is a timeout of end of frame
 		{ // did the sending process waited for an ack from remote?
 			{
@@ -825,9 +785,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		if (timeout)  // Timer timeout: end of byte
 		{
-			D(digitalWrite(PIO1_5, 1));     // yellow: end of byte
-			D(digitalWrite(PIO3_1, parity));// orange: parity bit ok
-
 			// check bit0 and bit 1 of first byte for low level preamble bits
 			if ( (!nextByteIndex) && (currentByte & PREAMBLE_MASK) )
 				rx_error |= RX_PREAMBLE_ERROR;// preamble error, continue to read bytes - possibility to discard the telegram at higher layer
@@ -936,8 +893,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 	case Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE:
 		tb_t( state, ttimer.value(), tb_in);
-		D(digitalWrite(PIO1_5, 1)); // yellow: prepare transmission
-
 		timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // enable cap event after waiting time for next rx
 
 		if (timer.flag(captureChannel)){ // cap event- start receiving,  maybe ack or early tx from other device - fixme: should not happen here!
@@ -1059,7 +1014,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		}  else if (timer.flag(timeChannel)){
 			// Timeout: we have a hardware problem as receiving our sent signal does not work. set error and just continue sending bit0
 			tb_t( state+400, ttimer.value(), tb_in);
-			D(digitalWrite(PIO2_8, 1));  // blue: sending bits does not work
 			state = Bus::SEND_BIT_0; //   prepare for to send bit 0
 			tx_error |= TX_PWM_STARTBIT_ERROR;
 		}// no break, continue with bit0 as we have a timeout here
@@ -1099,7 +1053,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		 * **/
 	case Bus::SEND_BITS_OF_BYTE:
 		tb_t( SEND_BITS_OF_BYTE, ttimer.value(), tb_in);
-		D(digitalWrite(PIO1_5, 1));    // yellow: send next bits
 		//tb_h( SEND_BITS_OF_BYTE+100, bitMask, tb_in);
 		//tb_d( SEND_BITS_OF_BYTE+200, time, tb_in);
 		//tb_h( state+100, sendAck, tb_in);
@@ -1172,7 +1125,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				tb_d( state+400,timer.capture(captureChannel), tb_in);
 				tb_t( state+300, ttimer.value(), tb_in);
 				// A collision. Stop sending and ignore the current transmission.
-				D(digitalWrite(PIO1_4, 1));  // purple
 				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
 				timer.match(timeChannel, BYTE_TIME_INCL_STOP); // todo we could set the timeout to the time value for remaining bits to receive
 				state = Bus::RECV_BITS_OF_BYTE; // -  try to receive remaining bits of sender - will be discard anyhow, just to be in sync again
@@ -1200,7 +1152,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	case Bus::SEND_END_OF_TX:
 		tb_t( state, ttimer.value(), tb_in);
 		tb_h( SEND_END_OF_TX+700, repeatTelegram, tb_in);
-		D(digitalWrite(PIO2_9, 1));
 #ifdef DUMP_TELEGRAMS
 		telTXEndTime= ttimer.value();
 #endif
