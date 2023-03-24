@@ -1309,7 +1309,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 
 		//timer is counting since last stop bit so we need to add the ACK_WAIT_TIME and the char-tx time of 11bits to the 50BT till idle for repated frames
-		timer.match(timeChannel, ACK_WAIT_TIME + BYTE_TIME_INCL_STOP + SEND_WAIT_TIME - PRE_SEND_TIME);
+		timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME);
 
 		timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait to increase the robustness on bus spikes
 		timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
