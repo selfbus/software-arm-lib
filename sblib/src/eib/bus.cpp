@@ -1135,7 +1135,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 				if (sendAck)
 				{
-					// LL acknowledgment frames are not repeated (ACK, NAK, BUSY).
+					// LL acknowledgment frames are not repeated (ACK, NACK, BUSY).
 					sendAck = 0;
 				}
 				else
@@ -1162,28 +1162,28 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				auto collisionBitCount = (timer.match(pwmChannel) - timer.capture(captureChannel) + 33) / BIT_TIME;
 				bitMask >>= collisionBitCount + 1;
 
-				// Pretend that we also received a 0-bit last time, such that there is no need to set any
+				// Pretend that we also received a 0 bit last time, such that there is no need to set any
 				// bits to 1 in RECV_BITS_OF_BYTE.
 				bitTime = timer.capture(captureChannel) - BIT_TIME;
 
 				// Only keep those bits of currentByte that we sent without collision, and clear the rest.
 				currentByte &= (bitMask - 1);
 
-				// Adjust timer and parity accordingly.
-				auto newTimerValue = BIT_TIME;
+				// Adjust timer and parity accordingly. In a non-collided byte, timer starts at 0 and runs
+				// to BYTE_TIME_INCL_STOP with bitTime and captureChannel relative to the start bit's
+				// falling edge. As we cannot set captureChannel, we configure reception of collided bytes
+				// relative to the rising edge of the last non-collided bit.
+				auto missingBits = 10;
 				for (auto i = bitMask >> 1; i; i >>= 1)
 				{
-					newTimerValue += BIT_TIME;
+					missingBits--;
 					if (currentByte & i)
 					{
 						parity = !parity;
 					}
 				}
 
-				newTimerValue += timer.value() - timer.capture(captureChannel);
-				timer.restart();
-				timer.value(newTimerValue);
-				timer.match(timeChannel, BYTE_TIME_INCL_STOP);
+				timer.match(timeChannel, timer.capture(captureChannel) + missingBits * BIT_TIME);
 				timer.matchMode(timeChannel, INTERRUPT | RESET);
 
 				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
