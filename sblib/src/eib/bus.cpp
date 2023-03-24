@@ -500,7 +500,6 @@ void Bus::handleTelegram(bool valid)
 	}
 	else if (nextByteIndex == 1 && parity)   // Received a spike or a bus acknowledgment, only parity, no checksum
 	{
-		currentByte &= 0xff;
 		tb_h( 907, currentByte, tb_in);
 		if ((currentByte == SB_BUS_ACK) && ((rx_error & RX_CHECKSUM_ERROR) == RX_CHECKSUM_ERROR))
         {
@@ -785,6 +784,8 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		if (timeout)  // Timer timeout: end of byte
 		{
+			currentByte &= 0xff;
+
 			// check bit0 and bit 1 of first byte for low level preamble bits
 			if ( (!nextByteIndex) && (currentByte & PREAMBLE_MASK) )
 				rx_error |= RX_PREAMBLE_ERROR;// preamble error, continue to read bytes - possibility to discard the telegram at higher layer
