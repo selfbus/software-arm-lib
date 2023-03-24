@@ -1209,7 +1209,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			// There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
 			time = 3 * BIT_TIME;
 			state = Bus::SEND_BIT_0;  // state for bit-0 of next byte to send
-			timer.match(pwmChannel, time - BIT_PULSE_TIME - timer.value()); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
+			timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
 		}
 		else
 		{
@@ -1217,7 +1217,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			state = Bus::SEND_END_OF_TX;
 			time = BIT_TIME - BIT_PULSE_TIME;
 		}
-		timer.match(timeChannel, time - timer.value());
+		timer.match(timeChannel, time);
 		break;
 
 		//state is in sync with resp. to bus timing,  entered by match interrupt after last bytes stop bit was send
