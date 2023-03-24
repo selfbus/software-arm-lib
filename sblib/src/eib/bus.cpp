@@ -1126,7 +1126,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				tb_t( state+300, ttimer.value(), tb_in);
 
 				// A collision. Stop sending and switch to receiving the current transmission.
-				D(digitalWrite(PIO1_4, 1));  // purple
 				collision = true;
 				tx_error |= TX_COLLISION_ERROR;
 				rx_error = 0;
