@@ -1068,32 +1068,28 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		}
 		bitMask <<= 1; // next low bit or stop bit if mask > 0x200
 
-		if (time > BIT_TIME ) //  low bit or high bit to send?
-			state = Bus::SEND_WAIT_FOR_HIGH_BIT_END; // high bit to send, detect collisions while sending high bits
-		//tb_h( SEND_BITS_OF_BYTE+300, bitMask, tb_in);
-		//tb_d( SEND_BITS_OF_BYTE+400, time, tb_in);
+		auto stopBitReached = (bitMask > 0x200);
 
-		if (bitMask > 0x200) // stop bit reached
-		{
-			if (nextByteIndex < sendTelegramLen && !sendAck) // if tel. end or ack, stop sending
-			{//  we are at the rising edge of parity bit-> need to send 4 bit:3 high bits (stop bit, 2 fill bits) and start bit pulse of next byte by pwm
-				time += BIT_TIME *3;
-				state = Bus::SEND_BIT_0;  // state for bit-0 of next byte to send
-			}
-			else
-			{//  need to send stop bit and sync with bus timing
-				state = Bus::SEND_END_OF_TX;
-				time += BIT_TIME  - BIT_PULSE_TIME;
-			}
-		}
 		// set next match/interrupt
 		// if we are sending high bits, we wait for next low bit edge by cap interrupt which might be a collision
 		// or timeout interrupt indicating end of bit pulse sending (high or low)
-		if (state == Bus::SEND_WAIT_FOR_HIGH_BIT_END)
+		if (time > BIT_TIME ) //  low bit or high bit to send?
+		{
+			state = Bus::SEND_WAIT_FOR_HIGH_BIT_END; // high bit to send, detect collisions while sending high bits
 			timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-		else timer.captureMode(captureChannel, FALLING_EDGE);
+		}
+		else
+		{
+			timer.captureMode(captureChannel, FALLING_EDGE);
+			if (stopBitReached)
+			{
+				state = Bus::SEND_END_OF_BYTE;
+			}
+		}
+		//tb_h( SEND_BITS_OF_BYTE+300, bitMask, tb_in);
+		//tb_d( SEND_BITS_OF_BYTE+400, time, tb_in);
 
-		if (state == Bus::SEND_END_OF_TX)
+		if (stopBitReached)
 			timer.match(pwmChannel, 0xffff); //stop pwm pulses - low output
 		// as we are at the raising edge of the last pulse, the next falling edge will be n*104 - 35us (min69us) away
 		else timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
@@ -1196,14 +1192,30 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			//tb_t( state+200, ttimer.value(), tb_in);
 			//tb_d( state+500,timer.match(pwmChannel), tb_in);
 			// we captured our sending low bit edge, continue sending, wait for bit ends with match intr
-			state = Bus::SEND_BITS_OF_BYTE;;
+			state = Bus::SEND_BITS_OF_BYTE;
 			break;
 		}
 
-		// timeout event, must be an error
-		state = Bus::SEND_BITS_OF_BYTE;
-		tx_error |= TX_TIMING_ERROR;
-		goto STATE_SWITCH;
+		// timeout event, i.e. sent all 1 bits without any collisions, now are in stop bit
+		state = Bus::SEND_END_OF_BYTE;
+
+		// Completed transmission of parity bit and are in the middle of the stop bit transmission.
+		// What do we need to do next?
+	case Bus::SEND_END_OF_BYTE:
+		if (nextByteIndex < sendTelegramLen && !sendAck)
+		{
+			// There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
+			time = 3 * BIT_TIME;
+			state = Bus::SEND_BIT_0;  // state for bit-0 of next byte to send
+			timer.match(pwmChannel, time - BIT_PULSE_TIME - timer.value()); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
+		}
+		else
+		{
+			// We're done. Finish to send stop bit and sync with bus timing.
+			state = Bus::SEND_END_OF_TX;
+			time = BIT_TIME - BIT_PULSE_TIME;
+		}
+		timer.match(timeChannel, time - timer.value());
 		break;
 
 		//state is in sync with resp. to bus timing,  entered by match interrupt after last bytes stop bit was send

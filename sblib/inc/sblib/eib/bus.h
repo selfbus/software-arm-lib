@@ -213,11 +213,10 @@ public:
 		SEND_BIT_0,						//!< Send the first bit of the current byte
 		SEND_BITS_OF_BYTE,				//!< Send the bits of the current byte
 		SEND_WAIT_FOR_HIGH_BIT_END,		//!< Send high bit(s) and wait for receiving a the falling edge of our next 0-bit.
-		SEND_WAIT_FOR_NEXT_TX_CHAR,		//!< Wait between two transmissions, cap disabled, timeout: start sending next char
+		SEND_END_OF_BYTE,				//!< Middle of stop bit reached, decide what to do next
 		SEND_END_OF_TX,					//!< Finish sending current byte
 		SEND_WAIT_FOR_RX_ACK_WINDOW,	//!< after sending we wait for the ack receive window to start, only timeout event enabled
-		SEND_WAIT_FOR_RX_ACK,			//!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
-		STATE_END
+		SEND_WAIT_FOR_RX_ACK			//!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
     };
 
     /**
@@ -364,7 +363,6 @@ private:
 
 #define TX_OK 0                     //!< No error
 #define TX_STARTBIT_BUSY_ERROR 1	//!< bus is busy few us before we intended to send a start bit
-#define TX_TIMING_ERROR 2			//!< error during the sending of bits (low bit after high bit was not detected
 #define TX_NACK_ERROR 4				//!< we received a NACK
 #define TX_ACK_TIMEOUT_ERROR 8		//!< we did not received an ACK after sending in the respective time window
 #define TX_REMOTE_BUSY_ERROR 16		//!< AFTER SENDING, REMOTE SIDE SENDS busy BACK
