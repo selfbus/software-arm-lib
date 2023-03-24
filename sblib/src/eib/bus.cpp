@@ -1053,6 +1053,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		 * n-bit low pulse end now after 35us by time match interrupt, send next bit of byte till end of byte (stop bit)
 		 * **/
 	case Bus::SEND_BITS_OF_BYTE:
+	{
 		tb_t( SEND_BITS_OF_BYTE, ttimer.value(), tb_in);
 		//tb_h( SEND_BITS_OF_BYTE+100, bitMask, tb_in);
 		//tb_d( SEND_BITS_OF_BYTE+200, time, tb_in);
@@ -1098,6 +1099,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		timer.match(timeChannel, time); // interrupt at end of low/high bit pulse - next raising edge or after stop bit + 2 wait bits
 		break;
+	}
 
 
 		/* SEND_WAIT_FOR_HIGH_BIT_END
