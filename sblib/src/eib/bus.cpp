@@ -1124,15 +1124,75 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			{
 				tb_d( state+400,timer.capture(captureChannel), tb_in);
 				tb_t( state+300, ttimer.value(), tb_in);
-				// A collision. Stop sending and ignore the current transmission.
-				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
-				timer.match(timeChannel, BYTE_TIME_INCL_STOP); // todo we could set the timeout to the time value for remaining bits to receive
-				state = Bus::RECV_BITS_OF_BYTE; // -  try to receive remaining bits of sender - will be discard anyhow, just to be in sync again
+
+				// A collision. Stop sending and switch to receiving the current transmission.
+				D(digitalWrite(PIO1_4, 1));  // purple
 				collision = true;
 				tx_error |= TX_COLLISION_ERROR;
-				break;
+				rx_error = 0;
+				checksum = 0xff;
+				valid = 1;
+				parity = 1;
 
+				if (sendAck)
+				{
+					// LL acknowledgment frames are not repeated (ACK, NAK, BUSY).
+					sendAck = 0;
+				}
+				else
+				{
+					// Normal frames are repeated.
+					repeatTelegram = true;
+
+					// For TX, nextByteIndex is incremented before we start transmitting. For RX, nextByteIndex is incremented after
+					// we received a byte completely. To account for this difference, we need to decrement when we switch from TX to RX.
+					nextByteIndex--;
+
+					// Copy all bytes we transmitted without collision over to the receive buffer and update checksum accordingly.
+					for (auto i = 0; i < nextByteIndex; i++)
+					{
+						auto b = sendCurTelegram[i];
+						rx_telegram[i] = b;
+						checksum ^= b;
+					}
+				}
+
+				// Scale back bitMask to match the collided bit. pwmChannel is when we would have sent
+				// the next falling edge, captureChannel when we received it. The 33 is to account for
+				// slight timing differences and integer arithmetic.
+				auto collisionBitCount = (timer.match(pwmChannel) - timer.capture(captureChannel) + 33) / BIT_TIME;
+				bitMask >>= collisionBitCount + 1;
+
+				// Pretend that we also received a 0-bit last time, such that there is no need to set any
+				// bits to 1 in RECV_BITS_OF_BYTE.
+				bitTime = timer.capture(captureChannel) - BIT_TIME;
+
+				// Only keep those bits of currentByte that we sent without collision, and clear the rest.
+				currentByte &= (bitMask - 1);
+
+				// Adjust timer and parity accordingly.
+				auto newTimerValue = BIT_TIME;
+				for (auto i = bitMask >> 1; i; i >>= 1)
+				{
+					newTimerValue += BIT_TIME;
+					if (currentByte & i)
+					{
+						parity = !parity;
+					}
+				}
+
+				newTimerValue += timer.value() - timer.capture(captureChannel);
+				timer.restart();
+				timer.value(newTimerValue);
+				timer.match(timeChannel, BYTE_TIME_INCL_STOP);
+				timer.matchMode(timeChannel, INTERRUPT | RESET);
+
+				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
+
+				state = Bus::RECV_BITS_OF_BYTE;
+				goto STATE_SWITCH;
 			}
+
 			//tb_t( state+200, ttimer.value(), tb_in);
 			//tb_d( state+500,timer.match(pwmChannel), tb_in);
 			// we captured our sending low bit edge, continue sending, wait for bit ends with match intr
