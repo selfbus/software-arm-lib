@@ -6,7 +6,7 @@
     - poll frame 
     - extended frame
 - Bus-Busy detection for start of normal frames and ACK-frames
-- Collision detection for all send bytes, no support for receiving of remaining telegram after collision, rx telegram is discarded.
+- Collision detection for all send bytes, supports receiving of collided telegram
 - Extended collision detection for ACK frame due to possible parallel sending of devices and bus delay
 - repetition of telegram after NACK, no ACK or BUSY after idle time (50bit) or busy wait (150bit)
 - sending BUSY to remote if rx-buffer is not free (higher layer still processing last telegram)
@@ -130,6 +130,64 @@ back to the sender as acknowledge and we wait 150 bit times for the repeated tel
 
 **todo we could disable any cap event during waiting.**
 
+## State Machine
+
+```mermaid
+flowchart TB
+    subgraph General
+        INIT
+        IDLE
+        WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
+    end
+    subgraph Receive
+        INIT_RX_FOR_RECEIVING_NEW_TEL
+        RECV_WAIT_FOR_STARTBIT_OR_TELEND
+        RECV_BITS_OF_BYTE
+        RECV_WAIT_FOR_ACK_TX_START
+    end
+    subgraph Send
+        SEND_START_BIT
+        SEND_BIT_0
+        SEND_BITS_OF_BYTE
+        SEND_WAIT_FOR_HIGH_BIT_END
+        SEND_END_OF_BYTE
+        SEND_END_OF_TX
+        SEND_WAIT_FOR_RX_ACK_WINDOW
+        SEND_WAIT_FOR_RX_ACK
+    end
+
+    INIT --50 bit inactivity--> IDLE
+    IDLE --sendTelegram--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
+    IDLE --Falling edge captured--> INIT_RX_FOR_RECEIVING_NEW_TEL
+    INIT_RX_FOR_RECEIVING_NEW_TEL ---> RECV_WAIT_FOR_STARTBIT_OR_TELEND
+    RECV_WAIT_FOR_STARTBIT_OR_TELEND ---> RECV_BITS_OF_BYTE
+    RECV_WAIT_FOR_STARTBIT_OR_TELEND --End of frame && sendAck--> RECV_WAIT_FOR_ACK_TX_START
+    RECV_WAIT_FOR_STARTBIT_OR_TELEND --End of frame && !sendAck--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
+    RECV_BITS_OF_BYTE --End of byte--> RECV_WAIT_FOR_STARTBIT_OR_TELEND
+
+    RECV_WAIT_FOR_ACK_TX_START --Collision--> INIT_RX_FOR_RECEIVING_NEW_TEL
+    RECV_WAIT_FOR_ACK_TX_START --> SEND_START_BIT
+
+    WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Falling edge captured--> INIT_RX_FOR_RECEIVING_NEW_TEL
+    WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Nothing to send--> IDLE
+    WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Something to send--> SEND_START_BIT
+    SEND_START_BIT --Collision--> INIT_RX_FOR_RECEIVING_NEW_TEL
+    SEND_START_BIT --> SEND_BIT_0
+    SEND_BIT_0 --> SEND_BITS_OF_BYTE
+    SEND_BITS_OF_BYTE --1-bits to send--> SEND_WAIT_FOR_HIGH_BIT_END
+    SEND_BITS_OF_BYTE --Stop bit reached--> SEND_END_OF_BYTE
+    SEND_WAIT_FOR_HIGH_BIT_END --Collision--> RECV_BITS_OF_BYTE
+    SEND_WAIT_FOR_HIGH_BIT_END --More bits to send--> SEND_BITS_OF_BYTE
+    SEND_WAIT_FOR_HIGH_BIT_END --Stop bit reached--> SEND_END_OF_BYTE
+    SEND_END_OF_BYTE --More bytes to send--> SEND_BIT_0
+    SEND_END_OF_BYTE --Done--> SEND_END_OF_TX
+    SEND_END_OF_TX --Sent an ACK--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
+    SEND_END_OF_TX --Sent a frame--> SEND_WAIT_FOR_RX_ACK_WINDOW
+    SEND_WAIT_FOR_RX_ACK_WINDOW --> SEND_WAIT_FOR_RX_ACK
+    SEND_WAIT_FOR_RX_ACK --Falling edge--> INIT_RX_FOR_RECEIVING_NEW_TEL
+    SEND_WAIT_FOR_RX_ACK --Timeout--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
+```
+
 ## Main requirements based on KNX Specification 2.1
 ### Physical Layer
 
@@ -200,8 +258,8 @@ A received frame should be processed only if it is addressed:
  - a group address found in the address table
  - broadcast address (0.0.0)
 
-- If the received frame is not correct (parity/checksum,length...error) a NACK should be sent to remote device ???Dest  addr could be wrong???.
-- If frame is correct but the device is busy (e.g. input queue full,...) a BUSY should be sent to remote device
+- If the received frame is not correct (parity/checksum,length...error) a NACK should be sent
+- If frame is correct but the device is busy (e.g. input queue full,...) a BUSY should be sent
 - If frame is correct an ACK should be sent
 
 **We send no acknowledge when we did receive an incorrect frame or correct frame which was not for us**
