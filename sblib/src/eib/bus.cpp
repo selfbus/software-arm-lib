@@ -1311,7 +1311,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		tx_error|= TX_ACK_TIMEOUT_ERROR; // todo  ack timeout - inform upper layer on error state and repeat tx if needed
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 
-		//timer is counting since last stop bit so we need to add the ACK_WAIT_TIME and the char-tx time of 11bits to the 50BT till idle for repated frames
+		//timer is counting since last stop bit so we need to wait 50BT till idle for repeated frames (see KNX spec v2.1 3/2/2 2.3.1 Figure 38)
 		timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME);
 
 		timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait to increase the robustness on bus spikes
