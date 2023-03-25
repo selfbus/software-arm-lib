@@ -1201,10 +1201,12 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		// timeout event, i.e. sent all 1 bits without any collisions, now are in stop bit
 		state = Bus::SEND_END_OF_BYTE;
+		timer.captureMode(captureChannel, FALLING_EDGE);
 
 		// Completed transmission of parity bit and are in the middle of the stop bit transmission.
 		// What do we need to do next?
 	case Bus::SEND_END_OF_BYTE:
+		tb_t( state, ttimer.value(), tb_in);
 		if (nextByteIndex < sendTelegramLen && !sendAck)
 		{
 			// There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
