@@ -501,9 +501,10 @@ void Bus::handleTelegram(bool valid)
 	else if (nextByteIndex == 1 && parity)   // Received a spike or a bus acknowledgment, only parity, no checksum
 	{
 		tb_h( 907, currentByte, tb_in);
-		if ((currentByte == SB_BUS_ACK) && ((rx_error & RX_CHECKSUM_ERROR) == RX_CHECKSUM_ERROR))
+		if (((rx_error & RX_CHECKSUM_ERROR) == RX_CHECKSUM_ERROR) &&
+			((currentByte == SB_BUS_ACK) || (currentByte == SB_BUS_NACK) || (currentByte == SB_BUS_BUSY) || (currentByte == SB_BUS_NACK_BUSY)))
         {
-            // received a ACK so clear checksum bit previously set in Isr Bus::timerInterruptHandler
+            // received an ACK frame so clear checksum bit previously set in Isr Bus::timerInterruptHandler
             rx_error &= ~RX_CHECKSUM_ERROR;
         }
 
