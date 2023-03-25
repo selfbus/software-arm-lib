@@ -509,7 +509,9 @@ void Bus::handleTelegram(bool valid)
         }
 
 		//  did we send a telegram ( sendTries>=1 and the received telegram is ACK or repetition max  -> send next telegram
-		if (wait_for_ack_from_remote) {
+		if (wait_for_ack_from_remote)
+		{
+			wait_for_ack_from_remote = false;
 			if ((currentByte == SB_BUS_ACK ) ||  sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax)
 			{ // last sending to remote was ok or max retry, prepare for next tx telegram
 				if ( sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax) tx_error|= TX_RETRY_ERROR;
@@ -662,7 +664,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		collision = false;
 		rx_error  = 0;
 		checksum = 0xff;
-		repeatTelegram = false;
 		sendAck = 0;
 		valid = 1;
 
@@ -1175,7 +1176,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			tb_h( SEND_END_OF_TX+600, repeatTelegram, tb_in);
 
 			// normal data frame,  L2 need to wait for ACK from remote for our telegram
-			//if (!(sendCurTelegram[0] & SB_TEL_ACK_REQ_FLAG)) {
 			wait_for_ack_from_remote = true; // default for data layer: acknowledge each telegram
 			time=  ACK_WAIT_TIME_MIN; //we wait 15BT- marging for ack rx window, cap intr disabled
 			state = Bus::SEND_WAIT_FOR_RX_ACK_WINDOW;
@@ -1187,7 +1187,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				else
 					sendTries++;
 			}
-			//}else wait_for_ack_from_remote = false;
 			// dump previous tx-telegram and repeat counter and busy retry
 			DB_TELEGRAM(
 			    for (int i =0; i< sendTelegramLen; i++)
@@ -1231,6 +1230,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			goto STATE_SWITCH;
 		}
 		repeatTelegram = true;
+		wait_for_ack_from_remote = false;
 		tx_error|= TX_ACK_TIMEOUT_ERROR; // todo  ack timeout - inform upper layer on error state and repeat tx if needed
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 
