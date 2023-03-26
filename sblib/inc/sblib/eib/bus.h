@@ -377,7 +377,7 @@ private:
 //
 inline bool Bus::idle() const
 {
-    return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == 0);
+    return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == nullptr);
 }
 
 inline void Bus::maxSendTries(int tries)
@@ -392,7 +392,7 @@ inline void Bus::maxSendBusyTries(int tries)
 
 inline bool Bus::sendingTelegram() const
 {
-    return sendCurTelegram != 0;
+    return sendCurTelegram != nullptr;
 }
 
 inline bool Bus::telegramReceived() const

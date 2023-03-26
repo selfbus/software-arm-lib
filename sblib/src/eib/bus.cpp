@@ -171,8 +171,8 @@ void Bus::begin()
 	telegramLen = 0;
 	sendAck = 0;
 	//need_to_send_ack_to_remote=false;
-	sendCurTelegram = 0;
-	sendNextTel = 0;
+	sendCurTelegram = nullptr;
+	sendNextTel = nullptr;
 	collision = false;
 	state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
 	//initialize bus-timer( e.g. defined as 16bit timer1)
@@ -578,7 +578,7 @@ void Bus::sendNextTelegram()
         sendCurTelegram[0] = 0;
     }
     sendCurTelegram = sendNextTel;
-    sendNextTel = 0;
+    sendNextTel = nullptr;
     sendTries = 0;
     sendBusyTries = 0;
     sendTelegramLen = 0;
@@ -935,7 +935,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			else  // Send nothing:  wait PRE_SEND_TIME before we set the bus to idle state
 			{
 			    DB_BUS(
-				   if (sendCurTelegram != 0)
+				   if (sendCurTelegram != nullptr)
 				   {
 				       tb_h( state+ 900,sendCurTelegram[0], tb_in);
 				   }
