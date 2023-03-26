@@ -331,7 +331,6 @@ private:
    // bool need_to_send_ack_to_remote; //!< receiving process need to send ack to remote sending side
     bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
    // bool busy_wait_to_remote; //!< receiving process/ upper layer busy, send busy to remote sender
-    bool repeated;              //!< A send telegram is repeated
     bool repeatTelegram;        //!< need to repeat last  telegram sent
     bool collision;             //!< A collision occurred
     unsigned int lastRXTimeVal; //!< time measurement between telegrams - last SysTime value
