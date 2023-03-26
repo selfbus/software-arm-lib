@@ -254,12 +254,16 @@ private:
     void idleState();
 
     /**
+     * Initializes all class variables to prepare for the next transmission.
+     */
+    void prepareForSending();
+
+    /**
      * Switch to the next telegram for sending.
      *
      * mark the current send buffer as free -> set first byte of buffer to 0
      * load a possible waiting/next buffer to current buffer
      * initialize some low level parameters for the interrupt driven send process
-     *
      */
     void sendNextTelegram();
 

@@ -171,9 +171,16 @@ void Bus::begin()
 	telegramLen = 0;
 	sendAck = 0;
 	//need_to_send_ack_to_remote=false;
+	rx_error = RX_OK;
+	bus_rx_state = RX_OK;
+	setBusRXStateValid(true);
+	collision = false;
+
+	tx_error = TX_OK;
+	bus_tx_state = TX_OK;
 	sendCurTelegram = nullptr;
 	sendNextTel = nullptr;
-	collision = false;
+	prepareForSending();
 	state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
 	//initialize bus-timer( e.g. defined as 16bit timer1)
 	timer.begin();
@@ -298,11 +305,8 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 	noInterrupts();
 	if (state == IDLE)
 	{
-		sendTries = 0;
-		sendBusyTries =0;
-		repeatTelegram = false;
+		prepareForSending();
 
-		wait_for_ack_from_remote = false;
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 		timer.match(timeChannel, 1);
 		timer.matchMode(timeChannel, INTERRUPT | RESET);
@@ -332,6 +336,19 @@ void Bus::idleState()
 	state = Bus::IDLE;
 	sendAck = 0;
 	//need_to_send_ack_to_remote=false;
+}
+
+void Bus::prepareForSending()
+{
+    tx_error = TX_OK;
+    setBusTXStateValid(true);
+
+    sendTries = 0;
+    sendBusyTries = 0;
+    sendTelegramLen = 0;
+    wait_for_ack_from_remote = false;
+    repeatTelegram = false;
+    busy_wait_from_remote = false;
 }
 
 /*
@@ -367,7 +384,7 @@ void Bus::idleState()
  *	telegramLen: rx telegram lenght
  *	sendAck:  !0:  RX process need to send ack to sending side back, set wait timer accordingly
  * 	indicate result of telegram reception/error state to upper layer via bus_rx_state/bus_tx_state
- * 	and bus_rxstae_valid/bus_txstate_valid
+ * 	and bus_rxstate_valid/bus_txstate_valid
  *
  *
  * @param bool of all received char parity and frame checksum error
@@ -570,8 +587,6 @@ void Bus::handleTelegram(bool valid)
 void Bus::sendNextTelegram()
 {
     bus_tx_state = tx_error;
-    tx_error = TX_OK;
-    setBusTXStateValid(true);
 
     if (sendCurTelegram)
     {
@@ -579,11 +594,8 @@ void Bus::sendNextTelegram()
     }
     sendCurTelegram = sendNextTel;
     sendNextTel = nullptr;
-    sendTries = 0;
-    sendBusyTries = 0;
-    sendTelegramLen = 0;
-    wait_for_ack_from_remote = false;
-    repeatTelegram = false;
+
+    prepareForSending();
 }
 
 
