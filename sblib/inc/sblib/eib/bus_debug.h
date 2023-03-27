@@ -56,6 +56,7 @@
     extern volatile unsigned int telTXStartTime; //!< time when the transmission (start bit of first byte)of a telegram to the bus started
     extern volatile unsigned int telRXEndTime; //!< time when the reception  (last stop bit) of a telegram from bus ended
     extern volatile unsigned int telTXEndTime; //!< time when the transmission (last stop bit)of a telegram to the bus ended
+    extern volatile bool telRXNotProcessed; //!< received telegram was not processed as it does not affect us
     extern volatile unsigned int telTXAck; //!< ack send by L2
     extern volatile unsigned int telRXWaitInitTime; //!< Wait for 50 bit time after last RX/TX telegram, could be less- rx will be ignored
     extern volatile unsigned int telRXWaitIdleTime; //!< bus is in idle after 50 bit times, now wait for next start of RX/TX

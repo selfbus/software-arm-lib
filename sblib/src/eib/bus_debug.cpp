@@ -41,6 +41,7 @@
     volatile unsigned int telTXStartTime = 0;
     volatile unsigned int telRXEndTime = 0;
     volatile unsigned int telTXEndTime = 0;
+    volatile bool telRXNotProcessed = false;
     volatile unsigned int telTXAck = 0;
     volatile unsigned int telRXWaitInitTime = 0;
     volatile unsigned int telRXWaitIdleTime = 0;
@@ -245,6 +246,11 @@ void dumpRXTelegram()
         serial.print("collision ");
     }
 
+    if (telRXNotProcessed)
+    {
+        serial.print("not processed ");
+    }
+
     //dump tel data
     if (telLength > 1)
     {
@@ -280,6 +286,7 @@ void dumpRXTelegram()
     telRXEndTime = 0;
     telrxerror = 0;
     telRXTelByteStartTime = 0;
+    telRXNotProcessed = false;
 }
 #endif
 
