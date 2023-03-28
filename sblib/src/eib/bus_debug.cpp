@@ -41,6 +41,7 @@
     volatile unsigned int telTXStartTime = 0;
     volatile unsigned int telRXEndTime = 0;
     volatile unsigned int telTXEndTime = 0;
+    volatile bool telRXNotProcessed = false;
     volatile unsigned int telTXAck = 0;
     volatile unsigned int telRXWaitInitTime = 0;
     volatile unsigned int telRXWaitIdleTime = 0;
@@ -49,6 +50,9 @@
     volatile unsigned int telRXTelBitTimingErrorLate = 0;
     volatile unsigned int telRXTelBitTimingErrorEarly = 0;
     //volatile unsigned int db_state= 2000;
+
+    unsigned int telLastRXEndTime = 0;
+    unsigned int telLastTXEndTime = 0;
 #   define DB_TELEGRAM(x) x
 #else
 #   define DB_TELEGRAM(x)
@@ -70,59 +74,15 @@
 
 
 #ifdef DUMP_TELEGRAMS
+void dumpTXTelegram();
+void dumpRXTelegram();
+
 void dumpTelegrams()
 {
-    static unsigned int telLastRXEndTime = 0;
-    static unsigned int telLastTXEndTime = 0;
-
-    if (telTXAck)
+    // we transmitted a telegram before we received one
+    if (telTXEndTime && telTXEndTime < telRXEndTime)
     {
-        serial.println("TXAck:", telTXAck, HEX, 2);
-        telTXAck = 0;
-    }
-
-    //dump transmitting part
-    if (telTXEndTime) // we transmitted a telegram
-    {
-        serial.print("TX : (S", telTXStartTime, DEC, 6);
-        serial.print(" E", telTXEndTime, DEC, 6);
-
-        if (telLastRXEndTime)
-        {
-            // print time in between last rx-tel and current tx-tel
-            serial.print(" dt RX-TX:", (telTXStartTime - telLastRXEndTime), DEC, 8);
-            telLastRXEndTime = 0;
-        }
-        else if(telLastTXEndTime)
-        {
-            // print time in between last tx-tel and current tx-tel
-            serial.print(" dt TX-TX:", (telTXStartTime - telLastTXEndTime), DEC, 8);
-            telLastTXEndTime = 0;
-        }
-
-        if (tx_telrxerror != 0)
-        {
-            serial.print(" err: 0x", tx_telrxerror, HEX, 4);
-        }
-        else
-        {
-            serial.print("  ok: 0x", tx_telrxerror, HEX, 4);
-        }
-        serial.print(" rep:", tx_rep_count, DEC, 1);
-        serial.print(" brep:", tx_busy_rep_count, DEC, 1);
-        serial.print(") ");
-
-        //dump tx telegram data
-        for (unsigned int i = 0; i < txtelLength; ++i)
-        {
-            if (i) serial.print(" ");
-            serial.print(txtelBuffer[i], HEX, 2);
-        }
-        serial.println();
-
-        telLastTXEndTime = telTXEndTime;
-        telTXEndTime = 0;
-        telTXStartTime = 0;
+        dumpTXTelegram();
     }
 
 /*
@@ -188,79 +148,145 @@ void dumpTelegrams()
     //dump tel receiving part
     if (telLength > 0)
     {
-        serial.print("RX : (S", telRXStartTime, DEC, 6 );
-        serial.print(" E", telRXEndTime, DEC, 6);
-        /*
-        serial.print(") ");
-        serial.print(", LRXE:", telLastRXEndTime, DEC, 9);
-        serial.print(", LTXE:", telLastTXEndTime, DEC,9);
-        serial.print(") ");
-        */
-        if (telLastTXEndTime)
-        {
-            // print time in between last tx-tel and current rx-tel
-            serial.print(" dt TX-RX:", (telRXStartTime - telLastTXEndTime), DEC, 8);
-            telLastTXEndTime = 0;
-        }
-        else if(telLastRXEndTime)
-        {
-            // print time in between last rx-tel and current rx-tel
-            serial.print(" dt RX-RX:", (telRXStartTime - telLastRXEndTime), DEC, 8);
-            //serial.println(") ");
-            //telLastRXEndTime = 0;
-        }
-
-        if (telrxerror != 0)
-        {
-            serial.print(" err: 0x", telrxerror, HEX, 4);
-        }
-        else
-        {
-            serial.print("  ok: 0x", telrxerror, HEX, 4);
-        }
-        serial.print(") ");
-
-        if (telcollision)
-        {
-            serial.print("collision ");
-        }
-
-        //dump tel data
-        if (telLength > 1)
-        {
-            for (unsigned int i = 0; i < telLength; ++i)
-            {
-                if (i) serial.print(" ");
-                serial.print(telBuffer[i], HEX, 2);
-            }
-        }
-        else if (telLength == 1)
-        {
-            // maybe a LL_ACK, LL_NACK or LL_BUSY, try to decode it
-            switch (telBuffer[0])
-            {
-            case 0xcc :
-                serial.print("LL_ACK");
-                break;
-            case 0x0c :
-                serial.print("LL_NACK");
-                break;
-            case 0xc0 :
-                serial.print("LL_BUSY");
-                break;
-            default:
-                serial.print(telBuffer[0], HEX, 2);
-            }
-        }
-        serial.println();
-
-        //reset all debug data
-        telLength = 0;
-        telLastRXEndTime = telRXEndTime;
-        telRXEndTime = 0;
-        telrxerror = 0;
-        telRXTelByteStartTime = 0;
+        dumpRXTelegram();
     }
+
+    if (telTXAck)
+    {
+        serial.println("TXAck:", telTXAck, HEX, 2);
+        telTXAck = 0;
+    }
+
+    // we transmitted a telegram after receiving one
+    if (telTXEndTime)
+    {
+        dumpTXTelegram();
+    }
+}
+
+void dumpTXTelegram()
+{
+    serial.print("TX : (S", telTXStartTime, DEC, 6);
+    serial.print(" E", telTXEndTime, DEC, 6);
+
+    if (telLastRXEndTime)
+    {
+        // print time in between last rx-tel and current tx-tel
+        serial.print(" dt RX-TX:", (telTXStartTime - telLastRXEndTime), DEC, 8);
+        telLastRXEndTime = 0;
+    }
+    else if(telLastTXEndTime)
+    {
+        // print time in between last tx-tel and current tx-tel
+        serial.print(" dt TX-TX:", (telTXStartTime - telLastTXEndTime), DEC, 8);
+        telLastTXEndTime = 0;
+    }
+
+    if (tx_telrxerror != 0)
+    {
+        serial.print(" err: 0x", tx_telrxerror, HEX, 4);
+    }
+    else
+    {
+        serial.print("  ok: 0x", tx_telrxerror, HEX, 4);
+    }
+    serial.print(" rep:", tx_rep_count, DEC, 1);
+    serial.print(" brep:", tx_busy_rep_count, DEC, 1);
+    serial.print(") ");
+
+    //dump tx telegram data
+    for (unsigned int i = 0; i < txtelLength; ++i)
+    {
+        if (i) serial.print(" ");
+        serial.print(txtelBuffer[i], HEX, 2);
+    }
+    serial.println();
+
+    telLastTXEndTime = telTXEndTime;
+    telTXEndTime = 0;
+    telTXStartTime = 0;
+}
+
+void dumpRXTelegram()
+{
+    serial.print("RX : (S", telRXStartTime, DEC, 6 );
+    serial.print(" E", telRXEndTime, DEC, 6);
+    /*
+    serial.print(") ");
+    serial.print(", LRXE:", telLastRXEndTime, DEC, 9);
+    serial.print(", LTXE:", telLastTXEndTime, DEC,9);
+    serial.print(") ");
+    */
+    if (telLastTXEndTime)
+    {
+        // print time in between last tx-tel and current rx-tel
+        serial.print(" dt TX-RX:", (telRXStartTime - telLastTXEndTime), DEC, 8);
+        telLastTXEndTime = 0;
+    }
+    else if(telLastRXEndTime)
+    {
+        // print time in between last rx-tel and current rx-tel
+        serial.print(" dt RX-RX:", (telRXStartTime - telLastRXEndTime), DEC, 8);
+        //serial.println(") ");
+        //telLastRXEndTime = 0;
+    }
+
+    if (telrxerror != 0)
+    {
+        serial.print(" err: 0x", telrxerror, HEX, 4);
+    }
+    else
+    {
+        serial.print("  ok: 0x", telrxerror, HEX, 4);
+    }
+    serial.print(") ");
+
+    if (telcollision)
+    {
+        serial.print("collision ");
+    }
+
+    if (telRXNotProcessed)
+    {
+        serial.print("not processed ");
+    }
+
+    //dump tel data
+    if (telLength > 1)
+    {
+        for (unsigned int i = 0; i < telLength; ++i)
+        {
+            if (i) serial.print(" ");
+            serial.print(telBuffer[i], HEX, 2);
+        }
+    }
+    else if (telLength == 1)
+    {
+        // maybe a LL_ACK, LL_NACK or LL_BUSY, try to decode it
+        switch (telBuffer[0])
+        {
+        case 0xcc :
+            serial.print("LL_ACK");
+            break;
+        case 0x0c :
+            serial.print("LL_NACK");
+            break;
+        case 0xc0 :
+            serial.print("LL_BUSY");
+            break;
+        default:
+            serial.print(telBuffer[0], HEX, 2);
+        }
+    }
+    serial.println();
+
+    //reset all debug data
+    telLength = 0;
+    telLastRXEndTime = telRXEndTime;
+    telRXEndTime = 0;
+    telrxerror = 0;
+    telRXTelByteStartTime = 0;
+    telRXNotProcessed = false;
 }
 #endif
 

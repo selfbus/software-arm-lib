@@ -253,12 +253,16 @@ private:
     void idleState();
 
     /**
+     * Initializes all class variables to prepare for the next transmission.
+     */
+    void prepareForSending();
+
+    /**
      * Switch to the next telegram for sending.
      *
      * mark the current send buffer as free -> set first byte of buffer to 0
      * load a possible waiting/next buffer to current buffer
      * initialize some low level parameters for the interrupt driven send process
-     *
      */
     void sendNextTelegram();
 
@@ -330,7 +334,6 @@ private:
    // bool need_to_send_ack_to_remote; //!< receiving process need to send ack to remote sending side
     bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
    // bool busy_wait_to_remote; //!< receiving process/ upper layer busy, send busy to remote sender
-    bool repeated;              //!< A send telegram is repeated
     bool repeatTelegram;        //!< need to repeat last  telegram sent
     bool collision;             //!< A collision occurred
     unsigned int lastRXTimeVal; //!< time measurement between telegrams - last SysTime value
@@ -376,7 +379,7 @@ private:
 //
 inline bool Bus::idle() const
 {
-    return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == 0);
+    return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == nullptr);
 }
 
 inline void Bus::maxSendTries(int tries)
@@ -391,7 +394,7 @@ inline void Bus::maxSendBusyTries(int tries)
 
 inline bool Bus::sendingTelegram() const
 {
-    return sendCurTelegram != 0;
+    return sendCurTelegram != nullptr;
 }
 
 inline bool Bus::telegramReceived() const

@@ -171,9 +171,16 @@ void Bus::begin()
 	telegramLen = 0;
 	sendAck = 0;
 	//need_to_send_ack_to_remote=false;
-	sendCurTelegram = 0;
-	sendNextTel = 0;
+	rx_error = RX_OK;
+	bus_rx_state = RX_OK;
+	setBusRXStateValid(true);
 	collision = false;
+
+	tx_error = TX_OK;
+	bus_tx_state = TX_OK;
+	sendCurTelegram = nullptr;
+	sendNextTel = nullptr;
+	prepareForSending();
 	state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
 	//initialize bus-timer( e.g. defined as 16bit timer1)
 	timer.begin();
@@ -298,11 +305,8 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 	noInterrupts();
 	if (state == IDLE)
 	{
-		sendTries = 0;
-		sendBusyTries =0;
-		repeatTelegram = false;
+		prepareForSending();
 
-		wait_for_ack_from_remote = false;
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 		timer.match(timeChannel, 1);
 		timer.matchMode(timeChannel, INTERRUPT | RESET);
@@ -332,6 +336,19 @@ void Bus::idleState()
 	state = Bus::IDLE;
 	sendAck = 0;
 	//need_to_send_ack_to_remote=false;
+}
+
+void Bus::prepareForSending()
+{
+    tx_error = TX_OK;
+    setBusTXStateValid(true);
+
+    sendTries = 0;
+    sendBusyTries = 0;
+    sendTelegramLen = 0;
+    wait_for_ack_from_remote = false;
+    repeatTelegram = false;
+    busy_wait_from_remote = false;
 }
 
 /*
@@ -367,7 +384,7 @@ void Bus::idleState()
  *	telegramLen: rx telegram lenght
  *	sendAck:  !0:  RX process need to send ack to sending side back, set wait timer accordingly
  * 	indicate result of telegram reception/error state to upper layer via bus_rx_state/bus_tx_state
- * 	and bus_rxstae_valid/bus_txstate_valid
+ * 	and bus_rxstate_valid/bus_txstate_valid
  *
  *
  * @param bool of all received char parity and frame checksum error
@@ -425,7 +442,7 @@ void Bus::handleTelegram(bool valid)
 		}
 		else
 		{
-            DB_BUS(serial.println(" Bus::handleTelegram not processed: 0x", destAddr, HEX));
+            DB_BUS(telRXNotProcessed = true);
 		}
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
@@ -509,7 +526,9 @@ void Bus::handleTelegram(bool valid)
         }
 
 		//  did we send a telegram ( sendTries>=1 and the received telegram is ACK or repetition max  -> send next telegram
-		if (wait_for_ack_from_remote) {
+		if (wait_for_ack_from_remote)
+		{
+			wait_for_ack_from_remote = false;
 			if ((currentByte == SB_BUS_ACK ) ||  sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax)
 			{ // last sending to remote was ok or max retry, prepare for next tx telegram
 				if ( sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax) tx_error|= TX_RETRY_ERROR;
@@ -568,20 +587,15 @@ void Bus::handleTelegram(bool valid)
 void Bus::sendNextTelegram()
 {
     bus_tx_state = tx_error;
-    tx_error = TX_OK;
-    setBusTXStateValid(true);
 
     if (sendCurTelegram)
     {
         sendCurTelegram[0] = 0;
     }
     sendCurTelegram = sendNextTel;
-    sendNextTel = 0;
-    sendTries = 0;
-    sendBusyTries = 0;
-    sendTelegramLen = 0;
-    wait_for_ack_from_remote = false;
-    repeatTelegram = false;
+    sendNextTel = nullptr;
+
+    prepareForSending();
 }
 
 
@@ -662,7 +676,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		collision = false;
 		rx_error  = 0;
 		checksum = 0xff;
-		repeatTelegram = false;
 		sendAck = 0;
 		valid = 1;
 
@@ -936,7 +949,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			else  // Send nothing:  wait PRE_SEND_TIME before we set the bus to idle state
 			{
 			    DB_BUS(
-				   if (sendCurTelegram != 0)
+				   if (sendCurTelegram != nullptr)
 				   {
 				       tb_h( state+ 900,sendCurTelegram[0], tb_in);
 				   }
@@ -1252,7 +1265,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			tb_h( SEND_END_OF_TX+600, repeatTelegram, tb_in);
 
 			// normal data frame,  L2 need to wait for ACK from remote for our telegram
-			//if (!(sendCurTelegram[0] & SB_TEL_ACK_REQ_FLAG)) {
 			wait_for_ack_from_remote = true; // default for data layer: acknowledge each telegram
 			time=  ACK_WAIT_TIME_MIN; //we wait 15BT- marging for ack rx window, cap intr disabled
 			state = Bus::SEND_WAIT_FOR_RX_ACK_WINDOW;
@@ -1264,7 +1276,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				else
 					sendTries++;
 			}
-			//}else wait_for_ack_from_remote = false;
 			// dump previous tx-telegram and repeat counter and busy retry
 			DB_TELEGRAM(
 			    for (int i =0; i< sendTelegramLen; i++)
@@ -1308,6 +1319,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			goto STATE_SWITCH;
 		}
 		repeatTelegram = true;
+		wait_for_ack_from_remote = false;
 		tx_error|= TX_ACK_TIMEOUT_ERROR; // todo  ack timeout - inform upper layer on error state and repeat tx if needed
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 
