@@ -288,18 +288,18 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 	    fatalError(); // soft fault: send buffer overflow
     }
 
-#ifdef DUMP_TELEGRAMS
-	unsigned int t;
-	t = ttimer.value();
-	serial.print("QUE: (", t, DEC, 8); // queued to send
-	serial.print(") ");
-	for (int i = 0; i <= length; ++i)
-	{
-		if (i) serial.print(" ");
-		serial.print(telegram[i], HEX, 2);
-	}
-	serial.println();
-#endif
+    DB_TELEGRAM(
+        unsigned int t;
+        t = ttimer.value();
+        serial.print("QUE: (", t, DEC, 8); // queued to send
+        serial.print(") ");
+        for (int i = 0; i <= length; ++i)
+        {
+            if (i) serial.print(" ");
+            serial.print(telegram[i], HEX, 2);
+        }
+        serial.println();
+    );
 
 	// Start sending if the bus is idle or sending will be triggered in WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE after finishing current TX/RX
 	noInterrupts();
@@ -401,17 +401,17 @@ void Bus::handleTelegram(bool valid)
 	tb2( 9000, b5,  b1, b2, b3, b4, tb_in);
 #endif
 
-#ifdef DUMP_TELEGRAMS
-	//telRXtime= ttimer.value();
-	if (nextByteIndex){
-		for (int i = 0; i < nextByteIndex; ++i)
-		{
-			telBuffer[i] = rx_telegram[i];
-		}
-		telLength = nextByteIndex;
-		telcollision = collision;
-	}
-#endif
+    DB_TELEGRAM(
+        //telRXtime= ttimer.value();
+        if (nextByteIndex){
+            for (int i = 0; i < nextByteIndex; ++i)
+            {
+                telBuffer[i] = rx_telegram[i];
+            }
+            telLength = nextByteIndex;
+            telcollision = collision;
+        }
+    );
 
 	//need_to_send_ack_to_remote=false;
 	sendAck = 0; // clear any pending ACK TX
@@ -624,9 +624,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	// BCU is in start-up phase, we wait for 50 bits inactivity of the bus
 	case Bus::INIT:
 		tb_t( state, ttimer.value(), tb_in);
-#ifdef DUMP_TELEGRAMS
-		telRXWaitInitTime= ttimer.value(); // if is is less than 50 we have a failure on the bus
-#endif
+        DB_TELEGRAM(telRXWaitInitTime = ttimer.value()); // if it is less than 50 we have a failure on the bus
 
 		if (timer.flag(captureChannel))
 		{// cap event: bus not in idle state before we have a timeout, restart waiting time
@@ -637,7 +635,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		idleState();
 		break;
 
-
 		// The bus is idle for at least 50BT. Usually we come here when we finished a TX/RX on the Bus and waited 50BT for next event without receiving a start bit on the Bus
 		// or at least one pending Telegram in the queue.
 		// A timeout  (after 0xfffe us) should not be received( indicating no bus activity) match interrupt is disabled
@@ -646,9 +643,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 	case Bus::IDLE:
 		tb_d( state+100, ttimer.value(), tb_in);
-#ifdef DUMP_TELEGRAMS
-		telRXWaitIdleTime= ttimer.value(); //
-#endif
+        DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
 
 		if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing - timeout??
 			break;
@@ -661,14 +656,14 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	case Bus::INIT_RX_FOR_RECEIVING_NEW_TEL:
 		tb_d( state+100, ttimer.value(), tb_in);
 
-#ifdef DUMP_TELEGRAMS
-		// correct the timer start value by the process time (about 13us) we had since the capture event
-		tv=timer.value(); cv= timer.capture(captureChannel);
-		if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-		else dt = (0xffff-cv) +tv;
+        DB_TELEGRAM(
+            // correct the timer start value by the process time (about 13us) we had since the capture event
+            tv=timer.value(); cv= timer.capture(captureChannel);
+            if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
+            else dt = (0xffff-cv) +tv;
 
-		telRXStartTime= ttimer.value()- dt;
-#endif
+            telRXStartTime= ttimer.value()- dt;
+        );
 
 		nextByteIndex = 0;
 		collision = false;
@@ -693,12 +688,12 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
                 {
                     rx_error |= RX_CHECKSUM_ERROR;
                 }
-#ifdef DUMP_TELEGRAMS
-		telRXEndTime= ttimer.value() - timer.value(); // timer was restarted at end of last stop bit -
-#   ifdef PIO_FOR_TEL_END_IND
-		digitalWrite(PIO_FOR_TEL_END_IND, 1);           // set Pin to high till next interrupt as end of Tel indication
-#   endif
-#endif
+                DB_TELEGRAM(
+                    telRXEndTime= ttimer.value() - timer.value(); // timer was restarted at end of last stop bit -
+#                   ifdef PIO_FOR_TEL_END_IND
+                        digitalWrite(PIO_FOR_TEL_END_IND, 1); // set Pin to high till next interrupt as end of Tel indication
+#                   endif
+                );
 
 				handleTelegram(valid && !checksum);
 			}
@@ -732,12 +727,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		bitMask = 1;
 		parity = 1;
 
-#ifdef DUMP_TELEGRAMS
-		// correct the timer start value by the process time (about 13us) we had since the capture event
-		//unsigned int dt, tv, cv;
-		telRXTelByteStartTime= ttimer.value()- dt;
-#endif
-
+        DB_TELEGRAM(telRXTelByteStartTime = ttimer.value() - dt); // correct the timer start value by the process time (about 13us) we had since the capture event
 		break;
 
 		// we received next capture event for a low bit at position n*104us or timeout if we have end of byte received
@@ -763,7 +753,8 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		//bittime hold the time of the n-th bit (0..9) time=n*104, timer is counting from startbit edge- should be 104us in advance
 
 		if (time >= bitTime + BIT_TIME - 35 ) // check window should be at least  n*104-7us  *** we use -35us to be more tolerant
-		{ // bit is not to early- check for to late - we might have some high bits received since last low bit
+        {
+            // bit is not to early- check for to late - we might have some high bits received since last low bit
 			bitTime += BIT_TIME; //set bittime to next expected bit edge
 			while (time >= bitTime + BIT_WAIT_TIME && bitMask <= 0x100) // high bit found or bit 9 (stop bit) found - move check to next bit position
 			{
@@ -773,25 +764,20 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				bitMask <<= 1; // next bit is in bitmask
 			}
 
-			if (time > bitTime  +33 && bitMask <= 0x100)
+			if (time > bitTime + 33 && bitMask <= 0x100)
 			{
-				rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
-
-				//report timing error for debugging
-#ifdef DUMP_TELEGRAMS
-		telRXTelBitTimingErrorLate = time;
-#endif
+                rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
+                DB_TELEGRAM(telRXTelBitTimingErrorLate = time); //report timing error for debugging
 			}
 			bitMask <<= 1; //next bit or stop bit
 			//tb_d( RECV_BITS_OF_BYTE +400, time, tb_in);
 			//tb_d( RECV_BITS_OF_BYTE +500, bitTime, tb_in);
-		} else // we might have received a additional edge due to bus reflection, tx-delay, edge should be within bit pulse +30us else ignore edge
-		{
-			rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
-			// report timing error for debugging
-#ifdef DUMP_TELEGRAMS
-		telRXTelBitTimingErrorEarly = time;
-#endif
+        }
+        else
+        {
+            // we might have received a additional edge due to bus reflection, tx-delay, edge should be within bit pulse +30us else ignore edge
+            rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
+            DB_TELEGRAM(telRXTelBitTimingErrorEarly = time); // report timing error for debugging
 		}
 
 		if (timeout)  // Timer timeout: end of byte
@@ -863,11 +849,10 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		}
 		sendTelegramLen = 0;
 
-#ifdef DUMP_TELEGRAMS
-        telTXAck = sendAck;
-        // set starttime of sending telegram
-        telTXStartTime = ttimer.value() + PRE_SEND_TIME;
-#endif
+        DB_TELEGRAM(
+            telTXAck = sendAck;
+            telTXStartTime = ttimer.value() + PRE_SEND_TIME; // set start time of sending telegram
+        );
 
 		//set timer for TX process: init PWM pulse generation, interrupt at pulse end and cap event (pulse start)
 		timer.match(pwmChannel, PRE_SEND_TIME); // waiting time till start of first bit- falling edge 104us + n*104us ( n=0 or3)
@@ -972,13 +957,8 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		tx_error = TX_OK;
 		state = Bus::SEND_START_BIT;
 
-#ifdef DUMP_TELEGRAMS
-			// set starttime of sending telegram
-			telTXStartTime = ttimer.value() + time;
-#endif
-
+        DB_TELEGRAM(telTXStartTime = ttimer.value() + time); // set start time of sending telegram
 		break;
-
 
 		/* SEND_START_BIT
 		 * start bit edge is in sync with bus timing!
@@ -1240,9 +1220,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	case Bus::SEND_END_OF_TX:
 		tb_t( state, ttimer.value(), tb_in);
 		tb_h( SEND_END_OF_TX+700, repeatTelegram, tb_in);
-#ifdef DUMP_TELEGRAMS
-		telTXEndTime= ttimer.value();
-#endif
+        DB_TELEGRAM(telTXEndTime = ttimer.value());
 
 		if (sendAck){ // we send an ack for last received frame, wait for idle for next action
 			tb_h( SEND_END_OF_TX+200, tx_error, tb_in);
