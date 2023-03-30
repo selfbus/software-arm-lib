@@ -1,19 +1,19 @@
 /**************************************************************************//**
- * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
- * @defgroup SBLIB_EXAMPLE_I2C_1 i2c example
- * @ingroup SBLIB_EXAMPLES
- * @brief   Read Lux and RTC from LPC1115 Developer Board using I2C class with a timer and the timer interrupt
- * @details for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT<br/>
- *         "Enable printf float" in Project settings -> Managed Linker Script<br/>
+ * @file    app_main.cpp
+ * @brief   A simple application which will read Lux and RTC from
+ *          LPC1115 Dev Board using I2C class with a timer and the timer interrupt.
  *
- * @note   needs at least a 64KB LPC111x.
+ *          needs BCU1 version of the sblib library
+ *          needs at least a 64KB LPC111x.
  *
- * @{
+ *          for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT
+ *          "Enable printf float" in Prj settings -> Managed Linker Script
  *
- * @file   app_main.cpp
+ *
  * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
  * @author Mario Theodoridis Copyright (c) 2021
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Doumanix <doumanix@gmx.de> Copyright (c) 2023
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -27,19 +27,27 @@
 #include <sblib/io_pin_names.h>
 #include <sblib/i2c.h>
 #include <sblib/eibBCU1.h>
+#include <sblib/internal/iap.h>
+#include <sblib/serial.h>
 
-#define DBG_LUX             1 ///< BH1750 Lux
-#define DBG_PRINT_LUX       1
+//#define DBG_LUX             1 ///< BH1750 Lux
+//#define DBG_PRINT_LUX       1
+//
+//#define DBG_RTC             1 ///< Ds3231 RTC
+//#define DBG_PRINT_RTC       1
+//#define DBG_PRINT_RTC_ALARM 1
+//
+//#define SET_RTC_INITIAL_TIME  0  ///< Change this from "1" to "0" after the time was set successfully
+//#define SET_RTC_ALARM1_ALARM2 0  ///< Change this from "1" to "0" after the ALARM1|2 was set successfully
+//
+//#define DBG_DHT             1 ///< DHT22
+//#define DBG_PRINT_DHT       1
 
-#define DBG_RTC             1 ///< Ds3231 RTC
-#define DBG_PRINT_RTC       1
-#define DBG_PRINT_RTC_ALARM 1
+//#define DBG_SGP4             1 ///< SGP4x
+//#define DBG_PRINT_SGP4       1
 
-#define SET_RTC_INITIAL_TIME  0  ///< Change this from "1" to "0" after the time was set successfully
-#define SET_RTC_ALARM1_ALARM2 0  ///< Change this from "1" to "0" after the ALARM1|2 was set successfully
-
-#define DBG_DHT             1 ///< DHT22
-#define DBG_PRINT_DHT       1
+#define DBG_SHT4             1 ///< SHT4x
+#define DBG_PRINT_SHT4       1
 
 #if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
 # include <stdio.h>          // "Enable printf float" in Prj settings -> Managed Linker Script
@@ -55,6 +63,15 @@
 #if DBG_DHT
 #   include <sblib/sensors/dht.h>
 #endif
+#if DBG_SHT2
+#   include <sblib/i2c/SHT2x.h>
+#endif
+#if DBG_SHT4
+#   include <sblib/i2c/SHT4x.h>
+#endif
+#if DBG_SGP4
+#   include <sblib/i2c/SGP4x.h>
+#endif
 
 #if DBG_LUX
   BH1750 bh;                 // BH1750
@@ -67,11 +84,24 @@
   DHT dht;                   // DHT 1st
 #endif
 
-#define READ_TIMER 1000      ///> Read values timer in Milliseconds
+#if DBG_SHT2
+  SHT2xClass SHT21;
+#endif
+
+#if DBG_SHT4
+  SHT4xClass SHT40;
+#endif
+
+#if DBG_SGP4
+  SGP4xClass SGP40;
+#endif
+
+#define READ_TIMER 2000      ///> Read values timer in Milliseconds
+
+bool bReadTimer= false;      ///> Condition to read values if timer reached
 
 BCU1 bcu = BCU1();
 
-bool bReadTimer= false;      ///> Condition to read values if timer reached
 
 /**
  * Handler for the timer interrupt.
@@ -166,6 +196,19 @@ bool SetRTCAlarm()
  */
 BcuBase* setup()
 {
+    serial.setRxPin(PIO1_6); // @ swd/jtag connector
+    serial.setTxPin(PIO1_7); // @ swd/jtag connector
+
+    // serial.setRxPin(PIO2_7); // @ 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
+    // serial.setTxPin(PIO2_8); // @ 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
+
+    serial.begin(115200);
+
+    serial.println("Selfbus I2C example");
+
+    serial.print("Target MCU has ", iapFlashSize() / 1024);
+    serial.println("k flash");
+    serial.println();
 
 #if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
     printf("Example-i2c application started\n");
@@ -183,6 +226,23 @@ BcuBase* setup()
 
 #if DBG_DHT
     dht.DHTInit(PIO2_2, DHT22); // Use the DHT22 sensor on PIN
+#endif
+
+#if DBG_SHT2
+    SHT21.Init();
+#endif
+
+#if DBG_SHT4
+    SHT40.init();
+#endif
+
+#if DBG_SGP4
+    SGP40.init();
+    uint16_t relativeHumidity = 0;
+    uint16_t temperature = 0;
+    uint16_t srawVoc = 0;
+    SGP40.measureRawSignal(relativeHumidity, temperature, srawVoc);
+//    SGP40.getSerialnumber();
 #endif
 
 /*
@@ -228,6 +288,33 @@ void ReadLux() {
   }
 }
 #endif
+
+#if DBG_SHT2
+void ReadSHTTemp() {
+	float temp = SHT21.GetTemperature();
+	printf("DMX Temp: %f\n", temp);
+}
+#endif
+
+#if DBG_SHT4
+void ReadSHT4TempHum() {
+	float temperature = 0;
+	float humidity = 0;
+	SHT40.measureHighPrecision(temperature, humidity);
+//	SHT40.readSensor(Sht4xCommand::measHi);
+	SHT40.getSerialnumber();
+//	printf("DMX4x Temp: %f\n", temp);
+}
+#endif
+
+#if DBG_SGP4
+void ReadSGP4Serial() {
+	uint16_t temp = SGP40.getSerialnumber();
+	SGP40.measureRawSignal(1,2,temp);
+//	printf("\nSerialNr[0]: %d\n", temp);
+}
+#endif
+
 
 #if DBG_DHT
 /**
@@ -321,6 +408,15 @@ void loop_noapp()
 #if DBG_DHT
         ReadTempHum();
 #endif
+#if DBG_SHT2
+        ReadSHTTemp();
+#endif
+#if DBG_SHT4
+        ReadSHT4TempHum();
+#endif
+#if DBG_SGP4
+        ReadSGP4Serial();
+#endif
         bReadTimer=false;
     }
     // Sleep until the next interrupt happens
@@ -334,4 +430,3 @@ void loop()
 {
     // will never be called in this example
 }
-/** @}*/
