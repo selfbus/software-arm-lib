@@ -1,18 +1,18 @@
 /**************************************************************************//**
- * @file    app_main.cpp
- * @brief   A simple application which will read Lux and RTC from
- *          LPC1115 Dev Board using I2C class with a timer and the timer interrupt.
+ * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
+ * @defgroup SBLIB_EXAMPLE_I2C_1 i2c example
+ * @ingroup SBLIB_EXAMPLES
+ * @brief   Read Lux and RTC from LPC1115 Developer Board using I2C class with a timer and the timer interrupt
+ * @details for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT<br/>
+ *         "Enable printf float" in Project settings -> Managed Linker Script<br/>
  *
- *          needs BCU1 version of the sblib library
- *          needs at least a 64KB LPC111x.
+ * @note    needs at least a 64KB LPC111x.
  *
- *          for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT
- *          "Enable printf float" in Prj settings -> Managed Linker Script
- *
+ * @{
  *
  * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
  * @author Mario Theodoridis Copyright (c) 2021
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
  * @author Doumanix <doumanix@gmx.de> Copyright (c) 2023
  * @bug No known bugs.
  ******************************************************************************/
@@ -32,14 +32,14 @@
 
 //#define DBG_LUX             1 ///< BH1750 Lux
 //#define DBG_PRINT_LUX       1
-//
+
 //#define DBG_RTC             1 ///< Ds3231 RTC
 //#define DBG_PRINT_RTC       1
 //#define DBG_PRINT_RTC_ALARM 1
-//
+
 //#define SET_RTC_INITIAL_TIME  0  ///< Change this from "1" to "0" after the time was set successfully
 //#define SET_RTC_ALARM1_ALARM2 0  ///< Change this from "1" to "0" after the ALARM1|2 was set successfully
-//
+
 //#define DBG_DHT             1 ///< DHT22
 //#define DBG_PRINT_DHT       1
 
@@ -101,7 +101,6 @@
 bool bReadTimer= false;      ///> Condition to read values if timer reached
 
 BCU1 bcu = BCU1();
-
 
 /**
  * Handler for the timer interrupt.
@@ -315,7 +314,6 @@ void ReadSGP4Serial() {
 }
 #endif
 
-
 #if DBG_DHT
 /**
  * Read the DHT Temperature and Humidity
@@ -430,3 +428,4 @@ void loop()
 {
     // will never be called in this example
 }
+/** @}*/
