@@ -35,7 +35,7 @@
 /*
  * This file is part of SHT4x.
  *
- *  Sensirion code adapted to Selfbus Library by Doumanix (2023)
+ * Sensirion code adapted to Selfbus Library by Doumanix (2023)
  */
 
 #include <stdint.h>
@@ -44,78 +44,41 @@
 #include <sblib/timer.h>
 #include <sblib/i2c/SHT4x.h>
 
-#include <sblib/serial.h>
-#include <sblib/internal/iap.h>
-
-// Specify the constants for water vapor and barometric pressure.
-#define WATER_VAPOR 17.62f
-#define BAROMETRIC_PRESSURE 243.5f
+#define WATER_VAPOR         (17.62f) //!< constant for water vapor
+#define BAROMETRIC_PRESSURE (243.5f) //!< constant for barometric pressure
 
 typedef enum {
   eSHT4xAddress = 0x44,
 } HUM_SENSOR_T;
 
-
-
-
-/******************************************************************************
- * Global Functions
- ******************************************************************************/
-
-/*****************************************************************************
-** Function name:  init
-**
-** Descriptions:   Initialize the SHT41
-**
-** parameters:     none
-**
-** Returned value: true on success, false on failure
-**
-*****************************************************************************/
 void SHT4xClass::init(void)
 {
 	i2c_lpcopen_init();
-
-	#if DEBUG
-		serial.setRxPin(PIO1_6); // @ swd/jtag connector
-		serial.setTxPin(PIO1_7); // @ swd/jtag connector
-		serial.begin(115200);
-		serial.println("Selfbus lib I2C SHT4x.cpp");
-		serial.print("Target MCU has ", iapFlashSize() / 1024);
-		serial.println("k flash");
-	#endif
-
-
 }
 
-uint16_t SHT4xClass::measureHighPrecision(float &temperature, float &humidity) {
+uint16_t SHT4xClass::measureHighPrecision()
+{
     uint16_t error = 0;
     uint16_t tTicks = 0;
     uint16_t hTicks = 0;
 
     error = measureHighPrecisionTicks(tTicks, hTicks);
-    if (error != 6) {
-        return error;
+    if (error != 6) ///\todo some constant for error/success
+    {
+        return (error);
     }
 
     this->temperature = _convertTicksToCelsius(tTicks);
     this->humidity = _convertTicksToPercentRH(hTicks);
-
-	#if DEBUG
-		serial.println("temperature === ", (int)(this->temperature*100));
-		serial.println("humidity ===", (int)(this->humidity*100));
-	#endif
-
-	return error;
+    return (error);
 }
-
 
 uint16_t SHT4xClass::measureHighPrecisionTicks(uint16_t &temperatureTicks, uint16_t &humidityTicks)
 {
 	uint8_t buffer[6] = {};
     uint8_t resultLength = 111;
 
-    resultLength = readSensor(Sht4xCommand::measHi, buffer, sizeof(buffer));
+    resultLength = readSensor(Sht4xCommand::measHi, buffer, sizeof(buffer) / sizeof(*buffer));
 
 	temperatureTicks = buffer[0];
 	temperatureTicks <<= 8;
@@ -124,72 +87,51 @@ uint16_t SHT4xClass::measureHighPrecisionTicks(uint16_t &temperatureTicks, uint1
 	humidityTicks <<= 8;
 	humidityTicks |= buffer[4];
 
-    return resultLength;
+    return (resultLength);
 }
 
 
 float SHT4xClass::_convertTicksToCelsius(uint16_t ticks) {
-    return static_cast<float>(ticks * 175.0 / 65535.0 - 45.0);
+    return (static_cast<float>(ticks * 175.0f / 65535.0f - 45.0f));
 }
 
 float SHT4xClass::_convertTicksToPercentRH(uint16_t ticks) {
-    return static_cast<float>(ticks * 125.0 / 65535.0 - 6);
+    return (static_cast<float>(ticks * 125.0f / 65535.0f - 6.0f));
 }
 
-/**********************************************************
- * GetHumidity
- *  Gets the current humidity from the sensor.
- *
- * @return float - The relative humidity in %RH
- **********************************************************/
 //float SHT4xClass::GetHumidity(void)
 //{
 //    float value = readSensor(eRHumidityHoldCmd);
 //    if (value == 0) {
-//        return 0;                       // Some unrealistic value
+//        return (0);                       // Some unrealistic value
 //    }
-//    return -6.0 + 125.0 / 65536.0 * value;
+//    return (-6.0f + 125.0f / 65536.0f * value);
 //}
 float SHT4xClass::getHumidity(void)
 {
-	return this->humidity;
+	return (this->humidity);
 }
 
-/**********************************************************
- * GetTemperature
- *  Gets the current temperature from the sensor.
- *
- * @return float - The temperature in Deg C
- **********************************************************/
 float SHT4xClass::getTemperature(void)
 {
-	return this->temperature;
+	return (this->temperature);
 }
 
+float SHT4xClass::getDewPoint(void)
+{
+/*
+  float humidity = getHumidity();
+  float temperature = getTemperature();
 
+  // Calculate the intermediate value 'gamma'
+  float gamma = log(humidity / 100.0f) + WATER_VAPOR * temperature / (BAROMETRIC_PRESSURE + temperature);
+  // Calculate dew point in Celsius
+  float dewPoint = BAROMETRIC_PRESSURE * gamma / (WATER_VAPOR - gamma);
 
-
-///**********************************************************
-// * GetDewPoint
-// *  Gets the current dew point based on the current humidity and temperature
-// *
-// * @return float - The dew point in Deg C
-// **********************************************************/
-//float SHT4xClass::getDewPoint(void)
-//{
-//  float humidity = getHumidity();
-//  float temperature = getTemperature();
-//
-//  // Calculate the intermediate value 'gamma'
-//  float gamma = log(humidity / 100) + WATER_VAPOR * temperature / (BAROMETRIC_PRESSURE + temperature);
-//  // Calculate dew point in Celsius
-//  float dewPoint = BAROMETRIC_PRESSURE * gamma / (WATER_VAPOR - gamma);
-//
-//  return dewPoint;
-//}
-
-
-
+  return (dewPoint);
+*/
+    return (-1.0f); // function not implemented
+}
 
 uint32_t SHT4xClass::getSerialnumber(void)
 {
@@ -204,11 +146,8 @@ uint32_t SHT4xClass::getSerialnumber(void)
 	serialnumber |= static_cast<uint32_t>(result[3]) << 8;
 	serialnumber |= static_cast<uint32_t>(result[4]);
 
-	return serialnumber;
+	return (serialnumber);
 }
-
-
-
 
 /******************************************************************************
  * Private Functions
@@ -231,11 +170,9 @@ uint16_t SHT4xClass::readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t e
 //  {
 
 	if(Chip_I2C_MasterSend(I2C0, eSHT4xAddress, &cmd, sizeof(cmd)) == 0){
-		#if DEBUG
-			serial.println("i2c send failed!");
-		#endif
+
 		i2c_lpcopen_init();
-		return 0;
+		return (0);
 	}
 
     // loop to receive measurement result within the timeout period
@@ -243,7 +180,7 @@ uint16_t SHT4xClass::readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t e
 		#if not DEBUG
 			if ((millis() - timeout) > 0) {
 				i2c_lpcopen_init();
-				return 0;
+				return (0);
 			}
 		#endif
 		delay(1);
@@ -252,20 +189,13 @@ uint16_t SHT4xClass::readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t e
 
 	// check if CRC of measure result is valid
 	if (buffer[2] != crc8(buffer, 2) || buffer[5] != crc8(buffer + 3, 2))
-		return false;
+	{
+		return (0);
+	}
 
-    return resultLength;
+    return (resultLength);
 }
 
-
-/**
- * Do a CRC validation of result
- *
- * @param data  Pointer to the data to use when calculating the CRC8.
- * @param len   The number of bytes in 'data'.
- *
- * @return CRC result value
- */
 uint8_t SHT4xClass::crc8(const uint8_t *data, int len) {
   /*
    *
@@ -288,8 +218,7 @@ uint8_t SHT4xClass::crc8(const uint8_t *data, int len) {
       crc = (crc & 0x80) ? (crc << 1) ^ POLYNOMIAL : (crc << 1);
     }
   }
-  return crc;
+  return (crc);
 }
-//SHT4xClass SHT4x;
 
 

@@ -58,61 +58,66 @@ class SHT4xClass
 private:
 	float temperature;
 	float humidity;
-//  uint16_t readSensor(Sht4xCommand command);
+    uint16_t readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t resultlength);
+
+    /**
+     * SHT4x command for a single shot measurement with high repeatability.
+     *
+     * @param temperatureTicks Temperature ticks. Convert to degrees celsius by
+     * (175 * value / 65535) - 45
+     *
+     * @param humidityTicks Humidity ticks. Convert to degrees celsius by (125 *
+     * value / 65535) - 6
+     *
+     * @return 0 on success, an error code otherwise
+     */
+    uint16_t measureHighPrecisionTicks(uint16_t& temperatureTicks, uint16_t& humidityTicks);
+
+    float _convertTicksToCelsius(uint16_t);
+    float _convertTicksToPercentRH(uint16_t);
+
+    /**
+     * Do a CRC validation of result
+     *
+     * @param data  Pointer to the data to use when calculating the CRC8.
+     * @param len   The number of bytes in 'data'.
+     *
+     * @return CRC result value
+     */
+    uint8_t crc8(const uint8_t* data, int len);
 
 public:
-	uint16_t readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t resultlength);
-//	uint16_t readSensor(Sht4xCommand command);
   /**
-   * Initialize the SHTxx sensor
+   * Initialize the SHT4x sensor
    */
   void init(void);
 
   /**
-   * get Humidity from SHT4x sensor
-   * returns the humidity as float
+   * Get relative humidity from SHT4x sensor
+   * @return the relative humidity in %RH as float
    */
   float getHumidity(void);
 
   /**
-   * get Temperature from SHT4x sensor
-   * returns the current temperature as float
+   * Get Temperature from SHT4x sensor
+   * @return the current temperature in degree C as float
    */
   float getTemperature(void);
 
   /**
-   * measureHighPrecisionTicks() - SHT4x command for a single shot measurement
-   * with high repeatability.
-   *
-   * @param temperatureTicks Temperature ticks. Convert to degrees celsius by
-   * (175 * value / 65535) - 45
-   *
-   * @param humidityTicks Humidity ticks. Convert to degrees celsius by (125 *
-   * value / 65535) - 6
-   *
-   * @return 0 on success, an error code otherwise
+   * SHT4x command for a single shot measurement with high repeatability.
+   * @return 6 on success, an error code otherwise
    */
-  uint16_t measureHighPrecisionTicks(uint16_t& temperatureTicks, uint16_t& humidityTicks);
-
+  uint16_t measureHighPrecision();
 
   /**
-   * measureHighPrecision() - SHT4x command for a single shot
-   * measurement with high repeatability.
-   *
-   * @param temperature Temperature in degrees celsius.
-   *
-   * @param humidity Humidity in percent relative humidity.
-   *
-   * @return 0 on success, an error code otherwise
+   * Gets the current dew point based on the current humidity and temperature
+   * @return the dew point in Deg C
+   * @warning not implemented
    */
-  uint16_t measureHighPrecision(float &temperature, float &humidity);
-
   float getDewPoint(void);
-  uint32_t getSerialnumber(void);
-  float _convertTicksToCelsius(uint16_t);
-  float _convertTicksToPercentRH(uint16_t);
-  uint8_t crc8(const uint8_t* , int);
 
+  uint32_t getSerialnumber(void);
 };
 
 #endif  /*sblib_SHT4x_h*/
