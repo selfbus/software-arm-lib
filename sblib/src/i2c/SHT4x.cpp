@@ -217,8 +217,10 @@ uint32_t SHT4xClass::getSerialnumber(void)
 uint16_t SHT4xClass::readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t expResultLength)
 {
 	uint8_t cmd = (uint8_t)command;
-	uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
 	uint8_t resultLength = 0;
+#ifndef DEBUG
+    uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
+#endif
 //
 //  if (!initialized)
 //  {
