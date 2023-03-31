@@ -3,8 +3,6 @@
  * @defgroup SBLIB_EXAMPLE_I2C_1 i2c example
  * @ingroup SBLIB_EXAMPLES
  * @brief   Read Lux and RTC from LPC1115 Developer Board using I2C class with a timer and the timer interrupt
- * @details for DBG_PRINT_LUX, DBG_PRINT_RTC or DBG_PRINT_DHT<br/>
- *         "Enable printf float" in Project settings -> Managed Linker Script<br/>
  *
  * @note    needs at least a 64KB LPC111x.
  *
@@ -51,11 +49,6 @@
 
 //#define DBG_SHT4            1 ///< SHT4x
 //#define DBG_PRINT_SHT4      1
-
-#if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT or DBG_SHT2 or DBG_SGP4 or DBG_SHT4
-#   include <cstdio>          // "Enable printf float" in Prj settings -> Managed Linker Script
-#endif
-
 
 #if DBG_LUX
 #   include <sblib/i2c/bh1750.h>
@@ -205,16 +198,12 @@ BcuBase* setup()
     // serial.setTxPin(PIO2_8); // @ 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
 
     serial.begin(115200);
-
     serial.println("Selfbus I2C example");
 
     serial.print("Target MCU has ", iapFlashSize() / 1024);
     serial.println("k flash");
     serial.println();
-
-#if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
-    printf("Example-i2c application started\n");
-#endif
+    serial.println("Example-i2c application started");
 
 #if DBG_RTC
     rtc.Ds3231Init();           // Initialize Ds3231
@@ -223,7 +212,7 @@ BcuBase* setup()
 #endif
 
 #if DBG_LUX
-  bh.begin();            // Initialize BH1750
+    bh.begin();            // Initialize BH1750
 #endif
 
 #if DBG_DHT
@@ -285,7 +274,7 @@ void ReadLux() {
     // Switch off the info LED if light is low else on
     digitalWrite(PIN_INFO, (light < 50));
 #if DBG_PRINT_LUX
-    printf("Lux: %d\n", (int)light);
+    serial.println("Lux: ", (int)light);
 #endif
   }
 }
@@ -294,18 +283,29 @@ void ReadLux() {
 #if DBG_SHT2
 void ReadSHTTemp() {
 	float temp = SHT21.GetTemperature();
-	printf("DMX Temp: %f\n", temp);
+	serial.println("DMX Temp: ", temp);
 }
 #endif
 
 #if DBG_SHT4
 void ReadSHT4TempHum() {
-	float temperature = 0;
-	float humidity = 0;
-	SHT40.measureHighPrecision(temperature, humidity);
-//	SHT40.readSensor(Sht4xCommand::measHi);
-	SHT40.getSerialnumber();
-//	printf("DMX4x Temp: %f\n", temp);
+	uint16_t error = SHT40.measureHighPrecision();
+	if (error == 6)  ///\todo check against the error/success constant
+	{
+	    serial.print("SHT4x temperature: ", SHT40.getTemperature(), 2);
+	    serial.print(" C");
+	    serial.print(" humidity: ", SHT40.getHumidity(), 2);
+	    //serial.print(" Dew point: ", SHT40.getDewPoint(), 2);
+	    //serial.print("°C");
+	    serial.println();
+	}
+	else
+	{
+	    serial.println("error measureHighPrecision() 0x", error, HEX, 4);
+	}
+
+	uint32_t serialnumber = SHT40.getSerialnumber();
+	serial.println("SHT4x serial number: 0x", (unsigned int)serialnumber, HEX, 8);
 }
 #endif
 
@@ -313,7 +313,8 @@ void ReadSHT4TempHum() {
 void ReadSGP4Serial() {
 	uint16_t temp = SGP40.getSerialnumber();
 	SGP40.measureRawSignal(1,2,temp);
-//	printf("\nSerialNr[0]: %d\n", temp);
+//	serial.println();
+//	serial.println("SerialNr[0]: ", temp);
 }
 #endif
 
@@ -323,26 +324,28 @@ void ReadSGP4Serial() {
  */
 bool ReadTempHum()
 {
-  bool bRet= dht.readData();
-  if(bRet)
-  {
+    if (!dht.readData())
+    {
+#if DBG_PRINT_DHT
+        serial.println("Err ", dht._lastError);
+#endif
+        return (false);
+    }
+
+
     digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
 #if DBG_PRINT_DHT
-    printf("     Temperature: %4.2f C \n", dht._lastTemperature );
-    printf("        Humidity: %4.2f\n",dht._lastHumidity);
-    printf("Dew point (fast): %4.2f\n",dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+    serial.print("     Temperature: ", dht._lastTemperature );
+    serial.println(" C");
+    serial.println("        Humidity: ", dht._lastHumidity);
+    serial.println("Dew point (fast): ", dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
 /*
-    printf("       Dew point: %4.2f (FastCalc: %4.2f)\r\n",
-            dht.CalcdewPoint(dht._lastTemperature, dht._lastHumidity),
-            dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+    serial.print("       Dew point: ", dht.CalcdewPoint(dht._lastTemperature, dht._lastHumidity));
+    serial.print(" (FastCalc: ", dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
+    serial.print(")");
 */
-    bRet= true;
-  } else printf("Err %i \r\n",dht._lastError);
-#else
-  }
 #endif
-
-  return bRet;
+    return (true);
 }
 #endif
 
@@ -356,8 +359,14 @@ void ReadTimeDate()
    ds3231_calendar_t rtc_calendar; rtc.GetCalendar(&rtc_calendar);
 
 #if DBG_PRINT_RTC
-   printf("Zeit: %02d.%02d.%02d - %02d:%02d:%02d\n",rtc_calendar.date,rtc_calendar.month, rtc_calendar.year,rtc_time.hours, rtc_time.minutes, rtc_time.seconds);
-   printf("Temp: %4.2f C\n",rtc.GetTemperature());
+   serial.print("Zeit: ", rtc_calendar.date, DEC, 2);
+   serial.print(".", rtc_calendar.month, DEC, 2);
+   serial.print(".", rtc_calendar.year, DEC, 2);
+   serial.print(" - ", rtc_time.hours, DEC, 2);
+   serial.print(":", rtc_time.minutes, DEC, 2);
+   serial.println(":", rtc_time.seconds, DEC, 2);
+   serial.print("Temp: ",rtc.GetTemperature());
+   serial.println(" C");
 #endif
 
    ds3231_alrm_t alarm;
@@ -366,13 +375,18 @@ void ReadTimeDate()
      if(rtc.CheckAlarm(ALARM_1))
      {
 #if DBG_PRINT_RTC
-       printf("++++ Alarm 1 ++++");printf("\n");
+       serial.println("++++ Alarm 1 ++++");
 #endif
        digitalWrite(PIN_PROG, !digitalRead(PIN_PROG));
        rtc.ResetAlarm(ALARM_1);
      }
 #if DBG_PRINT_RTC_ALARM
-     else printf("Timer Alarm 1: %d:%d:%d\n",alarm.hours, alarm.minutes, alarm.seconds);
+     else
+     {
+         serial.print("Timer Alarm 1: ", alarm.hours, DEC, 2);
+         serial.print(":", alarm.minutes, DEC, 2);
+         serial.print(":", alarm.seconds, DEC, 2);
+     }
 #endif
    }
 
@@ -381,13 +395,17 @@ void ReadTimeDate()
      if(rtc.CheckAlarm(ALARM_2))
      {
 #if DBG_PRINT_RTC
-       printf("++++ Alarm 2 ++++");printf("\n");
+       serial.println("++++ Alarm 2 ++++");
 #endif
        digitalWrite(PIN_PROG, !digitalRead(PIN_PROG));
        rtc.ResetAlarm(ALARM_2);
      }
 #if DBG_PRINT_RTC_ALARM
-     else printf("Timer Alarm 2: %d:%d\n",alarm.hours, alarm.minutes);
+     else
+    {
+       serial.print("Timer Alarm 2: ", alarm.hours, DEC, 2);
+       serial.println(":", alarm.minutes, DEC, 2);
+    }
 #endif
    }
 }
