@@ -43,14 +43,17 @@
 //#define DBG_DHT             1 ///< DHT22
 //#define DBG_PRINT_DHT       1
 
-//#define DBG_SGP4             1 ///< SGP4x
-//#define DBG_PRINT_SGP4       1
+#define DBG_SHT2            1 ///< SHT2x
+#define DBG_PRINT_SHT2      1
 
-#define DBG_SHT4             1 ///< SHT4x
-#define DBG_PRINT_SHT4       1
+//#define DBG_SGP4            1 ///< SGP4x
+//#define DBG_PRINT_SGP4      1
 
-#if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT
-# include <stdio.h>          // "Enable printf float" in Prj settings -> Managed Linker Script
+//#define DBG_SHT4            1 ///< SHT4x
+//#define DBG_PRINT_SHT4      1
+
+#if DBG_PRINT_LUX or DBG_PRINT_RTC or DBG_PRINT_DHT or DBG_SHT2 or DBG_SGP4 or DBG_SHT4
+#   include <cstdio>          // "Enable printf float" in Prj settings -> Managed Linker Script
 #endif
 
 
