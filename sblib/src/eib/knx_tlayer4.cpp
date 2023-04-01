@@ -635,8 +635,8 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
         // event E05
         dump2(
             serial.print("EVENT 5 seqNo ", seqNo);
-            serial.print(" != ", (seqNoRcv-1) & 0x0F);
-            serial.print(" seqNoRcv-1");
+            serial.print(" == ", (seqNoRcv-1) & 0x0F);
+            serial.print(" (seqNoRcv-1)");
             serial.print(LOG_SEP);
             dumpTelegramBytes(false, telegram, telLength);
         );
