@@ -1,10 +1,10 @@
 /**************************************************************************//**
  * @addtogroup SBLIB_EXAMPLES Selfbus library usage examples
- * @defgroup SBLIB_EXAMPLE_I2C_1 i2c example
+ * @defgroup SBLIB_EXAMPLE_I2C_DS3231 i2c DS3231 real time clock (RTC) example
  * @ingroup SBLIB_EXAMPLES
- * @brief   Read Lux and RTC from LPC1115 Developer Board using I2C class with a timer and the timer interrupt
+ * @brief   Read real time clock (RTC) using I2C class with a timer and the timer interrupt
  *
- * @note    needs at least a 64KB LPC111x.
+ * @note    Debug build needs at least a 64KB LPC111x.
  *
  * @{
  *
@@ -25,77 +25,19 @@
 #include <sblib/io_pin_names.h>
 #include <sblib/i2c.h>
 #include <sblib/eibBCU1.h>
-#include <sblib/internal/iap.h>
 #include <sblib/serial.h>
+#include <sblib/i2c/ds3231.h>
 
-//#define DBG_LUX             1 ///< BH1750 Lux
-//#define DBG_PRINT_LUX       1
+#define DBG_PRINT_RTC       1
+#define DBG_PRINT_RTC_ALARM 1
 
-//#define DBG_RTC             1 ///< Ds3231 RTC
-//#define DBG_PRINT_RTC       1
-//#define DBG_PRINT_RTC_ALARM 1
+#define SET_RTC_INITIAL_TIME  0  ///< Change this from "1" to "0" after the time was set successfully
+#define SET_RTC_ALARM1_ALARM2 0  ///< Change this from "1" to "0" after the ALARM1|2 was set successfully
 
-//#define SET_RTC_INITIAL_TIME  0  ///< Change this from "1" to "0" after the time was set successfully
-//#define SET_RTC_ALARM1_ALARM2 0  ///< Change this from "1" to "0" after the ALARM1|2 was set successfully
+#define READ_TIMER (2000) ///> Read values timer in Milliseconds
+bool bReadTimer = false;  ///> Condition to read values if timer reached
 
-//#define DBG_DHT             1 ///< DHT22
-//#define DBG_PRINT_DHT       1
-
-#define DBG_SHT2            1 ///< SHT2x
-#define DBG_PRINT_SHT2      1
-
-//#define DBG_SGP4            1 ///< SGP4x
-//#define DBG_PRINT_SGP4      1
-
-//#define DBG_SHT4            1 ///< SHT4x
-//#define DBG_PRINT_SHT4      1
-
-#if DBG_LUX
-#   include <sblib/i2c/bh1750.h>
-#endif
-#if DBG_RTC
-#   include <sblib/i2c/ds3231.h>
-#endif
-#if DBG_DHT
-#   include <sblib/sensors/dht.h>
-#endif
-#if DBG_SHT2
-#   include <sblib/i2c/SHT2x.h>
-#endif
-#if DBG_SHT4
-#   include <sblib/i2c/SHT4x.h>
-#endif
-#if DBG_SGP4
-#   include <sblib/i2c/SGP4x.h>
-#endif
-
-#if DBG_LUX
-  BH1750 bh;                 // BH1750
-#endif
-#if DBG_RTC
-  Ds3231 rtc;                // Ds3231
-#endif
-
-#if DBG_DHT
-  DHT dht;                   // DHT 1st
-#endif
-
-#if DBG_SHT2
-  SHT2xClass SHT21;
-#endif
-
-#if DBG_SHT4
-  SHT4xClass SHT40;
-#endif
-
-#if DBG_SGP4
-  SGP4xClass SGP40;
-#endif
-
-#define READ_TIMER 2000      ///> Read values timer in Milliseconds
-
-bool bReadTimer= false;      ///> Condition to read values if timer reached
-
+Ds3231 rtc;                // Ds3231
 BCU1 bcu = BCU1();
 
 /**
@@ -198,49 +140,11 @@ BcuBase* setup()
     // serial.setTxPin(PIO2_8); // @ 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
 
     serial.begin(115200);
-    serial.println("Selfbus I2C example");
+    serial.println("Selfbus I2C DS3231 real time clock (RTC) example");
 
-    serial.print("Target MCU has ", iapFlashSize() / 1024);
-    serial.println("k flash");
-    serial.println();
-    serial.println("Example-i2c application started");
-
-#if DBG_RTC
     rtc.Ds3231Init();           // Initialize Ds3231
     // WriteInitTime();         // Comment in, if you want setup the RTC TIME/Calendar
     // SetRTCAlarm();           // Comment in, if you want to set the Alarm1|2
-#endif
-
-#if DBG_LUX
-    bh.begin();            // Initialize BH1750
-#endif
-
-#if DBG_DHT
-    dht.DHTInit(PIO2_2, DHT22); // Use the DHT22 sensor on PIN
-#endif
-
-#if DBG_SHT2
-    SHT21.Init();
-#endif
-
-#if DBG_SHT4
-    SHT40.init();
-#endif
-
-#if DBG_SGP4
-    SGP40.init();
-    uint16_t relativeHumidity = 0;
-    uint16_t temperature = 0;
-    uint16_t srawVoc = 0;
-    SGP40.measureRawSignal(relativeHumidity, temperature, srawVoc);
-//    SGP40.getSerialnumber();
-#endif
-
-/*
-    if(I2C::Instance()->bI2CIsInitialized) {  // I2CScan
-        I2C::Instance()->I2CScan();           // check .I2CScan_State ans .I2CScan_uAdress
-    }
-*/
 
     // LED Initialize
     pinMode(PIN_INFO, OUTPUT);	 // Info LED (yellow)
@@ -262,94 +166,6 @@ BcuBase* setup()
     return (&bcu);
 }
 
-#if DBG_LUX
-/**
- * Read LUX
- */
-void ReadLux() {
-  // Read I2C LUX From BH1750!
-  if (bh.measurementReady(true)) {
-    bReadTimer = false;   // Reset Read Timer
-    float light = bh.readLightLevel();
-    // Switch off the info LED if light is low else on
-    digitalWrite(PIN_INFO, (light < 50));
-#if DBG_PRINT_LUX
-    serial.println("Lux: ", (int)light);
-#endif
-  }
-}
-#endif
-
-#if DBG_SHT2
-void ReadSHTTemp() {
-	float temp = SHT21.GetTemperature();
-	serial.println("DMX Temp: ", temp);
-}
-#endif
-
-#if DBG_SHT4
-void ReadSHT4TempHum() {
-	uint16_t error = SHT40.measureHighPrecision();
-	if (error == 6)  ///\todo check against the error/success constant
-	{
-	    serial.print("SHT4x temperature: ", SHT40.getTemperature(), 2);
-	    serial.print(" C");
-	    serial.print(" humidity: ", SHT40.getHumidity(), 2);
-	    //serial.print(" Dew point: ", SHT40.getDewPoint(), 2);
-	    //serial.print("°C");
-	    serial.println();
-	}
-	else
-	{
-	    serial.println("error measureHighPrecision() 0x", error, HEX, 4);
-	}
-
-	uint32_t serialnumber = SHT40.getSerialnumber();
-	serial.println("SHT4x serial number: 0x", (unsigned int)serialnumber, HEX, 8);
-}
-#endif
-
-#if DBG_SGP4
-void ReadSGP4Serial() {
-	uint16_t temp = SGP40.getSerialnumber();
-	SGP40.measureRawSignal(1,2,temp);
-//	serial.println();
-//	serial.println("SerialNr[0]: ", temp);
-}
-#endif
-
-#if DBG_DHT
-/**
- * Read the DHT Temperature and Humidity
- */
-bool ReadTempHum()
-{
-    if (!dht.readData())
-    {
-#if DBG_PRINT_DHT
-        serial.println("Err ", dht._lastError);
-#endif
-        return (false);
-    }
-
-
-    digitalWrite(PIN_RUN, !digitalRead(PIN_RUN));
-#if DBG_PRINT_DHT
-    serial.print("     Temperature: ", dht._lastTemperature );
-    serial.println(" C");
-    serial.println("        Humidity: ", dht._lastHumidity);
-    serial.println("Dew point (fast): ", dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
-/*
-    serial.print("       Dew point: ", dht.CalcdewPoint(dht._lastTemperature, dht._lastHumidity));
-    serial.print(" (FastCalc: ", dht.CalcdewPointFast(dht._lastTemperature, dht._lastHumidity));
-    serial.print(")");
-*/
-#endif
-    return (true);
-}
-#endif
-
-#if DBG_RTC
 /**
  * Read the RTC Time, Calendar, Alarm1, Alarm2 and the RTC Temperature
  */
@@ -409,34 +225,16 @@ void ReadTimeDate()
 #endif
    }
 }
-#endif
 
 /**
  * The main processing loop while no KNX-application is loaded.
  */
 void loop_noapp()
 {
-    if(bReadTimer)
+    if (bReadTimer)
     {
-#if DBG_LUX
-        ReadLux();
-#endif
-#if DBG_RTC
         ReadTimeDate();
-#endif
-#if DBG_DHT
-        ReadTempHum();
-#endif
-#if DBG_SHT2
-        ReadSHTTemp();
-#endif
-#if DBG_SHT4
-        ReadSHT4TempHum();
-#endif
-#if DBG_SGP4
-        ReadSGP4Serial();
-#endif
-        bReadTimer=false;
+        bReadTimer = false;
     }
     // Sleep until the next interrupt happens
     __WFI();
