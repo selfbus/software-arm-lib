@@ -888,8 +888,7 @@ bool TLayer4::checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLen
     }
 
     dump2(
-        repeatedTelegramCount++;
-        serial.println("REPEATED");
+        serial.print("REPEATED ");
     );
 
     if ((lastTelegramLength < 1) || (lastTelegramLength != telLength))
@@ -914,9 +913,9 @@ bool TLayer4::checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLen
         }
     }
 
-    // we received a already processed telegram, ignore it
+    repeatedIgnoredTelegramCount++; // we received a already processed telegram, ignore it
+
     dump2(
-        repeatedIgnoredTelegramCount++;
         serial.print("IGNORED");
         serial.print(LOG_SEP);
         dumpTelegramBytes(false, telegram, telLength, true);
