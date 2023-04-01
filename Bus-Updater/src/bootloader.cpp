@@ -22,7 +22,6 @@
 
 #include <sblib/main.h>
 #include <sblib/digital_pin.h>
-#include <sblib/internal/iap.h> // for IAP_SUCCESS
 #include <sblib/eib/apci.h>
 #include <sblib/hardware_descriptor.h>
 #include "boot_descriptor_block.h"
@@ -48,7 +47,7 @@
 
 BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
 
-Timeout runModeTimeout;              //!< running mode LED blinking timeout
+Timeout runModeTimeout; //!< running mode LED blinking timeout
 bool blinky = false;
 
 uint32_t getProgrammingButton()
@@ -84,8 +83,8 @@ BcuBase* setup()
     pinMode(PIN_RUN, OUTPUT);
 #endif
 
-// setup serial port for debug
-#ifdef DEBUG
+// if sblib didn't configure the serial port -> set it up for debugging
+#if !defined(INCLUDE_SERIAL) && defined(DEBUG)
 #   ifdef TS_ARM
         serial.setRxPin(PIO3_1);
         serial.setTxPin(PIO3_0);
@@ -102,6 +101,9 @@ BcuBase* setup()
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
     bcu.setProgPin(getProgrammingButton());
     runModeTimeout.start(1);
+
+    // finally start the bcu
+    bcu.begin();
 
 #ifdef DEBUG
     int physicalAddress = bcu.ownAddress();
@@ -125,13 +127,13 @@ BcuBase* setup()
     serial.println("Boot descriptor page        : 0x", bootDescriptorBlockPage(), HEX, 6);
     serial.println("Boot descriptor size        : 0x", BOOT_BLOCK_DESC_SIZE, HEX, 6);
     serial.print("physical address            : ");
-    dumpKNXAddress(physicalAddress);
+    serial.print(knx_area(physicalAddress));
+    serial.print(".", knx_line(physicalAddress));
+    serial.print(".", knx_device(physicalAddress));
     serial.println();
     serial.println("=================================================== by sh");
 #endif
 
-    // finally start the bcu
-    bcu.begin();
     return &bcu;
 }
 
@@ -214,7 +216,6 @@ static void run_updater(bool programmingMode)
 
     if (programmingMode)
     {
-        //((BcuUpdate &) bcu).setProgrammingMode(programmingMode);
         bcu.setProgrammingMode(programmingMode);
     }
 
