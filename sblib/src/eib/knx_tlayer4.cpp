@@ -63,10 +63,6 @@ dump2(
 
 uint16_t disconnectCount = 0; //!< number of disconnects since system reset
 
-///\todo remove after bugfix and on release
-uint16_t repeatedIgnoredTelegramCount = 0;
-///\todo end of remove after bugfix and on release
-
 void dumpTelegramBytes(bool tx, const unsigned char * telegram, const uint8_t length, const bool newLine = true)
 {
     dump2(
@@ -205,7 +201,7 @@ void dumpLogHeader()
 {
     dump2(
         serial.println();
-        serial.println("Keywords to search for: HIGH, ERROR, EVENT, HOTFIX");
+        serial.println("Keywords to search for: HIGH, ERROR, EVENT");
         serial.println();
         serial.print("#Telegram");
         serial.print(LOG_SEP);
@@ -232,8 +228,7 @@ void dumpLogHeader()
 }
 
 TLayer4::TLayer4(uint8_t maxTelegramLength):
-    sendTelegram(new byte[maxTelegramLength]()),
-    lastTelegram(new byte[maxTelegramLength]())
+    sendTelegram(new byte[maxTelegramLength]())
 {
 
 }
@@ -263,9 +258,6 @@ void TLayer4::_begin()
     dumpLogHeader();
     dump2(telegramCount = 0;);
     disconnectCount = 0;
-    lastTelegram[0] = 0;
-    lastTelegramLength = 0;
-    repeatedIgnoredTelegramCount = 0;
 }
 
 void TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
@@ -301,17 +293,6 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength
 
     dump2(telegramCount++;);
     dumpTelegramInfo(telegram, senderAddr, telegram[6], false, state);
-
-    if (!checkValidRepeatedTelegram(telegram, telLength))
-    {
-        // already processed
-        return (true);
-    }
-    else
-    {
-        // telegram is not repeated, buffer it for later checks
-        copyTelegram(telegram, telLength);
-    }
 
     if (tpci & T_CONNECTION_CTRL_COMMAND_Msk)  // A connection control command
     {
@@ -870,58 +851,5 @@ bool TLayer4::setTL4State(TLayer4::TL4State newState)
     state = newState;
     return (true);
 }
-
-void TLayer4::copyTelegram(unsigned char *telegram, uint8_t telLength)
-{
-    for (uint8_t i = 0; i < telLength; i++)
-    {
-        lastTelegram[i] = telegram[i];
-    }
-    lastTelegramLength = telLength;
-}
-
-bool TLayer4::checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLength)
-{
-    if (!isRepeated(telegram))
-    {
-        return true;
-    }
-
-    dump2(
-        serial.print("REPEATED ");
-    );
-
-    if ((lastTelegramLength < 1) || (lastTelegramLength != telLength))
-    {
-        return true;
-    }
-
-    // check controlByte of last and new telegram, ignoring the repeated flag
-    setRepeated(lastTelegram, true);
-    if (controlByte(telegram) != controlByte(lastTelegram))
-    {
-        return true;
-    }
-
-    // check remaining bytes, exclude control byte (1.byte) and checksum (last byte)
-    for (uint8_t i = 1; i < telLength - 1; i++)
-    {
-        if (lastTelegram[i] != telegram[i])
-        {
-            // telegrams don't match, everything ok
-            return true;
-        }
-    }
-
-    repeatedIgnoredTelegramCount++; // we received a already processed telegram, ignore it
-
-    dump2(
-        serial.print("IGNORED");
-        serial.print(LOG_SEP);
-        dumpTelegramBytes(false, telegram, telLength, true);
-    );
-    return false;
-}
-
 
 /** @}*/

@@ -78,13 +78,8 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderA
             d3(
                 serial.println();serial.println();serial.println();
                 serial.println("disconnectCount ", disconnectCount);
-
-                ///\todo remove after fix and on release
-                serial.println("ignored  ", repeatedIgnoredTelegramCount);
-                ///\todo end of remove after fix and on release
-
                 serial.println();serial.println();serial.println();
-                serial.flush();  // give time to send serial data
+                serial.flush(); // give time to send serial data
             );
             endDelay = millis() + RESET_DELAY_MS;
             while (millis() < endDelay)

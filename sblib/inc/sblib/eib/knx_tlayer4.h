@@ -38,10 +38,6 @@
 extern uint16_t telegramCount;   //!< number of telegrams since system reset
 extern uint16_t disconnectCount; //!< number of disconnects since system reset
 
-///\todo remove after bugfix and on release
-extern uint16_t repeatedIgnoredTelegramCount;
-///\todo end of remove after bugfix and on release
-
 /**
  * Implementation of the KNX transportation layer 4 Style 1 Rationalised
  */
@@ -251,18 +247,6 @@ private:
     int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
     bool telegramReadyToSend = false;           //!< True if a response is ready to be sent after our @ref T_ACK is confirmed
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
-
-    bool checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLength);  ///\todo remove after fix in Bus and on release
-
-    /**
-     * Copies currently processed telegram to @ref lastTelegram
-     * @param telegram  Current telegram processed
-     * @param telLength Length of current telegram
-     */
-    void copyTelegram(unsigned char *telegram, uint8_t telLength);
-
-    byte *lastTelegram;  //!< Buffer to store the last telegram received to compare with telegram currently processed
-    uint8_t lastTelegramLength = 0;         //!< Length of the last Telegram received
 
     volatile uint16_t ownAddr;                 //!< Our own physical address on the bus
 };
