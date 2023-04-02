@@ -62,6 +62,7 @@ dump2(
 )
 
 uint16_t disconnectCount = 0; //!< number of disconnects since system reset
+uint16_t ignoredNdataIndividual = 0;
 
 void dumpTelegramBytes(bool tx, const unsigned char * telegram, const uint8_t length, const bool newLine = true)
 {
@@ -201,7 +202,7 @@ void dumpLogHeader()
 {
     dump2(
         serial.println();
-        serial.println("Keywords to search for: HIGH, ERROR, EVENT");
+        serial.println("Keywords to search for: HIGH, ERROR, EVENT, IGNORED");
         serial.println();
         serial.print("#Telegram");
         serial.print(LOG_SEP);
@@ -258,6 +259,7 @@ void TLayer4::_begin()
     dumpLogHeader();
     dump2(telegramCount = 0;);
     disconnectCount = 0;
+    ignoredNdataIndividual = 0;
 }
 
 void TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
@@ -609,7 +611,7 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     if (seqNo == seqNoRcv)
     {
         ///\todo BUG event E04 needs more checks
-        // event E04
+        // event E04 and state != TLayer4::CLOSED
         telegramReadyToSend = actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
         /*
         // this either does not work, it's even worse
@@ -710,19 +712,25 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
 
 void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
 {
-    dump2(serial.println("ERROR A03sendAckPduAgain "));
-    ///\todo not sure if this is correct, test sequence 22 repeated T_DATA_CONNECTED
-    /*
-    if ((bus.sendCurTelegram != nullptr)|| (bus.sendNextTel != nullptr))
-    {
-        ///\todo class Bus should provide a method for this to clear all pending telegrams
-        bus.sendNextTel = nullptr;
-        bus.sendCurTelegram = nullptr;
-    }
-    */
-    sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
+    ///\todo clarify after KNX Spec 3.0 public release
+    // The Data Link Layer filters out repeated telegrams, provided that the repetition follows
+    // directly after the original telegram. If another telegram sneaks in (e.g. due to higher
+    // priority), we encounter such repeated telegrams in the Transport Layer.
+    //
+    // Per KNX Spec 2.1, Chapter 3/3/4 Section 5.4.4.3 p.27, this is Event E05 and its corresponding Action A3.
+    // The spec says to send another T_ACK for such a repeated telegram, but here's the catch:
+    // If the client does not implement Style 3, such as calimero-core 2.5.1 at the time of this writing (2023/04/02),
+    // it will see a duplicate T_ACK in state OPEN_IDLE (events E08/E09) and consequently close the
+    // connection.
+    //
+    // Prevent this by staying silent and intentionally disobeying the spec.
+    //
+    // KNX Spec 2.1 conform handling of action A03 would be, sending a T_ACK_PDU:
+    // sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
+
+    dump2(serial.println("ERROR A03sendAckPduAgain IGNORED N_DATA_INDIVIDUAL"));
+    ignoredNdataIndividual++; // we received a already processed T_ACK, ignore it
     connectedTime = systemTime; // "restart the connection timeout timer"
-    ///\todo shouldn't we also send a possible apci response again?
 }
 
 void TLayer4::actionA05DisconnectUser()

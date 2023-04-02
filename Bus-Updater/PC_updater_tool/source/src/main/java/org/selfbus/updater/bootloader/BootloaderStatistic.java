@@ -4,23 +4,23 @@ import org.selfbus.updater.Utils;
 
 public class BootloaderStatistic {
     private final int disconnectCount;
-    private final int reserved;
+    private final int ignoredNdataIndividual;
 
 
-    public BootloaderStatistic(int disconnectCount, int reserved) {
+    public BootloaderStatistic(int disconnectCount, int ignoredNdataIndividual) {
         this.disconnectCount = disconnectCount;
-        this.reserved = reserved;
+        this.ignoredNdataIndividual = ignoredNdataIndividual;
     }
 
     public static BootloaderStatistic fromArray(byte[] parse) {
         int disConnectCount = Utils.streamToShort(parse, 0);
-        int reserved = Utils.streamToShort(parse, 2);
-        return new BootloaderStatistic(disConnectCount, reserved);
+        int ignoredNdataIndividual = Utils.streamToShort(parse, 2);
+        return new BootloaderStatistic(disConnectCount, ignoredNdataIndividual);
     }
 
     public String toString() {
-        return String.format("#Disconnect: %d",
-                              getDisconnectCount());
+        return String.format("#Disconnect: %d #Ignored N_DATA_INDIVIDUAL: %d",
+                              getDisconnectCount(), getIgnoredNdataIndividual());
     }
 
     public long getDisconnectCount()
@@ -28,8 +28,8 @@ public class BootloaderStatistic {
         return disconnectCount;
     }
 
-    public long getReserved()
+    public long getIgnoredNdataIndividual()
     {
-        return reserved;
+        return ignoredNdataIndividual;
     }
 }

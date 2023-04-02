@@ -37,6 +37,7 @@
 
 extern uint16_t telegramCount;   //!< number of telegrams since system reset
 extern uint16_t disconnectCount; //!< number of disconnects since system reset
+extern uint16_t ignoredNdataIndividual; //!< number of N_DATA_INDIVIDUAL ignored in @ref actionA03sendAckPduAgain
 
 /**
  * Implementation of the KNX transportation layer 4 Style 1 Rationalised
@@ -207,6 +208,23 @@ private:
     void actionA00Nothing();
     void actionA01Connect(uint16_t address);
     bool actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
+
+    /**
+     * Performs action A3 as described in the KNX Spec. 2.1 3/3/4 5.3 p.19
+     * @param seqNo Sequence number the T_ACK should be send with
+     *
+     * @warning The Data Link Layer filters out repeated telegrams, provided that the repetition follows
+     *          directly after the original telegram. If another telegram sneaks in (e.g. due to higher
+     *          priority), we encounter such repeated telegrams in the Transport Layer.
+     *          <p>
+     *          Per KNX Spec 2.1, Chapter 3/3/4 Section 5.4.4.3 p.27, this is Event E05 and its corresponding Action A3.
+     *          The spec says to send another T_ACK for such a repeated telegram, but here's the catch:
+     *          If the client does not implement Style 3, such as calimero-core 2.5.1 at the time of this writing (2023/04/02),
+     *          it will see a duplicate T_ACK in state OPEN_IDLE (events E08/E09) and consequently close the
+     *          connection.
+     *          <p>
+     *          Prevent this by staying silent and intentionally disobeying the spec.
+     */
     void actionA03sendAckPduAgain(const int8_t seqNo);
 
     /**
