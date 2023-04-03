@@ -28,7 +28,8 @@
 
 
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
-#define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
+#define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds
+#define TL4_MAX_REPETITION_COUNT  (3)    //!< Maximum number of repetitions
 #define TL4_CTRL_TELEGRAM_SIZE    (8)    //!< The size of a connection control telegram
 
 #ifdef DEBUG
@@ -40,12 +41,12 @@ extern uint16_t disconnectCount; //!< number of disconnects since system reset
 extern uint16_t repeatedT_ACKcount; //!< number of repeated @ref T_ACK_PDU in @ref actionA03sendAckPduAgain
 
 /**
- * Implementation of the KNX transportation layer 4 Style 1 Rationalised
+ * Implementation of the KNX transportation layer 4 Style 3
  */
 class TLayer4
 {
 public:
-    /** The states of the transport layer 4 state machine Style 1 rationalised */
+    /** The states of the transport layer 4 state machine Style 3 */
     enum TL4State ///\todo make it private after refactoring of TL4 dumping
     {
         CLOSED,
@@ -216,6 +217,14 @@ private:
     void actionA03sendAckPduAgain(const int8_t seqNo);
 
     /**
+     * @brief Performs action A4 as described in the KNX Spec.
+     *        Send a @ref T_NACK_PDU to @ref connectedAddr with system priority
+     *
+     * @param seqNo Received (incorrect) sequence number
+     */
+    void actionA04SendNAck(const uint8_t seqNo);
+
+    /**
      * @brief Performs action A5 as described in the KNX Spec.
      */
     void actionA05DisconnectUser();
@@ -229,11 +238,14 @@ private:
     /**
      * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
      * @param senderSeqNo Senders sequence number
-     *
-     * @return true if sequence number was added, otherwise false
      */
     void actionA07SendDirectTelegram();
     void actionA08IncrementSequenceNumber();
+
+    /**
+     * @brief Repeats the last direct telegram in global buffer @ref sendTelegram
+     */
+    void actionA09RepeatMessage();
 
     /**
      * @brief Performs action A10 as described in the KNX Spec.
@@ -252,9 +264,11 @@ private:
     int8_t seqNoSend = -1;                      //!< Sequence number for the next telegram we send
     int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
     bool telegramReadyToSend = false;           //!< True if a response is ready to be sent after our @ref T_ACK is confirmed
+    int8_t repCount = 0;                        //!< Telegram repetition count
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
+    uint32_t sentTelegramTime = 0;              //!< System time of the last sent telegram
 
-    volatile uint16_t ownAddr;                 //!< Our own physical address on the bus
+    volatile uint16_t ownAddr;                  //!< Our own physical address on the bus
 };
 
 inline bool TLayer4::directConnection()

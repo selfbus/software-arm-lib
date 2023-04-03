@@ -543,7 +543,7 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
         }
         else
         {
-            sendAckTpu = T_NACK_PDU; // KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
+            sendAckTpu = T_NACK_PDU;
         }
         break;
 
@@ -568,7 +568,7 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
         break;
 
     default:
-        sendAckTpu = T_NACK_PDU;  // Command not supported, KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
+        sendAckTpu = T_NACK_PDU;
         break;
     }
     return (sendAckTpu);
