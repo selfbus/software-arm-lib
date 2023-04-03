@@ -336,7 +336,6 @@ private:
    // bool busy_wait_to_remote; //!< receiving process/ upper layer busy, send busy to remote sender
     bool repeatTelegram;        //!< need to repeat last  telegram sent
     bool collision;             //!< A collision occurred
-    unsigned int lastRXTimeVal; //!< time measurement between telegrams - last SysTime value
 };
 
 

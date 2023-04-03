@@ -19,7 +19,6 @@
 #include <sblib/platform.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/bcu_base.h>
-#include <sblib/timer.h>
 #include <sblib/eib/bus_debug.h>
 
 /* L1/L2 msg header control field data bits meaning */
@@ -195,8 +194,6 @@ void Bus::begin()
 	timer.match(timeChannel, WAIT_50BIT_FOR_IDLE);
 	timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
 	timer.match(pwmChannel, 0xffff);
-
-    lastRXTimeVal = millis();// time measurement between telegrams
 
 	// wait until output is driven low before enabling output pin.
 	// Using digitalWrite(txPin, 0) does not work with MAT channels.
@@ -460,7 +457,7 @@ void Bus::handleTelegram(bool valid)
 			// check the repeat bit in header and compare with previous received telegram still stored in the telegram[] buffer
 			bool already_received = false;
 			//check time in between the telegrams received should be less than 6ms for repeated tel and the orig tel
-			if ((lastRXTimeVal <= millis() + 6) && !(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
+			if (!(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
 			{// compare telegrams
 				if ((rx_telegram[0] & ~SB_TEL_REPEAT_FLAG) == (telegram[0] & ~SB_TEL_REPEAT_FLAG))
 				{// same header- compare data
@@ -478,8 +475,14 @@ void Bus::handleTelegram(bool valid)
 				if (telegramLen)
 				{
 					sendAck = SB_BUS_BUSY;
-					//need_to_send_ack_to_remote= true;//  no free rx buffer, send busy back
-					//busy_wait_to_remote = true;
+					if (destAddr == 0)
+					{
+					    // KNX Spec. 2.1. 3/2/2 2.4.1 p.38
+					    // Device should only send a LL_BUSY if it knows that the telegram can be processed within the next 100ms.
+					    // Since we know nothing about the running application we better stay quiet
+					    // don't send LL_BUSY for broadcasts
+					    sendAck = 0;
+					}
 					rx_error |= RX_BUFFER_BUSY;
 				}
 				else
@@ -491,18 +494,11 @@ void Bus::handleTelegram(bool valid)
 					rx_error = 0;
 					setBusRXStateValid(true);
 
-					lastRXTimeVal = millis();
 					//check if an ACK is requested -> not needed for poll frame
 					//if (! ( (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG)  ||   (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)) )
 					if (!(rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG) )
 					{
 					    sendAck = SB_BUS_ACK;
-					    if(destAddr == 0)
-					    {
-                            // test no ack for broadcasts
-                            // sendAck = 0;
-					    }
-						//need_to_send_ack_to_remote = (sendAck != 0);
 					}
 				}
 				// we received a valid telegram need to send an ack/busy to remote - has priority, no rx/tx  in between
