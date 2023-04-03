@@ -459,11 +459,10 @@ void Bus::handleTelegram(bool valid)
 			if (!(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
 			{// compare telegrams
 				if ((rx_telegram[0] & ~SB_TEL_REPEAT_FLAG) == (telegram[0] & ~SB_TEL_REPEAT_FLAG))
-				{// same header- compare data
-
+				{// same header -> compare remaining bytes, excluding the checksum byte
 					int i;
-					for (i =1; i <= nextByteIndex-1 && rx_telegram[i] == telegram[i]; i++);
-					if (i>=nextByteIndex) {
+					for (i = 1; (i < nextByteIndex - 1) && (rx_telegram[i] == telegram[i]); i++);
+					if (i == nextByteIndex - 1) {
 						already_received = true;
 					}
 				}
@@ -788,7 +787,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				rx_telegram[nextByteIndex++] = currentByte;
 				checksum ^= currentByte;
 			} else {
-				nextByteIndex = bcu->maxTelegramSize() -1;
 				rx_error |= RX_LENGHT_ERROR;
 			}
 
