@@ -77,14 +77,10 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderA
             dump2(serial.println("APCI_BASIC_RESTART_PDU"));
             d3(
                 serial.println();serial.println();serial.println();
-                serial.println("disconnectCount ", disconnectCount);
-
-                ///\todo remove after fix and on release
-                serial.println("ignored  ", repeatedIgnoredTelegramCount);
-                ///\todo end of remove after fix and on release
-
+                serial.println("disconnectCount           ", disconnectCount);
+                serial.println("ignored N_DATA_INDIVIDUAL ", ignoredNdataIndividual);
                 serial.println();serial.println();serial.println();
-                serial.flush();  // give time to send serial data
+                serial.flush(); // give time to send serial data
             );
             endDelay = millis() + RESET_DELAY_MS;
             while (millis() < endDelay)

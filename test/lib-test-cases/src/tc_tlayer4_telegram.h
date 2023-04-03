@@ -229,7 +229,25 @@ static Telegram testCaseTelegrams_20b[] =
 
 static Telegram testCaseTelegrams_21[] =
 {
-    // KNX Spec. 8/3/4 2.3.3.1 p.30
+    // see TLayer4::actionA03sendAckPduAgain(..) why we don't follow the KNX Spec 2.1 in this test
+    // Step 3 modified and not compliant with KNX Spec. 8/3/4 2.3.3.1 p.30
+
+    // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.15.254 to destAddr=1.0.1
+    {TEL_RX, 7, 0, 0x1001, connect, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x60, 0x80}},
+    // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.15.254 to destAddr=1.0.1
+    {TEL_RX, 8, 0, 0, NULL, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x61, 0x7F, 0x00}},
+    // 3. Check for empty TX-Response
+    {CHECK_TX_BUFFER, 0, 0, 0, connectedOpenIdle, {}},
+    // 4. simulate 6000 milliseconds passing, loop bcu once
+    {TIMER_TICK,  6000, 1, 0, NULL, {}},
+    // 5. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
+    {TEL_TX, 7, 0, 0, disconnectClosed, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0x81}},
+    // 6. Check for empty TX-Response
+    {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
+    {END}
+
+    /*
+    // specified in KNX Spec. 8/3/4 2.3.3.1 p.30
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.15.254 to destAddr=1.0.1
     {TEL_RX, 7, 0, 0x1001, connect, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x60, 0x80}},
     // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.15.254 to destAddr=1.0.1
@@ -243,11 +261,14 @@ static Telegram testCaseTelegrams_21[] =
     // 6. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
+    */
 };
 
 static Telegram testCaseTelegrams_22[] =
 {
-    // KNX Spec. 8/3/4 2.3.3.2 p.31
+    // see TLayer4::actionA03sendAckPduAgain(..) why we don't follow the KNX Spec 2.1 in this test
+    // Step 5 modified and not compliant with KNX Spec. 8/3/4 2.3.3.2 p.31
+
     // 0. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     // 0.1 simulate a T_DATA_CONNECTED from sourceAddr=10.0.1 to destAddr=10.0.0
     // steps 0.x done in tc_setup_OpenWait_A001
@@ -256,16 +277,32 @@ static Telegram testCaseTelegrams_22[] =
     {TEL_RX,  8, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
     // 2. Check T_ACK response for the DeviceDescriptorRead
     {TEL_TX,  7, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU Seq=0
-    // 3. repeated DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  8, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
-
-    ///\todo not sure if this is correct, test sequence 22 repeated T_DATA_CONNECTED
-    // 4. Read the DeviceDescriptorRead response
+    // 3. Check the DeviceDescriptorRead Response
     {TEL_TX, 10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
+    // 4. repeated DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  8, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    // 5. Check for empty TX-Response
+    {CHECK_TX_BUFFER, 0, 0, 0, connectedOpenWait, {}},
+    {END}
 
-    // 5. Check T_ACK response for the DeviceDescriptorRead
+    /*
+    // specified in KNX Spec. 8/3/4 2.3.3.2 p.31
+    // 0. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
+    // 0.1 simulate a T_DATA_CONNECTED from sourceAddr=10.0.1 to destAddr=10.0.0
+    // steps 0.x done in tc_setup_OpenWait_A001
+
+    // 1. DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  8, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    // 2. Check T_ACK response for the DeviceDescriptorRead
+    {TEL_TX,  7, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU Seq=0
+    // 3. Check the DeviceDescriptorRead Response
+    {TEL_TX, 10, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
+    // 4. repeated DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX,  8, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    // 5. Check T_ACK response for the second DeviceDescriptorRead
     {TEL_TX,  7, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}}, // T_ACK_PDU Seq=0
     {END}
+    */
 };
 
 static Telegram testCaseTelegrams_23[] =

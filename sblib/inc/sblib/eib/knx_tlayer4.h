@@ -28,8 +28,15 @@
 
 
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
-#define TL4_ACK_TIMEOUT_MS        (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
+#define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
 #define TL4_CTRL_TELEGRAM_SIZE    (8)    //!< The size of a connection control telegram
+
+/**
+ * The T_ACK suppression window in milliseconds for a repeated/duplicate N_DATA_INDIVIDUAL.
+ * @warning The T_ACK suppression in action A03 @ref actionA03sendAckPduAgain is NOT KNX Spec. 2.1 conform
+ */
+#define TL4_T_ACK_SUPPRESS_WINDOW_MS (TL4_T_ACK_TIMEOUT_MS/2)
+
 
 #ifdef DEBUG
 #   define LONG_PAUSE_THRESHOLD_MS (500)
@@ -37,10 +44,7 @@
 
 extern uint16_t telegramCount;   //!< number of telegrams since system reset
 extern uint16_t disconnectCount; //!< number of disconnects since system reset
-
-///\todo remove after bugfix and on release
-extern uint16_t repeatedIgnoredTelegramCount;
-///\todo end of remove after bugfix and on release
+extern uint16_t ignoredNdataIndividual; //!< number of N_DATA_INDIVIDUAL ignored in @ref actionA03sendAckPduAgain
 
 /**
  * Implementation of the KNX transportation layer 4 Style 1 Rationalised
@@ -211,6 +215,25 @@ private:
     void actionA00Nothing();
     void actionA01Connect(uint16_t address);
     bool actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
+
+    /**
+     * Performs action A3 as described in the KNX Spec. 2.1 3/3/4 5.3 p.19
+     * @param seqNo Sequence number the T_ACK should be send with
+     *
+     * @warning The Data Link Layer filters out repeated telegrams, provided that the repetition follows
+     *          directly after the original telegram. If another telegram sneaks in (e.g. due to higher
+     *          priority), we encounter such repeated telegrams in the Transport Layer.
+     *          <p>
+     *          Per KNX Spec 2.1, Chapter 3/3/4 Section 5.4.4.3 p.27, this is Event E05 and its corresponding Action A3.
+     *          The spec says to send another T_ACK for such a repeated telegram, but here's the catch:
+     *          If the client does not implement Style 3, such as calimero-core 2.5.1 at the time of this writing (2023/04/02),
+     *          it will see a duplicate T_ACK in state OPEN_IDLE (events E08/E09) and consequently close the
+     *          connection.
+     *          <p>
+     *          Prevent this by staying silent and intentionally disobeying the spec.
+     *          <p>
+     *          The T_ACK suppression is NOT KNX Spec. 2.1 conform
+     */
     void actionA03sendAckPduAgain(const int8_t seqNo);
 
     /**
@@ -222,7 +245,7 @@ private:
      * @brief Performs action A6 as described in the KNX Spec.
      *        Send a @ref T_DISCONNECT_PDU to @ref connectedAddr with system priority and Sequence# = 0
      */
-    void actionA06Disconnect();
+    void actionA06DisconnectAndClose();
 
     /**
      * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
@@ -251,18 +274,6 @@ private:
     int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
     bool telegramReadyToSend = false;           //!< True if a response is ready to be sent after our @ref T_ACK is confirmed
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
-
-    bool checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLength);  ///\todo remove after fix in Bus and on release
-
-    /**
-     * Copies currently processed telegram to @ref lastTelegram
-     * @param telegram  Current telegram processed
-     * @param telLength Length of current telegram
-     */
-    void copyTelegram(unsigned char *telegram, uint8_t telLength);
-
-    byte *lastTelegram;  //!< Buffer to store the last telegram received to compare with telegram currently processed
-    uint8_t lastTelegramLength = 0;         //!< Length of the last Telegram received
 
     volatile uint16_t ownAddr;                 //!< Our own physical address on the bus
 };

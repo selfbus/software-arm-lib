@@ -62,10 +62,7 @@ dump2(
 )
 
 uint16_t disconnectCount = 0; //!< number of disconnects since system reset
-
-///\todo remove after bugfix and on release
-uint16_t repeatedIgnoredTelegramCount = 0;
-///\todo end of remove after bugfix and on release
+uint16_t ignoredNdataIndividual = 0;
 
 void dumpTelegramBytes(bool tx, const unsigned char * telegram, const uint8_t length, const bool newLine = true)
 {
@@ -205,7 +202,7 @@ void dumpLogHeader()
 {
     dump2(
         serial.println();
-        serial.println("Keywords to search for: HIGH, ERROR, EVENT, HOTFIX");
+        serial.println("Keywords to search for: HIGH, ERROR, EVENT, IGNORED");
         serial.println();
         serial.print("#Telegram");
         serial.print(LOG_SEP);
@@ -232,8 +229,7 @@ void dumpLogHeader()
 }
 
 TLayer4::TLayer4(uint8_t maxTelegramLength):
-    sendTelegram(new byte[maxTelegramLength]()),
-    lastTelegram(new byte[maxTelegramLength]())
+    sendTelegram(new byte[maxTelegramLength]())
 {
 
 }
@@ -263,9 +259,7 @@ void TLayer4::_begin()
     dumpLogHeader();
     dump2(telegramCount = 0;);
     disconnectCount = 0;
-    lastTelegram[0] = 0;
-    lastTelegramLength = 0;
-    repeatedIgnoredTelegramCount = 0;
+    ignoredNdataIndividual = 0;
 }
 
 void TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
@@ -301,17 +295,6 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength
 
     dump2(telegramCount++;);
     dumpTelegramInfo(telegram, senderAddr, telegram[6], false, state);
-
-    if (!checkValidRepeatedTelegram(telegram, telLength))
-    {
-        // already processed
-        return (true);
-    }
-    else
-    {
-        // telegram is not repeated, buffer it for later checks
-        copyTelegram(telegram, telLength);
-    }
 
     if (tpci & T_CONNECTION_CTRL_COMMAND_Msk)  // A connection control command
     {
@@ -383,8 +366,7 @@ bool TLayer4::processConControlConnectPDU(uint16_t senderAddr)
             if (connectedAddr == senderAddr)
             {
                 // event E00
-                setTL4State(TLayer4::CLOSED);
-                actionA06Disconnect();
+                actionA06DisconnectAndClose();
             }
             else
             {
@@ -489,8 +471,7 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
                 serial.print(LOG_SEP);
                 dumpTelegramBytes(false, telegram, telLength);
             );
-            actionA06Disconnect();
-            setTL4State(TLayer4::CLOSED);
+            actionA06DisconnectAndClose();
             return (false);
         }
 
@@ -509,8 +490,7 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
         else
         {
             dump2(serial.print(" EVENT 8 state != OPEN_WAIT"););
-            actionA06Disconnect();
-            setTL4State(TLayer4::CLOSED);
+            actionA06DisconnectAndClose();
             dumpTelegramBytes(false, telegram, telLength);
             return (false);
         }
@@ -541,8 +521,7 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
         else
         {
             dump2(serial.print(" EVENT 11b_2 "););
-            actionA06Disconnect();
-            setTL4State(TLayer4::CLOSED);
+            actionA06DisconnectAndClose();
             dumpTelegramBytes(false, telegram, telLength);
             return (false);
         }
@@ -628,7 +607,7 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     if (seqNo == seqNoRcv)
     {
         ///\todo BUG event E04 needs more checks
-        // event E04
+        // event E04 and state != TLayer4::CLOSED
         telegramReadyToSend = actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
         /*
         // this either does not work, it's even worse
@@ -641,8 +620,7 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
             // according to KNX Spec 2.1, we should execute action A02
             // but that can lead to a infinite loop, instead we execute A06 to disconnect the connection
             dump2(serial.print("EVENT 4 DirectTelegram while waiting for T_ACK ");); ///\todo CHECK THIS
-            setTL4State(TLayer4::CLOSED);
-            actionA06Disconnect();
+            actionA06DisconnectAndClose();
             dumpTelegramBytes(false, telegram, telLength);
         }
         */
@@ -654,8 +632,8 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
         // event E05
         dump2(
             serial.print("EVENT 5 seqNo ", seqNo);
-            serial.print(" != ", (seqNoRcv-1) & 0x0F);
-            serial.print(" seqNoRcv-1");
+            serial.print(" == ", (seqNoRcv-1) & 0x0F);
+            serial.print(" (seqNoRcv-1)");
             serial.print(LOG_SEP);
             dumpTelegramBytes(false, telegram, telLength);
         );
@@ -667,8 +645,7 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     dump2(
           serial.print("EVENT 6 out of sequence ");
     );
-    actionA06Disconnect();
-    setTL4State(TLayer4::CLOSED);
+    actionA06DisconnectAndClose();
     dumpTelegramBytes(false, telegram, telLength);
 }
 
@@ -729,19 +706,37 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
 
 void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
 {
-    dump2(serial.println("ERROR A03sendAckPduAgain "));
-    ///\todo not sure if this is correct, test sequence 22 repeated T_DATA_CONNECTED
-    /*
-    if ((bus.sendCurTelegram != nullptr)|| (bus.sendNextTel != nullptr))
+    ///\todo clarify after KNX Spec 3.0 public release
+    // The Data Link Layer filters out repeated telegrams, provided that the repetition follows
+    // directly after the original telegram. If another telegram sneaks in (e.g. due to higher
+    // priority), we encounter such repeated telegrams in the Transport Layer.
+    //
+    // Per KNX Spec 2.1, Chapter 3/3/4 Section 5.4.4.3 p.27, this is Event E05 and its corresponding Action A3.
+    // The spec says to send another T_ACK for such a repeated telegram, but here's the catch:
+    // If the client does not implement Style 3, such as calimero-core 2.5.1 at the time of this writing (2023/04/02),
+    // it will see a duplicate T_ACK in state OPEN_IDLE (events E08/E09) and consequently close the
+    // connection.
+    //
+    // Prevent this by staying silent for TL4_T_ACK_SUPPRESS_WINDOW_MS time and intentionally disobeying the spec.
+
+    dump2(serial.print("ERROR A03sendAckPduAgain "));
+    if ((connectedTime + TL4_T_ACK_SUPPRESS_WINDOW_MS) <= systemTime)
     {
-        ///\todo class Bus should provide a method for this to clear all pending telegrams
-        bus.sendNextTel = nullptr;
-        bus.sendCurTelegram = nullptr;
+        dump2(
+            serial.print("sending T_ACK seqNo# ", seqNo, DEC, 2);
+            serial.print(" again");
+        );
+        // KNX Spec 2.1 conform handling of action A03 -> sending a T_ACK_PDU:
+        sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     }
-    */
-    sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
+    else
+    {
+        // Prevention by staying silent for TL4_T_ACK_SUPPRESS_WINDOW_MS time and intentionally disobeying the spec.
+        dump2(serial.print("IGNORED N_DATA_INDIVIDUAL"));
+        ignoredNdataIndividual++; // we received a already processed N_DATA_INDIVIDUAL, ignore it
+    }
+    dump2(serial.println());
     connectedTime = systemTime; // "restart the connection timeout timer"
-    ///\todo shouldn't we also send a possible apci response again?
 }
 
 void TLayer4::actionA05DisconnectUser()
@@ -753,7 +748,7 @@ void TLayer4::actionA05DisconnectUser()
     resetConnection();
 }
 
-void TLayer4::actionA06Disconnect()
+void TLayer4::actionA06DisconnectAndClose()
 {
     disconnectCount++;
     setTL4State(TLayer4::CLOSED);
@@ -832,7 +827,7 @@ void TLayer4::loop()
     // Send a disconnect after TL4_CONNECTION_TIMEOUT_MS milliseconds inactivity
     if ((state != TLayer4::CLOSED) && (elapsed(connectedTime) >= TL4_CONNECTION_TIMEOUT_MS))
     {
-        actionA06Disconnect();
+        actionA06DisconnectAndClose();
         dump2(serial.println("direct connection timed out => disconnecting"));
     }
 
@@ -870,58 +865,5 @@ bool TLayer4::setTL4State(TLayer4::TL4State newState)
     state = newState;
     return (true);
 }
-
-void TLayer4::copyTelegram(unsigned char *telegram, uint8_t telLength)
-{
-    for (uint8_t i = 0; i < telLength; i++)
-    {
-        lastTelegram[i] = telegram[i];
-    }
-    lastTelegramLength = telLength;
-}
-
-bool TLayer4::checkValidRepeatedTelegram(unsigned char *telegram, uint8_t telLength)
-{
-    if (!isRepeated(telegram))
-    {
-        return true;
-    }
-
-    dump2(
-        serial.print("REPEATED ");
-    );
-
-    if ((lastTelegramLength < 1) || (lastTelegramLength != telLength))
-    {
-        return true;
-    }
-
-    // check controlByte of last and new telegram, ignoring the repeated flag
-    setRepeated(lastTelegram, true);
-    if (controlByte(telegram) != controlByte(lastTelegram))
-    {
-        return true;
-    }
-
-    // check remaining bytes, exclude control byte (1.byte) and checksum (last byte)
-    for (uint8_t i = 1; i < telLength - 1; i++)
-    {
-        if (lastTelegram[i] != telegram[i])
-        {
-            // telegrams don't match, everything ok
-            return true;
-        }
-    }
-
-    repeatedIgnoredTelegramCount++; // we received a already processed telegram, ignore it
-
-    dump2(
-        serial.print("IGNORED");
-        serial.print(LOG_SEP);
-        dumpTelegramBytes(false, telegram, telLength, true);
-    );
-    return false;
-}
-
 
 /** @}*/
