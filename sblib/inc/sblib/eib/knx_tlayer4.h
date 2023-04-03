@@ -28,8 +28,15 @@
 
 
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
-#define TL4_ACK_TIMEOUT_MS        (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
+#define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
 #define TL4_CTRL_TELEGRAM_SIZE    (8)    //!< The size of a connection control telegram
+
+/**
+ * The T_ACK suppression window in milliseconds for a repeated/duplicate N_DATA_INDIVIDUAL.
+ * @warning The T_ACK suppression in action A03 @ref actionA03sendAckPduAgain is NOT KNX Spec. 2.1 conform
+ */
+#define TL4_T_ACK_SUPPRESS_WINDOW_MS (TL4_T_ACK_TIMEOUT_MS/2)
+
 
 #ifdef DEBUG
 #   define LONG_PAUSE_THRESHOLD_MS (500)
@@ -224,6 +231,8 @@ private:
      *          connection.
      *          <p>
      *          Prevent this by staying silent and intentionally disobeying the spec.
+     *          <p>
+     *          The T_ACK suppression is NOT KNX Spec. 2.1 conform
      */
     void actionA03sendAckPduAgain(const int8_t seqNo);
 

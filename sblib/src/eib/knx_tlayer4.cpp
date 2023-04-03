@@ -723,13 +723,25 @@ void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
     // it will see a duplicate T_ACK in state OPEN_IDLE (events E08/E09) and consequently close the
     // connection.
     //
-    // Prevent this by staying silent and intentionally disobeying the spec.
-    //
-    // KNX Spec 2.1 conform handling of action A03 would be, sending a T_ACK_PDU:
-    // sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
+    // Prevent this by staying silent for TL4_T_ACK_SUPPRESS_WINDOW_MS time and intentionally disobeying the spec.
 
-    dump2(serial.println("ERROR A03sendAckPduAgain IGNORED N_DATA_INDIVIDUAL"));
-    ignoredNdataIndividual++; // we received a already processed T_ACK, ignore it
+    dump2(serial.print("ERROR A03sendAckPduAgain "));
+    if ((connectedTime + TL4_T_ACK_SUPPRESS_WINDOW_MS) <= systemTime)
+    {
+        dump2(
+            serial.print("sending T_ACK seqNo# ", seqNo, DEC, 2);
+            serial.print(" again");
+        );
+        // KNX Spec 2.1 conform handling of action A03 -> sending a T_ACK_PDU:
+        sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
+    }
+    else
+    {
+        // Prevention by staying silent for TL4_T_ACK_SUPPRESS_WINDOW_MS time and intentionally disobeying the spec.
+        dump2(serial.print("IGNORED N_DATA_INDIVIDUAL"));
+        ignoredNdataIndividual++; // we received a already processed N_DATA_INDIVIDUAL, ignore it
+    }
+    dump2(serial.println());
     connectedTime = systemTime; // "restart the connection timeout timer"
 }
 
