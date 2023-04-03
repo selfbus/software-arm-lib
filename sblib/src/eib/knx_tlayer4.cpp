@@ -366,8 +366,7 @@ bool TLayer4::processConControlConnectPDU(uint16_t senderAddr)
             if (connectedAddr == senderAddr)
             {
                 // event E00
-                setTL4State(TLayer4::CLOSED);
-                actionA06Disconnect();
+                actionA06DisconnectAndClose();
             }
             else
             {
@@ -472,8 +471,7 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
                 serial.print(LOG_SEP);
                 dumpTelegramBytes(false, telegram, telLength);
             );
-            actionA06Disconnect();
-            setTL4State(TLayer4::CLOSED);
+            actionA06DisconnectAndClose();
             return (false);
         }
 
@@ -492,8 +490,7 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
         else
         {
             dump2(serial.print(" EVENT 8 state != OPEN_WAIT"););
-            actionA06Disconnect();
-            setTL4State(TLayer4::CLOSED);
+            actionA06DisconnectAndClose();
             dumpTelegramBytes(false, telegram, telLength);
             return (false);
         }
@@ -524,8 +521,7 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
         else
         {
             dump2(serial.print(" EVENT 11b_2 "););
-            actionA06Disconnect();
-            setTL4State(TLayer4::CLOSED);
+            actionA06DisconnectAndClose();
             dumpTelegramBytes(false, telegram, telLength);
             return (false);
         }
@@ -624,8 +620,7 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
             // according to KNX Spec 2.1, we should execute action A02
             // but that can lead to a infinite loop, instead we execute A06 to disconnect the connection
             dump2(serial.print("EVENT 4 DirectTelegram while waiting for T_ACK ");); ///\todo CHECK THIS
-            setTL4State(TLayer4::CLOSED);
-            actionA06Disconnect();
+            actionA06DisconnectAndClose();
             dumpTelegramBytes(false, telegram, telLength);
         }
         */
@@ -650,8 +645,7 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     dump2(
           serial.print("EVENT 6 out of sequence ");
     );
-    actionA06Disconnect();
-    setTL4State(TLayer4::CLOSED);
+    actionA06DisconnectAndClose();
     dumpTelegramBytes(false, telegram, telLength);
 }
 
@@ -754,7 +748,7 @@ void TLayer4::actionA05DisconnectUser()
     resetConnection();
 }
 
-void TLayer4::actionA06Disconnect()
+void TLayer4::actionA06DisconnectAndClose()
 {
     disconnectCount++;
     setTL4State(TLayer4::CLOSED);
@@ -833,7 +827,7 @@ void TLayer4::loop()
     // Send a disconnect after TL4_CONNECTION_TIMEOUT_MS milliseconds inactivity
     if ((state != TLayer4::CLOSED) && (elapsed(connectedTime) >= TL4_CONNECTION_TIMEOUT_MS))
     {
-        actionA06Disconnect();
+        actionA06DisconnectAndClose();
         dump2(serial.println("direct connection timed out => disconnecting"));
     }
 

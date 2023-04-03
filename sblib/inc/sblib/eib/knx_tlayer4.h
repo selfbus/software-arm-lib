@@ -245,7 +245,7 @@ private:
      * @brief Performs action A6 as described in the KNX Spec.
      *        Send a @ref T_DISCONNECT_PDU to @ref connectedAddr with system priority and Sequence# = 0
      */
-    void actionA06Disconnect();
+    void actionA06DisconnectAndClose();
 
     /**
      * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
