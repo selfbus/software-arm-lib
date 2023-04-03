@@ -453,10 +453,9 @@ void Bus::handleTelegram(bool valid)
 				}
 		}
 		if (processTel)
-		{// check for repeated telegram, did we already received it -check that time between telegram is about 50bit times
+		{// check for repeated telegram, did we already received it
 			// check the repeat bit in header and compare with previous received telegram still stored in the telegram[] buffer
 			bool already_received = false;
-			//check time in between the telegrams received should be less than 6ms for repeated tel and the orig tel
 			if (!(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
 			{// compare telegrams
 				if ((rx_telegram[0] & ~SB_TEL_REPEAT_FLAG) == (telegram[0] & ~SB_TEL_REPEAT_FLAG))
