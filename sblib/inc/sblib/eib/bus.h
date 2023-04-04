@@ -248,7 +248,12 @@ public:
 
 private:
     /**
-     * Switch to idle state
+     * Switch to @ref Bus::IDLE state
+     * @details Set the Bus state machine to @ref Bus::IDLE state.
+     *          We waited at least 50 Bit times (without cap event enabled),
+     *          now we wait for next Telegram to receive.
+     *          Configure the capture to falling edge and interrupt
+     *          match register for low PWM output
      */
     void idleState();
 
