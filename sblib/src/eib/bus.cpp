@@ -438,7 +438,7 @@ void Bus::handleTelegram(bool valid)
 			processTel = true;
 		}
 
-        DB_BUS(telRXNotProcessed = !processTel);
+		DB_TELEGRAM(telRXNotProcessed = !processTel);
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
 		if (!(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
