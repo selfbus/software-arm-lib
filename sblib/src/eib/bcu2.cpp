@@ -226,5 +226,5 @@ void BCU2::sendApciIndividualAddressSerialNumberReadResponse()
     sendTelegram[16] = 0x00;
     sendTelegram[17] = 0x00;
 
-    bus->sendTelegram(sendTelegram, 18);
+    sendPreparedTelegram();
 }

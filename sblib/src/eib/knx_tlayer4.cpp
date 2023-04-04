@@ -577,6 +577,11 @@ void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSe
     send(sendCtrlTelegram, 7);
 }
 
+void TLayer4::sendPreparedTelegram()
+{
+    send(sendTelegram, telegramSize(sendTelegram));
+}
+
 void TLayer4::finishedSendingTelegram(byte *telegram, bool successful)
 {
     sendTelegram[0] = 0;
@@ -800,7 +805,7 @@ void TLayer4::actionA07SendDirectTelegram()
         dumpTelegramBytes(true, &sendTelegram[0], telegramSize(sendTelegram), true);
     );
     telegramReadyToSend = false;
-    send(sendTelegram, telegramSize(sendTelegram));
+    sendPreparedTelegram();
     repCount = 0;
     sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
     connectedTime = systemTime; // "restart the connection timeout timer"
@@ -823,7 +828,7 @@ void TLayer4::actionA09RepeatMessage()
 
     // Checksum will be recalculated by Bus class.
     setRepeated(sendTelegram, false);
-    send(sendTelegram, telegramSize(sendTelegram)); ///\todo sendTelegram[0] is not "saved" and here always 0x00
+    sendPreparedTelegram(); ///\todo sendTelegram[0] is not "saved" and here always 0x00
     repCount++;
     sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
     connectedTime = systemTime; // "restart the connection timeout timer"

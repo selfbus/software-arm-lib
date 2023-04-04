@@ -106,6 +106,11 @@ public:
     void waitForSendBufferFree();
 
     /**
+     * Sends the telegram that was prepared in @ref sendTelegram.
+     */
+    void sendPreparedTelegram();
+
+    /**
      * Wait for @ref sendTelegram to be free.
      */
     void finishedSendingTelegram(byte *telegram, bool successful);

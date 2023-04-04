@@ -106,7 +106,7 @@ void BcuBase::sendApciIndividualAddressReadResponse()
     setDestinationAddress(sendTelegram, 0x0000); // Zero target address, it's a broadcast
     sendTelegram[5] = 0xe0 + 1; // address type & routing count in high nibble + response length in low nibble
     setApciCommand(sendTelegram, APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU, 0);
-    bus->sendTelegram(sendTelegram, 8);
+    sendPreparedTelegram();
 }
 
 void BcuBase::end()

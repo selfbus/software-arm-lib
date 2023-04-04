@@ -619,7 +619,7 @@ bool BcuDefault::processApciMasterResetPDU(unsigned char *telegram, const uint8_
     while (!bus->idle())
         ;
     // send APCI_MASTER_RESET_RESPONSE_PDU
-    bus->sendTelegram(sendTelegram, telegramSize(sendTelegram));
+    sendPreparedTelegram();
     while (!bus->idle())
                 ;
     // send disconnect

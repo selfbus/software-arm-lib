@@ -361,7 +361,7 @@ void ComObjects::sendGroupReadTelegram(int objno, int addr)
     setDestinationAddress(bcu->sendTelegram, addr);
     bcu->sendTelegram[5] = 0xe1; // routing count + length
     setApciCommand(bcu->sendTelegram, APCI_GROUP_VALUE_READ_PDU, 0);
-    bcu->bus->sendTelegram(bcu->sendTelegram, 8);
+    bcu->sendPreparedTelegram();
     transmitting_object_no = objno; //save transmitting object for status check
     bcu->bus->setBusRXStateValid(false);
 }
@@ -391,7 +391,7 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
     // Process this telegram in the receive queue (if there is a local receiver of this group address)
     processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, bcu->sendTelegram, objno);
 
-    bcu->bus->sendTelegram(bcu->sendTelegram, 8 + objSize);
+    bcu->sendPreparedTelegram();
     transmitting_object_no = objno; //save transmitting object for status check
     bcu->bus->setBusTXStateValid(false);
 }
