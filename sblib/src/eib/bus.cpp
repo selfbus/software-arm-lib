@@ -298,41 +298,23 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
         serial.println();
     );
 
-	// Start sending if the bus is idle or sending will be triggered in WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE after finishing current TX/RX
-	noInterrupts();
-	if (state == IDLE)
-	{
-		prepareForSending();
-
-		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
-		timer.match(timeChannel, 1);
-		timer.matchMode(timeChannel, INTERRUPT | RESET);
-		timer.value(0);
-	}
-	interrupts();
+	// actual sending is started in Bus::IDLE state
 }
 
-/*
- *  set the Bus state machine to idle state.
- *  We waited at least 50 Bit times  (without cap event enabled), now we wait for next Telegram to receive.
- *  configure the capture to falling edge and interrupt
- *  match register for low pwm output
- *
- *todo we could stop the timer for energy save reasons
- */
 void Bus::idleState()
 {
-	tb_t( 99, ttimer.value(), tb_in);
-	tb_h( 99, sendAck, tb_in);
+    tb_t( 99, ttimer.value(), tb_in);
+    tb_h( 99, sendAck, tb_in);
 
-	timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // for any receiving start bit on the Bus
-	timer.matchMode(timeChannel, RESET); // no timeout interrupt, reset at match todo we could stop timer for power saving
-	timer.match(timeChannel, 0xfffe); // stop pwm pulse generation, set output to low
-	timer.match(pwmChannel, 0xffff);
-	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
-	state = Bus::IDLE;
-	sendAck = 0;
-	//need_to_send_ack_to_remote=false;
+    timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // for any receiving start bit on the Bus
+    timer.matchMode(timeChannel, INTERRUPT | RESET);
+    timer.match(timeChannel, 35);
+    timer.match(pwmChannel, 0xffff);
+    timer.value(0);
+    //timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
+    state = Bus::IDLE;
+    sendAck = 0;
+    //need_to_send_ack_to_remote=false;
 }
 
 void Bus::prepareForSending()
@@ -631,17 +613,24 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		// The bus is idle for at least 50BT. Usually we come here when we finished a TX/RX on the Bus and waited 50BT for next event without receiving a start bit on the Bus
 		// or at least one pending Telegram in the queue.
-		// A timeout  (after 0xfffe us) should not be received( indicating no bus activity) match interrupt is disabled
+		// A timeout  (after 0xfffe us) should not be received (indicating no bus activity) match interrupt is disabled
 		// A reception of a new telegram is triggered by the falling edge of the received start bit and we collect the bits in the receiving process
-		// Sending is triggered in idle state by a call to sendTelegram and state switch from idle to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
+		// Sending is triggered in idle state by a call to prepareForSending() and state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
 
 	case Bus::IDLE:
 		tb_d( state+100, ttimer.value(), tb_in);
         DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
 
-		if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing - timeout??
-			break;
-
+        if (!timer.flag(captureChannel)) // Not a bus-in signal
+        {
+            if (!sendCurTelegram) // check telegram in send queue
+            {
+                break;
+            }
+            prepareForSending();
+            state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
+            goto STATE_SWITCH;
+        }
 
 		// RX process functions
 		//initialize the RX process for a new telegram reception.
