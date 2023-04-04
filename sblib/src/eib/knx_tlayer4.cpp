@@ -577,6 +577,11 @@ void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSe
     send(sendCtrlTelegram, 7);
 }
 
+void TLayer4::finishedSendingTelegram(uint8_t *telegram, bool successful)
+{
+    sendTelegram[0] = 0;
+}
+
 void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
 {
     dump2(

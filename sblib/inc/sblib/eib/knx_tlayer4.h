@@ -101,6 +101,16 @@ public:
     uint16_t connectedTo();
 
     /**
+     * Wait for @ref sendTelegram to be free.
+     */
+    void waitForSendBufferFree();
+
+    /**
+     * Wait for @ref sendTelegram to be free.
+     */
+    void finishedSendingTelegram(uint8_t *telegram, bool successful);
+
+    /**
      * A buffer for the telegram to send.
      * @warning This buffer is considered library private and should rather not be used by the application program.
      */
@@ -297,6 +307,11 @@ inline uint16_t TLayer4::connectedTo()
     {
         return (0);
     }
+}
+
+inline void TLayer4::waitForSendBufferFree()
+{
+    while (sendTelegram[0]);
 }
 
 inline int8_t TLayer4::sequenceNumberReceived()

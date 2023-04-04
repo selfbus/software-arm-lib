@@ -551,7 +551,6 @@ void Bus::handleTelegram(bool valid)
  * Current telegram was send, send next telegram
  *
  * load data for next telegram, save  send resultState - driven by interrupts of timer and capture input
- * Free send-buffer is indicated by "0" in the header byte: send-buffer[0]=0
  *
  */
 void Bus::sendNextTelegram()
@@ -560,7 +559,7 @@ void Bus::sendNextTelegram()
 
     if (sendCurTelegram)
     {
-        sendCurTelegram[0] = 0;
+        bcu->finishedSendingTelegram(sendCurTelegram, !(tx_error & TX_RETRY_ERROR));
     }
     sendCurTelegram = sendNextTel;
     sendNextTel = nullptr;
