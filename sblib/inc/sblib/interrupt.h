@@ -159,7 +159,7 @@ ALWAYS_INLINE void clearPendingInterrupt(IRQn_Type interruptType)
 
 ALWAYS_INLINE void setPendingInterrupt(IRQn_Type interruptType)
 {
-    NVIC->ICPR[0] = 1 << (interruptType & 0x1f);
+    NVIC->ISPR[0] = 1 << (interruptType & 0x1f);
 }
 
 ALWAYS_INLINE bool isInsideInterrupt(void)
