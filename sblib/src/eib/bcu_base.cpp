@@ -62,7 +62,7 @@ void BcuBase::loop()
     bool busOK = (bus->state == Bus::IDLE) || (bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE);
     if (telegramInQueu && busOK && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
 	{
-        processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
+        processTelegram(bus->telegram, (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
 
 	if (progPin)
