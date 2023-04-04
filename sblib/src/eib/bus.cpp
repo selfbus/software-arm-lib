@@ -697,7 +697,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		tv=timer.value(); cv= timer.capture(captureChannel);
 		if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-		else dt = (0xffff-cv) +tv;
+		else dt = (timer.match(timeChannel)-cv) +tv;
 		timer.restart();  // restart timer and pre-load with processing time of 2us
 		timer.value(dt+2);
 		timer.match(timeChannel, BYTE_TIME_INCL_STOP);
