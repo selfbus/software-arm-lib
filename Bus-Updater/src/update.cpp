@@ -558,13 +558,13 @@ static unsigned char updRequestBootloaderIdentity(uint8_t * data)
  */
 static unsigned char updRequestStatistic()
 {
-    uint32_t sizeTotal = sizeof(disconnectCount) + sizeof(ignoredNdataIndividual);
+    uint32_t sizeTotal = sizeof(disconnectCount) + sizeof(repeatedT_ACKcount);
 
     prepareReturnTelegram(bcu.sendTelegram, sizeTotal, UPD_RESPONSE_STATISTIC);
     uShort16ToStream(bcu.sendTelegram + 9, disconnectCount);
-    uShort16ToStream(bcu.sendTelegram + 9 + sizeof(disconnectCount), ignoredNdataIndividual);
+    uShort16ToStream(bcu.sendTelegram + 9 + sizeof(disconnectCount), repeatedT_ACKcount);
     d3(serial.print(" #DC ", disconnectCount));
-    d3(serial.print(" #ignor ", ignoredNdataIndividual));
+    d3(serial.print(" #repT_ACK ", repeatedT_ACKcount));
     return (T_ACK_PDU);
 }
 

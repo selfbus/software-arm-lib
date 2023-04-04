@@ -420,7 +420,7 @@ void Bus::handleTelegram(bool valid)
 			processTel = true;
 		}
 
-        DB_BUS(telRXNotProcessed = !processTel);
+		DB_TELEGRAM(telRXNotProcessed = !processTel);
 
 		// Only process the telegram if it is for us or if we want to get all telegrams
 		if (!(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
@@ -454,15 +454,11 @@ void Bus::handleTelegram(bool valid)
 				//  check for space in rx buffer for next telegram, if no space available, send busy back
 				if (telegramLen)
 				{
-					sendAck = SB_BUS_BUSY;
-					if (destAddr == 0)
-					{
-					    // KNX Spec. 2.1. 3/2/2 2.4.1 p.38
-					    // Device should only send a LL_BUSY if it knows that the telegram can be processed within the next 100ms.
-					    // Since we know nothing about the running application we better stay quiet
-					    // don't send LL_BUSY for broadcasts
-					    sendAck = 0;
-					}
+				    // KNX Spec. 2.1. 3/2/2 2.4.1 p.38
+ 			        // Device should only send a LL_BUSY if it knows that the telegram can be processed within the next 100ms.
+					// Since we know nothing about the running application we better stay quiet
+					// don't send LL_BUSY for broadcasts
+					sendAck = 0;
 					rx_error |= RX_BUFFER_BUSY;
 				}
 				else
