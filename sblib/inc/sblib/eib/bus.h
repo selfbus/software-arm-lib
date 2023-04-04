@@ -324,9 +324,9 @@ private:
 
     int currentByte;                //!< The current byte that is received/sent, including the parity bit
     int sendTelegramLen;            //!< The size of the to be sent telegram in bytes (including the checksum).
-    volatile byte *sendCurTelegram; //!< The telegram that is currently being sent.
-    volatile byte *sendNextTel;     //!< The telegram to be sent after sbSendTelegram is done.
-    volatile byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
+    byte *sendCurTelegram;          //!< The telegram that is currently being sent.
+    byte *sendNextTel;              //!< The telegram to be sent after sbSendTelegram is done.
+    byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
 
     int bitMask;
     int bitTime;                 //!< The bit-time within a byte when receiving

@@ -108,7 +108,7 @@ public:
     /**
      * Wait for @ref sendTelegram to be free.
      */
-    void finishedSendingTelegram(uint8_t *telegram, bool successful);
+    void finishedSendingTelegram(byte *telegram, bool successful);
 
     /**
      * A buffer for the telegram to send.
