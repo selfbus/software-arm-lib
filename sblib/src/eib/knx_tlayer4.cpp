@@ -454,10 +454,11 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
         // check for event E10
         if (connectedAddr != senderAddr)
         {
-            dump2(serial.print(" EVENT 10 "););
-
+            dump2(
+               serial.print(" EVENT 10 ");
+               dumpTelegramBytes(false, telegram, telLength);
+            );
             actionA00Nothing();
-            dumpTelegramBytes(false, telegram, telLength);
             return (false);
         }
 
@@ -527,8 +528,8 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
                 serial.print("< ", TL4_MAX_REPETITION_COUNT);
                 serial.print("maxRepCount ");
             );
-            actionA09RepeatMessage();
             dumpTelegramBytes(false, telegram, telLength);
+            actionA09RepeatMessage();
             return (false);
         }
         // event E12/E13
@@ -614,8 +615,8 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
                 dumpKNXAddress(senderAddr);
                 serial.print(" senderAddr ");
              );
-        actionA00Nothing();
         dumpTelegramBytes(false, telegram, telLength);
+        actionA00Nothing();
         return;
     }
 
@@ -676,7 +677,7 @@ unsigned char TLayer4::processApci(ApciCommand apciCmd, const uint16_t senderAdd
 
 void TLayer4::actionA00Nothing()
 {
-    dump2(serial.println("A00Nothing "));
+    dump2(serial.println("A00Nothing"));
 }
 
 void TLayer4::actionA01Connect(uint16_t address)
@@ -748,7 +749,7 @@ void TLayer4::actionA06DisconnectAndClose()
     disconnectCount++;
     setTL4State(TLayer4::CLOSED);
     dump2(
-        serial.println("A06Disconnect");
+        serial.println("actionA06DisconnectAndClose");
     );
     sendConControlTelegram(T_DISCONNECT_PDU, connectedAddr, 0);
     resetConnection();
@@ -810,7 +811,12 @@ void TLayer4::actionA08IncrementSequenceNumber()
 
 void TLayer4::actionA09RepeatMessage()
 {
-    send(sendTelegram, telegramSize(sendTelegram));
+    dump2(
+        serial.print("ERROR actionA09RepeatMessage ");
+        dumpTelegramBytes(true, sendTelegram, telegramSize(sendTelegram));
+    );
+
+    send(sendTelegram, telegramSize(sendTelegram)); ///\todo sendTelegram[0] is not "saved" and here always 0x00
     repCount++;
     sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
     connectedTime = systemTime; // "restart the connection timeout timer"
@@ -844,14 +850,21 @@ void TLayer4::loop()
         if (repCount < TL4_MAX_REPETITION_COUNT)
         {
             // event E17
+            dump2(
+                dumpTicks();
+                serial.println("T_ACK timed out => repeating");
+            );
+
             actionA09RepeatMessage();
-            dump2(serial.println("T_ACK timed out and too many repetitions => disconnecting"));
         }
         else
         {
             // event E18
+            dump2(
+                dumpTicks();
+                serial.println("T_ACK timed out and too many repetitions => disconnecting");
+            );
             actionA06DisconnectAndClose();
-            dump2(serial.println("T_ACK timed out and too many repetitions => disconnecting"));
         }
     }
 
