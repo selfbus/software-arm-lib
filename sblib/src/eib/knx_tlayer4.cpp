@@ -62,7 +62,7 @@ dump2(
 )
 
 uint16_t disconnectCount = 0; //!< number of disconnects since system reset
-uint16_t ignoredNdataIndividual = 0;
+uint16_t repeatedT_ACKcount = 0;
 
 void dumpTelegramBytes(bool tx, const unsigned char * telegram, const uint8_t length, const bool newLine = true)
 {
@@ -259,7 +259,7 @@ void TLayer4::_begin()
     dumpLogHeader();
     dump2(telegramCount = 0;);
     disconnectCount = 0;
-    ignoredNdataIndividual = 0;
+    repeatedT_ACKcount = 0;
 }
 
 void TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
@@ -706,36 +706,9 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
 
 void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
 {
-    ///\todo clarify after KNX Spec 3.0 public release
-    // The Data Link Layer filters out repeated telegrams, provided that the repetition follows
-    // directly after the original telegram. If another telegram sneaks in (e.g. due to higher
-    // priority), we encounter such repeated telegrams in the Transport Layer.
-    //
-    // Per KNX Spec 2.1, Chapter 3/3/4 Section 5.4.4.3 p.27, this is Event E05 and its corresponding Action A3.
-    // The spec says to send another T_ACK for such a repeated telegram, but here's the catch:
-    // If the client does not implement Style 3, such as calimero-core 2.5.1 at the time of this writing (2023/04/02),
-    // it will see a duplicate T_ACK in state OPEN_IDLE (events E08/E09) and consequently close the
-    // connection.
-    //
-    // Prevent this by staying silent for TL4_T_ACK_SUPPRESS_WINDOW_MS time and intentionally disobeying the spec.
-
-    dump2(serial.print("ERROR A03sendAckPduAgain "));
-    if ((connectedTime + TL4_T_ACK_SUPPRESS_WINDOW_MS) <= systemTime)
-    {
-        dump2(
-            serial.print("sending T_ACK seqNo# ", seqNo, DEC, 2);
-            serial.print(" again");
-        );
-        // KNX Spec 2.1 conform handling of action A03 -> sending a T_ACK_PDU:
-        sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
-    }
-    else
-    {
-        // Prevention by staying silent for TL4_T_ACK_SUPPRESS_WINDOW_MS time and intentionally disobeying the spec.
-        dump2(serial.print("IGNORED N_DATA_INDIVIDUAL"));
-        ignoredNdataIndividual++; // we received a already processed N_DATA_INDIVIDUAL, ignore it
-    }
-    dump2(serial.println());
+    dump2(serial.println("ERROR A03sendAckPduAgain "));
+    sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
+    repeatedT_ACKcount++; // counting for statistics
     connectedTime = systemTime; // "restart the connection timeout timer"
 }
 

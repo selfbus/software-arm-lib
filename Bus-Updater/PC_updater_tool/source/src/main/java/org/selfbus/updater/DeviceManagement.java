@@ -339,12 +339,12 @@ public final class DeviceManagement {
             catch (KNXTimeoutException | KNXRemoteException e) {
                 logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incTimeoutCount();
-                Thread.sleep(TL4_CONNECTION_TIMEOUT_MS);
+                //Thread.sleep(TL4_CONNECTION_TIMEOUT_MS); ///\todo remove on release
             }
             catch (KNXDisconnectException e) {
                 logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incDropCount();
-                Thread.sleep(TL4_CONNECTION_TIMEOUT_MS);
+                //Thread.sleep(TL4_CONNECTION_TIMEOUT_MS); ///\todo remove on release
             }
             catch (KNXIllegalArgumentException e) {
                 throw new UpdaterException(String.format("%s failed.", command), e);

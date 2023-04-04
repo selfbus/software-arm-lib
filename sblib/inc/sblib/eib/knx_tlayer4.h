@@ -31,20 +31,13 @@
 #define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
 #define TL4_CTRL_TELEGRAM_SIZE    (8)    //!< The size of a connection control telegram
 
-/**
- * The T_ACK suppression window in milliseconds for a repeated/duplicate N_DATA_INDIVIDUAL.
- * @warning The T_ACK suppression in action A03 @ref actionA03sendAckPduAgain is NOT KNX Spec. 2.1 conform
- */
-#define TL4_T_ACK_SUPPRESS_WINDOW_MS (TL4_T_ACK_TIMEOUT_MS/2)
-
-
 #ifdef DEBUG
 #   define LONG_PAUSE_THRESHOLD_MS (500)
 #endif
 
 extern uint16_t telegramCount;   //!< number of telegrams since system reset
 extern uint16_t disconnectCount; //!< number of disconnects since system reset
-extern uint16_t ignoredNdataIndividual; //!< number of N_DATA_INDIVIDUAL ignored in @ref actionA03sendAckPduAgain
+extern uint16_t repeatedT_ACKcount; //!< number of repeated @ref T_ACK_PDU in @ref actionA03sendAckPduAgain
 
 /**
  * Implementation of the KNX transportation layer 4 Style 1 Rationalised
@@ -219,20 +212,6 @@ private:
     /**
      * Performs action A3 as described in the KNX Spec. 2.1 3/3/4 5.3 p.19
      * @param seqNo Sequence number the T_ACK should be send with
-     *
-     * @warning The Data Link Layer filters out repeated telegrams, provided that the repetition follows
-     *          directly after the original telegram. If another telegram sneaks in (e.g. due to higher
-     *          priority), we encounter such repeated telegrams in the Transport Layer.
-     *          <p>
-     *          Per KNX Spec 2.1, Chapter 3/3/4 Section 5.4.4.3 p.27, this is Event E05 and its corresponding Action A3.
-     *          The spec says to send another T_ACK for such a repeated telegram, but here's the catch:
-     *          If the client does not implement Style 3, such as calimero-core 2.5.1 at the time of this writing (2023/04/02),
-     *          it will see a duplicate T_ACK in state OPEN_IDLE (events E08/E09) and consequently close the
-     *          connection.
-     *          <p>
-     *          Prevent this by staying silent and intentionally disobeying the spec.
-     *          <p>
-     *          The T_ACK suppression is NOT KNX Spec. 2.1 conform
      */
     void actionA03sendAckPduAgain(const int8_t seqNo);
 
