@@ -241,7 +241,7 @@ public class Updater implements Runnable {
                 result.written(), flashTimeDuration, col, bytesPerSecond, ConColors.RESET);
 
         if (result.dropCount() > 0) {
-            infoMsg += String.format(" %Disconnects: %d%s", ConColors.BRIGHT_RED, result.dropCount(), ConColors.RESET);
+            infoMsg += String.format(" %sDisconnects: %d%s", ConColors.BRIGHT_RED, result.dropCount(), ConColors.RESET);
         } else {
             infoMsg += String.format(" %sDisconnect: %d%s", ConColors.BRIGHT_GREEN, result.dropCount(), ConColors.RESET);
         }
