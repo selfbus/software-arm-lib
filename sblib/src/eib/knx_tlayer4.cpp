@@ -816,6 +816,8 @@ void TLayer4::actionA09RepeatMessage()
         dumpTelegramBytes(true, sendTelegram, telegramSize(sendTelegram));
     );
 
+    // Checksum will be recalculated by Bus class.
+    setRepeated(sendTelegram, false);
     send(sendTelegram, telegramSize(sendTelegram)); ///\todo sendTelegram[0] is not "saved" and here always 0x00
     repCount++;
     sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
