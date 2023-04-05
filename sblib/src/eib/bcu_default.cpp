@@ -615,10 +615,6 @@ bool BcuDefault::processApciMasterResetPDU(unsigned char *telegram, const uint8_
     unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
     *magicWord = BOOTLOADER_MAGIC_WORD;
 
-    // send transport layer 4 ACK
-    sendConControlTelegram(T_ACK_PDU, connectedTo(), senderSeqNo);
-    while (!bus->idle())
-        ;
     // send APCI_MASTER_RESET_RESPONSE_PDU
     sendPreparedTelegram();
     while (!bus->idle())
