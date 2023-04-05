@@ -596,7 +596,7 @@ bool BcuDefault::processApciMasterResetPDU(unsigned char *telegram, const uint8_
         return (false);
     }
 
-    waitForSendBufferFree();
+    acquireSendBuffer();
     // create the APCI_MASTER_RESET_RESPONSE_PDU
     initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD);
     // sender address will be set by bus.sendTelegram()

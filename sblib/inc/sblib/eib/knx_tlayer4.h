@@ -103,7 +103,7 @@ public:
     /**
      * Wait for @ref sendTelegram to be free.
      */
-    void waitForSendBufferFree();
+    void acquireSendBuffer();
 
     /**
      * Sends the telegram that was prepared in @ref sendTelegram.
@@ -272,6 +272,11 @@ private:
 
     int8_t sequenceNumberReceived();
 
+    /**
+     * Set @ref sendTelegram free.
+     */
+    void releaseSendBuffer();
+
     byte sendCtrlTelegram[TL4_CTRL_TELEGRAM_SIZE];  //!< Short buffer for connection control telegrams.
 
     TLayer4::TL4State state = TLayer4::CLOSED;  //!< Current state of the TL4 state machine
@@ -315,7 +320,7 @@ inline uint16_t TLayer4::connectedTo()
     }
 }
 
-inline void TLayer4::waitForSendBufferFree()
+inline void TLayer4::acquireSendBuffer()
 {
     // Someone wants to write into the shared @ref sendTelegram buffer.
     // Wait until the current message in it is sent.
@@ -323,6 +328,12 @@ inline void TLayer4::waitForSendBufferFree()
 
     // Then allocate it for the caller.
     sendBufferInUse = true;
+}
+
+inline void TLayer4::releaseSendBuffer()
+{
+    sendBufferInUse = false;
+    telegramReadyToSend = false;
 }
 
 inline int8_t TLayer4::sequenceNumberReceived()

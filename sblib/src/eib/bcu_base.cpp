@@ -101,7 +101,7 @@ bool BcuBase::setProgrammingMode(bool newMode)
 
 void BcuBase::sendApciIndividualAddressReadResponse()
 {
-    waitForSendBufferFree();
+    acquireSendBuffer();
     initLpdu(sendTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD);
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
     setDestinationAddress(sendTelegram, 0x0000); // Zero target address, it's a broadcast

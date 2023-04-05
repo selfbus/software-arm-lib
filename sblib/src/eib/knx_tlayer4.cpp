@@ -246,9 +246,7 @@ void TLayer4::_begin()
             );
 #endif
     state = TLayer4::CLOSED;
-    // set sending buffer to free
-    sendBufferInUse = false;
-    telegramReadyToSend = false;
+    releaseSendBuffer();
     connectedAddr = 0;
     seqNoSend = -1;
     seqNoRcv = -1;
@@ -590,8 +588,7 @@ void TLayer4::finishedSendingTelegram(byte *telegram, bool successful)
         // For connection-oriented communication, keep it alive for potential repeats.
         if (state != TL4State::OPEN_WAIT)
         {
-            sendBufferInUse = false;
-            telegramReadyToSend = false;
+            releaseSendBuffer();
         }
     }
 
@@ -610,8 +607,7 @@ void TLayer4::finishedSendingTelegram(byte *telegram, bool successful)
             }
             else
             {
-                sendBufferInUse = false;
-                telegramReadyToSend = false;
+                releaseSendBuffer();
             }
         }
         else
@@ -748,7 +744,7 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
 
-    waitForSendBufferFree();
+    acquireSendBuffer();
     bool sendResponse = false;
     processApci(apciCmd, connectedAddr, seqNo, &sendResponse, telegram, telLength);
     if (sendResponse)
@@ -758,7 +754,7 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     }
     else
     {
-        sendBufferInUse = false;
+        releaseSendBuffer();
     }
     return sendResponse;
 }
@@ -849,8 +845,7 @@ void TLayer4::actionA08IncrementSequenceNumber()
     seqNoSend++;
     seqNoSend &= 0x0F;
     connectedTime = systemTime; // "restart the connection timeout timer"
-    sendBufferInUse = false;
-    telegramReadyToSend = false;
+    releaseSendBuffer();
 }
 
 void TLayer4::actionA09RepeatMessage()
@@ -933,8 +928,7 @@ void TLayer4::resetConnection()
 
     if (state == TL4State::OPEN_WAIT)
     {
-        sendBufferInUse = false;
-        telegramReadyToSend = false;
+        releaseSendBuffer();
     }
 }
 
