@@ -178,7 +178,6 @@ void Bus::begin()
 	tx_error = TX_OK;
 	bus_tx_state = TX_OK;
 	sendCurTelegram = nullptr;
-	sendNextTel = nullptr;
 	prepareForSending();
 	state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
 	//initialize bus-timer( e.g. defined as 16bit timer1)
@@ -266,19 +265,11 @@ void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
  */
 void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 {
-
 	prepareTelegram(telegram, length);
-
-	// Wait until there is space in the sending queue
-	while (sendNextTel);
 
 	if (!sendCurTelegram)
     {
 	    sendCurTelegram = telegram;
-    }
-	else if (!sendNextTel)
-    {
-        sendNextTel = telegram;
     }
 	else
     {
@@ -559,10 +550,10 @@ void Bus::sendNextTelegram()
 
     if (sendCurTelegram)
     {
-        bcu->finishedSendingTelegram(sendCurTelegram, !(tx_error & TX_RETRY_ERROR));
+        auto sentTelegram = sendCurTelegram;
+        sendCurTelegram = nullptr;
+        bcu->finishedSendingTelegram(sentTelegram, !(tx_error & TX_RETRY_ERROR));
     }
-    sendCurTelegram = sendNextTel;
-    sendNextTel = nullptr;
 
     prepareForSending();
 }
