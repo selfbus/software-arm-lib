@@ -476,14 +476,11 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
     return (lengthPayLoad == 0);
 }
 
-unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char *telegram, uint8_t telLength)
+bool BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, unsigned char *telegram, uint8_t telLength)
 {
     uint8_t count;
     uint16_t address;
     uint8_t index;
-
-    unsigned char sendAckTpu = 0;
-    *sendResponse = false;
 
     switch (apciCmd)
     {
@@ -497,8 +494,7 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
         sendTelegram[8] = count;     // read count
         sendTelegram[9] = 0;         // ADC value high byte
         sendTelegram[10] = 0;        // ADC value low byte
-        *sendResponse = true;
-        break;
+        return (true);
 
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
@@ -516,7 +512,6 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
                     apciCmd = APCI_MEMORY_READ_PDU;
                 }
             }
-            sendAckTpu = T_ACK_PDU;
         }
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
@@ -532,20 +527,12 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
             setApciCommand(sendTelegram, APCI_MEMORY_RESPONSE_PDU, count);
             sendTelegram[8] = HIGH_BYTE(address);
             sendTelegram[9] = lowByte(address);
-            *sendResponse = true;
+            return (true);
         }
         break;
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
-        if (processDeviceDescriptorReadTelegram(telegram[7] & 0x3f))
-        {
-            *sendResponse = true;
-        }
-        else
-        {
-            sendAckTpu = T_NACK_PDU;
-        }
-        break;
+        return (processDeviceDescriptorReadTelegram(telegram[7] & 0x3f));
 
     case APCI_BASIC_RESTART_PDU:
         softSystemReset();
@@ -557,21 +544,18 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
             softSystemReset(); // perform a basic restart;
         }
         // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
-        *sendResponse = true;
         break;
 
     case APCI_AUTHORIZE_REQUEST_PDU:
         sendTelegram[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
         setApciCommand(sendTelegram, APCI_AUTHORIZE_RESPONSE_PDU, 0);
         sendTelegram[8] = 0x00;
-        *sendResponse = true;
-        break;
+        return (true);
 
     default:
-        sendAckTpu = T_NACK_PDU;
         break;
     }
-    return (sendAckTpu);
+    return (false);
 }
 
 bool BcuDefault::processDeviceDescriptorReadTelegram(int id)

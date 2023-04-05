@@ -107,13 +107,11 @@ BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* com
 		properties(properties)
 {}
 
-unsigned char BCU2::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char *telegram, uint8_t telLength)
+bool BCU2::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, unsigned char *telegram, uint8_t telLength)
 {
     uint8_t count;
     uint16_t address;
     uint8_t index;
-    unsigned char sendAckTpu = 0;
-    *sendResponse = false;
     bool found;
     uint8_t id;
 
@@ -139,8 +137,7 @@ unsigned char BCU2::processApci(ApciCommand apciCmd, const uint16_t senderAddr, 
         else
             found = properties->propertyValueWriteTelegram(index, (PropertyID) id, count, address);
         if (!found) sendTelegram[10] = 0;
-        *sendResponse = true;
-        break;
+        return (true);
 
     case APCI_PROPERTY_DESCRIPTION_READ_PDU:
         index = telegram[8];
@@ -152,14 +149,11 @@ unsigned char BCU2::processApci(ApciCommand apciCmd, const uint16_t senderAddr, 
         sendTelegram[9] = id;
         sendTelegram[10] = (uint8_t)address;
         properties->propertyDescReadTelegram(index, (PropertyID) id, address);
-        *sendResponse = true;
-        break;
+        return (true);
 
     default:
-        sendAckTpu = BcuDefault::processApci(apciCmd, senderAddr, senderSeqNo, sendResponse, telegram, telLength);
-        break;
+        return BcuDefault::processApci(apciCmd, senderAddr, senderSeqNo, telegram, telLength);
     }
-    return (sendAckTpu);
 }
 
 word BCU2::getCommObjectTableAddressStatic() const

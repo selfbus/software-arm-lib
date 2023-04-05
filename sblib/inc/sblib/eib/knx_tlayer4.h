@@ -152,8 +152,8 @@ protected:
      */
     void sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo);
 
-    virtual unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
-                                      bool * sendResponse, unsigned char * telegram, uint8_t telLength);
+    virtual bool processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
+                                      unsigned char * telegram, uint8_t telLength);
 
     bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
     int8_t sequenceNumberSend();
@@ -225,7 +225,7 @@ private:
 
     void actionA00Nothing();
     void actionA01Connect(uint16_t address);
-    bool actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
+    void actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
 
     /**
      * Performs action A3 as described in the KNX Spec. 2.1 3/3/4 5.3 p.19

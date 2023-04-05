@@ -133,8 +133,8 @@ public:
      */
     bool processApciMasterResetPDU(unsigned char *telegram, const uint8_t senderSeqNo, uint8_t eraseCode, uint8_t channelNumber);
 
-     virtual unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
-                                       bool * sendResponse, unsigned char * telegram, uint8_t telLength);
+    virtual bool processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
+                                       unsigned char * telegram, uint8_t telLength);
 
     /**
       * @brief Performs a system reset by calling @ref NVIC_SystemReset

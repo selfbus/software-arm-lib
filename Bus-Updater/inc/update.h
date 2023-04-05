@@ -33,9 +33,9 @@
  *
  * @param data      data buffer received from KNX bus
  * @param size      size of data buffer
- * @return          always T_ACK_PDU, the real return values are encapsulated in bcu.sendTelegram[9..]
+ * @return          whether to return a telegram, the real return values are encapsulated in bcu.sendTelegram[9..]
  */
-unsigned char handleApciUsermsgManufacturer(uint8_t * data, uint32_t size);
+bool handleApciUsermsgManufacturer(uint8_t * data, uint32_t size);
 
 /**
  * @brief Resets the UPD/UDP protocol ramBuffer and global variables to default
@@ -45,9 +45,9 @@ void resetUPDProtocol(void);
 /**
  * Handles deprecated KNX memory requests by sending the old @ref UPD_SEND_LAST_ERROR with old value of @ref UDP_NOT_IMPLEMENTED
  *
- * @return always T_ACK_PDU
+ * @return always true
  */
-unsigned char handleDeprecatedApciMemoryWrite();
+bool handleDeprecatedApciMemoryWrite();
 
 
 #endif /* UPDATE_H_ */

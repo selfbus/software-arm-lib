@@ -319,6 +319,7 @@ void TLayer4::processConControlTelegram(const uint16_t& senderAddr, const TPDU& 
 
         default:
             result = processConControlAcknowledgmentPDU(senderAddr, tpci, telegram, telLength);
+            break;
     }
 
     if (!result)
@@ -356,7 +357,6 @@ bool TLayer4::processConControlConnectPDU(uint16_t senderAddr)
         case TLayer4::CLOSED:
             actionA01Connect(senderAddr);
             return (true);
-            break;
 
         case TLayer4::OPEN_IDLE:
         case TLayer4::OPEN_WAIT:
@@ -374,6 +374,7 @@ bool TLayer4::processConControlConnectPDU(uint16_t senderAddr)
 
         default:
             dump2(serial.print("ERROR processConControlConnectPDU should never land here"));
+            break;
     }
     return (false);
 }
@@ -688,12 +689,12 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     {
         ///\todo BUG event E04 needs more checks
         // event E04 and state != TLayer4::CLOSED
-        telegramReadyToSend = actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
+        actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
         /*
         // this either does not work, it's even worse
         if (state == TLayer4::OPEN_IDLE)
         {
-            telegramReadyToSend = actionA02sendAckPduAndProcessApci(apci, seqNo, telegram, telLength);
+            actionA02sendAckPduAndProcessApci(apci, seqNo, telegram, telLength);
         }
         else
         {
@@ -729,14 +730,13 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     dumpTelegramBytes(false, telegram, telLength);
 }
 
-unsigned char TLayer4::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool * sendResponse, unsigned char * telegram, uint8_t telLength)
+bool TLayer4::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, unsigned char * telegram, uint8_t telLength)
 {
     dump2(
           serial.print("TLayer4::processApci");
           serial.print(LOG_SEP);
     );
-    *sendResponse = false;
-    return (0); // we return nothing
+    return (false); // we return nothing
 }
 
 void TLayer4::actionA00Nothing()
@@ -759,7 +759,7 @@ void TLayer4::actionA01Connect(uint16_t address)
     dump2(lastTick = connectedTime;); // for debug logging
 }
 
-bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength)
+void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength)
 {
     dump2(serial.print("actionA02 "));
     dumpTelegramBytes(false,telegram, telLength);
@@ -769,18 +769,17 @@ bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     connectedTime = systemTime; // "restart the connection timeout timer"
 
     acquireSendBuffer();
-    bool sendResponse = false;
-    processApci(apciCmd, connectedAddr, seqNo, &sendResponse, telegram, telLength);
+    auto sendResponse = processApci(apciCmd, connectedAddr, seqNo, telegram, telLength);
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2
         initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        telegramReadyToSend = true;
     }
     else
     {
         releaseSendBuffer();
     }
-    return sendResponse;
 }
 
 void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
