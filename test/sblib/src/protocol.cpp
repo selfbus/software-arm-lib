@@ -202,14 +202,13 @@ static void _handleTx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, un
 
     _handleBusSendingInterrupt(currentBcu);
 
-    REQUIRE(currentBcu->bus->sendNextTel == nullptr);
+    REQUIRE(currentBcu->bus->sendCurTelegram == nullptr);
 }
 
 static void _handleCheckTx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int tn)
 {
     unsigned int s = 0;
-    if (currentBcu->bus->sendCurTelegram) s++;
-    if (currentBcu->bus->sendNextTel) s++;
+    if (currentBcu->bus->sendCurTelegram != nullptr) s++;
     INFO("Check if additional telegrams should be sent");
     REQUIRE(s == tel->variable);
 }
@@ -217,8 +216,7 @@ static void _handleCheckTx(BcuDefault* currentBcu, Test_Case * tc, Telegram * te
 static void _handleTime(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
 	unsigned int s = 0;
-    if (currentBcu->bus->sendCurTelegram) s++;
-    if (currentBcu->bus->sendNextTel) s++;
+    if (currentBcu->bus->sendCurTelegram != nullptr) s++;
     //INFO("Ensure that no outgoing telegram is in the queue");
     if (s)
     {
