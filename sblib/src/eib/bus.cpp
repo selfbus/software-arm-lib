@@ -586,8 +586,11 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
     digitalWrite(PIO_FOR_TEL_END_IND, 0);           // rest PIO
 #endif
 
-	// debug processing takes about 7-8us
-	tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
+	// debug processing takes about 7-8us; only trace interrupt invocation if it was not the IDLE timer
+	if ((state != Bus::IDLE) || !(timer.flag(timeChannel)))
+	{
+		tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
+	}
 
 	STATE_SWITCH:
 	switch (state)
@@ -614,9 +617,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		// Sending is triggered in idle state by a call to prepareForSending() and state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
 
 	case Bus::IDLE:
-		tb_d( state+100, ttimer.value(), tb_in);
-        DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
-
         if (!timer.flag(captureChannel)) // Not a bus-in signal
         {
             if (!sendCurTelegram) // check telegram in send queue
@@ -627,6 +627,9 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
             state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
             goto STATE_SWITCH;
         }
+
+		tb_d( state+100, ttimer.value(), tb_in);
+        DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
 
 		// RX process functions
 		//initialize the RX process for a new telegram reception.
