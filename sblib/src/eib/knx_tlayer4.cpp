@@ -709,13 +709,15 @@ void TLayer4::actionA01Connect(uint16_t address)
 bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength)
 {
     dump2(serial.print("actionA02 "));
-    bool sendResponse = false;
-    processApci(apciCmd, connectedAddr, seqNo, &sendResponse, telegram, telLength);
     dumpTelegramBytes(false,telegram, telLength);
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     seqNoRcv++;                 // increment sequence counter
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
+
+    waitForSendBufferFree();
+    bool sendResponse = false;
+    processApci(apciCmd, connectedAddr, seqNo, &sendResponse, telegram, telLength);
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2
