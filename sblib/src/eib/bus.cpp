@@ -586,11 +586,14 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
     digitalWrite(PIO_FOR_TEL_END_IND, 0);           // rest PIO
 #endif
 
-	// debug processing takes about 7-8us; only trace interrupt invocation if it was not the IDLE timer
-	if ((state != Bus::IDLE) || !(timer.flag(timeChannel)))
-	{
-		tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
-	}
+
+    DB_BUS(
+        // debug processing takes about 7-8us; only trace interrupt invocation if it was not the IDLE timer
+        if ((state != Bus::IDLE) || !(timer.flag(timeChannel)))
+        {
+            tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
+        }
+    );
 
 	STATE_SWITCH:
 	switch (state)
