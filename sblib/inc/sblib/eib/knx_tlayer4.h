@@ -102,8 +102,10 @@ public:
 
     /**
      * Wait for @ref sendTelegram to be free.
+     *
+     * @return Whether the buffer could be acquired or not
      */
-    void acquireSendBuffer();
+    bool acquireSendBuffer();
 
     /**
      * Sends the telegram that was prepared in @ref sendTelegram.
@@ -318,16 +320,6 @@ inline uint16_t TLayer4::connectedTo()
     {
         return (0);
     }
-}
-
-inline void TLayer4::acquireSendBuffer()
-{
-    // Someone wants to write into the shared @ref sendTelegram buffer.
-    // Wait until the current message in it is sent.
-    while (sendBufferInUse);
-
-    // Then allocate it for the caller.
-    sendBufferInUse = true;
 }
 
 inline void TLayer4::releaseSendBuffer()

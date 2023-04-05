@@ -580,11 +580,35 @@ void TLayer4::sendPreparedTelegram()
     send(sendTelegram, telegramSize(sendTelegram));
 }
 
+bool TLayer4::acquireSendBuffer()
+{
+    if (sendBufferInUse)
+    {
+        // No way to acquire the send buffer while we're waiting for successful transmission in a
+        // connection-oriented communication. User has to abort. Per KNX spec v2.1 3/3/4 section 3.1:
+        // "The user of Transport Layer shall not request a service primitive before the preceding
+        // request is confirmed by Transport Layer, i.e. no parallel services are allowed."
+        if (state == TL4State::OPEN_WAIT)
+        {
+            return false;
+        }
+
+        // Someone wants to write into the shared @ref sendTelegram buffer, and it's in use
+        // for connection-less communication. Wait until the current message in it is sent.
+        while (sendBufferInUse);
+
+        // Then allocate it for the caller.
+        sendBufferInUse = true;
+    }
+
+    return true;
+}
+
 void TLayer4::finishedSendingTelegram(byte *telegram, bool successful)
 {
     if (telegram == sendTelegram)
     {
-        // For non-connection-oriented communication, the buffer is freed after sending the telegram.
+        // For connection-less communication, the buffer is freed after sending the telegram.
         // For connection-oriented communication, keep it alive for potential repeats.
         if (state != TL4State::OPEN_WAIT)
         {
