@@ -52,15 +52,15 @@ static Telegram testCaseTelegrams_03[] =
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, 0, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. APCI_DEVICEDESCRIPTOR_READ_PDU from sourceAddr=10.0.1 to destAddr=10.0.0 (MaskVersionRead())
-    {TEL_RX,  8, 0, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
+    {TEL_RX,  8, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
     // 3. Check T_ACK 10.0.0->10.0.1, loop() once so DeviceDescriptorResponse will be send and state set to OPEN_WAIT
-    {TEL_TX,  7, 1, 0xA001, connectedOpenIdleOrWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
+    {TEL_TX,  7, 1, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
     // 4. remove DeviceDescriptorResponse, not in Spec. but we need it to clear sendTelegram
-    {TEL_TX,  10, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
+    // {TEL_TX,  10, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
     // 5. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
-    // 6. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
-    {TEL_TX,  7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
+    // 6. Check for empty TX-Response and OPEN_WAIT
+    {CHECK_TX_BUFFER,  0, 0, 0, connectedOpenWait, {}},
     {END}
 };
 
