@@ -284,6 +284,7 @@ private:
     uint32_t sentTelegramTime = 0;              //!< System time of the last sent telegram
 
     volatile uint16_t ownAddr;                  //!< Our own physical address on the bus
+    volatile bool sendBufferInUse = false;      //!< Is the @ref sendTelegram buffer currently used by anyone
 };
 
 inline bool TLayer4::directConnection()
@@ -316,7 +317,12 @@ inline uint16_t TLayer4::connectedTo()
 
 inline void TLayer4::waitForSendBufferFree()
 {
-    while (sendTelegram[0]);
+    // Someone wants to write into the shared @ref sendTelegram buffer.
+    // Wait until the current message in it is sent.
+    while (sendBufferInUse);
+
+    // Then allocate it for the caller.
+    sendBufferInUse = true;
 }
 
 inline int8_t TLayer4::sequenceNumberReceived()
