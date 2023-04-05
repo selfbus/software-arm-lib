@@ -247,6 +247,7 @@ void TLayer4::_begin()
 #endif
     state = TLayer4::CLOSED;
     releaseSendBuffer();
+    sendTelegramActionA07 = false;
     connectedAddr = 0;
     seqNoSend = -1;
     seqNoRcv = -1;
@@ -629,7 +630,9 @@ void TLayer4::finishedSendingTelegram(byte *telegram, bool successful)
             // with an outdated telegram, so throw it away instead.
             if (successful)
             {
-                actionA07SendDirectTelegram();
+                // This code runs in the Bus timer ISR, so it must not run the code synchronously as that e.g.
+                // deadlocks debug output. Run it asynchronously instead.
+                sendTelegramActionA07 = true;
             }
             else
             {
@@ -909,6 +912,14 @@ void TLayer4::loop()
         dump2(serial.println("direct connection timed out => disconnecting"));
     }
 
+    // Send a potential response message
+    if ((state == TLayer4::OPEN_IDLE) && (sendTelegramActionA07))
+    {
+        // event E15
+        sendTelegramActionA07 = false;
+        actionA07SendDirectTelegram();
+    }
+
     // Repeat the message after TL4_T_ACK_TIMEOUT_MS milliseconds
     if ((state == TLayer4::OPEN_WAIT) && (elapsed(sentTelegramTime) >= TL4_T_ACK_TIMEOUT_MS))
     {
@@ -932,15 +943,6 @@ void TLayer4::loop()
             actionA06DisconnectAndClose();
         }
     }
-
-/* This is now done in actionA02sendAckPduAndProcessApci
-    if ((state == TLayer4::OPEN_IDLE) && (telegramReadyToSend) && (bus.idle())) ///\todo this is according to spec
-    // if (telegramReadyToSend && bus.idle()) // but this worked better
-    {
-        // event E15
-        actionA07SendDirectTelegram(); // this is event E15 to send our response
-    }
-*/
 }
 
 void TLayer4::resetConnection()

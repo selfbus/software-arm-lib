@@ -285,7 +285,8 @@ private:
     uint16_t connectedAddr = 0;                 //!< Remote address of the connected partner
     int8_t seqNoSend = -1;                      //!< Sequence number for the next telegram we send
     int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
-    bool telegramReadyToSend = false;           //!< True if a response is ready to be sent after our @ref T_ACK is confirmed
+    bool telegramReadyToSend = false;           //!< True if a telegram is ready to be sent
+    bool sendTelegramActionA07 = false;         //!< True if a response can be sent after our @ref T_ACK is confirmed
     int8_t repCount = 0;                        //!< Telegram repetition count
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
     uint32_t sentTelegramTime = 0;              //!< System time of the last sent telegram
