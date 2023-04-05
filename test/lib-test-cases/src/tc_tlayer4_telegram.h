@@ -26,7 +26,7 @@
 
 static Telegram testCaseTelegrams_01[] =
 {
-    // KNX Spec. 8/3/4 2.2.1.1 p.12
+    // KNX Spec. 8/3/4 2.2.1.1 p.12 (all styles)
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 1, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. Check for empty TX-Response
@@ -36,21 +36,19 @@ static Telegram testCaseTelegrams_01[] =
 
 static Telegram testCaseTelegrams_02[] =
 {
-    // KNX Spec. 8/3/4 2.2.1.2 p.13
+    // KNX Spec. 8/3/4 2.2.1.2 p.13 (style 3, remain in OPEN_IDLE)
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, 0xA001, connect,               {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. a second T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0, while already connected
-    {TEL_RX,  7, 0, 0x0000, connectWhileConnectedClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
-    // 3. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
-    {TEL_TX,  7, 0, 0, NULL,                       {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
-    // 4. Check for empty TX-Response
+    {TEL_RX,  7, 0, 0x0000, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
 };
 
 static Telegram testCaseTelegrams_03[] =
 {
-    // KNX Spec. 8/3/4 2.2.1.3 p.14
+    // KNX Spec. 8/3/4 2.2.1.3 p.14 (style 3, remain in OPEN_WAIT)
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, 0, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. APCI_DEVICEDESCRIPTOR_READ_PDU from sourceAddr=10.0.1 to destAddr=10.0.0 (MaskVersionRead())
@@ -60,7 +58,7 @@ static Telegram testCaseTelegrams_03[] =
     // 4. remove DeviceDescriptorResponse, not in Spec. but we need it to clear sendTelegram
     {TEL_TX,  10, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
     // 5. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
-    {TEL_RX,  7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    {TEL_RX,  7, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 6. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
     {TEL_TX,  7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
     {END}

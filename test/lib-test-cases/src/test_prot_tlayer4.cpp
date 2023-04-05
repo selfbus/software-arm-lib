@@ -177,7 +177,7 @@ static Test_Case testCaseTelegramSequence_02 =
 
 static Test_Case testCaseTelegramSequence_03 =
 {
-    "TelSeq 3 Connect from remote device with initial state OPEN_WAIT (style 1)",
+    "TelSeq 3 Connect from remote device with initial state OPEN_WAIT (style 3)",
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
