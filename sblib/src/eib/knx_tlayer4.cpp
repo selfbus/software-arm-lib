@@ -265,7 +265,7 @@ void TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
     discardReceivedTelegram();
 }
 
-bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength)
+void TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength)
 {
     uint16_t destAddr = destinationAddress(telegram);
     ApciCommand apciCmd = apciCommand(telegram);
@@ -273,17 +273,19 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength
     if (destAddr == 0)
     {
         // a broadcast telegram
-        return (processBroadCastTelegram(apciCmd, telegram, telLength));
+        processBroadCastTelegram(apciCmd, telegram, telLength);
+        return;
     }
     else if ((telegram[5] & T_GROUP_ADDRESS_FLAG_Msk)) ///\todo function for this in knx_tpdu.h
     {
         // a group address telegram
-        return (processGroupAddressTelegram(apciCmd, destAddr, telegram, telLength));
+        processGroupAddressTelegram(apciCmd, destAddr, telegram, telLength);
+        return;
     }
     else if (destAddr != ownAddress())
     {
         // not for us
-        return (true);
+        return;
     }
 
     ///\todo function to get tpciCommand in knx_tpdu.h
@@ -301,7 +303,6 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength
     {
         processDirectTelegram(apciCmd, telegram, telLength);
     }
-    return (true);
 }
 
 void TLayer4::processConControlTelegram(const uint16_t& senderAddr, const TPDU& tpci, unsigned char *telegram, const uint8_t& telLength)

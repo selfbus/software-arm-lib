@@ -166,7 +166,7 @@ private:
     /**
      * Internal processing of the received telegram from bus.telegram. Called by processTelegram
      */
-    bool processTelegramInternal(unsigned char *telegram, uint8_t telLength);
+    void processTelegramInternal(unsigned char *telegram, uint8_t telLength);
 
     /** Sets a new state @ref TL4State for the transport layer state machine
      *
