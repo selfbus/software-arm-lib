@@ -691,24 +691,8 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
 
     if (seqNo == seqNoRcv)
     {
-        ///\todo BUG event E04 needs more checks
         // event E04 and state != TLayer4::CLOSED
         actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
-        /*
-        // this either does not work, it's even worse
-        if (state == TLayer4::OPEN_IDLE)
-        {
-            actionA02sendAckPduAndProcessApci(apci, seqNo, telegram, telLength);
-        }
-        else
-        {
-            // according to KNX Spec 2.1, we should execute action A02
-            // but that can lead to a infinite loop, instead we execute A06 to disconnect the connection
-            dump2(serial.print("EVENT 4 DirectTelegram while waiting for T_ACK ");); ///\todo CHECK THIS
-            actionA06DisconnectAndClose();
-            dumpTelegramBytes(false, telegram, telLength);
-        }
-        */
         return;
     }
 
