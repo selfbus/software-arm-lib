@@ -1095,7 +1095,14 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		//tb_h( SEND_WAIT_FOR_HIGH_BIT_END+200, timer.captureMode(captureChannel),  tb_in);
 		//tb_h( state+100, sendAck, tb_in);
 
-		if (timer.flag(captureChannel)){
+		if (timer.flag(captureChannel))
+		{
+			// If it was just a very short spike, ignore it and continue transmitting.
+			if (digitalRead(rxPin))
+			{
+				break;
+			}
+
 			if (( timer.capture(captureChannel) < timer.match(pwmChannel) - BIT_WAIT_TIME +30 ) &&  // add bit margin: early 7us, late 30us
 					(timer.capture(captureChannel) > BIT_WAIT_TIME - 7))  // subtract 7 margin for early bit
 			{
