@@ -360,13 +360,14 @@ private:
 #define RX_STARTBIT_ERROR 1             //!< we detected high level few us after cap. event of start bit
 #define RX_STOPBIT_ERROR 2              //!< we received a cap event during stop bit
 #define RX_TIMING_ERROR 4               //!< received edge of bits is not in the timing window n*104-7 - n*104+33
-#define RX_TIMING_ERROR_SPIKE 8         //!< received edge of bit but low pulse is to short
-#define RX_PARITY_ERROR 16              //!< parity not valid
-#define RX_CHECKSUM_ERROR 32            //!< checksum not valid
-#define RX_LENGHT_ERROR 64              //!< received number of byte does not match length value of telegram
-#define RX_BUFFER_BUSY 128              //!< rx buffer still busy by higher layer process while a new telegram was received
-#define RX_INVALID_TELEGRAM_ERROR 256   //!< we received something but not a valid tel frame: to short,  to long, spike
-#define RX_PREAMBLE_ERROR 512		    //!< first char we received has invalid value in bit 0 and bit 1
+#define RX_TIMING_ERROR_SPIKE_IGNORED 8 //!< received edge of bit but low pulse is to short
+#define RX_TIMING_ERROR_SPIKE 16        //!< received edge of bit with incorrect timing
+#define RX_PARITY_ERROR 32              //!< parity not valid
+#define RX_CHECKSUM_ERROR 64            //!< checksum not valid
+#define RX_LENGHT_ERROR 128              //!< received number of byte does not match length value of telegram
+#define RX_BUFFER_BUSY 256              //!< rx buffer still busy by higher layer process while a new telegram was received
+#define RX_INVALID_TELEGRAM_ERROR 512   //!< we received something but not a valid tel frame: to short,  to long, spike
+#define RX_PREAMBLE_ERROR 1024		    //!< first char we received has invalid value in bit 0 and bit 1
 
 #define TX_OK 0                     //!< No error
 #define TX_STARTBIT_BUSY_ERROR 1	//!< bus is busy few us before we intended to send a start bit

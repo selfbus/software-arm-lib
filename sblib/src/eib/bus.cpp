@@ -726,7 +726,12 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		{
 			time = timer.capture(captureChannel); // we received an capt. event: new low bit
 			// read the bit again (about few us after cap event) if it is not at low level we received a spike - set error flag and continue
-			if (digitalRead(rxPin)) rx_error |= RX_TIMING_ERROR_SPIKE; // we set error flag and continue rx process
+			if (digitalRead(rxPin))
+			{
+				// we set error flag and continue rx process
+				rx_error |= RX_TIMING_ERROR_SPIKE_IGNORED;
+				break;
+			}
 		}
 
 		// find the bit position after last low bit and add high bits accordingly, window for the reception of falling edge of a bit is:
