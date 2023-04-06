@@ -762,6 +762,8 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     {
         ///\todo normally this has to be done in Layer 2
         initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        setDestinationAddress(sendTelegram, connectedAddr);
+        setSequenceNumber(sendTelegram, seqNoSend);
         telegramReadyToSend = true;
     }
     else
