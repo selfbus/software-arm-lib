@@ -354,11 +354,7 @@ int ComObjects::firstObjectAddr(int objno)
 
 void ComObjects::sendGroupReadTelegram(int objno, int addr)
 {
-    // If the buffer is in use for connection-oriented communication, there's no choice but to abort this operation.
-    if (!bcu->acquireSendBuffer())
-    {
-        return;
-    }
+    bcu->acquireSendBuffer();
     ///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
     // check of spec 3.7.4. : no additional search for associations to Grp Addr for local read and possible response
     initLpdu(bcu->sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
@@ -377,11 +373,7 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
     byte addData = 0;
     ApciCommand cmd;
 
-    // If the buffer is in use for connection-oriented communication, there's no choice but to abort this operation.
-    if (!bcu->acquireSendBuffer())
-    {
-        return;
-    }
+    bcu->acquireSendBuffer();
 	///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
 	initLpdu(bcu->sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
 	setDestinationAddress(bcu->sendTelegram, addr);

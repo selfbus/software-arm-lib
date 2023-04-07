@@ -252,8 +252,8 @@ static bool getProgButtonState()
  */
 static void setLastError(UDP_State errorToSet)
 {
-    prepareReturnTelegram(bcu.sendTelegram, 1, UPD_SEND_LAST_ERROR);
-    bcu.sendTelegram[9] = errorToSet;
+    prepareReturnTelegram(bcu.sendConnectedTelegram, 1, UPD_SEND_LAST_ERROR);
+    bcu.sendConnectedTelegram[9] = errorToSet;
 }
 
 void resetUPDProtocol(void)
@@ -336,8 +336,8 @@ static bool updAppVersionRequest()
 {
     char* appversion;
     appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - BOOT_BLOCK_DESC_SIZE));
-    prepareReturnTelegram(bcu.sendTelegram, BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
-    memcpy(bcu.sendTelegram + 9, appversion, BL_ID_STRING_LENGTH - 1);
+    prepareReturnTelegram(bcu.sendConnectedTelegram, BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
+    memcpy(bcu.sendConnectedTelegram + 9, appversion, BL_ID_STRING_LENGTH - 1);
     d3(
         if (appversion != bl_id_string)
         {
@@ -519,9 +519,9 @@ static bool updRequestBootloaderIdentity(uint8_t * data)
     if (!versionMatch)
     {
         // version mismatch send the minimum requested major and minor version
-        prepareReturnTelegram(bcu.sendTelegram, sizeof(UPDATER_MIN_MAJOR_VERSION) + sizeof(UPDATER_MIN_MINOR_VERSION), UPD_RESPONSE_BL_VERSION_MISMATCH);
-        bcu.sendTelegram[offset] = UPDATER_MIN_MAJOR_VERSION;
-        bcu.sendTelegram[offset + sizeof(UPDATER_MIN_MAJOR_VERSION)] = UPDATER_MIN_MINOR_VERSION;
+        prepareReturnTelegram(bcu.sendConnectedTelegram, sizeof(UPDATER_MIN_MAJOR_VERSION) + sizeof(UPDATER_MIN_MINOR_VERSION), UPD_RESPONSE_BL_VERSION_MISMATCH);
+        bcu.sendConnectedTelegram[offset] = UPDATER_MIN_MAJOR_VERSION;
+        bcu.sendConnectedTelegram[offset + sizeof(UPDATER_MIN_MAJOR_VERSION)] = UPDATER_MIN_MINOR_VERSION;
         d3(serial.print("Updater version mismatch! Required ", UPDATER_MIN_MAJOR_VERSION));
         d3(serial.print(".", UPDATER_MIN_MINOR_VERSION));
         d3(serial.print(" received: ", majorVersionUpdater));
@@ -536,14 +536,14 @@ static bool updRequestBootloaderIdentity(uint8_t * data)
                               sizeof(bootloaderFeatures) +
                               sizeof(appFirstAddress);
 
-    prepareReturnTelegram(bcu.sendTelegram, dataSize, UPD_RESPONSE_BL_IDENTITY);
-    bcu.sendTelegram[offset] = BOOTLOADER_MAJOR_VERSION;
+    prepareReturnTelegram(bcu.sendConnectedTelegram, dataSize, UPD_RESPONSE_BL_IDENTITY);
+    bcu.sendConnectedTelegram[offset] = BOOTLOADER_MAJOR_VERSION;
     offset += sizeof(BOOTLOADER_MAJOR_VERSION);
-    bcu.sendTelegram[offset] = BOOTLOADER_MINOR_VERSION;
+    bcu.sendConnectedTelegram[offset] = BOOTLOADER_MINOR_VERSION;
     offset += sizeof(BOOTLOADER_MINOR_VERSION);
-    uInt32ToStream(bcu.sendTelegram + offset, bootloaderFeatures);
+    uInt32ToStream(bcu.sendConnectedTelegram + offset, bootloaderFeatures);
     offset += sizeof(bootloaderFeatures);
-    ptrToStream(bcu.sendTelegram + offset, appFirstAddress);
+    ptrToStream(bcu.sendConnectedTelegram + offset, appFirstAddress);
     d3(serial.print("BL v", BOOTLOADER_MAJOR_VERSION, DEC));
     d3(serial.print(".", BOOTLOADER_MINOR_VERSION, DEC, 2));
     d3(serial.print("    BL feature 0x", (unsigned int)bootloaderFeatures, HEX, 8));
@@ -560,9 +560,9 @@ static bool updRequestStatistic()
 {
     uint32_t sizeTotal = sizeof(disconnectCount) + sizeof(repeatedT_ACKcount);
 
-    prepareReturnTelegram(bcu.sendTelegram, sizeTotal, UPD_RESPONSE_STATISTIC);
-    uShort16ToStream(bcu.sendTelegram + 9, disconnectCount);
-    uShort16ToStream(bcu.sendTelegram + 9 + sizeof(disconnectCount), repeatedT_ACKcount);
+    prepareReturnTelegram(bcu.sendConnectedTelegram, sizeTotal, UPD_RESPONSE_STATISTIC);
+    uShort16ToStream(bcu.sendConnectedTelegram + 9, disconnectCount);
+    uShort16ToStream(bcu.sendConnectedTelegram + 9 + sizeof(disconnectCount), repeatedT_ACKcount);
     d3(serial.print(" #DC ", disconnectCount));
     d3(serial.print(" #repT_ACK ", repeatedT_ACKcount));
     return (true);
@@ -593,8 +593,8 @@ static bool udpRequestBootDescriptionBlock()
         bootDescr->crc = -1;
     }
 
-    prepareReturnTelegram(bcu.sendTelegram, 12, UPD_RESPONSE_BOOT_DESC);
-    memcpy(bcu.sendTelegram + 9, bootDescr, 12); // startAddress, endAddress, crc
+    prepareReturnTelegram(bcu.sendConnectedTelegram, 12, UPD_RESPONSE_BOOT_DESC);
+    memcpy(bcu.sendConnectedTelegram + 9, bootDescr, 12); // startAddress, endAddress, crc
 
     d3(serial.print("FW start@ 0x", bootDescr->startAddress));   // Firmware start address
     d3(serial.print(" end@ 0x", bootDescr->endAddress));        // Firmware end address
@@ -614,11 +614,11 @@ static bool udpRequestBootDescriptionBlock()
 static bool updRequestData()
 {
      /*
-     memcpy(bcu.sendTelegram + 9, address, count);
-     bcu.sendTelegram[5] = 0x63 + count;
-     bcu.sendTelegram[6] = 0x42;
-     bcu.sendTelegram[7] = 0x40 | count;
-     bcu.sendTelegram[8] = UPD_SEND_DATA;
+     memcpy(bcu.sendConnectedTelegram + 9, address, count);
+     bcu.sendConnectedTelegram[5] = 0x63 + count;
+     bcu.sendConnectedTelegram[6] = 0x42;
+     bcu.sendConnectedTelegram[7] = 0x40 | count;
+     bcu.sendConnectedTelegram[8] = UPD_SEND_DATA;
      */
     setLastError(UDP_NOT_IMPLEMENTED);
     return (true);
@@ -650,8 +650,8 @@ static bool updRequestUID()
         setLastError(result);
         return (true);
     }
-    prepareReturnTelegram(bcu.sendTelegram, UID_LENGTH_USED, UPD_RESPONSE_UID);
-    memcpy(bcu.sendTelegram + 9, uid, UID_LENGTH_USED);
+    prepareReturnTelegram(bcu.sendConnectedTelegram, UID_LENGTH_USED, UPD_RESPONSE_UID);
+    memcpy(bcu.sendConnectedTelegram + 9, uid, UID_LENGTH_USED);
     dline(" OK");
     return (true);
 }
@@ -860,15 +860,15 @@ static bool updProgramDecompressedDataToFlash(uint8_t * data)
 
 bool handleDeprecatedApciMemoryWrite()
 {
-    bcu.sendTelegram[5] = 0x63 + 4; // routing count in high nibble + response length in low nibble
-    bcu.sendTelegram[6] = 0x42;     // APCI_MEMORY_RESPONSE_PDU
-    bcu.sendTelegram[7] = 0x40 | 4; // APCI_MEMORY_RESPONSE_PDU
-    bcu.sendTelegram[8] = 0;        // [8-9] old value of UPD_SEND_LAST_ERROR = 0x0015
-    bcu.sendTelegram[9] = 0x15;
-    bcu.sendTelegram[10] = 0xff;    // [10-13] old value of UDP_NOT_IMPLEMENTED = 0x0000FFFF
-    bcu.sendTelegram[11] = 0xff;
-    bcu.sendTelegram[12] = 0x00;
-    bcu.sendTelegram[13] = 0x00;
+    bcu.sendConnectedTelegram[5] = 0x63 + 4; // routing count in high nibble + response length in low nibble
+    bcu.sendConnectedTelegram[6] = 0x42;     // APCI_MEMORY_RESPONSE_PDU
+    bcu.sendConnectedTelegram[7] = 0x40 | 4; // APCI_MEMORY_RESPONSE_PDU
+    bcu.sendConnectedTelegram[8] = 0;        // [8-9] old value of UPD_SEND_LAST_ERROR = 0x0015
+    bcu.sendConnectedTelegram[9] = 0x15;
+    bcu.sendConnectedTelegram[10] = 0xff;    // [10-13] old value of UDP_NOT_IMPLEMENTED = 0x0000FFFF
+    bcu.sendConnectedTelegram[11] = 0xff;
+    bcu.sendConnectedTelegram[12] = 0x00;
+    bcu.sendConnectedTelegram[13] = 0x00;
     return (true);
 }
 

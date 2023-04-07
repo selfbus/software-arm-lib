@@ -33,7 +33,7 @@
  *
  * @param data      data buffer received from KNX bus
  * @param size      size of data buffer
- * @return          whether to return a telegram, the real return values are encapsulated in bcu.sendTelegram[9..]
+ * @return          whether to return a telegram, the real return values are encapsulated in bcu.sendConnectedTelegram[9..]
  */
 bool handleApciUsermsgManufacturer(uint8_t * data, uint32_t size);
 

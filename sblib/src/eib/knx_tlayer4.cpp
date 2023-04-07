@@ -25,6 +25,7 @@
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_npdu.h>
 #include <sblib/libconfig.h>
+#include <cstring>
 
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
@@ -229,7 +230,8 @@ void dumpLogHeader()
 }
 
 TLayer4::TLayer4(uint8_t maxTelegramLength):
-    sendTelegram(new byte[maxTelegramLength]())
+    sendTelegram(new byte[maxTelegramLength]()),
+    sendConnectedTelegram(new byte[maxTelegramLength]())
 {
 
 }
@@ -246,8 +248,8 @@ void TLayer4::_begin()
             );
 #endif
     state = TLayer4::CLOSED;
-    releaseSendBuffer();
-    sendTelegramActionA07 = false;
+    sendTelegramBufferState = TELEGRAM_FREE;
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
     connectedAddr = 0;
     seqNoSend = -1;
     seqNoRcv = -1;
@@ -579,69 +581,46 @@ void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSe
 
 void TLayer4::sendPreparedTelegram()
 {
-    telegramReadyToSend = true;
+    sendTelegramBufferState = TELEGRAM_SENDING;
     send(sendTelegram, telegramSize(sendTelegram));
 }
 
-bool TLayer4::acquireSendBuffer()
+void TLayer4::sendPreparedConnectedTelegram()
 {
-    if (sendBufferInUse)
-    {
-        // No way to acquire the send buffer while we're waiting for successful transmission in a
-        // connection-oriented communication. User has to abort. Per KNX spec v2.1 3/3/4 section 3.1:
-        // "The user of Transport Layer shall not request a service primitive before the preceding
-        // request is confirmed by Transport Layer, i.e. no parallel services are allowed."
-        if (state == TL4State::OPEN_WAIT)
-        {
-            return false;
-        }
+    acquireSendBuffer();
+    memcpy(sendTelegram, sendConnectedTelegram, telegramSize(sendConnectedTelegram));
+    sendPreparedTelegram();
+}
 
-        // Someone wants to write into the shared @ref sendTelegram buffer, and it's in use
-        // for connection-less communication. Wait until the current message in it is sent.
-        while (sendBufferInUse);
+void TLayer4::acquireSendBuffer()
+{
+    // Someone wants to write into the shared @ref sendTelegram buffer. Wait until the current
+    // telegram in it is sent.
+    while (sendTelegramBufferState != TELEGRAM_FREE);
 
-        // Then allocate it for the caller.
-        sendBufferInUse = true;
-    }
-
-    return true;
+    // Then allocate it for the caller.
+    sendTelegramBufferState = TELEGRAM_ACQUIRED;
 }
 
 void TLayer4::finishedSendingTelegram(byte *telegram, bool successful)
 {
     if (telegram == sendTelegram)
     {
-        // For connection-less communication, the buffer is freed after sending the telegram.
-        // For connection-oriented communication, keep it alive for potential repeats.
-        if (state != TL4State::OPEN_WAIT)
-        {
-            releaseSendBuffer();
-        }
+        sendTelegramBufferState = TELEGRAM_FREE;
     }
-
-    if ((telegram == sendCtrlTelegram) && telegramReadyToSend)
+    else if ((telegram == sendCtrlTelegram) && sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
     {
-        auto connectionOrientedTelegramReadyToSend = (sendTelegram[6] & T_IS_SEQUENCED_Msk);
-        if (connectionOrientedTelegramReadyToSend)
+        // For successfully sent connection control telegrams, continue with the next direct telegram.
+        // If there was an error, one of the connected parties will encounter a timeout and either close
+        // the connection or send the last telegram again. In both cases it does not make sense to respond
+        // with an outdated telegram, so throw it away instead.
+        if (successful)
         {
-            // For successfully sent connection control telegrams, continue with the next direct telegram.
-            // If there was an error, one of the connected parties will encounter a timeout and either close
-            // the connection or send the last telegram again. In both cases it does not make sense to respond
-            // with an outdated telegram, so throw it away instead.
-            if (successful)
-            {
-                // This code runs in the Bus timer ISR, so it must not run the code synchronously as that e.g.
-                // deadlocks debug output. Run it asynchronously instead.
-                sendTelegramActionA07 = true;
-            }
-            else
-            {
-                releaseSendBuffer();
-            }
+            sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_WAIT_LOOP;
         }
         else
         {
-            sendPreparedTelegram();
+            sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
         }
     }
 }
@@ -756,19 +735,14 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
 
-    acquireSendBuffer();
     auto sendResponse = processApci(apciCmd, connectedAddr, seqNo, telegram, telLength);
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2
-        initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
-        setDestinationAddress(sendTelegram, connectedAddr);
-        setSequenceNumber(sendTelegram, seqNoSend);
-        telegramReadyToSend = true;
-    }
-    else
-    {
-        releaseSendBuffer();
+        initLpdu(sendConnectedTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        setDestinationAddress(sendConnectedTelegram, connectedAddr);
+        setSequenceNumber(sendConnectedTelegram, seqNoSend);
+        sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
     }
 }
 
@@ -818,7 +792,7 @@ void TLayer4::actionA07SendDirectTelegram()
         return;
     }
 
-    if (!telegramReadyToSend)
+    if (sendConnectedTelegramBufferState != CONNECTED_TELEGRAM_WAIT_LOOP)
     {
         dump2(
               serial.print("ERROR A07SendTelegram Nothing to send");
@@ -827,26 +801,22 @@ void TLayer4::actionA07SendDirectTelegram()
         return;
     }
 
-    setSequenceNumber(sendTelegram, seqNoSend);
-
     dump2(
         telegramCount++;
-        dumpTelegramInfo(sendTelegram, connectedAddr, sendTelegram[6], true, state);
+        dumpTelegramInfo(sendConnectedTelegram, connectedAddr, sendConnectedTelegram[6], true, state);
         serial.print("sendDirectT");
         serial.print(LOG_SEP);
         serial.print("A07SendTelegram");
         serial.print(LOG_SEP);
     );
 
-    // priority already set in actionA02sendAckPduAndProcessApci
-    // sender address will be set by bus.sendTelegram()
-    setDestinationAddress(sendTelegram, connectedAddr);
     setTL4State(TLayer4::OPEN_WAIT);
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_SENDING;
 
     dump2(
-        dumpTelegramBytes(true, &sendTelegram[0], telegramSize(sendTelegram), true);
+        dumpTelegramBytes(true, sendConnectedTelegram, telegramSize(sendConnectedTelegram), true);
     );
-    sendPreparedTelegram();
+    sendPreparedConnectedTelegram();
     repCount = 0;
     sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
     connectedTime = systemTime; // "restart the connection timeout timer"
@@ -858,19 +828,17 @@ void TLayer4::actionA08IncrementSequenceNumber()
     seqNoSend++;
     seqNoSend &= 0x0F;
     connectedTime = systemTime; // "restart the connection timeout timer"
-    releaseSendBuffer();
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
 }
 
 void TLayer4::actionA09RepeatMessage()
 {
     dump2(
         serial.print("ERROR actionA09RepeatMessage ");
-        dumpTelegramBytes(true, sendTelegram, telegramSize(sendTelegram));
+        dumpTelegramBytes(true, sendConnectedTelegram, telegramSize(sendConnectedTelegram));
     );
 
-    // Checksum will be recalculated by Bus class.
-    setRepeated(sendTelegram, false);
-    sendPreparedTelegram();
+    sendPreparedConnectedTelegram();
     repCount++;
     sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
     connectedTime = systemTime; // "restart the connection timeout timer"
@@ -899,10 +867,9 @@ void TLayer4::loop()
     }
 
     // Send a potential response message
-    if ((state == TLayer4::OPEN_IDLE) && (sendTelegramActionA07))
+    if ((state == TLayer4::OPEN_IDLE) && (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_LOOP))
     {
         // event E15
-        sendTelegramActionA07 = false;
         actionA07SendDirectTelegram();
     }
 
@@ -940,7 +907,7 @@ void TLayer4::resetConnection()
 
     if (state == TL4State::OPEN_WAIT)
     {
-        releaseSendBuffer();
+        sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
     }
 }
 

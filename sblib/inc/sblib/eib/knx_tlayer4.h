@@ -101,11 +101,9 @@ public:
     uint16_t connectedTo();
 
     /**
-     * Wait for @ref sendTelegram to be free.
-     *
-     * @return Whether the buffer could be acquired or not
+     * Wait for @ref sendTelegram to be free and acquire it.
      */
-    bool acquireSendBuffer();
+    void acquireSendBuffer();
 
     /**
      * Sends the telegram that was prepared in @ref sendTelegram.
@@ -122,6 +120,13 @@ public:
      * @warning This buffer is considered library private and should rather not be used by the application program.
      */
     byte *sendTelegram;
+
+    /**
+     * A buffer for the connection-oriented telegram to send. Separate from @ref sendTelegram as repeated sending
+     * can be necessary after seconds, while other telegrams can be received and transmitted.
+     * @warning This buffer is considered library private and should rather not be used by the application program.
+     */
+    byte *sendConnectedTelegram;
 protected:
     /**
      * Special initialization for the transport layer.
@@ -156,7 +161,6 @@ protected:
                                       unsigned char * telegram, uint8_t telLength);
 
     bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
-    int8_t sequenceNumberSend();
 
 
     virtual void discardReceivedTelegram() = 0;
@@ -223,6 +227,12 @@ private:
      */
     void processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength);
 
+    /**
+     * Forward the connection-oriented telegram in @ref sendConnectedTelegram to @ref sendTelegram
+     * and send it.
+     */
+    void sendPreparedConnectedTelegram();
+
     void actionA00Nothing();
     void actionA01Connect(uint16_t address);
     void actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
@@ -253,14 +263,13 @@ private:
     void actionA06DisconnectAndClose();
 
     /**
-     * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
-     * @param senderSeqNo Senders sequence number
+     * @brief Sends the direct telegram which is provided in global buffer @ref sendConnectedTelegram
      */
     void actionA07SendDirectTelegram();
     void actionA08IncrementSequenceNumber();
 
     /**
-     * @brief Repeats the last direct telegram in global buffer @ref sendTelegram
+     * @brief Repeats the last direct telegram in global buffer @ref sendConnectedTelegram
      */
     void actionA09RepeatMessage();
 
@@ -272,27 +281,34 @@ private:
      */
     void actionA10Disconnect(uint16_t address);
 
-    int8_t sequenceNumberReceived();
-
-    /**
-     * Set @ref sendTelegram free.
-     */
-    void releaseSendBuffer();
-
     byte sendCtrlTelegram[TL4_CTRL_TELEGRAM_SIZE];  //!< Short buffer for connection control telegrams.
 
     TLayer4::TL4State state = TLayer4::CLOSED;  //!< Current state of the TL4 state machine
     uint16_t connectedAddr = 0;                 //!< Remote address of the connected partner
     int8_t seqNoSend = -1;                      //!< Sequence number for the next telegram we send
     int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
-    bool telegramReadyToSend = false;           //!< True if a telegram is ready to be sent
-    bool sendTelegramActionA07 = false;         //!< True if a response can be sent after our @ref T_ACK is confirmed
     int8_t repCount = 0;                        //!< Telegram repetition count
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
     uint32_t sentTelegramTime = 0;              //!< System time of the last sent telegram
 
     volatile uint16_t ownAddr;                  //!< Our own physical address on the bus
-    volatile bool sendBufferInUse = false;      //!< Is the @ref sendTelegram buffer currently used by anyone
+
+    enum SendTelegramBufferState
+    {
+        TELEGRAM_FREE,
+        TELEGRAM_ACQUIRED,
+        TELEGRAM_SENDING
+    };
+    enum SendConnectedTelegramBufferState
+    {
+        CONNECTED_TELEGRAM_FREE,
+        CONNECTED_TELEGRAM_WAIT_T_ACK_SENT,
+        CONNECTED_TELEGRAM_WAIT_LOOP,
+        CONNECTED_TELEGRAM_SENDING
+    };
+
+    volatile SendTelegramBufferState sendTelegramBufferState;
+    volatile SendConnectedTelegramBufferState sendConnectedTelegramBufferState;
 };
 
 inline bool TLayer4::directConnection()
@@ -321,22 +337,6 @@ inline uint16_t TLayer4::connectedTo()
     {
         return (0);
     }
-}
-
-inline void TLayer4::releaseSendBuffer()
-{
-    sendBufferInUse = false;
-    telegramReadyToSend = false;
-}
-
-inline int8_t TLayer4::sequenceNumberReceived()
-{
-    return (seqNoRcv);
-}
-
-inline int8_t TLayer4::sequenceNumberSend()
-{
-    return (seqNoSend);
 }
 
 #endif /* TLAYER4_H_ */

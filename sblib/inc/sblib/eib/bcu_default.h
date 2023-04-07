@@ -124,14 +124,13 @@ public:
      * Process a APCI_MASTER_RESET_PDU
      * see KNX Spec. 3/5/2 §3.7.1.2 p.64 A_Restart
      *
-     * @param senderSeqNo   The TL layer 4 sequence number of the sender
      * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
      * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
-     * @note sendTelegram is accessed and changed inside the function to prepare a @ref APCI_MASTER_RESET_RESPONSE_PDU
+     * @note sendConnectedTelegram is accessed and changed inside the function to prepare a @ref APCI_MASTER_RESET_RESPONSE_PDU
      *
-     * @return true if a restart shall happen, otherwise false
+     * @return true if a response message should be sent, otherwise false
      */
-    bool processApciMasterResetPDU(unsigned char *telegram, const uint8_t senderSeqNo, uint8_t eraseCode, uint8_t channelNumber);
+    bool processApciMasterResetPDU(uint8_t eraseCode, uint8_t channelNumber);
 
     virtual bool processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
                                        unsigned char * telegram, uint8_t telLength);
@@ -232,6 +231,15 @@ protected:
     bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
     unsigned int groupTelWaitMillis;
     unsigned int groupTelSent;
+
+private:
+    enum BcuRestartType
+    {
+        NO_RESTART,
+        RESTART_BASIC,
+        RESTART_MASTER
+    };
+    BcuRestartType requestedRestartType;
 };
 
 #define  MAX_GROUP_TEL_PER_SECOND  28
