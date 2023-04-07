@@ -632,6 +632,15 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
           serial.print(LOG_SEP);
     );
 
+    ///\todo function to check for individual_pdu in knx_tpdu.h
+    unsigned char tpci = telegram[6] & 0xfc; //0b11111100 Transport control field (see KNX 3/3/4 p.6 TPDU)
+    if (tpci == 0)
+    {
+        // T_Data_Individual-PDU: Every implementation acquires buffer and sends response on its own.
+        processApci(apciCmd, 0, 0, telegram, telLength);
+        return;
+    }
+
     const uint16_t senderAddr = senderAddress(telegram);
     const uint8_t seqNo = sequenceNumber(telegram);
 
