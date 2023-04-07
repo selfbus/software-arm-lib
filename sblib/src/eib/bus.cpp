@@ -298,23 +298,33 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
         serial.println();
     );
 
-	// actual sending is started in Bus::IDLE state
+	// Start sending if the bus is idle or sending will be triggered in WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE after finishing current TX/RX
+	noInterrupts();
+	if (state == IDLE)
+	{
+		prepareForSending();
+
+		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
+		timer.match(timeChannel, 1);
+		timer.matchMode(timeChannel, INTERRUPT | RESET);
+		timer.value(0);
+	}
+	interrupts();
 }
 
 void Bus::idleState()
 {
-    tb_t( 99, ttimer.value(), tb_in);
-    tb_h( 99, sendAck, tb_in);
+	tb_t( 99, ttimer.value(), tb_in);
+	tb_h( 99, sendAck, tb_in);
 
-    timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // for any receiving start bit on the Bus
-    timer.matchMode(timeChannel, INTERRUPT | RESET);
-    timer.match(timeChannel, 35);
-    timer.match(pwmChannel, 0xffff);
-    timer.value(0);
-    //timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
-    state = Bus::IDLE;
-    sendAck = 0;
-    //need_to_send_ack_to_remote=false;
+	timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // for any receiving start bit on the Bus
+	timer.matchMode(timeChannel, RESET); // no timeout interrupt, reset at match todo we could stop timer for power saving
+	timer.match(timeChannel, 0xfffe); // stop pwm pulse generation, set output to low
+	timer.match(pwmChannel, 0xffff);
+	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
+	state = Bus::IDLE;
+	sendAck = 0;
+	//need_to_send_ack_to_remote=false;
 }
 
 void Bus::prepareForSending()
@@ -586,14 +596,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     digitalWrite(PIO_FOR_TEL_END_IND, 0);           // restore handleTelegram() PIO
 #endif
 
-
-    DB_BUS(
-        // debug processing takes about 7-8us; only trace interrupt invocation if it was not the IDLE timer
-        if ((state != Bus::IDLE) || !(timer.flag(timeChannel)))
-        {
-            tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
-        }
-    );
+	// debug processing takes about 7-8us
+	tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
 
 	STATE_SWITCH:
 	switch (state)
@@ -620,19 +624,12 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		// Sending is triggered in idle state by a call to prepareForSending() and state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
 
 	case Bus::IDLE:
-        if (!timer.flag(captureChannel)) // Not a bus-in signal
-        {
-            if (!sendCurTelegram) // check telegram in send queue
-            {
-                break;
-            }
-            prepareForSending();
-            state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
-            goto STATE_SWITCH;
-        }
-
 		tb_d( state+100, ttimer.value(), tb_in);
         DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
+
+		if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing - timeout??
+			break;
+
 
 		// RX process functions
 		//initialize the RX process for a new telegram reception.
