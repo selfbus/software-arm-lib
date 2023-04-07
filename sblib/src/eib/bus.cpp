@@ -265,16 +265,12 @@ void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
  */
 void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 {
-	prepareTelegram(telegram, length);
+    prepareTelegram(telegram, length);
 
-	if (!sendCurTelegram)
-    {
-	    sendCurTelegram = telegram;
-    }
-	else
-    {
-	    fatalError(); // soft fault: send buffer overflow
-    }
+    // Wait until there is space in the sending queue
+    while (sendCurTelegram);
+
+    sendCurTelegram = telegram;
 
     DB_TELEGRAM(
         unsigned int t;
