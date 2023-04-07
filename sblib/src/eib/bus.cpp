@@ -576,14 +576,14 @@ void Bus::sendNextTelegram()
  * Selecting the right state of SM Bus
  *
  */
-__attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
+__attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 {
 	volatile bool timeout;
 	volatile int time;
 	unsigned int dt, tv, cv;
 
 #ifdef PIO_FOR_TEL_END_IND
-    digitalWrite(PIO_FOR_TEL_END_IND, 0);           // rest PIO
+    digitalWrite(PIO_FOR_TEL_END_IND, 0);           // restore handleTelegram() PIO
 #endif
 
 
