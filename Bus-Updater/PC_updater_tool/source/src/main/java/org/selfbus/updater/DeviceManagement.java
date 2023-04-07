@@ -19,7 +19,6 @@ import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 import java.time.Duration;
 import java.util.Arrays;
 
-import static org.selfbus.updater.Mcu.TL4_CONNECTION_TIMEOUT_MS;
 import static org.selfbus.updater.upd.UPDProtocol.COMMAND_POSITION;
 import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 
@@ -29,7 +28,13 @@ import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 public final class DeviceManagement {
     private static final int RESTART_ERASE_CODE = 7; //!< EraseCode for the APCI_MASTER_RESET_PDU (valid from 1..7)
     private static final int RESTART_CHANNEL = 255;  //!< Channelnumber for the APCI_MASTER_RESET_PDU
+    /** KNX transport layer 4 connection timeout */
+    private static final int TL4_CONNECTION_TIMEOUT_MS = 6300; ///\todo delete after TL4 Style 3 implementation in sblib
+
     public static final int MAX_UPD_COMMAND_RETRY = 3; //!< default maximum retries a UPD command is sent to the client
+
+    /** Use transport layer 4 connections timeout for closing MCUs TL4 connection*/
+    private boolean tl4Timeout = false; ///\todo delete after TL4 Style 3 implementation in sblib
 
     @SuppressWarnings("unused")
     private DeviceManagement (){}
@@ -336,15 +341,23 @@ public final class DeviceManagement {
                 result.copyFromArray(data2);
                 return result;
             }
-            catch (KNXTimeoutException | KNXRemoteException e) {
+            catch (KNXTimeoutException e) {
                 logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incTimeoutCount();
-                //Thread.sleep(TL4_CONNECTION_TIMEOUT_MS); ///\todo remove on release
+                /*
+                ///\todo delete after TL4 Style 3 implementation in sblib
+                if (getTL4Timeout()){
+                    Thread.sleep(TL4_CONNECTION_TIMEOUT_MS);
+                }
+                */
             }
-            catch (KNXDisconnectException e) {
+            catch (KNXDisconnectException | KNXRemoteException e) { ///\todo check causes of KNXRemoteException, if think they are unrecoverable
                 logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
                 result.incDropCount();
-                //Thread.sleep(TL4_CONNECTION_TIMEOUT_MS); ///\todo remove on release
+                ///\todo delete after TL4 Style 3 implementation in sblib
+                if (getTL4Timeout()) {
+                    Thread.sleep(TL4_CONNECTION_TIMEOUT_MS);
+                }
             }
             catch (KNXIllegalArgumentException e) {
                 throw new UpdaterException(String.format("%s failed.", command), e);
@@ -388,4 +401,13 @@ public final class DeviceManagement {
             throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()));
         }
     }
+
+    public boolean getTL4Timeout() {
+        return tl4Timeout;
+    }
+
+    public void setTL4Timeout(boolean tl4Timeout) {
+        this.tl4Timeout = tl4Timeout;
+    }
+
 }
