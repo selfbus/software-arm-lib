@@ -599,6 +599,12 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 	// debug processing takes about 7-8us
 	tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
 
+    // If we captured a falling edge (bit), read the pin again. If it is not at low level we received a spike. Ignore those.
+    if ((timer.flag(captureChannel)) && (digitalRead(rxPin)))
+    {
+        goto DONE;
+    }
+
 	STATE_SWITCH:
 	switch (state)
 	{
@@ -684,8 +690,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
 		//tb_h( state +100, currentByte, tb_in);
 		// we captured a startbit falling edge trigger
-		// read the start bit now (about few us after cap event) if it is still at low level to avoid that spikes will start analysis of rx data
-		if (digitalRead(rxPin)) rx_error |= RX_STARTBIT_ERROR; // we set error flag and continue rx process
 
 		// we received a start bit interrupt - reset timer for next byte reception,
 		// set byte time incl stop bit to 1144us and use that as ref for all succeeding timings in RX process
@@ -725,13 +729,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		else
 		{
 			time = timer.capture(captureChannel); // we received an capt. event: new low bit
-			// read the bit again (about few us after cap event) if it is not at low level we received a spike - set error flag and continue
-			if (digitalRead(rxPin))
-			{
-				// we set error flag and continue rx process
-				rx_error |= RX_TIMING_ERROR_SPIKE_IGNORED;
-				break;
-			}
 		}
 
 		// find the bit position after last low bit and add high bits accordingly, window for the reception of falling edge of a bit is:
@@ -1097,12 +1094,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
 		if (timer.flag(captureChannel))
 		{
-			// If it was just a very short spike, ignore it and continue transmitting.
-			if (digitalRead(rxPin))
-			{
-				break;
-			}
-
 			if (( timer.capture(captureChannel) < timer.match(pwmChannel) - BIT_WAIT_TIME +30 ) &&  // add bit margin: early 7us, late 30us
 					(timer.capture(captureChannel) > BIT_WAIT_TIME - 7))  // subtract 7 margin for early bit
 			{
@@ -1305,6 +1296,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		break;
 	}
 
+DONE:
 	timer.resetFlags();
 }
 
