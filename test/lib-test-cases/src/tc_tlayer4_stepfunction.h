@@ -31,7 +31,7 @@ typedef struct
     int connectedAddrNew;
     byte seqNoSend;
     byte seqNoRcv;
-    bool telegramReadyToSend;
+    TLayer4::SendConnectedTelegramBufferState sendConnectedTelegramBufferState;
 } ProtocolTestState;
 
 static ProtocolTestState protoState[2];
@@ -55,7 +55,7 @@ static void connect(void * state, unsigned int param)
     VaS(state)->machineState = TLayer4::OPEN_IDLE;
     VaS(state)->seqNoSend = 0;
     VaS(state)->seqNoRcv = 0;
-    VaS(state)->telegramReadyToSend = false;
+    VaS(state)->sendConnectedTelegramBufferState = TLayer4::CONNECTED_TELEGRAM_FREE;
 }
 
 static void connectWhileConnectedClosed(void * state, unsigned int param)

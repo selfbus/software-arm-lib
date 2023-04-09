@@ -74,7 +74,7 @@ static void gatherProtocolState_01(ProtocolTestState * state, ProtocolTestState 
     state->machineState = bcuUnderTest->state;
     state->seqNoSend = bcuUnderTest->seqNoSend;
     state->seqNoRcv = bcuUnderTest->seqNoRcv;
-    state->telegramReadyToSend = bcuUnderTest->telegramReadyToSend;
+    state->sendConnectedTelegramBufferState = bcuUnderTest->sendConnectedTelegramBufferState;
 
     if(refState)
     {
@@ -83,7 +83,7 @@ static void gatherProtocolState_01(ProtocolTestState * state, ProtocolTestState 
         REQUIRE(state->connectedAddrNew == refState->connectedAddrNew);
         REQUIRE(state->seqNoSend == refState->seqNoSend);
         REQUIRE(state->seqNoRcv == refState->seqNoRcv);
-        REQUIRE(state->telegramReadyToSend == refState->telegramReadyToSend);
+        REQUIRE(state->sendConnectedTelegramBufferState == refState->sendConnectedTelegramBufferState);
     }
 }
 
@@ -181,7 +181,7 @@ static Test_Case testCaseTelegramSequence_03 =
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup,
+    tc_setup_OpenWait_A001,
     (StateFunction *) gatherProtocolState_03,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
@@ -298,7 +298,7 @@ static Test_Case testCaseTelegramSequence_19 =
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup_OpenWait_A001,
+    tc_setup,
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
@@ -613,10 +613,29 @@ void runTL4TestsOnBcu(BcuType testBcuType, std::string sectionName)
 
 TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
 {
-    runTL4TestsOnBcu(BCU_1, "BCU 1");
-    runTL4TestsOnBcu(BCU_2, "BCU 2");
-    runTL4TestsOnBcu(BCU_0701, "BCU 0x0701 (BIM112)");
-    runTL4TestsOnBcu(BCU_0705, "BCU 0x0705 (BIM112)");
-    runTL4TestsOnBcu(BCU_07B0, "BCU 0x07B0");
+    SECTION("BCU 1")
+    {
+        runTL4TestsOnBcu(BCU_1, "BCU 1");
+    }
+
+    SECTION("BCU 1")
+    {
+        runTL4TestsOnBcu(BCU_2, "BCU 2");
+    }
+
+    SECTION("BCU 1")
+    {
+        runTL4TestsOnBcu(BCU_0701, "BCU 0x0701 (BIM112)");
+    }
+
+    SECTION("BCU 1")
+    {
+        runTL4TestsOnBcu(BCU_0705, "BCU 0x0705 (BIM112)");
+    }
+
+    SECTION("BCU 1")
+    {
+        runTL4TestsOnBcu(BCU_07B0, "BCU 0x07B0");
+    }
 }
 

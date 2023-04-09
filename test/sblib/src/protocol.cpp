@@ -9,6 +9,7 @@
  */
 
 #include "protocol.h"
+#include <sblib/eib/knx_npdu.h>
 #include <sblib/internal/variables.h>
 #include <sblib/internal/iap.h>
 #include <sblib/bits.h>
@@ -146,6 +147,7 @@ static void _checkSendTelegram(BcuDefault* currentBcu, Test_Case * tc, Telegram 
 {
     int i;
     int mismatches = 0;
+    int sendTelegramLen = telegramSize(currentBcu->bus->sendCurTelegram);
     char msg[1025];
     char numbers[23 * 3 + 1] = { 0 };
     char received[23 * 3 + 1] = { 0 };
@@ -153,9 +155,9 @@ static void _checkSendTelegram(BcuDefault* currentBcu, Test_Case * tc, Telegram 
     char temp[1025];
 
     snprintf(msg, 1024, "%s: Number of bytes in send telegram %d expected %d, sent %d", tc->name, testStep,
-        tel->length, currentBcu->bus->sendTelegramLen - 1);
+        tel->length, sendTelegramLen);
     INFO(msg);
-    REQUIRE(tel->length == (currentBcu->bus->sendTelegramLen - 1));
+    REQUIRE(tel->length == sendTelegramLen);
 
     snprintf(msg, 1024, "%s: Send telegram %d mismatch at byte(s) ", tc->name, testStep);
     for (i = 0; i < tel->length; i++)
