@@ -871,7 +871,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 			{
 				tb_h( state+ 100,sendTries + 10* sendBusyTries, tb_in);
 				tx_error |= TX_RETRY_ERROR;
-				sendNextTelegram();	// then send next  todo: info upper layer on sending error of last telegram
+				sendNextTelegram();	// then send next, this also informs upper layer on sending error of last telegram
 			}
 			if (sendCurTelegram)  // Send a telegram pending?
 			{		//tb_t( state+200, ttimer.value(), tb_in);
