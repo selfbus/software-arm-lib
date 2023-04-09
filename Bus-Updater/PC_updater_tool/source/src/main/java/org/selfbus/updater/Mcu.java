@@ -20,6 +20,4 @@ public final class Mcu {
 
     /** Default restart time of the MCU in seconds */
     public static final int DEFAULT_RESTART_TIME_SECONDS = 6;
-    /** KNX transport layer 4 connection timeout */
-    public static final int TL4_CONNECTION_TIMEOUT_MS = 6300;
 }
