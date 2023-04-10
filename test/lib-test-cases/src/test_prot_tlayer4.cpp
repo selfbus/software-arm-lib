@@ -599,10 +599,7 @@ void runTL4TestsOnBcu(BcuType testBcuType, std::string sectionName)
         executeTest(testBcuType, &testCaseTelegramSequence_18);
         executeTest(testBcuType, &testCaseTelegramSequence_19);
         executeTest(testBcuType, &testCaseTelegramSequence_20a);
-
-        ///\todo implement test case 20b correctly
-        // executeTest(testBcuType, &testCaseTelegramSequence_20b);
-
+        executeTest(testBcuType, &testCaseTelegramSequence_20b);
         executeTest(testBcuType, &testCaseTelegramSequence_21);
         executeTest(testBcuType, &testCaseTelegramSequence_22);
         executeTest(testBcuType, &testCaseTelegramSequence_23);

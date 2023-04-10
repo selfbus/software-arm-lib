@@ -220,31 +220,31 @@ static Telegram testCaseTelegrams_20b[] =
     // 5. simulate 3500 milliseconds passing
     {TIMER_TICK, 3500, 0, 0, connectedOpenWait, {}},
     // 6. MemoryRead(Count=1, Addr=0x01FE) from sourceAddr=10.15.254 to destAddr=1.0.1
-    {TEL_RX, 8, 0, 0xAFFE, connectedOpenWait, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x63, 0x46, 0x01, 0x01, 0xFE}},
+    {TEL_RX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x63, 0x46, 0x01, 0x01, 0xFE}},
     // 7. Check T_ACK response for the MemoryRead, loop bcu once
     {TEL_TX, 7, 1, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0xC6}}, // T_ACK_PDU
     // 8. Check second try of DeviceDescriptorResponse
     {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x63, 0x43, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}}, // DeviceDescriptorResponse(DescType=00, Descriptor=??)
     // 9. simulate 6500 milliseconds passing
     {TIMER_TICK, 6500, 0, 0, connectedOpenWait, {}},
-    // 10. Receive T-Ack(Seq=0)
-    {TEL_RX, 7, 0, 0xAFFE, connectedOpenIdle, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x60, 0xC2}},
+    // 10. Receive T-Ack(Seq=0), loop bcu once
+    {TEL_RX, 7, 1, 0xAFFE, connectedOpenIdle, {0xB0, 0xAF, 0xFE, 0x10, 0x01, 0x60, 0xC2}},
     // 11. Check MemoryReadResponse
-    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
-    // 12. simulate 3500 milliseconds passing
-    {TIMER_TICK, 3500, 0, 0, connectedOpenWait, {}},
+    {TEL_TX, 11, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
+    // 12. simulate 3500 milliseconds passing, loop bcu once
+    {TIMER_TICK, 3500, 1, 0, connectedOpenWait, {}},
     // 13. Check MemoryReadResponse repetition 1
-    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
-    // 14. simulate 3500 milliseconds passing
-    {TIMER_TICK, 3500, 0, 0, connectedOpenWait, {}},
+    {TEL_TX, 11, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
+    // 14. simulate 3500 milliseconds passing, loop bcu once
+    {TIMER_TICK, 3500, 1, 0, connectedOpenWait, {}},
     // 15. Check MemoryReadResponse repetition 2
-    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
-    // 16. simulate 3500 milliseconds passing
-    {TIMER_TICK, 3500, 0, 0, connectedOpenWait, {}},
+    {TEL_TX, 11, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
+    // 16. simulate 3500 milliseconds passing, loop bcu once
+    {TIMER_TICK, 3500, 1, 0, connectedOpenWait, {}},
     // 17. Check MemoryReadResponse repetition 3
-    {TEL_TX, 10, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
-    // 18. simulate 3500 milliseconds passing
-    {TIMER_TICK, 3500, 0, 0, connectedOpenWait, {}},
+    {TEL_TX, 11, 0, 0xAFFE, connectedOpenWait, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x64, 0x46, 0x41, 0x01, 0xFE, 0x00}}, // MemoryResponse(Count=01, Addr=01FE, Data=?? )
+    // 18. simulate 3500 milliseconds passing, loop bcu once
+    {TIMER_TICK, 3500, 1, 0, connectedOpenWait, {}},
     // 19. Check TX-Response for a T_DISCONNECT_PDU (0x81) to 10.0.1
     {TEL_TX, 7, 0, 0, disconnectClosed, {0xB0, 0x10, 0x01, 0xAF, 0xFE, 0x60, 0x81}},
     {END}

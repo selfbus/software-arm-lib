@@ -231,7 +231,8 @@ void dumpLogHeader()
 
 TLayer4::TLayer4(uint8_t maxTelegramLength):
     sendTelegram(new byte[maxTelegramLength]()),
-    sendConnectedTelegram(new byte[maxTelegramLength]())
+    sendConnectedTelegram(new byte[maxTelegramLength]()),
+    sendConnectedTelegram2(new byte[maxTelegramLength]())
 {
 
 }
@@ -250,6 +251,7 @@ void TLayer4::_begin()
     state = TLayer4::CLOSED;
     sendTelegramBufferState = TELEGRAM_FREE;
     sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+    sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
     connectedAddr = 0;
     seqNoSend = -1;
     seqNoRcv = -1;
@@ -610,14 +612,11 @@ void TLayer4::finishedSendingTelegram(bool successful)
         // If there was an error, one of the connected parties will encounter a timeout and either close
         // the connection or send the last telegram again. In both cases it does not make sense to respond
         // with an outdated telegram, so throw it away instead.
-        if (successful)
-        {
-            sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_WAIT_LOOP;
-        }
-        else
-        {
-            sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
-        }
+        sendConnectedTelegramBufferState = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
+    }
+    else if (sendConnectedTelegramBuffer2State == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+    {
+        sendConnectedTelegramBuffer2State = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
     }
 }
 
@@ -751,14 +750,23 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
 
-    auto sendResponse = processApci(apciCmd, telegram, telLength, sendConnectedTelegram);
+    auto sendBuffer = (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_FREE) ? sendConnectedTelegram : sendConnectedTelegram2;
+    auto sendResponse = processApci(apciCmd, telegram, telLength, sendBuffer);
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2
-        initLpdu(sendConnectedTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
-        setDestinationAddress(sendConnectedTelegram, connectedAddr);
-        setSequenceNumber(sendConnectedTelegram, seqNoSend);
-        sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
+        initLpdu(sendBuffer, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        setDestinationAddress(sendBuffer, connectedAddr);
+        if (sendBuffer == sendConnectedTelegram)
+        {
+            setSequenceNumber(sendBuffer, seqNoSend);
+            sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
+        }
+        else
+        {
+            setSequenceNumber(sendBuffer, ((seqNoSend + 1) & 0x0F));
+            sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
+        }
     }
 }
 
@@ -845,6 +853,13 @@ void TLayer4::actionA08IncrementSequenceNumber()
     seqNoSend &= 0x0F;
     connectedTime = systemTime; // "restart the connection timeout timer"
     sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+
+    if (sendConnectedTelegramBuffer2State != CONNECTED_TELEGRAM_FREE)
+    {
+        memcpy(sendConnectedTelegram, sendConnectedTelegram2, telegramSize(sendConnectedTelegram2));
+        sendConnectedTelegramBufferState = sendConnectedTelegramBuffer2State;
+        sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
+    }
 }
 
 void TLayer4::actionA09RepeatMessage()
@@ -924,6 +939,7 @@ void TLayer4::resetConnection()
     if (state == TL4State::OPEN_WAIT)
     {
         sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+        sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
     }
 }
 

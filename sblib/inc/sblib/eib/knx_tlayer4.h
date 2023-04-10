@@ -282,10 +282,11 @@ private:
     byte *sendTelegram;
 
     /**
-     * A buffer for the connection-oriented telegram to send. Separate from @ref sendTelegram as repeated sending
+     * Two buffers for connection-oriented telegrams to send. Separate from @ref sendTelegram as repeated sending
      * can be necessary after seconds, while other telegrams can be received and transmitted.
      */
     byte *sendConnectedTelegram;
+    byte *sendConnectedTelegram2;
 
     enum SendTelegramBufferState
     {
@@ -303,6 +304,7 @@ private:
 
     volatile SendTelegramBufferState sendTelegramBufferState;
     volatile SendConnectedTelegramBufferState sendConnectedTelegramBufferState;
+    volatile SendConnectedTelegramBufferState sendConnectedTelegramBuffer2State;
 };
 
 inline bool TLayer4::directConnection()
