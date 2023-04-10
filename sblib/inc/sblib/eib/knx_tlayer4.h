@@ -30,7 +30,6 @@
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
 #define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds
 #define TL4_MAX_REPETITION_COUNT  (3)    //!< Maximum number of repetitions
-#define TL4_CTRL_TELEGRAM_SIZE    (8)    //!< The size of a connection control telegram
 
 #ifdef DEBUG
 #   define LONG_PAUSE_THRESHOLD_MS (500)
@@ -113,7 +112,7 @@ public:
     /**
      * Wait for @ref sendTelegram to be free.
      */
-    void finishedSendingTelegram(byte *telegram, bool successful);
+    void finishedSendingTelegram(bool successful);
 
     /**
      * A buffer for the telegram to send.
@@ -280,8 +279,6 @@ private:
      * @param address KNX address to send the @ref T_DISCONNECT_PDU
      */
     void actionA10Disconnect(uint16_t address);
-
-    byte sendCtrlTelegram[TL4_CTRL_TELEGRAM_SIZE];  //!< Short buffer for connection control telegrams.
 
     TLayer4::TL4State state = TLayer4::CLOSED;  //!< Current state of the TL4 state machine
     uint16_t connectedAddr = 0;                 //!< Remote address of the connected partner

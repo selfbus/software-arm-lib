@@ -548,35 +548,31 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
 
 void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo)
 {
-    sendCtrlTelegram[6] = (uint8_t)cmd;
+    acquireSendBuffer();
+
+    initLpdu(sendTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // connection control commands always in system priority
+    // sender address will be set by bus.sendTelegram()
+    setDestinationAddress(sendTelegram, address);
+    sendTelegram[5] = (uint8_t)0x60; ///\todo set correct routing counter
+    sendTelegram[6] = (uint8_t)cmd;
     if (cmd & T_SEQUENCED_COMMAND)  // Add the sequence number if the command shall contain it
     {
-        setSequenceNumber(sendCtrlTelegram, senderSeqNo);
+        setSequenceNumber(sendTelegram, senderSeqNo);
     }
 
     dump2(
         telegramCount++;
-        ///\todo create better debug-file/class and include below dump, also rewrite dumpTelegramInfo without using bus.telegram & sendCtrlTelegram[6]
-        // dumpTelegramInfo(bus.telegram, address, sendCtrlTelegram[6], true, state);
+        ///\todo create better debug-file/class and include below dump, also rewrite dumpTelegramInfo without using bus.telegram & sendTelegram[6]
+        // dumpTelegramInfo(bus.telegram, address, sendTelegram[6], true, state);
         serial.print("sendControl");
-    );
-
-    initLpdu(sendCtrlTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // connection control commands always in system priority
-    // sender address will be set by bus.sendTelegram()
-
-    setDestinationAddress(sendCtrlTelegram, address);
-    sendCtrlTelegram[5] = (uint8_t)0x60; ///\todo set correct routing counter
-
-    dump2(
         if (address != connectedAddr)
         {
             serial.print(" ERROR");
         }
-        uint8_t lengthCtrlTelegram = sizeof(sendCtrlTelegram) / sizeof(sendCtrlTelegram[0]);
-        dumpTelegramBytes(true, &sendCtrlTelegram[0], lengthCtrlTelegram);
+        dumpTelegramBytes(true, sendTelegram, 7);
     );
 
-    send(sendCtrlTelegram, 7);
+    sendPreparedTelegram();
 }
 
 void TLayer4::sendPreparedTelegram()
@@ -602,13 +598,11 @@ void TLayer4::acquireSendBuffer()
     sendTelegramBufferState = TELEGRAM_ACQUIRED;
 }
 
-void TLayer4::finishedSendingTelegram(byte *telegram, bool successful)
+void TLayer4::finishedSendingTelegram(bool successful)
 {
-    if (telegram == sendTelegram)
-    {
-        sendTelegramBufferState = TELEGRAM_FREE;
-    }
-    else if ((telegram == sendCtrlTelegram) && sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+    sendTelegramBufferState = TELEGRAM_FREE;
+
+    if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
     {
         // For successfully sent connection control telegrams, continue with the next direct telegram.
         // If there was an error, one of the connected parties will encounter a timeout and either close

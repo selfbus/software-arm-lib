@@ -289,8 +289,6 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 	noInterrupts();
 	if (state == IDLE)
 	{
-		prepareForSending();
-
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 		timer.match(timeChannel, 1);
 		timer.matchMode(timeChannel, INTERRUPT | RESET);
@@ -500,7 +498,7 @@ void Bus::handleTelegram(bool valid)
 			{ // last sending to remote was ok or max retry, prepare for next tx telegram
 				if ( sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax) tx_error|= TX_RETRY_ERROR;
 				tb_h( 906, tx_error, tb_in);
-				sendNextTelegram();
+				finishSendingTelegram();
 			}
 			else if (currentByte == SB_BUS_BUSY)
 			{
@@ -545,20 +543,18 @@ void Bus::handleTelegram(bool valid)
 }
 
 /*
- * Current telegram was send, send next telegram
+ * Finish the telegram sending process.
  *
- * load data for next telegram, save  send resultState - driven by interrupts of timer and capture input
- *
+ * Notify upper layer of completion and prepare for next telegram transmission.
  */
-void Bus::sendNextTelegram()
+void Bus::finishSendingTelegram()
 {
     bus_tx_state = tx_error;
 
     if (sendCurTelegram)
     {
-        auto sentTelegram = sendCurTelegram;
         sendCurTelegram = nullptr;
-        bcu->finishedSendingTelegram(sentTelegram, !(tx_error & TX_RETRY_ERROR));
+        bcu->finishedSendingTelegram(!(tx_error & TX_RETRY_ERROR));
     }
 
     prepareForSending();
@@ -607,7 +603,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		// or at least one pending Telegram in the queue.
 		// A timeout  (after 0xfffe us) should not be received (indicating no bus activity) match interrupt is disabled
 		// A reception of a new telegram is triggered by the falling edge of the received start bit and we collect the bits in the receiving process
-		// Sending is triggered in idle state by a call to prepareForSending() and state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
+		// Sending is triggered in idle state by state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
 
 	case Bus::IDLE:
 		tb_d( state+100, ttimer.value(), tb_in);
@@ -871,7 +867,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 			{
 				tb_h( state+ 100,sendTries + 10* sendBusyTries, tb_in);
 				tx_error |= TX_RETRY_ERROR;
-				sendNextTelegram();	// then send next, this also informs upper layer on sending error of last telegram
+				finishSendingTelegram();	// then send next, this also informs upper layer on sending error of last telegram
 			}
 			if (sendCurTelegram)  // Send a telegram pending?
 			{		//tb_t( state+200, ttimer.value(), tb_in);

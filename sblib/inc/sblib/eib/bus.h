@@ -263,13 +263,11 @@ private:
     void prepareForSending();
 
     /**
-     * Switch to the next telegram for sending.
+     * Finish the telegram sending process.
      *
-     * mark the current send buffer as free -> set first byte of buffer to 0
-     * load a possible waiting/next buffer to current buffer
-     * initialize some low level parameters for the interrupt driven send process
+     * Notify upper layer of completion and prepare for next telegram transmission.
      */
-    void sendNextTelegram();
+    void finishSendingTelegram();
 
     /**
      * @fn void prepareTelegram(unsigned char*, unsigned short)const
