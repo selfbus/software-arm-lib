@@ -132,6 +132,12 @@ void BcuDefault::loop()
 
     BcuBase::loop(); // check processTelegram and programming button state
 
+    // Rest of this function is only relevant if currently able to send another telegram.
+    if (bus->sendingTelegram())
+    {
+        return;
+    }
+
     if (requestedRestartType != NO_RESTART)
     {
         if (requestedRestartType == RESTART_MASTER)
@@ -143,8 +149,8 @@ void BcuDefault::loop()
     }
 
     // handle group object telegrams only if application is runnning
-    // if bus is not sending (telegram buffer is empty) check for next telegram to be send
-    if (sendGrpTelEnabled && applicationRunning() && !bus->sendingTelegram())
+    // check for next telegram to be send
+    if (sendGrpTelEnabled && applicationRunning())
     {
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
