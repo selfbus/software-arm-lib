@@ -42,6 +42,7 @@ static void tc_setup_1001(Telegram* tel, uint16_t telCount)
 {
     bcuUnderTest->state = TLayer4::CLOSED; // to "reset" connection for next test
     bcuUnderTest->setOwnAddress(0x1001);
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
 static void tc_setup_OpenWait(Telegram* tel, uint16_t telCount)
@@ -419,7 +420,7 @@ static Test_Case testCaseTelegramSequence_30 =
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
-    testCaseTelegrams_31
+    testCaseTelegrams_30
 };
 
 static Test_Case testCaseTelegramSequence_31 =
@@ -519,7 +520,7 @@ static Test_Case testCaseTelegramSequence_38 =
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup_OpenWait_A001,
+    tc_setup,
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
@@ -532,7 +533,7 @@ static Test_Case testCaseTelegramSequence_39 =
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup_OpenWait_A001,
+    tc_setup,
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
