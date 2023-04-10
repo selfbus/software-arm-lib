@@ -409,6 +409,19 @@ static Test_Case testCaseTelegramSequence_26 =
     testCaseTelegrams_26
 };
 
+static Test_Case testCaseTelegramSequence_30 =
+{
+    "TelSeq 30 Reception of a T_ACK_PDU, with initial state OPEN_IDLE (style 1/2)",
+    MANUFACTURER, DEVICE, VERSION,
+    0,
+    NULL,
+    tc_setup,
+    (StateFunction *) gatherProtocolState_machineState,
+    (TestCaseState *) &protoState[0],
+    (TestCaseState *) &protoState[1],
+    testCaseTelegrams_31
+};
+
 static Test_Case testCaseTelegramSequence_31 =
 {
     "TelSeq 31 Reception of T_ACK with wrong sequence number, with initial state OPEN_IDLE (style 1/2)",
@@ -595,7 +608,8 @@ void runTL4TestsOnBcu(BcuType testBcuType, std::string sectionName)
         executeTest(testBcuType, &testCaseTelegramSequence_24);
         executeTest(testBcuType, &testCaseTelegramSequence_25);
         executeTest(testBcuType, &testCaseTelegramSequence_26);
-        // test cases 27-30 not implemented, they are for client only, (T_DATA_CONNECTED from the local user)
+        // test cases 27-29 not implemented, they are for client only, (T_DATA_CONNECTED from the local user)
+        executeTest(testBcuType, &testCaseTelegramSequence_30);
         executeTest(testBcuType, &testCaseTelegramSequence_31); // from KNX Spec note: "Current System 1 implementations (see volume 6) transmit faulty telegrams. This is not allowed for updated versions or new developed system 1 implementations."
         executeTest(testBcuType, &testCaseTelegramSequence_32);
         executeTest(testBcuType, &testCaseTelegramSequence_33);
@@ -613,29 +627,10 @@ void runTL4TestsOnBcu(BcuType testBcuType, std::string sectionName)
 
 TEST_CASE("Transport layer 4 protocol", "[protocol][L4]")
 {
-    SECTION("BCU 1")
-    {
-        runTL4TestsOnBcu(BCU_1, "BCU 1");
-    }
-
-    SECTION("BCU 1")
-    {
-        runTL4TestsOnBcu(BCU_2, "BCU 2");
-    }
-
-    SECTION("BCU 1")
-    {
-        runTL4TestsOnBcu(BCU_0701, "BCU 0x0701 (BIM112)");
-    }
-
-    SECTION("BCU 1")
-    {
-        runTL4TestsOnBcu(BCU_0705, "BCU 0x0705 (BIM112)");
-    }
-
-    SECTION("BCU 1")
-    {
-        runTL4TestsOnBcu(BCU_07B0, "BCU 0x07B0");
-    }
+    runTL4TestsOnBcu(BCU_1, "BCU 1");
+    runTL4TestsOnBcu(BCU_2, "BCU 2");
+    runTL4TestsOnBcu(BCU_0701, "BCU 0x0701 (BIM112)");
+    runTL4TestsOnBcu(BCU_0705, "BCU 0x0705 (BIM112)");
+    runTL4TestsOnBcu(BCU_07B0, "BCU 0x07B0");
 }
 

@@ -292,9 +292,9 @@ static Telegram testCaseTelegrams_23[] =
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=1.0.1 with wrong Seq=5
-    {TEL_RX, 8, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x57, 0x00}},
-    // 3. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
+    {TEL_RX, 8, 0, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x57, 0x00}},
+    // 3. Check T_NACK_PDU (Seq=5)
+    {TEL_TX, 7, 0, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xD7}},
     // 4. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
@@ -308,9 +308,9 @@ static Telegram testCaseTelegrams_24[] =
     // steps 0.x done in tc_setup_OpenWait_A001
 
     // 1. DeviceDescriptorRead(DescType=00) from sourceAddr=10.0.1 to destAddr=10.0.0 with wrong Seq=5
-    {TEL_RX, 8, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x57, 0x00}},
-    // 2. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
+    {TEL_RX, 8, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x57, 0x00}},
+    // 2. Check T_NACK_PDU (Seq=5)
+    {TEL_TX, 7, 0, 0xA001, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xD7}},
     // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
@@ -323,9 +323,8 @@ static Telegram testCaseTelegrams_25[] =
     {TEL_RX, 7, 0, 0xA007, connect, {0xB0, 0xA0, 0x07, 0xA0, 0x00, 0x60, 0x80}},
     // 2. DeviceDescriptorRead(DescType=00) from wrong sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 8, 0, 0xA007, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
-    // 3. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0xA007, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
-    // 4. Check for empty TX-Response
+    // Style 2/3 - BDUT sends no Disconnect on the bus.
+    // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
 };
@@ -339,8 +338,20 @@ static Telegram testCaseTelegrams_26[] =
 
     // 1. DeviceDescriptorRead(DescType=00) from wrong sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 8, 0, 0xA007, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x00}},
-    // 2. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0xA007, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
+    // Style 2/3 - BDUT sends no Disconnect on the bus.
+    // 2. Check for empty TX-Response
+    {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
+    {END}
+};
+
+static Telegram testCaseTelegrams_30[] =
+{
+    // KNX Spec. 8/3/4 2.4.2.1 p.38/39
+    // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
+    {TEL_RX, 7, 0, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
+    // 2. T_ACK_PDU (Seq=0)
+    {TEL_RX, 8, 0, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC2}},
+    // Style 3 - BDUT remains in OPEN_IDLE, BDUT sends no T_Disconnect.ind and no Disconnect on the bus.
     // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
@@ -348,14 +359,13 @@ static Telegram testCaseTelegrams_26[] =
 
 static Telegram testCaseTelegrams_31[] =
 {
-    // KNX Spec. 8/3/4 2.4.3.1 p.39
+    // KNX Spec. 8/3/4 2.4.3.1 p.39/40
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. T_ACK with wrong sequence number (5)
-    {TEL_RX, 8, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xD6}}, // T-Ack(Seq=5)
-    // 3. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
-    // 4. Check for empty TX-Response
+    {TEL_RX, 8, 0, 0xA001, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xD6}}, // T-Ack(Seq=5)
+    // Style 3 - BDUT remains in OPEN_IDLE, BDUT sends no T_Disconnect.ind and no Disconnect on the bus.
+    // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
 };
@@ -382,10 +392,9 @@ static Telegram testCaseTelegrams_33[] =
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.7 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0xA007, connect, {0xB0, 0xA0, 0x07, 0xA0, 0x00, 0x60, 0x80}},
     // 2. T_ACK with wrong source addressAddr=10.0.1
-    {TEL_RX, 8, 0, 0xA007, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xD6}}, // T-Ack(Seq=0)
-    // 3. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0xA007, connectedOpenIdle, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
-    // 4. Check for empty TX-Response
+    {TEL_RX, 8, 0, 0xA007, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC2}}, // T-Ack(Seq=0)
+    // Style 2/3 - BDUT sends no Disconnect on the bus.
+    // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
 };
@@ -399,9 +408,8 @@ static Telegram testCaseTelegrams_34[] =
 
     // 1. T_ACK with wrong source addressAddr=10.0.1
     {TEL_RX, 8, 0, 0xA007, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xC2}}, // T-Ack(Seq=0)
-    // 2. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0xA007, connectedOpenWait, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
-    // 3. Check for empty TX-Response
+    // Style 2/3 - BDUT sends no Disconnect on the bus.
+    // 2. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
 };
@@ -412,10 +420,9 @@ static Telegram testCaseTelegrams_35[] =
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0xA001, connect, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. T_NACK with wrong sequence number 5
-    {TEL_RX, 8, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xD7}}, // T-Nack(Seq=5)
-    // 3. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
-    // 4. Check for empty TX-Response
+    {TEL_RX, 8, 0, 0, connectedOpenIdle, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xD7}}, // T-Nack(Seq=5)
+    // Style 3 - BDUT remains in OPEN_IDLE, BDUT sends no T_Disconnect.ind and no Disconnect on	the bus.
+    // 3. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
 };
