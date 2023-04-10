@@ -564,7 +564,7 @@ void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSe
 
     dump2(
         telegramCount++;
-        ///\todo create better debug-file/class and include below dump, also rewrite dumpTelegramInfo without using bus.telegram & sendTelegram[6]
+        ///\todo create better debug-file/class and include below dump, also rewrite dumpTelegramInfo without using bus.telegram & sendBuffer[6]
         // dumpTelegramInfo(bus.telegram, address, sendBuffer[6], true, state);
         serial.print("sendControl");
         if (address != connectedAddr)

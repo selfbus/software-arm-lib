@@ -110,7 +110,10 @@ public:
     void sendPreparedTelegram();
 
     /**
-     * Wait for @ref sendTelegram to be free.
+     * Notification that the last telegram transmission has ended.
+     *
+     * @param successful Whether the telegram was transmitted successfully (received an LL_ACK)
+     *                   or not (not even after repeating it a few times).
      */
     void finishedSendingTelegram(bool successful);
 protected:
