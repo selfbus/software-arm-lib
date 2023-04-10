@@ -255,11 +255,11 @@ public:
 
 	virtual LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad, const int len);
 
-	virtual bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start);
+	virtual bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer);
 
-	virtual bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start);
+	virtual bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer);
 
-	virtual bool propertyDescReadTelegram(int objectIdx, PropertyID propertyId, int index);
+	virtual bool propertyDescReadTelegram(int objectIdx, PropertyID propertyId, int index, uint8_t * sendBuffer);
 
 	#ifdef DUMP_PROPERTIES
 

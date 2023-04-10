@@ -122,8 +122,7 @@ public:
 	PropertiesBCU2* properties;
 
 protected:
-    bool processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
-            unsigned char *telegram, uint8_t telLength) override;
+    bool processApci(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength, uint8_t * sendBuffer) override;
 
     void sendApciIndividualAddressSerialNumberReadResponse();
 

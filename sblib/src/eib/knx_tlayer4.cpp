@@ -548,28 +548,28 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
 
 void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo)
 {
-    acquireSendBuffer();
+    auto sendBuffer = acquireSendBuffer();
 
-    initLpdu(sendTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // connection control commands always in system priority
+    initLpdu(sendBuffer, PRIORITY_SYSTEM, false, FRAME_STANDARD); // connection control commands always in system priority
     // sender address will be set by bus.sendTelegram()
-    setDestinationAddress(sendTelegram, address);
-    sendTelegram[5] = (uint8_t)0x60; ///\todo set correct routing counter
-    sendTelegram[6] = (uint8_t)cmd;
+    setDestinationAddress(sendBuffer, address);
+    sendBuffer[5] = (uint8_t)0x60; ///\todo set correct routing counter
+    sendBuffer[6] = (uint8_t)cmd;
     if (cmd & T_SEQUENCED_COMMAND)  // Add the sequence number if the command shall contain it
     {
-        setSequenceNumber(sendTelegram, senderSeqNo);
+        setSequenceNumber(sendBuffer, senderSeqNo);
     }
 
     dump2(
         telegramCount++;
         ///\todo create better debug-file/class and include below dump, also rewrite dumpTelegramInfo without using bus.telegram & sendTelegram[6]
-        // dumpTelegramInfo(bus.telegram, address, sendTelegram[6], true, state);
+        // dumpTelegramInfo(bus.telegram, address, sendBuffer[6], true, state);
         serial.print("sendControl");
         if (address != connectedAddr)
         {
             serial.print(" ERROR");
         }
-        dumpTelegramBytes(true, sendTelegram, 7);
+        dumpTelegramBytes(true, sendBuffer, 7);
     );
 
     sendPreparedTelegram();
@@ -583,12 +583,12 @@ void TLayer4::sendPreparedTelegram()
 
 void TLayer4::sendPreparedConnectedTelegram()
 {
-    acquireSendBuffer();
-    memcpy(sendTelegram, sendConnectedTelegram, telegramSize(sendConnectedTelegram));
+    auto sendBuffer = acquireSendBuffer();
+    memcpy(sendBuffer, sendConnectedTelegram, telegramSize(sendConnectedTelegram));
     sendPreparedTelegram();
 }
 
-void TLayer4::acquireSendBuffer()
+uint8_t * TLayer4::acquireSendBuffer()
 {
     // Someone wants to write into the shared @ref sendTelegram buffer. Wait until the current
     // telegram in it is sent.
@@ -596,6 +596,8 @@ void TLayer4::acquireSendBuffer()
 
     // Then allocate it for the caller.
     sendTelegramBufferState = TELEGRAM_ACQUIRED;
+
+    return sendTelegram;
 }
 
 void TLayer4::finishedSendingTelegram(bool successful)
@@ -626,16 +628,27 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
           serial.print(LOG_SEP);
     );
 
+    const uint16_t senderAddr = senderAddress(telegram);
+
     ///\todo function to check for individual_pdu in knx_tpdu.h
     unsigned char tpci = telegram[6] & 0xfc; //0b11111100 Transport control field (see KNX 3/3/4 p.6 TPDU)
     if (tpci == 0)
     {
-        // T_Data_Individual-PDU: Every implementation acquires buffer and sends response on its own.
-        processApci(apciCmd, 0, 0, telegram, telLength);
+        // T_Data_Individual-PDU: Allow implementations to overwrite fields (priority, destination)
+        auto sendBuffer = acquireSendBuffer();
+        initLpdu(sendBuffer, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        setDestinationAddress(sendBuffer, senderAddr);
+        if (processApci(apciCmd, telegram, telLength, sendBuffer))
+        {
+            sendPreparedTelegram();
+        }
+        else
+        {
+            sendTelegramBufferState = TELEGRAM_FREE;
+        }
         return;
     }
 
-    const uint16_t senderAddr = senderAddress(telegram);
     const uint8_t seqNo = sequenceNumber(telegram);
 
     // check for event E07 or CLOSED state of events E04, E05, E06
@@ -700,7 +713,7 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     dumpTelegramBytes(false, telegram, telLength);
 }
 
-bool TLayer4::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, unsigned char * telegram, uint8_t telLength)
+bool TLayer4::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
 {
     dump2(
           serial.print("TLayer4::processApci");
@@ -738,7 +751,7 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
 
-    auto sendResponse = processApci(apciCmd, connectedAddr, seqNo, telegram, telLength);
+    auto sendResponse = processApci(apciCmd, telegram, telLength, sendConnectedTelegram);
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2

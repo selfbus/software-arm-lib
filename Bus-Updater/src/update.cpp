@@ -53,6 +53,7 @@
 #define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< magic number for device is unlocked and flashing is allowed
 
 static uint8_t __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
+static uint8_t * retTelegram = nullptr;                  //!< pointer to return buffer, as a field for easier access and smaller code size
 
 // Try to avoid direct access to these global variables.
 // It's better to use their get, set and reset functions
@@ -171,7 +172,7 @@ uint16_t streamToUShort16(uint8_t * buffer)
  * @param count Number of bytes the return telegram shall have
  * @param cmd   UPD/UDP command/response to set the return telegram
  */
-static void prepareReturnTelegram(uint8_t * retTelegram, unsigned int count, unsigned char cmd)
+static void prepareReturnTelegram(unsigned int count, unsigned char cmd)
 {
     count += 2; // +1 byte because counting starts including retTelegram[7] (KNX Spec 2.1 3/3/3 2.1 NPDU p.6)
                 // +1 byte for cmd (retTelegram[8])
@@ -252,8 +253,8 @@ static bool getProgButtonState()
  */
 static void setLastError(UDP_State errorToSet)
 {
-    prepareReturnTelegram(bcu.sendConnectedTelegram, 1, UPD_SEND_LAST_ERROR);
-    bcu.sendConnectedTelegram[9] = errorToSet;
+    prepareReturnTelegram(1, UPD_SEND_LAST_ERROR);
+    retTelegram[9] = errorToSet;
 }
 
 void resetUPDProtocol(void)
@@ -336,8 +337,8 @@ static bool updAppVersionRequest()
 {
     char* appversion;
     appversion = getAppVersion((AppDescriptionBlock *) (applicationFirstAddress() - BOOT_BLOCK_DESC_SIZE));
-    prepareReturnTelegram(bcu.sendConnectedTelegram, BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
-    memcpy(bcu.sendConnectedTelegram + 9, appversion, BL_ID_STRING_LENGTH - 1);
+    prepareReturnTelegram(BL_ID_STRING_LENGTH - 1, UPD_APP_VERSION_RESPONSE);
+    memcpy(retTelegram + 9, appversion, BL_ID_STRING_LENGTH - 1);
     d3(
         if (appversion != bl_id_string)
         {
@@ -519,9 +520,9 @@ static bool updRequestBootloaderIdentity(uint8_t * data)
     if (!versionMatch)
     {
         // version mismatch send the minimum requested major and minor version
-        prepareReturnTelegram(bcu.sendConnectedTelegram, sizeof(UPDATER_MIN_MAJOR_VERSION) + sizeof(UPDATER_MIN_MINOR_VERSION), UPD_RESPONSE_BL_VERSION_MISMATCH);
-        bcu.sendConnectedTelegram[offset] = UPDATER_MIN_MAJOR_VERSION;
-        bcu.sendConnectedTelegram[offset + sizeof(UPDATER_MIN_MAJOR_VERSION)] = UPDATER_MIN_MINOR_VERSION;
+        prepareReturnTelegram(sizeof(UPDATER_MIN_MAJOR_VERSION) + sizeof(UPDATER_MIN_MINOR_VERSION), UPD_RESPONSE_BL_VERSION_MISMATCH);
+        retTelegram[offset] = UPDATER_MIN_MAJOR_VERSION;
+        retTelegram[offset + sizeof(UPDATER_MIN_MAJOR_VERSION)] = UPDATER_MIN_MINOR_VERSION;
         d3(serial.print("Updater version mismatch! Required ", UPDATER_MIN_MAJOR_VERSION));
         d3(serial.print(".", UPDATER_MIN_MINOR_VERSION));
         d3(serial.print(" received: ", majorVersionUpdater));
@@ -536,14 +537,14 @@ static bool updRequestBootloaderIdentity(uint8_t * data)
                               sizeof(bootloaderFeatures) +
                               sizeof(appFirstAddress);
 
-    prepareReturnTelegram(bcu.sendConnectedTelegram, dataSize, UPD_RESPONSE_BL_IDENTITY);
-    bcu.sendConnectedTelegram[offset] = BOOTLOADER_MAJOR_VERSION;
+    prepareReturnTelegram(dataSize, UPD_RESPONSE_BL_IDENTITY);
+    retTelegram[offset] = BOOTLOADER_MAJOR_VERSION;
     offset += sizeof(BOOTLOADER_MAJOR_VERSION);
-    bcu.sendConnectedTelegram[offset] = BOOTLOADER_MINOR_VERSION;
+    retTelegram[offset] = BOOTLOADER_MINOR_VERSION;
     offset += sizeof(BOOTLOADER_MINOR_VERSION);
-    uInt32ToStream(bcu.sendConnectedTelegram + offset, bootloaderFeatures);
+    uInt32ToStream(retTelegram + offset, bootloaderFeatures);
     offset += sizeof(bootloaderFeatures);
-    ptrToStream(bcu.sendConnectedTelegram + offset, appFirstAddress);
+    ptrToStream(retTelegram + offset, appFirstAddress);
     d3(serial.print("BL v", BOOTLOADER_MAJOR_VERSION, DEC));
     d3(serial.print(".", BOOTLOADER_MINOR_VERSION, DEC, 2));
     d3(serial.print("    BL feature 0x", (unsigned int)bootloaderFeatures, HEX, 8));
@@ -560,9 +561,9 @@ static bool updRequestStatistic()
 {
     uint32_t sizeTotal = sizeof(disconnectCount) + sizeof(repeatedT_ACKcount);
 
-    prepareReturnTelegram(bcu.sendConnectedTelegram, sizeTotal, UPD_RESPONSE_STATISTIC);
-    uShort16ToStream(bcu.sendConnectedTelegram + 9, disconnectCount);
-    uShort16ToStream(bcu.sendConnectedTelegram + 9 + sizeof(disconnectCount), repeatedT_ACKcount);
+    prepareReturnTelegram(sizeTotal, UPD_RESPONSE_STATISTIC);
+    uShort16ToStream(retTelegram + 9, disconnectCount);
+    uShort16ToStream(retTelegram + 9 + sizeof(disconnectCount), repeatedT_ACKcount);
     d3(serial.print(" #DC ", disconnectCount));
     d3(serial.print(" #repT_ACK ", repeatedT_ACKcount));
     return (true);
@@ -593,8 +594,8 @@ static bool udpRequestBootDescriptionBlock()
         bootDescr->crc = -1;
     }
 
-    prepareReturnTelegram(bcu.sendConnectedTelegram, 12, UPD_RESPONSE_BOOT_DESC);
-    memcpy(bcu.sendConnectedTelegram + 9, bootDescr, 12); // startAddress, endAddress, crc
+    prepareReturnTelegram(12, UPD_RESPONSE_BOOT_DESC);
+    memcpy(retTelegram + 9, bootDescr, 12); // startAddress, endAddress, crc
 
     d3(serial.print("FW start@ 0x", bootDescr->startAddress));   // Firmware start address
     d3(serial.print(" end@ 0x", bootDescr->endAddress));        // Firmware end address
@@ -614,11 +615,11 @@ static bool udpRequestBootDescriptionBlock()
 static bool updRequestData()
 {
      /*
-     memcpy(bcu.sendConnectedTelegram + 9, address, count);
-     bcu.sendConnectedTelegram[5] = 0x63 + count;
-     bcu.sendConnectedTelegram[6] = 0x42;
-     bcu.sendConnectedTelegram[7] = 0x40 | count;
-     bcu.sendConnectedTelegram[8] = UPD_SEND_DATA;
+     memcpy(retTelegram + 9, address, count);
+     retTelegram[5] = 0x63 + count;
+     retTelegram[6] = 0x42;
+     retTelegram[7] = 0x40 | count;
+     retTelegram[8] = UPD_SEND_DATA;
      */
     setLastError(UDP_NOT_IMPLEMENTED);
     return (true);
@@ -650,8 +651,8 @@ static bool updRequestUID()
         setLastError(result);
         return (true);
     }
-    prepareReturnTelegram(bcu.sendConnectedTelegram, UID_LENGTH_USED, UPD_RESPONSE_UID);
-    memcpy(bcu.sendConnectedTelegram + 9, uid, UID_LENGTH_USED);
+    prepareReturnTelegram(UID_LENGTH_USED, UPD_RESPONSE_UID);
+    memcpy(retTelegram + 9, uid, UID_LENGTH_USED);
     dline(" OK");
     return (true);
 }
@@ -858,21 +859,21 @@ static bool updProgramDecompressedDataToFlash(uint8_t * data)
     return (true);
 }
 
-bool handleDeprecatedApciMemoryWrite()
+bool handleDeprecatedApciMemoryWrite(uint8_t * sendBuffer)
 {
-    bcu.sendConnectedTelegram[5] = 0x63 + 4; // routing count in high nibble + response length in low nibble
-    bcu.sendConnectedTelegram[6] = 0x42;     // APCI_MEMORY_RESPONSE_PDU
-    bcu.sendConnectedTelegram[7] = 0x40 | 4; // APCI_MEMORY_RESPONSE_PDU
-    bcu.sendConnectedTelegram[8] = 0;        // [8-9] old value of UPD_SEND_LAST_ERROR = 0x0015
-    bcu.sendConnectedTelegram[9] = 0x15;
-    bcu.sendConnectedTelegram[10] = 0xff;    // [10-13] old value of UDP_NOT_IMPLEMENTED = 0x0000FFFF
-    bcu.sendConnectedTelegram[11] = 0xff;
-    bcu.sendConnectedTelegram[12] = 0x00;
-    bcu.sendConnectedTelegram[13] = 0x00;
+    sendBuffer[5] = 0x63 + 4; // routing count in high nibble + response length in low nibble
+    sendBuffer[6] = 0x42;     // APCI_MEMORY_RESPONSE_PDU
+    sendBuffer[7] = 0x40 | 4; // APCI_MEMORY_RESPONSE_PDU
+    sendBuffer[8] = 0;        // [8-9] old value of UPD_SEND_LAST_ERROR = 0x0015
+    sendBuffer[9] = 0x15;
+    sendBuffer[10] = 0xff;    // [10-13] old value of UDP_NOT_IMPLEMENTED = 0x0000FFFF
+    sendBuffer[11] = 0xff;
+    sendBuffer[12] = 0x00;
+    sendBuffer[13] = 0x00;
     return (true);
 }
 
-bool handleApciUsermsgManufacturer(uint8_t * data, uint32_t size)
+bool handleApciUsermsgManufacturerInternal(uint8_t * data, uint32_t size)
 {
     if (size < sizeof(updCommands[idxInvalidUPDCommand].code))
     {
@@ -974,6 +975,14 @@ bool handleApciUsermsgManufacturer(uint8_t * data, uint32_t size)
             return (updUnkownCommand());
     }
     return (false); //we should never land here
+}
+
+bool handleApciUsermsgManufacturer(uint8_t * sendBuffer, uint8_t * data, uint32_t size)
+{
+    retTelegram = sendBuffer;
+    auto result = handleApciUsermsgManufacturerInternal(data, size);
+    retTelegram = nullptr;
+    return result;
 }
 
 

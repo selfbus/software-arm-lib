@@ -145,6 +145,8 @@ static void _handleRx(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, un
 
 static void _checkSendTelegram(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, unsigned int testStep)
 {
+    REQUIRE(currentBcu->bus->sendCurTelegram != nullptr);
+
     int i;
     int mismatches = 0;
     int sendTelegramLen = telegramSize(currentBcu->bus->sendCurTelegram);

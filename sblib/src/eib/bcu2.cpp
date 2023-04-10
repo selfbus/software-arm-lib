@@ -107,7 +107,7 @@ BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* com
 		properties(properties)
 {}
 
-bool BCU2::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, unsigned char *telegram, uint8_t telLength)
+bool BCU2::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
 {
     uint8_t count;
     uint16_t address;
@@ -125,34 +125,34 @@ bool BCU2::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int
         address = ((telegram[10] & 0x0f) << 4);
         address = (uint16_t)(address | (telegram[11]));
 
-        sendTelegram[5] = 0x60 + 5; // routing count in high nibble + response length in low nibble
-        setApciCommand(sendTelegram, APCI_PROPERTY_VALUE_RESPONSE_PDU, 0);
-        sendTelegram[8] = index;
-        sendTelegram[9] = id;
-        sendTelegram[10] = telegram[10];
-        sendTelegram[11] = telegram[11];
+        sendBuffer[5] = 0x60 + 5; // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_PROPERTY_VALUE_RESPONSE_PDU, 0);
+        sendBuffer[8] = index;
+        sendBuffer[9] = id;
+        sendBuffer[10] = telegram[10];
+        sendBuffer[11] = telegram[11];
 
         if (apciCmd == APCI_PROPERTY_VALUE_READ_PDU)
-            found = properties->propertyValueReadTelegram(index, (PropertyID) id, count, address);
+            found = properties->propertyValueReadTelegram(index, (PropertyID) id, count, address, sendBuffer);
         else
-            found = properties->propertyValueWriteTelegram(index, (PropertyID) id, count, address);
-        if (!found) sendTelegram[10] = 0;
+            found = properties->propertyValueWriteTelegram(index, (PropertyID) id, count, address, sendBuffer);
+        if (!found) sendBuffer[10] = 0;
         return (true);
 
     case APCI_PROPERTY_DESCRIPTION_READ_PDU:
         index = telegram[8];
         id = telegram[9];
         address = telegram[10];
-        sendTelegram[5] = 0x60 + 8; // routing count in high nibble + response length in low nibble
-        setApciCommand(sendTelegram, APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU, 0);
-        sendTelegram[8] = index;
-        sendTelegram[9] = id;
-        sendTelegram[10] = (uint8_t)address;
-        properties->propertyDescReadTelegram(index, (PropertyID) id, address);
+        sendBuffer[5] = 0x60 + 8; // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_PROPERTY_DESCRIPTION_RESPONSE_PDU, 0);
+        sendBuffer[8] = index;
+        sendBuffer[9] = id;
+        sendBuffer[10] = (uint8_t)address;
+        properties->propertyDescReadTelegram(index, (PropertyID) id, address, sendBuffer);
         return (true);
 
     default:
-        return BcuDefault::processApci(apciCmd, senderAddr, senderSeqNo, telegram, telLength);
+        return BcuDefault::processApci(apciCmd, telegram, telLength, sendBuffer);
     }
 }
 
@@ -201,25 +201,25 @@ bool BCU2::processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram
 
 void BCU2::sendApciIndividualAddressSerialNumberReadResponse()
 {
-    acquireSendBuffer();
-    initLpdu(sendTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD);
+    auto sendBuffer = acquireSendBuffer();
+    initLpdu(sendBuffer, PRIORITY_SYSTEM, false, FRAME_STANDARD);
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    setDestinationAddress(sendTelegram, 0x0000); // Zero target address, it's a broadcast
-    sendTelegram[5] = 0xe0 + 11; // address type & routing count in high nibble + response length (11) in low nibble
-    setApciCommand(sendTelegram, APCI_INDIVIDUALADDRESS_SERIALNUMBER_RESPONSE_PDU, 0);
-    // sendTelegram[8-13] contains serial number
+    setDestinationAddress(sendBuffer, 0x0000); // Zero target address, it's a broadcast
+    sendBuffer[5] = 0xe0 + 11; // address type & routing count in high nibble + response length (11) in low nibble
+    setApciCommand(sendBuffer, APCI_INDIVIDUALADDRESS_SERIALNUMBER_RESPONSE_PDU, 0);
+    // sendBuffer[8-13] contains serial number
     for (uint8_t i = 0; i < userEeprom->serialSize(); i++)
     {
-        sendTelegram[8+i] = userEeprom->serial()[i];
+        sendBuffer[8+i] = userEeprom->serial()[i];
     }
 
-    // sendTelegram[14-15] contains domain address
-    sendTelegram[14] = 0x00;
-    sendTelegram[15] = 0x00;
+    // sendBuffer[14-15] contains domain address
+    sendBuffer[14] = 0x00;
+    sendBuffer[15] = 0x00;
 
-    // sendTelegram[16-17] reserved
-    sendTelegram[16] = 0x00;
-    sendTelegram[17] = 0x00;
+    // sendBuffer[16-17] reserved
+    sendBuffer[16] = 0x00;
+    sendBuffer[17] = 0x00;
 
     sendPreparedTelegram();
 }

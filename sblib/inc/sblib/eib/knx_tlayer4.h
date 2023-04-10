@@ -102,7 +102,7 @@ public:
     /**
      * Wait for @ref sendTelegram to be free and acquire it.
      */
-    void acquireSendBuffer();
+    uint8_t * acquireSendBuffer();
 
     /**
      * Sends the telegram that was prepared in @ref sendTelegram.
@@ -113,19 +113,6 @@ public:
      * Wait for @ref sendTelegram to be free.
      */
     void finishedSendingTelegram(bool successful);
-
-    /**
-     * A buffer for the telegram to send.
-     * @warning This buffer is considered library private and should rather not be used by the application program.
-     */
-    byte *sendTelegram;
-
-    /**
-     * A buffer for the connection-oriented telegram to send. Separate from @ref sendTelegram as repeated sending
-     * can be necessary after seconds, while other telegrams can be received and transmitted.
-     * @warning This buffer is considered library private and should rather not be used by the application program.
-     */
-    byte *sendConnectedTelegram;
 protected:
     /**
      * Special initialization for the transport layer.
@@ -156,8 +143,7 @@ protected:
      */
     void sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo);
 
-    virtual bool processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
-                                      unsigned char * telegram, uint8_t telLength);
+    virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
 
     bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
 
@@ -262,13 +248,13 @@ private:
     void actionA06DisconnectAndClose();
 
     /**
-     * @brief Sends the direct telegram which is provided in global buffer @ref sendConnectedTelegram
+     * @brief Sends the direct telegram which is provided in buffer @ref sendConnectedTelegram
      */
     void actionA07SendDirectTelegram();
     void actionA08IncrementSequenceNumber();
 
     /**
-     * @brief Repeats the last direct telegram in global buffer @ref sendConnectedTelegram
+     * @brief Repeats the last direct telegram in buffer @ref sendConnectedTelegram
      */
     void actionA09RepeatMessage();
 
@@ -289,6 +275,17 @@ private:
     uint32_t sentTelegramTime = 0;              //!< System time of the last sent telegram
 
     volatile uint16_t ownAddr;                  //!< Our own physical address on the bus
+
+    /**
+     * A buffer for the telegram to send.
+     */
+    byte *sendTelegram;
+
+    /**
+     * A buffer for the connection-oriented telegram to send. Separate from @ref sendTelegram as repeated sending
+     * can be necessary after seconds, while other telegrams can be received and transmitted.
+     */
+    byte *sendConnectedTelegram;
 
     enum SendTelegramBufferState
     {

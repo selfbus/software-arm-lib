@@ -40,14 +40,23 @@ static void tc_setup(Telegram* tel, uint16_t telCount)
 
 static Telegram apciAdcReadPduTelegrams[] =
 {
+    // 1. APCI_ADC_READ_PDU
+    {TEL_RX, 9, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x62, 0x01, 0x80, 0x89}},
+    // 2. APCI_ADC_RESPONSE_PDU
+    {TEL_TX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x64, 0x01, 0xC0, 0x89, 0x00, 0x00}},
+    {END}
+};
+
+static Telegram apciAdcReadPduConnectedTelegrams[] =
+{
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. APCI_ADC_READ_PDU
-    {TEL_RX, 8, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x64, 0x01, 0x80}},
+    {TEL_RX, 9, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x62, 0x41, 0x80, 0x89}},
     // 3. Check T_ACK, loop() once so APCI_ADC_RESPONSE_PDU will be send
     {TEL_TX, 7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
-    // 4.  APCI_ADC_RESPONSE_PDU
-    {TEL_TX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x64, 0x41, 0xC0, 0xAB, 0x00, 0x00}},
+    // 4. APCI_ADC_RESPONSE_PDU
+    {TEL_TX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x64, 0x41, 0xC0, 0x89, 0x00, 0x00}},
     {END}
 };
 
@@ -260,6 +269,19 @@ static Test_Case testCaseApciAdcReadPdu =
     apciAdcReadPduTelegrams
 };
 
+static Test_Case testCaseApciAdcReadPduConnected =
+{
+    "APCI_ADC_READ_PDU",
+    MANUFACTURER, DEVICE, VERSION,
+    0,    //powerOnDelay
+    NULL, // eePromSetup
+    tc_setup,
+    NULL,
+    NULL,
+    NULL,
+    apciAdcReadPduConnectedTelegrams
+};
+
 static Test_Case testCaseApciMemoryReadPdu =
 {
     "APCI_MEMORY_READ_PDU",
@@ -387,6 +409,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
     SECTION("BCU 1") {
         bcuTypeToTest = BCU_1;
         executeTest(bcuTypeToTest, &testCaseApciAdcReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciAdcReadPduConnected);
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
@@ -405,6 +428,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
     SECTION("BCU 2") {
         bcuTypeToTest = BCU_2;
         executeTest(bcuTypeToTest, &testCaseApciAdcReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciAdcReadPduConnected);
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
@@ -419,6 +443,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
     SECTION("BCU 0x0701 (BIM112)") {
         bcuTypeToTest = BCU_0701;
         executeTest(bcuTypeToTest, &testCaseApciAdcReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciAdcReadPduConnected);
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
@@ -433,6 +458,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
     SECTION("BCU 0x0705 (BIM112)") {
         bcuTypeToTest = BCU_0705;
         executeTest(bcuTypeToTest, &testCaseApciAdcReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciAdcReadPduConnected);
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
@@ -447,6 +473,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
     SECTION("BCU 0x07B0") {
         bcuTypeToTest = BCU_07B0;
         executeTest(bcuTypeToTest, &testCaseApciAdcReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciAdcReadPduConnected);
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);

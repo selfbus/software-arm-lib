@@ -354,13 +354,13 @@ int ComObjects::firstObjectAddr(int objno)
 
 void ComObjects::sendGroupReadTelegram(int objno, int addr)
 {
-    bcu->acquireSendBuffer();
+    auto sendBuffer = bcu->acquireSendBuffer();
     ///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
     // check of spec 3.7.4. : no additional search for associations to Grp Addr for local read and possible response
-    initLpdu(bcu->sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
-    setDestinationAddress(bcu->sendTelegram, addr);
-    bcu->sendTelegram[5] = 0xe1; // routing count + length
-    setApciCommand(bcu->sendTelegram, APCI_GROUP_VALUE_READ_PDU, 0);
+    initLpdu(sendBuffer, PRIORITY_LOW, false, FRAME_STANDARD);
+    setDestinationAddress(sendBuffer, addr);
+    sendBuffer[5] = 0xe1; // routing count + length
+    setApciCommand(sendBuffer, APCI_GROUP_VALUE_READ_PDU, 0);
     bcu->sendPreparedTelegram();
     transmitting_object_no = objno; //save transmitting object for status check
     bcu->bus->setBusRXStateValid(false);
@@ -373,23 +373,23 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
     byte addData = 0;
     ApciCommand cmd;
 
-    bcu->acquireSendBuffer();
-	///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
-	initLpdu(bcu->sendTelegram, PRIORITY_LOW, false, FRAME_STANDARD);
-	setDestinationAddress(bcu->sendTelegram, addr);
-    bcu->sendTelegram[5] = 0xe0 | ((objSize + 1) & 0x0f);
+    auto sendBuffer = bcu->acquireSendBuffer();
+    ///\todo Set routing count and priority according to the parameters set from ETS in the EEPROM, add ID/objno for result association from bus-layer
+    initLpdu(sendBuffer, PRIORITY_LOW, false, FRAME_STANDARD);
+    setDestinationAddress(sendBuffer, addr);
+    sendBuffer[5] = 0xe0 | ((objSize + 1) & 0x0f);
 
     isResponse ? cmd = APCI_GROUP_VALUE_RESPONSE_PDU : cmd = APCI_GROUP_VALUE_WRITE_PDU;
 
     if (objSize)
-        reverseCopy(bcu->sendTelegram + 8, valuePtr, objSize);
+        reverseCopy(sendBuffer + 8, valuePtr, objSize);
     else
         addData = *valuePtr;
 
-    setApciCommand(bcu->sendTelegram, cmd, addData);
+    setApciCommand(sendBuffer, cmd, addData);
 
     // Process this telegram in the receive queue (if there is a local receiver of this group address)
-    processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, bcu->sendTelegram, objno);
+    processGroupTelegram(addr, APCI_GROUP_VALUE_WRITE_PDU, sendBuffer, objno);
 
     bcu->sendPreparedTelegram();
     transmitting_object_no = objno; //save transmitting object for status check

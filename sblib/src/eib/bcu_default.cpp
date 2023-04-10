@@ -487,7 +487,7 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
     return (lengthPayLoad == 0);
 }
 
-bool BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, unsigned char *telegram, uint8_t telLength)
+bool BcuDefault::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
 {
     uint8_t count;
     uint16_t address;
@@ -500,11 +500,11 @@ bool BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, con
                             //!  The value read can be converted to a voltage value by using the following formula: Voltage = ADC_Value * 0,15V
         index = telegram[7] & 0x3f;  // ADC channel
         count = telegram[8];         // number of samples
-        sendConnectedTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
-        setApciCommand(sendConnectedTelegram, APCI_ADC_RESPONSE_PDU, index);
-        sendConnectedTelegram[8] = count;     // read count
-        sendConnectedTelegram[9] = 0;         // ADC value high byte
-        sendConnectedTelegram[10] = 0;        // ADC value low byte
+        sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_ADC_RESPONSE_PDU, index);
+        sendBuffer[8] = count;     // read count
+        sendBuffer[9] = 0;         // ADC value high byte
+        sendBuffer[10] = 0;        // ADC value low byte
         return (true);
 
     case APCI_MEMORY_READ_PDU:
@@ -527,35 +527,35 @@ bool BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, con
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            if (!processApciMemoryReadPDU(address, &sendConnectedTelegram[10], count))
+            if (!processApciMemoryReadPDU(address, &sendBuffer[10], count))
             {
                 // address space unreachable, need to respond with count 0
                 count = 0;
             }
 
             // send a APCI_MEMORY_RESPONSE_PDU response
-            sendConnectedTelegram[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
-            setApciCommand(sendConnectedTelegram, APCI_MEMORY_RESPONSE_PDU, count);
-            sendConnectedTelegram[8] = HIGH_BYTE(address);
-            sendConnectedTelegram[9] = lowByte(address);
+            sendBuffer[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
+            setApciCommand(sendBuffer, APCI_MEMORY_RESPONSE_PDU, count);
+            sendBuffer[8] = HIGH_BYTE(address);
+            sendBuffer[9] = lowByte(address);
             return (true);
         }
         break;
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
-        return (processDeviceDescriptorReadTelegram(telegram[7] & 0x3f));
+        return (processDeviceDescriptorReadTelegram(sendBuffer, telegram[7] & 0x3f));
 
     case APCI_BASIC_RESTART_PDU:
         requestedRestartType = RESTART_BASIC;
         break;
 
     case APCI_MASTER_RESET_PDU:
-        return (processApciMasterResetPDU(telegram[8], telegram[9]));
+        return (processApciMasterResetPDU(sendBuffer, telegram[8], telegram[9]));
 
     case APCI_AUTHORIZE_REQUEST_PDU:
-        sendConnectedTelegram[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
-        setApciCommand(sendConnectedTelegram, APCI_AUTHORIZE_RESPONSE_PDU, 0);
-        sendConnectedTelegram[8] = 0x00;
+        sendBuffer[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_AUTHORIZE_RESPONSE_PDU, 0);
+        sendBuffer[8] = 0x00;
         return (true);
 
     default:
@@ -564,21 +564,21 @@ bool BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, con
     return (false);
 }
 
-bool BcuDefault::processDeviceDescriptorReadTelegram(int id)
+bool BcuDefault::processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id)
 {
     if (id != 0)
     {
         return (false); // unknown device descriptor
     }
 
-    sendConnectedTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
-    setApciCommand(sendConnectedTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
-    sendConnectedTelegram[8] = HIGH_BYTE(getMaskVersion());
-    sendConnectedTelegram[9] = lowByte(getMaskVersion());
+    sendBuffer[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
+    setApciCommand(sendBuffer, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
+    sendBuffer[8] = HIGH_BYTE(getMaskVersion());
+    sendBuffer[9] = lowByte(getMaskVersion());
     return (true);
 }
 
-bool BcuDefault::processApciMasterResetPDU(uint8_t eraseCode, uint8_t channelNumber)
+bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber)
 {
     if (!checkApciForMagicWord(eraseCode, channelNumber))
     {
@@ -588,11 +588,11 @@ bool BcuDefault::processApciMasterResetPDU(uint8_t eraseCode, uint8_t channelNum
     }
 
     // create the APCI_MASTER_RESET_RESPONSE_PDU
-    sendConnectedTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
-    setApciCommand(sendConnectedTelegram, APCI_MASTER_RESET_RESPONSE_PDU, 0);
-    sendConnectedTelegram[8] = T_RESTART_NO_ERROR;
-    sendConnectedTelegram[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
-    sendConnectedTelegram[10] = 1; // 1 second
+    sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+    setApciCommand(sendBuffer, APCI_MASTER_RESET_RESPONSE_PDU, 0);
+    sendBuffer[8] = T_RESTART_NO_ERROR;
+    sendBuffer[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
+    sendBuffer[10] = 1; // 1 second
 
     // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
     // set magicWord to start after reset in bootloader mode

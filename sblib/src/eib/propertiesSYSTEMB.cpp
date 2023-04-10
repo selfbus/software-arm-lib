@@ -304,7 +304,7 @@ int PropertiesSYSTEMB::loadProperty(int objectIdx, const byte* data, int len)
     return LS_LOADING;
 }
 
-bool PropertiesSYSTEMB::propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start)
+bool PropertiesSYSTEMB::propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer)
 {
     // IF_DUMP_PROPERTIES(serial.print("propertyValueReadTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
@@ -322,22 +322,22 @@ bool PropertiesSYSTEMB::propertyValueReadTelegram(int objectIdx, PropertyID prop
     {
         if (propertyId == PID_TABLE_REFERENCE)
         {
-            bcu->sendTelegram[12] = 0;
-            bcu->sendTelegram[13] = 0;
-            reverseCopy(bcu->sendTelegram + 14, valuePtr + start * size, len);
+            sendBuffer[12] = 0;
+            sendBuffer[13] = 0;
+            reverseCopy(sendBuffer + 14, valuePtr + start * size, len);
             len += 2;
         }
         else
-            reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+            reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
     }
-    else memcpy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+    else memcpy(sendBuffer + 12, valuePtr + start * size, len);
 
-    bcu->sendTelegram[5] += len;
+    sendBuffer[5] += len;
 
     return true;
 }
 
-bool PropertiesSYSTEMB::propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start)
+bool PropertiesSYSTEMB::propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer)
 {
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def)
@@ -360,7 +360,7 @@ bool PropertiesSYSTEMB::propertyValueWriteTelegram(int objectIdx, PropertyID pro
         len = bcu->bus->telegramLen - 13;
         state = loadProperty(objectIdx, data, len);
         bcu->userEeprom->loadState()[objectIdx] = state;
-        bcu->sendTelegram[12] = state;
+        sendBuffer[12] = state;
         len = 1;
     }
     else
@@ -372,17 +372,17 @@ bool PropertiesSYSTEMB::propertyValueWriteTelegram(int objectIdx, PropertyID pro
         if (propertyId == PID_MCB_TABLE)
         {
             memcpy(valuePtr + start * size, data, len);
-            memcpy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+            memcpy(sendBuffer + 12, valuePtr + start * size, len);
         }
         else
         {
             reverseCopy(valuePtr + start * size, data, len);
-            reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+            reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
         }
         if (def->isEepromPointer())
             bcu->userEeprom->modified(true);
     }
 
-    bcu->sendTelegram[5] += len;
+    sendBuffer[5] += len;
     return true;
 }

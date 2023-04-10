@@ -124,16 +124,15 @@ public:
      * Process a APCI_MASTER_RESET_PDU
      * see KNX Spec. 3/5/2 §3.7.1.2 p.64 A_Restart
      *
+     * @param sendBuffer    Buffer to write the (potential) response into
      * @param eraseCode     eraseCode of the @ref APCI_MASTER_RESET_PDU telegram
      * @param channelNumber channelNumber of the @ref APCI_MASTER_RESET_PDU telegram
-     * @note sendConnectedTelegram is accessed and changed inside the function to prepare a @ref APCI_MASTER_RESET_RESPONSE_PDU
      *
      * @return true if a response message should be sent, otherwise false
      */
-    bool processApciMasterResetPDU(uint8_t eraseCode, uint8_t channelNumber);
+    bool processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber);
 
-    virtual bool processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
-                                       unsigned char * telegram, uint8_t telLength);
+    virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
 
     /**
       * @brief Performs a system reset by calling @ref NVIC_SystemReset
@@ -211,11 +210,12 @@ protected:
     /**
      * Process a device-descriptor-read request.
      *
+     * @param sendBuffer - Buffer to write the response into
      * @param id - the device-descriptor type ID
      *
      * @return True on success, false on failure
      */
-    bool processDeviceDescriptorReadTelegram(int id);  ///\todo move to a new subclass BL doesnt need that
+    bool processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id);  ///\todo move to a new subclass BL doesnt need that
 
     /**
      * Flushes all pending write operations to user memory (eeprom, memmapper) and sends a callback to the user
