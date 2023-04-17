@@ -936,11 +936,8 @@ void TLayer4::resetConnection()
           serial.print(LOG_SEP)
     );
 
-    if (state == TL4State::OPEN_WAIT)
-    {
-        sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
-        sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
-    }
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+    sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
 }
 
 bool TLayer4::setTL4State(TLayer4::TL4State newState)
