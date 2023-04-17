@@ -103,6 +103,7 @@ static void _handleBusSendingInterrupt(BcuDefault* currentBcu)
 
      if (currentBcu->bus->state == Bus::SEND_START_BIT)
      {
+        _LPC_TMR16B1.TC += 10;
         currentBcu->bus->state = Bus::SEND_END_OF_TX;
         currentBcu->bus->timerInterruptHandler();
         if (currentBcu->bus->state == Bus::SEND_WAIT_FOR_RX_ACK_WINDOW)  // device request an ACK -> so inject one
