@@ -745,7 +745,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		//tb_t( RECV_BITS_OF_BYTE, ttimer.value(), tb_in);
 
 		timeout = timer.flag(timeChannel); // timeout--> end of rx byte
-		if (timeout) time = BYTE_TIME_INCL_STOP; // BYTE_TIME = 11 bits
+		if (timeout) time = timer.match(timeChannel); // end of stop bit
 		else
 		{
 			time = timer.capture(captureChannel); // we received an capt. event: new low bit
