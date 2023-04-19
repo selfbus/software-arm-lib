@@ -1114,10 +1114,18 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
 		if (timer.flag(captureChannel))
 		{
-			if (( timer.capture(captureChannel) < timer.match(pwmChannel) - BIT_WAIT_TIME +30 ) &&  // add bit margin: early 7us, late 30us
-					(timer.capture(captureChannel) > BIT_WAIT_TIME - 7))  // subtract 7 margin for early bit
+			auto captureTime = timer.capture(captureChannel);
+			if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - 7))
 			{
-				tb_d( state+400,timer.capture(captureChannel), tb_in);
+				// Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
+				// (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
+				// This is a spike, ignore it.
+				break;
+			}
+
+			if (( captureTime < timer.match(pwmChannel) - 7 ))
+			{
+				tb_d( state+400, captureTime, tb_in);
 				tb_t( state+300, ttimer.value(), tb_in);
 
 				// A collision. Stop sending and switch to receiving the current transmission.
@@ -1154,12 +1162,12 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 				// Scale back bitMask to match the collided bit. pwmChannel is when we would have sent
 				// the next falling edge, captureChannel when we received it. The 33 is to account for
 				// slight timing differences and integer arithmetic.
-				auto collisionBitCount = (timer.match(pwmChannel) - timer.capture(captureChannel) + 33) / BIT_TIME;
+				auto collisionBitCount = (timer.match(pwmChannel) - captureTime + 33) / BIT_TIME;
 				bitMask >>= collisionBitCount + 1;
 
 				// Pretend that we also received a 0 bit last time, such that there is no need to set any
 				// bits to 1 in RECV_BITS_OF_BYTE.
-				bitTime = timer.capture(captureChannel) - BIT_TIME;
+				bitTime = captureTime - BIT_TIME;
 
 				// Only keep those bits of currentByte that we sent without collision, and clear the rest.
 				currentByte &= (bitMask - 1);
@@ -1178,7 +1186,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 					}
 				}
 
-				timer.match(timeChannel, timer.capture(captureChannel) + missingBits * BIT_TIME);
+				timer.match(timeChannel, captureTime + missingBits * BIT_TIME);
 				timer.matchMode(timeChannel, INTERRUPT | RESET);
 
 				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
