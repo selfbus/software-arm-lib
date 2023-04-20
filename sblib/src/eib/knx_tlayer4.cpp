@@ -750,23 +750,36 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
 
-    auto sendBuffer = (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_FREE) ? sendConnectedTelegram : sendConnectedTelegram2;
+    byte * sendBuffer;
+    volatile SendConnectedTelegramBufferState * sendBufferState;
+    if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_FREE)
+    {
+        sendBuffer = sendConnectedTelegram;
+        sendBufferState = &sendConnectedTelegramBufferState;
+    }
+    else
+    {
+        sendBuffer = sendConnectedTelegram2;
+        sendBufferState = &sendConnectedTelegramBuffer2State;
+    }
+
+    // Mark buffer as acquired before starting potentially long-running processing of the message.
+    // This ensures finishedSendingTelegram() can move the buffer to the next state and thus prevents
+    // messages lingering in the buffer. The message will not be sent prematurely as the sending is
+    // triggered in loop(), which can only execute after this function returns.
+    *sendBufferState = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
     auto sendResponse = processApci(apciCmd, telegram, telLength, sendBuffer);
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2
         initLpdu(sendBuffer, priority(telegram), false, FRAME_STANDARD); // same priority as received
         setDestinationAddress(sendBuffer, connectedAddr);
-        if (sendBuffer == sendConnectedTelegram)
-        {
-            setSequenceNumber(sendBuffer, seqNoSend);
-            sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
-        }
-        else
-        {
-            setSequenceNumber(sendBuffer, ((seqNoSend + 1) & 0x0F));
-            sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
-        }
+        auto sequenceNumber = (sendBuffer == sendConnectedTelegram) ? seqNoSend : ((seqNoSend + 1) & 0x0F);
+        setSequenceNumber(sendBuffer, sequenceNumber);
+    }
+    else
+    {
+        *sendBufferState = CONNECTED_TELEGRAM_FREE;
     }
 }
 
