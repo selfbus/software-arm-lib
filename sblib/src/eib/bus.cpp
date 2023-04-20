@@ -405,7 +405,7 @@ void Bus::handleTelegram(bool valid)
 	//need_to_send_ack_to_remote=false;
 	sendAck = 0; // clear any pending ACK TX
 	int time = SEND_WAIT_TIME -  PRE_SEND_TIME; // default wait time after bus action
-	state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;//  default next state is wait for 50 bit times for pending tx or new  rx
+	state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;//  default next state is wait for 50 bit times for pending tx or new rx
 	tb_h( 908, currentByte, tb_in);
 	tb_h( 909, parity, tb_in);
 
@@ -444,6 +444,7 @@ void Bus::handleTelegram(bool valid)
 					//need_to_send_ack_to_remote=true;
 				}
 		}
+
 		if (processTel)
 		{// check for repeated telegram, did we already received it
 			// check the repeat bit in header and compare with previous received telegram still stored in the telegram[] buffer
@@ -460,38 +461,40 @@ void Bus::handleTelegram(bool valid)
 				}
 			}
 
-			if (!already_received){
-				//  check for space in rx buffer for next telegram, if no space available, send busy back
-				if (telegramLen)
+			// check for space in rx buffer for next telegram, if no space available, send nothing
+			if (telegramLen)
+			{
+				// KNX Spec. 2.1. 3/2/2 2.4.1 p.38
+				// Device should only send a LL_BUSY if it knows that the telegram can be processed within the next 100ms.
+				// Since we know nothing about the running application we better send nothing
+				sendAck = 0;
+				rx_error |= RX_BUFFER_BUSY;
+			}
+			else
+			{
+				sendAck = SB_BUS_ACK;
+				// store data in telegram buffer for higher layers, set telegramLen to indicate data available
+				if (!already_received)
 				{
-				    // KNX Spec. 2.1. 3/2/2 2.4.1 p.38
- 			        // Device should only send a LL_BUSY if it knows that the telegram can be processed within the next 100ms.
-					// Since we know nothing about the running application we better stay quiet
-					// don't send LL_BUSY for broadcasts
-					sendAck = 0;
-					rx_error |= RX_BUFFER_BUSY;
-				}
-				else
-				{// store data in telegram buffer for higher layers, set telegramLen to indicate data available
-					//todo check if telegram[] buffer is free
 					for (int i = 0; i < nextByteIndex; i++) telegram[i] = rx_telegram[i];
 					telegramLen = nextByteIndex;
 					bus_rx_state = rx_error;
 					rx_error = 0;
 					setBusRXStateValid(true);
+				}
+			}
 
-					//check if an ACK is requested -> not needed for poll frame
-					//if (! ( (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG)  ||   (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)) )
-					if (!(rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG) )
-					{
-					    sendAck = SB_BUS_ACK;
-					}
-				}
-				// we received a valid telegram need to send an ack/busy to remote - has priority, no rx/tx  in between
-				if ( sendAck){
-					state = Bus::RECV_WAIT_FOR_ACK_TX_START;
-					time = SEND_ACK_WAIT_TIME - PRE_SEND_TIME;
-				}
+			if (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)
+			{
+				// not an L_Data frame, don't send any LL_ACK
+				sendAck = 0;
+			}
+
+			if (sendAck)
+			{
+				// ACK has priority, no rx/tx in between
+				state = Bus::RECV_WAIT_FOR_ACK_TX_START;
+				time = SEND_ACK_WAIT_TIME - PRE_SEND_TIME;
 			}
 		}
 	}
