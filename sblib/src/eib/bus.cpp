@@ -498,39 +498,37 @@ void Bus::handleTelegram(bool valid)
 			}
 		}
 	}
-	else if (nextByteIndex == 1 && parity)   // Received a spike or a bus acknowledgment, only parity, no checksum
+	else if (nextByteIndex == 1 && wait_for_ack_from_remote)   // Received a spike or a bus acknowledgment, only parity, no checksum
 	{
 		tb_h( 907, currentByte, tb_in);
-		if (((rx_error & RX_CHECKSUM_ERROR) == RX_CHECKSUM_ERROR) &&
-			((currentByte == SB_BUS_ACK) || (currentByte == SB_BUS_NACK) || (currentByte == SB_BUS_BUSY) || (currentByte == SB_BUS_NACK_BUSY)))
-        {
-            // received an ACK frame so clear checksum bit previously set in Isr Bus::timerInterruptHandler
-            rx_error &= ~RX_CHECKSUM_ERROR;
-        }
 
-		//  did we send a telegram ( sendTries>=1 and the received telegram is ACK or repetition max  -> send next telegram
-		if (wait_for_ack_from_remote)
+		wait_for_ack_from_remote = false;
+
+		// received an ACK frame so clear checksum bit previously set in ISR Bus::timerInterruptHandler
+		rx_error &= ~RX_CHECKSUM_ERROR;
+
+		// received telegram is ACK or repetition max -> send next telegram
+		if ((parity && currentByte == SB_BUS_ACK) || sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
 		{
-			wait_for_ack_from_remote = false;
-			if ((currentByte == SB_BUS_ACK ) ||  sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax)
-			{ // last sending to remote was ok or max retry, prepare for next tx telegram
-				if ( sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax) tx_error|= TX_RETRY_ERROR;
-				tb_h( 906, tx_error, tb_in);
-				sendNextTelegram();
-			}
-			else if (currentByte == SB_BUS_BUSY)
-			{
-				time = BUSY_WAIT_150BIT - PRE_SEND_TIME;
-				tx_error |=TX_REMOTE_BUSY_ERROR;
-				busy_wait_from_remote = true;
-				repeatTelegram = true;
-			}
-			else
-			{// we received nack or wrong ack, need to repeat last telegram
-				tx_error |= TX_NACK_ERROR;
-				busy_wait_from_remote = false;
-				repeatTelegram = true;
-			}
+			// last sending to remote was ok or max retry, prepare for next tx telegram
+			if (sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
+				tx_error |= TX_RETRY_ERROR;
+			tb_h( 906, tx_error, tb_in);
+			sendNextTelegram();
+		}
+		else if (parity && currentByte == SB_BUS_BUSY)
+		{
+			time = BUSY_WAIT_150BIT - PRE_SEND_TIME;
+			tx_error |= TX_REMOTE_BUSY_ERROR;
+			busy_wait_from_remote = true;
+			repeatTelegram = true;
+		}
+		else
+		{
+			// we received nack or something else, need to repeat last telegram
+			tx_error |= TX_NACK_ERROR;
+			busy_wait_from_remote = false;
+			repeatTelegram = true;
 		}
 	}
 	else if (collision) // A collision occurred during sending. Ignore the received bytes
@@ -539,7 +537,7 @@ void Bus::handleTelegram(bool valid)
 	}
 	else // We received wrong checksum or parity, or more than one byte but too short for a telegram
 	{
-		rx_error |=RX_INVALID_TELEGRAM_ERROR;
+		rx_error |= RX_INVALID_TELEGRAM_ERROR;
 	}
 
     DB_TELEGRAM(telrxerror = rx_error);
