@@ -396,7 +396,7 @@ void Bus::handleTelegram(bool valid)
 
 #ifndef BUSMONITOR   // no processing if we are in monitor mode
 
-	// Received a valid telegram with correct checksum and valid control byte ( normal data frame with preamble bits)?
+	// Received a valid telegram with correct checksum and valid control byte (normal data frame with preamble bits)?
 	//todo extended tel, check tel len, give upper layer error info
 	if ( nextByteIndex >= 8 && valid  &&  (( rx_telegram[0] & VALID_DATA_FRAME_TYPE_MASK) == VALID_DATA_FRAME_TYPE_VALUE)
 			&& nextByteIndex <= bcu->maxTelegramSize()  )
@@ -404,31 +404,21 @@ void Bus::handleTelegram(bool valid)
 		int destAddr = (rx_telegram[3] << 8) | rx_telegram[4];
 		bool processTel = false;
 
-		// We ACK the telegram only if it's for us
-		if (rx_telegram[5] & 0x80) // groupr addr or phy addr
+		// Only process the telegram if it is for us
+		if (rx_telegram[5] & 0x80) // group address or physical address
 		{
 		    processTel = (destAddr == 0); // broadcast
-		    processTel |= (bcu->addrTables != nullptr) && (bcu->addrTables->indexOfAddr(destAddr) >= 0); // known group addr
+		    processTel |= (bcu->addrTables != nullptr) && (bcu->addrTables->indexOfAddr(destAddr) >= 0); // known group address
 		}
 		else if (destAddr == bcu->ownAddress())
 		{
 			processTel = true;
 		}
 
-		DB_TELEGRAM(telRXNotProcessed = !processTel);
+        // with disabled TL we also process the telegram, so the application (e.g. ft12, knx-if) can handle it completely by itself
+        processTel |= !(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER);
 
-		// Only process the telegram if it is for us or if we want to get all telegrams
-		if (!(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
-		{ // TL is disabled we might process the telegram
-			processTel = true;
-			// if LL is in normal mode (not busmonitor mode) we send ack back
-			if (bcu->userRam->status() & BCU_STATUS_LINK_LAYER)
-				if (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG )
-				{
-					sendAck = SB_BUS_ACK;
-					//need_to_send_ack_to_remote=true;
-				}
-		}
+        DB_TELEGRAM(telRXNotProcessed = !processTel);
 
 		if (processTel)
 		{// check for repeated telegram, did we already received it
@@ -469,9 +459,12 @@ void Bus::handleTelegram(bool valid)
 				}
 			}
 
-			if (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)
+            // LL_ACK only allowed, if link layer is in normal mode, not busmonitor mode
+            auto suppressAck = !(bcu->userRam->status() & BCU_STATUS_LINK_LAYER);
+            // LL_ACK only allowed for L_Data frames
+            suppressAck &= rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG;
+            if (suppressAck)
 			{
-				// not an L_Data frame, don't send any LL_ACK
 				sendAck = 0;
 			}
 
