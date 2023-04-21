@@ -33,8 +33,7 @@ BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* com
 		usrCallback(nullptr),
 		sendGrpTelEnabled(false),
 		groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
-		groupTelSent(millis()),
-		requestedRestartType(NO_RESTART)
+		groupTelSent(millis())
 {
     this->comObjects = comObjects;
 }
@@ -136,16 +135,6 @@ void BcuDefault::loop()
     if (bus->sendingTelegram())
     {
         return;
-    }
-
-    if (requestedRestartType != NO_RESTART)
-    {
-        if (requestedRestartType == RESTART_MASTER)
-        {
-            // send disconnect
-            sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
-        }
-        softSystemReset();
     }
 
     // handle group object telegrams only if application is runnning
@@ -499,6 +488,11 @@ bool BcuDefault::processApci(ApciCommand apciCmd, unsigned char * telegram, uint
     uint16_t address;
     uint8_t index;
 
+    if (BcuBase::processApci(apciCmd, telegram, telLength, sendBuffer))
+    {
+        return (true);
+    }
+
     switch (apciCmd)
     {
     case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI,
@@ -550,10 +544,6 @@ bool BcuDefault::processApci(ApciCommand apciCmd, unsigned char * telegram, uint
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
         return (processDeviceDescriptorReadTelegram(sendBuffer, telegram[7] & 0x3f));
-
-    case APCI_BASIC_RESTART_PDU:
-        requestedRestartType = RESTART_BASIC;
-        break;
 
     case APCI_MASTER_RESET_PDU:
         return (processApciMasterResetPDU(sendBuffer, telegram[8], telegram[9]));

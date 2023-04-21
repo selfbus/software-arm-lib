@@ -25,8 +25,6 @@
 #include "boot_descriptor_block.h"
 
 #define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
-#define RESET_DELAY_MS 500                 //!< Time in milliseconds a System reset should be delayed to
-                                           //!< give the bcu enough time to send it's T_ACK_PDU
 
 /**
  * Handles KNX @ref APCI_USERMSG_MANUFACTURER_0 which encapsulates our UPD/UDP protocol

@@ -38,7 +38,8 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         userRam(userRam),
         addrTables(addrTables),
         comObjects(nullptr),
-        progButtonDebouncer()
+        progButtonDebouncer(),
+        requestedRestartType(NO_RESTART)
 {
     timerBusObj = bus;
     setFatalErrorPin(progPin);
@@ -77,6 +78,22 @@ void BcuBase::loop()
 		pinMode(progPin, OUTPUT);
 		digitalWrite(progPin, (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) ^ progPinInv);
 	}
+
+    // Rest of this function is only relevant if currently able to send another telegram.
+    if (bus->sendingTelegram())
+    {
+        return;
+    }
+
+    if (requestedRestartType != NO_RESTART)
+    {
+        if (connectedTo() != 0)
+        {
+            // send disconnect
+            sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
+        }
+        softSystemReset();
+    }
 }
 
 bool BcuBase::setProgrammingMode(bool newMode)
@@ -97,6 +114,19 @@ bool BcuBase::setProgrammingMode(bool newMode)
     pinMode(progPin, OUTPUT);
     digitalWrite(progPin, (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) ^ progPinInv);
     return true;
+}
+
+bool BcuBase::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
+{
+    switch (apciCmd)
+    {
+        case APCI_BASIC_RESTART_PDU:
+            requestedRestartType = RESTART_BASIC;
+            return (true);
+        default:
+            break;
+    }
+    return (false);
 }
 
 void BcuBase::sendApciIndividualAddressReadResponse()

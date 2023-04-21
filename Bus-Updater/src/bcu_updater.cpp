@@ -61,7 +61,6 @@ bool BcuUpdate::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8
 {
     uint32_t offset = 8;
     uint32_t dataLength = telLength - offset - 1; // -1 exclude knx checksum
-    uint32_t endDelay;
 
     switch(apciCmd)
     {
@@ -80,13 +79,7 @@ bool BcuUpdate::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8
                 serial.println();serial.println();serial.println();
                 serial.flush(); // give time to send serial data
             );
-            endDelay = millis() + RESET_DELAY_MS;
-            while (millis() < endDelay)
-            {
-                waitForInterrupt();
-            }
-            NVIC_SystemReset();
-            return (false);
+            return (BcuBase::processApci(apciCmd, telegram, telLength, sendBuffer));
 
         default:
             return (false);

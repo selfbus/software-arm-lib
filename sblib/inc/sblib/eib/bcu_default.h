@@ -233,13 +233,6 @@ protected:
     unsigned int groupTelSent;
 
 private:
-    enum BcuRestartType
-    {
-        NO_RESTART,
-        RESTART_BASIC,
-        RESTART_MASTER
-    };
-    BcuRestartType requestedRestartType;
 };
 
 #define  MAX_GROUP_TEL_PER_SECOND  28

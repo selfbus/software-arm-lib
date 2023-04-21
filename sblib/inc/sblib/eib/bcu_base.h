@@ -111,6 +111,8 @@ protected:
      */
     bool setProgrammingMode(bool newMode);
 
+    virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
+
     void sendApciIndividualAddressReadResponse();
 
     Debouncer progButtonDebouncer; //!< The debouncer for the programming mode button.
@@ -118,6 +120,13 @@ protected:
     void discardReceivedTelegram();
     void send(unsigned char* telegram, unsigned short length);
 
-};
+    enum BcuRestartType
+    {
+        NO_RESTART,
+        RESTART_BASIC,
+        RESTART_MASTER
+    };
+    BcuRestartType requestedRestartType;
 
+};
 #endif /*sblib_BcuBase_h*/
