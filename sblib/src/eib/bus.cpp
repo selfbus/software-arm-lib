@@ -268,7 +268,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
     prepareTelegram(telegram, length);
 
     // Wait until there is space in the sending queue
-    while (sendCurTelegram);
+    while (sendCurTelegram != nullptr);
 
     sendCurTelegram = telegram;
 
@@ -552,7 +552,7 @@ void Bus::finishSendingTelegram()
 {
     bus_tx_state = tx_error;
 
-    if (sendCurTelegram)
+    if (sendCurTelegram != nullptr)
     {
         sendCurTelegram = nullptr;
         bcu->finishedSendingTelegram(!(tx_error & TX_RETRY_ERROR));
@@ -892,7 +892,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 				tx_error |= TX_RETRY_ERROR;
 				finishSendingTelegram();	// then send next, this also informs upper layer on sending error of last telegram
 			}
-			if (sendCurTelegram)  // Send a telegram pending?
+			if (sendCurTelegram != nullptr)  // Send a telegram pending?
 			{		//tb_t( state+200, ttimer.value(), tb_in);
 				tb_h( state+ 200, repeatTelegram, tb_in);
 				//tb_h( state+ 300,sendCurTelegram[0], tb_in);
