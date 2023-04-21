@@ -459,7 +459,7 @@ void Bus::handleTelegram(bool valid)
             // LL_ACK only allowed, if link layer is in normal mode, not busmonitor mode
             auto suppressAck = !(bcu->userRam->status() & BCU_STATUS_LINK_LAYER);
             // LL_ACK only allowed for L_Data frames
-            suppressAck &= rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG;
+            suppressAck |= rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG;
             if (suppressAck)
 			{
 				sendAck = 0;
