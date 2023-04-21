@@ -133,7 +133,9 @@ protected:
     virtual bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) = 0;
 
     /**
-     * ///\todo check real functionality and if even needed
+     * Reset TL4 connection by setting
+     * @ref sendConnectedTelegramBufferState and @ref sendConnectedTelegramBuffer2State to
+     * @ref CONNECTED_TELEGRAM_FREE
      */
     virtual void resetConnection();
 
