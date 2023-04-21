@@ -288,18 +288,6 @@ private:
      */
     void handleTelegram(bool valid);
 
-
-    /**
-     * !!!!!!!!!!! not available in code !!!!!!!!!!!!
-     * Sending Process is waiting for an acknowledgment.
-     * Handle the received byte(s) on a low level. Repeat the last send Telegram in case of invalid ack
-     * This function is called by the function TIMER16_1_IRQHandler() to decide about repetition
-     * of last sent Telegram.
-     *
-     * @param valid - 1 if (all) bytes had correct parity, 0 if not
-     */
-    // void handleAckTelegram(bool valid);
-
 protected:
     friend class TLayer4;
     friend class BcuDefault;
@@ -333,9 +321,7 @@ private:
     volatile unsigned short rx_error;	//!< hold the rx error flags of the rx process of the state machine
     volatile unsigned short tx_error;	//!< hold the tx error flags of the tx process of the state machine
     bool wait_for_ack_from_remote; //!< sending process is requesting an ack from remote side
-   // bool need_to_send_ack_to_remote; //!< receiving process need to send ack to remote sending side
     bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
-   // bool busy_wait_to_remote; //!< receiving process/ upper layer busy, send busy to remote sender
     bool repeatTelegram;        //!< need to repeat last  telegram sent
     bool collision;             //!< A collision occurred
 };

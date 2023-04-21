@@ -169,7 +169,6 @@ void Bus::begin()
 
 	telegramLen = 0;
 	sendAck = 0;
-	//need_to_send_ack_to_remote=false;
 	rx_error = RX_OK;
 	bus_rx_state = RX_OK;
 	setBusRXStateValid(true);
@@ -309,7 +308,6 @@ void Bus::idleState()
 	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
 	state = Bus::IDLE;
 	sendAck = 0;
-	//need_to_send_ack_to_remote=false;
 }
 
 void Bus::prepareForSending()
@@ -387,7 +385,6 @@ void Bus::handleTelegram(bool valid)
         }
     );
 
-	//need_to_send_ack_to_remote=false;
 	sendAck = 0; // clear any pending ACK TX
 	int time = SEND_WAIT_TIME -  PRE_SEND_TIME; // default wait time after bus action
 	state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;//  default next state is wait for 50 bit times for pending tx or new rx
