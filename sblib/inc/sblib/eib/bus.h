@@ -263,13 +263,11 @@ private:
     void prepareForSending();
 
     /**
-     * Switch to the next telegram for sending.
+     * Finish the telegram sending process.
      *
-     * mark the current send buffer as free -> set first byte of buffer to 0
-     * load a possible waiting/next buffer to current buffer
-     * initialize some low level parameters for the interrupt driven send process
+     * Notify upper layer of completion and prepare for next telegram transmission.
      */
-    void sendNextTelegram();
+    void finishSendingTelegram();
 
     /**
      * @fn void prepareTelegram(unsigned char*, unsigned short)const
@@ -289,18 +287,6 @@ private:
      * @param valid - 1 if all bytes had correct parity and the checksum is correct, 0 if not
      */
     void handleTelegram(bool valid);
-
-
-    /**
-     * !!!!!!!!!!! not available in code !!!!!!!!!!!!
-     * Sending Process is waiting for an acknowledgment.
-     * Handle the received byte(s) on a low level. Repeat the last send Telegram in case of invalid ack
-     * This function is called by the function TIMER16_1_IRQHandler() to decide about repetition
-     * of last sent Telegram.
-     *
-     * @param valid - 1 if (all) bytes had correct parity, 0 if not
-     */
-    // void handleAckTelegram(bool valid);
 
 protected:
     friend class TLayer4;
@@ -324,9 +310,8 @@ private:
 
     int currentByte;                //!< The current byte that is received/sent, including the parity bit
     int sendTelegramLen;            //!< The size of the to be sent telegram in bytes (including the checksum).
-    volatile byte *sendCurTelegram; //!< The telegram that is currently being sent.
-    volatile byte *sendNextTel;     //!< The telegram to be sent after sbSendTelegram is done.
-    volatile byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
+    byte *sendCurTelegram;          //!< The telegram that is currently being sent.
+    byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
 
     int bitMask;
     int bitTime;                 //!< The bit-time within a byte when receiving
@@ -336,9 +321,7 @@ private:
     volatile unsigned short rx_error;	//!< hold the rx error flags of the rx process of the state machine
     volatile unsigned short tx_error;	//!< hold the tx error flags of the tx process of the state machine
     bool wait_for_ack_from_remote; //!< sending process is requesting an ack from remote side
-   // bool need_to_send_ack_to_remote; //!< receiving process need to send ack to remote sending side
     bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
-   // bool busy_wait_to_remote; //!< receiving process/ upper layer busy, send busy to remote sender
     bool repeatTelegram;        //!< need to repeat last  telegram sent
     bool collision;             //!< A collision occurred
 };

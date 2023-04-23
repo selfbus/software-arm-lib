@@ -604,7 +604,7 @@ int PropertiesBCU2::loadProperty(int objectIdx, const byte* data, int len)
     return LS_LOADING;
 }
 
-bool PropertiesBCU2::propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start)
+bool PropertiesBCU2::propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer)
 {
     DB_PROPERTIES(serial.print("propertyValueReadTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
@@ -620,19 +620,19 @@ bool PropertiesBCU2::propertyValueReadTelegram(int objectIdx, PropertyID propert
 
     if (type < PDT_CHAR_BLOCK)
     {
-        reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+        reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
     }
     else
     {
-        memcpy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+        memcpy(sendBuffer + 12, valuePtr + start * size, len);
     }
 
-    bcu->sendTelegram[5] += len;
+    sendBuffer[5] += len;
 
     return true;
 }
 
-bool PropertiesBCU2::propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start)
+bool PropertiesBCU2::propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer)
 {
     const PropertyDef* def = propertyDef(objectIdx, propertyId);
     if (!def)
@@ -655,7 +655,7 @@ bool PropertiesBCU2::propertyValueWriteTelegram(int objectIdx, PropertyID proper
         len = bcu->bus->telegramLen - 13;
         state = loadProperty(objectIdx, data, len);
         bcu->userEeprom->loadState()[objectIdx] = state;
-        bcu->sendTelegram[12] = state;
+        sendBuffer[12] = state;
         len = 1;
     }
     else
@@ -665,16 +665,16 @@ bool PropertiesBCU2::propertyValueWriteTelegram(int objectIdx, PropertyID proper
         len = count * size;
         DB_PROPERTIES(serial.print("propertyValueWriteTelegram: "); printObjectIdx(objectIdx); serial.print(" "); printPropertyID(propertyId);serial.println(););
         reverseCopy(valuePtr + start * size, data, len);
-        reverseCopy(bcu->sendTelegram + 12, valuePtr + start * size, len);
+        reverseCopy(sendBuffer + 12, valuePtr + start * size, len);
         if (def->isEepromPointer())
             bcu->userEeprom->modified(true);
     }
 
-    bcu->sendTelegram[5] += len;
+    sendBuffer[5] += len;
     return true;
 }
 
-bool PropertiesBCU2::propertyDescReadTelegram(int objectIdx, PropertyID propertyId, int index)
+bool PropertiesBCU2::propertyDescReadTelegram(int objectIdx, PropertyID propertyId, int index, uint8_t * sendBuffer)
 {
     const PropertyDef* def;
 
@@ -682,15 +682,15 @@ bool PropertiesBCU2::propertyDescReadTelegram(int objectIdx, PropertyID property
         def = propertyDef(objectIdx, propertyId);
     else def = &propertiesTab()[objectIdx][index];
 
-    bcu->sendTelegram[10] = index;
+    sendBuffer[10] = index;
 
     if (!def || !def->id)
     {
-        bcu->sendTelegram[9] = propertyId;
-        bcu->sendTelegram[11] = 0;
-        bcu->sendTelegram[12] = 0;
-        bcu->sendTelegram[13] = 0;
-        bcu->sendTelegram[14] = 0;
+        sendBuffer[9] = propertyId;
+        sendBuffer[11] = 0;
+        sendBuffer[12] = 0;
+        sendBuffer[13] = 0;
+        sendBuffer[14] = 0;
         return false; // not found
     }
 
@@ -699,11 +699,11 @@ bool PropertiesBCU2::propertyDescReadTelegram(int objectIdx, PropertyID property
         numElems = *def->valuePointer(bcu);
     else numElems = 1;
 
-    bcu->sendTelegram[9] = def->id;
-    bcu->sendTelegram[11] = def->control & (PC_TYPE_MASK | PC_WRITABLE);
-    bcu->sendTelegram[12] = (numElems >> 8) & 15;
-    bcu->sendTelegram[13] = numElems;
-    bcu->sendTelegram[14] = def->control & PC_WRITABLE ? 0xf1 : 0x50; // wild guess from bus traces
+    sendBuffer[9] = def->id;
+    sendBuffer[11] = def->control & (PC_TYPE_MASK | PC_WRITABLE);
+    sendBuffer[12] = (numElems >> 8) & 15;
+    sendBuffer[13] = numElems;
+    sendBuffer[14] = def->control & PC_WRITABLE ? 0xf1 : 0x50; // wild guess from bus traces
 
     return true;
 }

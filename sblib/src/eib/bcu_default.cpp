@@ -131,9 +131,15 @@ void BcuDefault::loop()
 
     BcuBase::loop(); // check processTelegram and programming button state
 
+    // Rest of this function is only relevant if currently able to send another telegram.
+    if (bus->sendingTelegram())
+    {
+        return;
+    }
+
     // handle group object telegrams only if application is runnning
-    // if bus is not sending (telegram buffer is empty) check for next telegram to be send
-    if (sendGrpTelEnabled && applicationRunning() && !bus->sendingTelegram())
+    // check for next telegram to be send
+    if (sendGrpTelEnabled && applicationRunning())
     {
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
@@ -151,7 +157,7 @@ void BcuDefault::loop()
         }
     }
 
-    if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && connectedTo() == 0)
+    if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && !directConnection())
     {
         if (userEeprom->writeDelayElapsed())
         {
@@ -476,14 +482,16 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
     return (lengthPayLoad == 0);
 }
 
-unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char *telegram, uint8_t telLength)
+bool BcuDefault::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
 {
     uint8_t count;
     uint16_t address;
     uint8_t index;
 
-    unsigned char sendAckTpu = 0;
-    *sendResponse = false;
+    if (BcuBase::processApci(apciCmd, telegram, telLength, sendBuffer))
+    {
+        return (true);
+    }
 
     switch (apciCmd)
     {
@@ -492,13 +500,12 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
                             //!  The value read can be converted to a voltage value by using the following formula: Voltage = ADC_Value * 0,15V
         index = telegram[7] & 0x3f;  // ADC channel
         count = telegram[8];         // number of samples
-        sendTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
-        setApciCommand(sendTelegram, APCI_ADC_RESPONSE_PDU, index);
-        sendTelegram[8] = count;     // read count
-        sendTelegram[9] = 0;         // ADC value high byte
-        sendTelegram[10] = 0;        // ADC value low byte
-        *sendResponse = true;
-        break;
+        sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_ADC_RESPONSE_PDU, index);
+        sendBuffer[8] = count;     // read count
+        sendBuffer[9] = 0;         // ADC value high byte
+        sendBuffer[10] = 0;        // ADC value low byte
+        return (true);
 
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
@@ -516,118 +523,80 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
                     apciCmd = APCI_MEMORY_READ_PDU;
                 }
             }
-            sendAckTpu = T_ACK_PDU;
         }
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            if (!processApciMemoryReadPDU(address, &sendTelegram[10], count))
+            if (!processApciMemoryReadPDU(address, &sendBuffer[10], count))
             {
                 // address space unreachable, need to respond with count 0
                 count = 0;
             }
 
             // send a APCI_MEMORY_RESPONSE_PDU response
-            sendTelegram[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
-            setApciCommand(sendTelegram, APCI_MEMORY_RESPONSE_PDU, count);
-            sendTelegram[8] = HIGH_BYTE(address);
-            sendTelegram[9] = lowByte(address);
-            *sendResponse = true;
+            sendBuffer[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
+            setApciCommand(sendBuffer, APCI_MEMORY_RESPONSE_PDU, count);
+            sendBuffer[8] = HIGH_BYTE(address);
+            sendBuffer[9] = lowByte(address);
+            return (true);
         }
         break;
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
-        if (processDeviceDescriptorReadTelegram(telegram[7] & 0x3f))
-        {
-            *sendResponse = true;
-        }
-        else
-        {
-            sendAckTpu = T_NACK_PDU; // KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
-        }
-        break;
-
-    case APCI_BASIC_RESTART_PDU:
-        softSystemReset();
-        break; // we should never land on this break
+        return (processDeviceDescriptorReadTelegram(sendBuffer, telegram[7] & 0x3f));
 
     case APCI_MASTER_RESET_PDU:
-        if (processApciMasterResetPDU(telegram, senderSeqNo, telegram[8], telegram[9]))
-        {
-            softSystemReset(); // perform a basic restart;
-        }
-        // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
-        *sendResponse = true;
-        break;
+        return (processApciMasterResetPDU(sendBuffer, telegram[8], telegram[9]));
 
     case APCI_AUTHORIZE_REQUEST_PDU:
-        sendTelegram[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
-        setApciCommand(sendTelegram, APCI_AUTHORIZE_RESPONSE_PDU, 0);
-        sendTelegram[8] = 0x00;
-        *sendResponse = true;
-        break;
+        sendBuffer[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_AUTHORIZE_RESPONSE_PDU, 0);
+        sendBuffer[8] = 0x00;
+        return (true);
 
     default:
-        sendAckTpu = T_NACK_PDU;  // Command not supported, KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
         break;
     }
-    return (sendAckTpu);
+    return (false);
 }
 
-bool BcuDefault::processDeviceDescriptorReadTelegram(int id)
+bool BcuDefault::processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id)
 {
     if (id != 0)
     {
         return (false); // unknown device descriptor
     }
 
-    sendTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
-    setApciCommand(sendTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
-    sendTelegram[8] = HIGH_BYTE(getMaskVersion());
-    sendTelegram[9] = lowByte(getMaskVersion());
+    sendBuffer[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
+    setApciCommand(sendBuffer, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
+    sendBuffer[8] = HIGH_BYTE(getMaskVersion());
+    sendBuffer[9] = lowByte(getMaskVersion());
     return (true);
 }
 
-bool BcuDefault::processApciMasterResetPDU(unsigned char *telegram, const uint8_t senderSeqNo, uint8_t eraseCode, uint8_t channelNumber)
+bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber)
 {
     if (!checkApciForMagicWord(eraseCode, channelNumber))
     {
         ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+        requestedRestartType = RESTART_BASIC;
         return (false);
     }
 
     // create the APCI_MASTER_RESET_RESPONSE_PDU
-    initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD);
-    // sender address will be set by bus.sendTelegram()
-    setDestinationAddress(sendTelegram, connectedTo());
-
-    sendTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
-    setApciCommand(sendTelegram, APCI_MASTER_RESET_RESPONSE_PDU, 0);
-    setSequenceNumber(sendTelegram, sequenceNumberSend());
-    sendTelegram[8] = T_RESTART_NO_ERROR;
-    sendTelegram[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
-    sendTelegram[10] = 1; // 1 second
+    sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+    setApciCommand(sendBuffer, APCI_MASTER_RESET_RESPONSE_PDU, 0);
+    sendBuffer[8] = T_RESTART_NO_ERROR;
+    sendBuffer[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
+    sendBuffer[10] = 1; // 1 second
 
     // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
     // set magicWord to start after reset in bootloader mode
 #ifndef IAP_EMULATION
     unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
     *magicWord = BOOTLOADER_MAGIC_WORD;
-
-    // send transport layer 4 ACK
-    sendConControlTelegram(T_ACK_PDU, connectedTo(), senderSeqNo);
-    while (!bus->idle())
-        ;
-    // send APCI_MASTER_RESET_RESPONSE_PDU
-    bus->sendTelegram(sendTelegram, telegramSize(sendTelegram));
-    while (!bus->idle())
-                ;
-    // send disconnect
-    sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
-    while (!bus->idle())
-        ;
-    softSystemReset();
 #endif
+    requestedRestartType = RESTART_MASTER;
     return (true);
 }
 

@@ -57,21 +57,18 @@ BcuUpdate::BcuUpdate(UserRamUpdater* userRamUpdater) :
 {
 }
 
-unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
-        bool * sendResponse, unsigned char * telegram, uint8_t telLength)
+bool BcuUpdate::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
 {
     uint32_t offset = 8;
     uint32_t dataLength = telLength - offset - 1; // -1 exclude knx checksum
-    uint32_t endDelay;
 
     switch(apciCmd)
     {
         case APCI_MEMORY_WRITE_PDU:
-            *sendResponse = true;
-            return (handleDeprecatedApciMemoryWrite());
+            return (handleDeprecatedApciMemoryWrite(sendBuffer));
+
         case APCI_USERMSG_MANUFACTURER_0:
-            *sendResponse = true;
-            return (handleApciUsermsgManufacturer(&telegram[offset], dataLength));
+            return (handleApciUsermsgManufacturer(sendBuffer, &telegram[offset], dataLength));
 
         case APCI_BASIC_RESTART_PDU:
             dump2(serial.println("APCI_BASIC_RESTART_PDU"));
@@ -82,16 +79,10 @@ unsigned char BcuUpdate::processApci(ApciCommand apciCmd, const uint16_t senderA
                 serial.println();serial.println();serial.println();
                 serial.flush(); // give time to send serial data
             );
-            endDelay = millis() + RESET_DELAY_MS;
-            while (millis() < endDelay)
-            {
-                waitForInterrupt();
-            }
-            NVIC_SystemReset();
-            return (T_ACK_PDU);
+            return (BcuBase::processApci(apciCmd, telegram, telLength, sendBuffer));
 
         default:
-            return (T_NACK_PDU);
+            return (false);
     }
 }
 

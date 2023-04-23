@@ -25,6 +25,7 @@
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/knx_npdu.h>
 #include <sblib/libconfig.h>
+#include <cstring>
 
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
@@ -229,7 +230,9 @@ void dumpLogHeader()
 }
 
 TLayer4::TLayer4(uint8_t maxTelegramLength):
-    sendTelegram(new byte[maxTelegramLength]())
+    sendTelegram(new byte[maxTelegramLength]()),
+    sendConnectedTelegram(new byte[maxTelegramLength]()),
+    sendConnectedTelegram2(new byte[maxTelegramLength]())
 {
 
 }
@@ -246,10 +249,9 @@ void TLayer4::_begin()
             );
 #endif
     state = TLayer4::CLOSED;
-    // set sending buffer to free
-    sendTelegram[0] = 0;
-    sendCtrlTelegram[0] = 0;
-    telegramReadyToSend = false;
+    sendTelegramBufferState = TELEGRAM_FREE;
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+    sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
     connectedAddr = 0;
     seqNoSend = -1;
     seqNoRcv = -1;
@@ -268,7 +270,7 @@ void TLayer4::processTelegram(unsigned char *telegram, uint8_t telLength)
     discardReceivedTelegram();
 }
 
-bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength)
+void TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength)
 {
     uint16_t destAddr = destinationAddress(telegram);
     ApciCommand apciCmd = apciCommand(telegram);
@@ -276,17 +278,19 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength
     if (destAddr == 0)
     {
         // a broadcast telegram
-        return (processBroadCastTelegram(apciCmd, telegram, telLength));
+        processBroadCastTelegram(apciCmd, telegram, telLength);
+        return;
     }
     else if ((telegram[5] & T_GROUP_ADDRESS_FLAG_Msk)) ///\todo function for this in knx_tpdu.h
     {
         // a group address telegram
-        return (processGroupAddressTelegram(apciCmd, destAddr, telegram, telLength));
+        processGroupAddressTelegram(apciCmd, destAddr, telegram, telLength);
+        return;
     }
     else if (destAddr != ownAddress())
     {
         // not for us
-        return (true);
+        return;
     }
 
     ///\todo function to get tpciCommand in knx_tpdu.h
@@ -304,7 +308,6 @@ bool TLayer4::processTelegramInternal(unsigned char *telegram, uint8_t telLength
     {
         processDirectTelegram(apciCmd, telegram, telLength);
     }
-    return (true);
 }
 
 void TLayer4::processConControlTelegram(const uint16_t& senderAddr, const TPDU& tpci, unsigned char *telegram, const uint8_t& telLength)
@@ -322,6 +325,7 @@ void TLayer4::processConControlTelegram(const uint16_t& senderAddr, const TPDU& 
 
         default:
             result = processConControlAcknowledgmentPDU(senderAddr, tpci, telegram, telLength);
+            break;
     }
 
     if (!result)
@@ -359,14 +363,13 @@ bool TLayer4::processConControlConnectPDU(uint16_t senderAddr)
         case TLayer4::CLOSED:
             actionA01Connect(senderAddr);
             return (true);
-            break;
 
         case TLayer4::OPEN_IDLE:
         case TLayer4::OPEN_WAIT:
             if (connectedAddr == senderAddr)
             {
                 // event E00
-                actionA06DisconnectAndClose();
+                actionA00Nothing();
             }
             else
             {
@@ -377,6 +380,7 @@ bool TLayer4::processConControlConnectPDU(uint16_t senderAddr)
 
         default:
             dump2(serial.print("ERROR processConControlConnectPDU should never land here"));
+            break;
     }
     return (false);
 }
@@ -440,22 +444,25 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
               serial.print(LOG_SEP);
         );
 
-        // check CLOSED state for E08, E09
-        if (state == TLayer4::CLOSED)
+        // check CLOSED and OPEN_IDLE states for E08, E09, E10
+        if ((state == TLayer4::CLOSED) || (state == TLayer4::OPEN_IDLE))
         {
-            dump2(serial.print(" EVENT 8/9/10 CLOSED "););
-            actionA10Disconnect(senderAddr);
-            dumpTelegramBytes(false, telegram, telLength);
+            dump2(
+                serial.print(" EVENT 8/9/10 ");
+                dumpTelegramBytes(false, telegram, telLength);
+            );
+            actionA00Nothing();
             return (false);
         }
 
         // check for event E10
         if (connectedAddr != senderAddr)
         {
-            dump2(serial.print(" EVENT 10 "););
-
-            actionA10Disconnect(senderAddr);
-            dumpTelegramBytes(false, telegram, telLength);
+            dump2(
+               serial.print(" EVENT 10 ");
+               dumpTelegramBytes(false, telegram, telLength);
+            );
+            actionA00Nothing();
             return (false);
         }
 
@@ -475,25 +482,15 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
             return (false);
         }
 
-        // check correct state for event E08
-        if (state == TLayer4::OPEN_WAIT)
-        {
-            dump2(
-                  serial.print("OK");
-                  serial.print(LOG_SEP);
-            );
-            actionA08IncrementSequenceNumber();
-            setTL4State(TLayer4::OPEN_IDLE);
-            dumpTelegramBytes(false, telegram, telLength);
-            return (true);
-        }
-        else
-        {
-            dump2(serial.print(" EVENT 8 state != OPEN_WAIT"););
-            actionA06DisconnectAndClose();
-            dumpTelegramBytes(false, telegram, telLength);
-            return (false);
-        }
+        // event E08
+        dump2(
+              serial.print("OK");
+              serial.print(LOG_SEP);
+        );
+        actionA08IncrementSequenceNumber();
+        setTL4State(TLayer4::OPEN_IDLE);
+        dumpTelegramBytes(false, telegram, telLength);
+        return (true);
     }
     else
     {
@@ -503,62 +500,124 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
               serial.print(LOG_SEP);
         );
 
-        // event E11b
-        if (state == TLayer4::CLOSED)
+        // check CLOSED state for events E11, E12, E13, E14
+        const byte curSeqNo = sequenceNumber(telegram);
+        if ((state == TLayer4::CLOSED) || (curSeqNo != seqNoSend) || (connectedAddr != senderAddr))
         {
-            dump2(serial.print(" EVENT 11b/14 "););
-            actionA10Disconnect(senderAddr);
-            dumpTelegramBytes(false, telegram, telLength);
+            dump2(
+                if (connectedAddr != senderAddr)
+                {
+                    serial.print("EVENT 14 ");
+                }
+                else if (curSeqNo != seqNoSend)
+                {
+                    serial.print("EVENT 11 ");
+                }
+                else
+                {
+                    serial.print("EVENT 12/13 ");
+                }
+                dumpTelegramBytes(false, telegram, telLength);
+            );
+            actionA00Nothing();
             return (false);
         }
-        else if (connectedAddr != senderAddr) // check for event E14
+
+        if (repCount < TL4_MAX_REPETITION_COUNT && state == TLayer4::OPEN_WAIT)
         {
-            dump2(serial.print(" EVENT 14"););
-            actionA10Disconnect(senderAddr);
+            // event E12
+            dump2(
+                serial.print(" EVENT 12 ");
+                serial.print("repCount ", repCount);
+                serial.print("< ", TL4_MAX_REPETITION_COUNT);
+                serial.print("maxRepCount ");
+            );
             dumpTelegramBytes(false, telegram, telLength);
+            actionA09RepeatMessage();
             return (false);
         }
-        else
-        {
-            dump2(serial.print(" EVENT 11b_2 "););
-            actionA06DisconnectAndClose();
+        // event E12/E13
+        dump2(
+            serial.print(" EVENT 12/13 ");
+            serial.print("repCount ", repCount);
+            serial.print(", maxRepCount ", TL4_MAX_REPETITION_COUNT);
             dumpTelegramBytes(false, telegram, telLength);
-            return (false);
-        }
+        );
+        actionA06DisconnectAndClose();
+        return (false);
     }
 }
 
 void TLayer4::sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo)
 {
-    sendCtrlTelegram[6] = (uint8_t)cmd;
+    auto sendBuffer = acquireSendBuffer();
+
+    initLpdu(sendBuffer, PRIORITY_SYSTEM, false, FRAME_STANDARD); // connection control commands always in system priority
+    // sender address will be set by bus.sendTelegram()
+    setDestinationAddress(sendBuffer, address);
+    sendBuffer[5] = (uint8_t)0x60; ///\todo set correct routing counter
+    sendBuffer[6] = (uint8_t)cmd;
     if (cmd & T_SEQUENCED_COMMAND)  // Add the sequence number if the command shall contain it
     {
-        setSequenceNumber(sendCtrlTelegram, senderSeqNo);
+        setSequenceNumber(sendBuffer, senderSeqNo);
     }
 
     dump2(
         telegramCount++;
-        ///\todo create better debug-file/class and include below dump, also rewrite dumpTelegramInfo without using bus.telegram & sendCtrlTelegram[6]
-        // dumpTelegramInfo(bus.telegram, address, sendCtrlTelegram[6], true, state);
+        ///\todo create better debug-file/class and include below dump, also rewrite dumpTelegramInfo without using bus.telegram & sendBuffer[6]
+        // dumpTelegramInfo(bus.telegram, address, sendBuffer[6], true, state);
         serial.print("sendControl");
-    );
-
-    initLpdu(sendCtrlTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD); // connection control commands always in system priority
-    // sender address will be set by bus.sendTelegram()
-
-    setDestinationAddress(sendCtrlTelegram, address);
-    sendCtrlTelegram[5] = (uint8_t)0x60; ///\todo set correct routing counter
-
-    dump2(
         if (address != connectedAddr)
         {
             serial.print(" ERROR");
         }
-        uint8_t lengthCtrlTelegram = sizeof(sendCtrlTelegram) / sizeof(sendCtrlTelegram[0]);
-        dumpTelegramBytes(true, &sendCtrlTelegram[0], lengthCtrlTelegram);
+        dumpTelegramBytes(true, sendBuffer, 7);
     );
 
-    send(sendCtrlTelegram, 7);
+    sendPreparedTelegram();
+}
+
+void TLayer4::sendPreparedTelegram()
+{
+    sendTelegramBufferState = TELEGRAM_SENDING;
+    send(sendTelegram, telegramSize(sendTelegram));
+}
+
+void TLayer4::sendPreparedConnectedTelegram()
+{
+    auto sendBuffer = acquireSendBuffer();
+    memcpy(sendBuffer, sendConnectedTelegram, telegramSize(sendConnectedTelegram));
+    sendPreparedTelegram();
+}
+
+uint8_t * TLayer4::acquireSendBuffer()
+{
+    // Someone wants to write into the shared @ref sendTelegram buffer. Wait until the current
+    // telegram in it is sent.
+    while (sendTelegramBufferState != TELEGRAM_FREE);
+
+    // Then allocate it for the caller.
+    sendTelegramBufferState = TELEGRAM_ACQUIRED;
+
+    return sendTelegram;
+}
+
+void TLayer4::finishedSendingTelegram(bool successful)
+{
+    sendTelegramBufferState = TELEGRAM_FREE;
+
+    if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+    {
+        // For successfully sent connection control telegrams, continue with the next direct telegram.
+        // If there was an error, one of the connected parties will encounter a timeout and either close
+        // the connection or send the last telegram again. In both cases it does not make sense to respond
+        // with an outdated telegram, so throw it away instead.
+        sendConnectedTelegramBufferState = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
+    }
+    else if (sendConnectedTelegramBuffer2State == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+    {
+        sendConnectedTelegramBuffer2State = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
+    }
 }
 
 void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength)
@@ -569,12 +628,32 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     );
 
     const uint16_t senderAddr = senderAddress(telegram);
+
+    ///\todo function to check for individual_pdu in knx_tpdu.h
+    unsigned char tpci = telegram[6] & 0xfc; //0b11111100 Transport control field (see KNX 3/3/4 p.6 TPDU)
+    if (tpci == 0)
+    {
+        // T_Data_Individual-PDU: Allow implementations to overwrite fields (priority, destination)
+        auto sendBuffer = acquireSendBuffer();
+        initLpdu(sendBuffer, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        setDestinationAddress(sendBuffer, senderAddr);
+        if (processApci(apciCmd, telegram, telLength, sendBuffer))
+        {
+            sendPreparedTelegram();
+        }
+        else
+        {
+            sendTelegramBufferState = TELEGRAM_FREE;
+        }
+        return;
+    }
+
     const uint8_t seqNo = sequenceNumber(telegram);
 
     // check for event E07 or CLOSED state of events E04, E05, E06
     if ((connectedAddr != senderAddr) || (state == TLayer4::CLOSED))
     {
-        // event E07 or state CLOSED -> always action A10
+        // event E07 or state CLOSED -> always action A00
         dump2(
                 if (connectedAddr != senderAddr)
                 {
@@ -599,31 +678,15 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
                 dumpKNXAddress(senderAddr);
                 serial.print(" senderAddr ");
              );
-        actionA10Disconnect(senderAddr);
         dumpTelegramBytes(false, telegram, telLength);
+        actionA00Nothing();
         return;
     }
 
     if (seqNo == seqNoRcv)
     {
-        ///\todo BUG event E04 needs more checks
         // event E04 and state != TLayer4::CLOSED
-        telegramReadyToSend = actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
-        /*
-        // this either does not work, it's even worse
-        if (state == TLayer4::OPEN_IDLE)
-        {
-            telegramReadyToSend = actionA02sendAckPduAndProcessApci(apci, seqNo, telegram, telLength);
-        }
-        else
-        {
-            // according to KNX Spec 2.1, we should execute action A02
-            // but that can lead to a infinite loop, instead we execute A06 to disconnect the connection
-            dump2(serial.print("EVENT 4 DirectTelegram while waiting for T_ACK ");); ///\todo CHECK THIS
-            actionA06DisconnectAndClose();
-            dumpTelegramBytes(false, telegram, telLength);
-        }
-        */
+        actionA02sendAckPduAndProcessApci(apciCmd, seqNo, telegram, telLength);
         return;
     }
 
@@ -645,23 +708,22 @@ void TLayer4::processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram
     dump2(
           serial.print("EVENT 6 out of sequence ");
     );
-    actionA06DisconnectAndClose();
+    actionA04SendNAck(seqNo);
     dumpTelegramBytes(false, telegram, telLength);
 }
 
-unsigned char TLayer4::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool * sendResponse, unsigned char * telegram, uint8_t telLength)
+bool TLayer4::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
 {
     dump2(
           serial.print("TLayer4::processApci");
           serial.print(LOG_SEP);
     );
-    *sendResponse = false;
-    return (0); // we return nothing
+    return (false); // we return nothing
 }
 
 void TLayer4::actionA00Nothing()
 {
-    dump2(serial.println("A00Nothing "));
+    dump2(serial.println("A00Nothing"));
 }
 
 void TLayer4::actionA01Connect(uint16_t address)
@@ -671,7 +733,6 @@ void TLayer4::actionA01Connect(uint16_t address)
           serial.print(LOG_SEP);
     );
     resetConnection();
-    telegramReadyToSend = false;
     connectedAddr = address;
     seqNoSend = 0;
     seqNoRcv = 0;
@@ -680,28 +741,46 @@ void TLayer4::actionA01Connect(uint16_t address)
     dump2(lastTick = connectedTime;); // for debug logging
 }
 
-bool TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength)
+void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength)
 {
     dump2(serial.print("actionA02 "));
-    bool sendResponse = false;
-    processApci(apciCmd, connectedAddr, seqNo, &sendResponse, telegram, telLength);
     dumpTelegramBytes(false,telegram, telLength);
-    sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo); // KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
+    sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     seqNoRcv++;                 // increment sequence counter
     seqNoRcv &= 0x0F;           // handle overflow
     connectedTime = systemTime; // "restart the connection timeout timer"
+
+    byte * sendBuffer;
+    volatile SendConnectedTelegramBufferState * sendBufferState;
+    if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_FREE)
+    {
+        sendBuffer = sendConnectedTelegram;
+        sendBufferState = &sendConnectedTelegramBufferState;
+    }
+    else
+    {
+        sendBuffer = sendConnectedTelegram2;
+        sendBufferState = &sendConnectedTelegramBuffer2State;
+    }
+
+    // Mark buffer as acquired before starting potentially long-running processing of the message.
+    // This ensures finishedSendingTelegram() can move the buffer to the next state and thus prevents
+    // messages lingering in the buffer. The message will not be sent prematurely as the sending is
+    // triggered in loop(), which can only execute after this function returns.
+    *sendBufferState = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
+    auto sendResponse = processApci(apciCmd, telegram, telLength, sendBuffer);
     if (sendResponse)
     {
         ///\todo normally this has to be done in Layer 2
-        initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD); // same priority as received
-
-        ///todo get callback from L2 of successfully sent T_ACK and then execute below steps
-        discardReceivedTelegram();
-        sendResponse = false;
-        telegramReadyToSend = true;
-        actionA07SendDirectTelegram();
+        initLpdu(sendBuffer, priority(telegram), false, FRAME_STANDARD); // same priority as received
+        setDestinationAddress(sendBuffer, connectedAddr);
+        auto sequenceNumber = (sendBuffer == sendConnectedTelegram) ? seqNoSend : ((seqNoSend + 1) & 0x0F);
+        setSequenceNumber(sendBuffer, sequenceNumber);
     }
-    return sendResponse;
+    else
+    {
+        *sendBufferState = CONNECTED_TELEGRAM_FREE;
+    }
 }
 
 void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
@@ -709,6 +788,13 @@ void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
     dump2(serial.println("ERROR A03sendAckPduAgain "));
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     repeatedT_ACKcount++; // counting for statistics
+    connectedTime = systemTime; // "restart the connection timeout timer"
+}
+
+void TLayer4::actionA04SendNAck(const uint8_t seqNo)
+{
+    dump2(serial.println("ERROR actionA04SendNAck"));
+    sendConControlTelegram(T_NACK_PDU, connectedAddr, seqNo);
     connectedTime = systemTime; // "restart the connection timeout timer"
 }
 
@@ -726,7 +812,7 @@ void TLayer4::actionA06DisconnectAndClose()
     disconnectCount++;
     setTL4State(TLayer4::CLOSED);
     dump2(
-        serial.println("A06Disconnect");
+        serial.println("actionA06DisconnectAndClose");
     );
     sendConControlTelegram(T_DISCONNECT_PDU, connectedAddr, 0);
     resetConnection();
@@ -743,7 +829,7 @@ void TLayer4::actionA07SendDirectTelegram()
         return;
     }
 
-    if (!telegramReadyToSend)
+    if (sendConnectedTelegramBufferState != CONNECTED_TELEGRAM_WAIT_LOOP)
     {
         dump2(
               serial.print("ERROR A07SendTelegram Nothing to send");
@@ -752,28 +838,25 @@ void TLayer4::actionA07SendDirectTelegram()
         return;
     }
 
-    setSequenceNumber(sendTelegram, seqNoSend);
-
     dump2(
         telegramCount++;
-        dumpTelegramInfo(sendTelegram, connectedAddr, sendTelegram[6], true, state);
+        dumpTelegramInfo(sendConnectedTelegram, connectedAddr, sendConnectedTelegram[6], true, state);
         serial.print("sendDirectT");
         serial.print(LOG_SEP);
         serial.print("A07SendTelegram");
         serial.print(LOG_SEP);
     );
 
-    // priority already set in actionA02sendAckPduAndProcessApci
-    // sender address will be set by bus.sendTelegram()
-    setDestinationAddress(sendTelegram, connectedAddr);
     setTL4State(TLayer4::OPEN_WAIT);
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_SENDING;
 
     dump2(
-        dumpTelegramBytes(true, &sendTelegram[0], telegramSize(sendTelegram), true);
+        dumpTelegramBytes(true, sendConnectedTelegram, telegramSize(sendConnectedTelegram), true);
     );
-    telegramReadyToSend = false;
-    send(sendTelegram, telegramSize(sendTelegram));
-    connectedTime = systemTime;
+    sendPreparedConnectedTelegram();
+    repCount = 0;
+    sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
+    connectedTime = systemTime; // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA08IncrementSequenceNumber()
@@ -781,6 +864,27 @@ void TLayer4::actionA08IncrementSequenceNumber()
     dump2(serial.print("A08IncrementSequenceNumber "));
     seqNoSend++;
     seqNoSend &= 0x0F;
+    connectedTime = systemTime; // "restart the connection timeout timer"
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+
+    if (sendConnectedTelegramBuffer2State != CONNECTED_TELEGRAM_FREE)
+    {
+        memcpy(sendConnectedTelegram, sendConnectedTelegram2, telegramSize(sendConnectedTelegram2));
+        sendConnectedTelegramBufferState = sendConnectedTelegramBuffer2State;
+        sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
+    }
+}
+
+void TLayer4::actionA09RepeatMessage()
+{
+    dump2(
+        serial.print("ERROR actionA09RepeatMessage ");
+        dumpTelegramBytes(true, sendConnectedTelegram, telegramSize(sendConnectedTelegram));
+    );
+
+    sendPreparedConnectedTelegram();
+    repCount++;
+    sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
     connectedTime = systemTime; // "restart the connection timeout timer"
 }
 
@@ -797,21 +901,45 @@ void TLayer4::loop()
 {
     if (!enabled)
         return;
+
     // Send a disconnect after TL4_CONNECTION_TIMEOUT_MS milliseconds inactivity
     if ((state != TLayer4::CLOSED) && (elapsed(connectedTime) >= TL4_CONNECTION_TIMEOUT_MS))
     {
+        // event E16
         actionA06DisconnectAndClose();
         dump2(serial.println("direct connection timed out => disconnecting"));
     }
 
-/* This is now done in actionA02sendAckPduAndProcessApci
-    if ((state == TLayer4::OPEN_IDLE) && (telegramReadyToSend) && (bus.idle())) ///\todo this is according to spec
-    // if (telegramReadyToSend && bus.idle()) // but this worked better
+    // Send a potential response message
+    if ((state == TLayer4::OPEN_IDLE) && (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_LOOP))
     {
         // event E15
-        actionA07SendDirectTelegram(); // this is event E15 to send our response
+        actionA07SendDirectTelegram();
     }
-*/
+
+    // Repeat the message after TL4_T_ACK_TIMEOUT_MS milliseconds
+    if ((state == TLayer4::OPEN_WAIT) && (elapsed(sentTelegramTime) >= TL4_T_ACK_TIMEOUT_MS))
+    {
+        if (repCount < TL4_MAX_REPETITION_COUNT)
+        {
+            // event E17
+            dump2(
+                dumpTicks();
+                serial.println("T_ACK timed out => repeating");
+            );
+
+            actionA09RepeatMessage();
+        }
+        else
+        {
+            // event E18
+            dump2(
+                dumpTicks();
+                serial.println("T_ACK timed out and too many repetitions => disconnecting");
+            );
+            actionA06DisconnectAndClose();
+        }
+    }
 }
 
 void TLayer4::resetConnection()
@@ -820,6 +948,9 @@ void TLayer4::resetConnection()
           serial.print("TLayer4::resetConnection");
           serial.print(LOG_SEP)
     );
+
+    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+    sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
 }
 
 bool TLayer4::setTL4State(TLayer4::TL4State newState)

@@ -28,8 +28,8 @@
 
 
 #define TL4_CONNECTION_TIMEOUT_MS (6000) //!< Transport layer 4 connection timeout in milliseconds
-#define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds, not used in Style 1 Rationalised
-#define TL4_CTRL_TELEGRAM_SIZE    (8)    //!< The size of a connection control telegram
+#define TL4_T_ACK_TIMEOUT_MS      (3000) //!< Transport layer 4 T_ACK/T_NACK timeout in milliseconds
+#define TL4_MAX_REPETITION_COUNT  (3)    //!< Maximum number of repetitions
 
 #ifdef DEBUG
 #   define LONG_PAUSE_THRESHOLD_MS (500)
@@ -40,12 +40,12 @@ extern uint16_t disconnectCount; //!< number of disconnects since system reset
 extern uint16_t repeatedT_ACKcount; //!< number of repeated @ref T_ACK_PDU in @ref actionA03sendAckPduAgain
 
 /**
- * Implementation of the KNX transportation layer 4 Style 1 Rationalised
+ * Implementation of the KNX transportation layer 4 Style 3
  */
 class TLayer4
 {
 public:
-    /** The states of the transport layer 4 state machine Style 1 rationalised */
+    /** The states of the transport layer 4 state machine Style 3 */
     enum TL4State ///\todo make it private after refactoring of TL4 dumping
     {
         CLOSED,
@@ -100,10 +100,22 @@ public:
     uint16_t connectedTo();
 
     /**
-     * A buffer for the telegram to send.
-     * @warning This buffer is considered library private and should rather not be used by the application program.
+     * Wait for @ref sendTelegram to be free and acquire it.
      */
-    byte *sendTelegram;
+    uint8_t * acquireSendBuffer();
+
+    /**
+     * Sends the telegram that was prepared in @ref sendTelegram.
+     */
+    void sendPreparedTelegram();
+
+    /**
+     * Notification that the last telegram transmission has ended.
+     *
+     * @param successful Whether the telegram was transmitted successfully (received an LL_ACK)
+     *                   or not (not even after repeating it a few times).
+     */
+    void finishedSendingTelegram(bool successful);
 protected:
     /**
      * Special initialization for the transport layer.
@@ -121,7 +133,9 @@ protected:
     virtual bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) = 0;
 
     /**
-     * ///\todo check real functionality and if even needed
+     * Reset TL4 connection by setting
+     * @ref sendConnectedTelegramBufferState and @ref sendConnectedTelegramBuffer2State to
+     * @ref CONNECTED_TELEGRAM_FREE
      */
     virtual void resetConnection();
 
@@ -134,11 +148,9 @@ protected:
      */
     void sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo);
 
-    virtual unsigned char processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo,
-                                      bool * sendResponse, unsigned char * telegram, uint8_t telLength);
+    virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
 
     bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
-    int8_t sequenceNumberSend();
 
 
     virtual void discardReceivedTelegram() = 0;
@@ -148,7 +160,7 @@ private:
     /**
      * Internal processing of the received telegram from bus.telegram. Called by processTelegram
      */
-    bool processTelegramInternal(unsigned char *telegram, uint8_t telLength);
+    void processTelegramInternal(unsigned char *telegram, uint8_t telLength);
 
     /** Sets a new state @ref TL4State for the transport layer state machine
      *
@@ -205,15 +217,29 @@ private:
      */
     void processDirectTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength);
 
+    /**
+     * Forward the connection-oriented telegram in @ref sendConnectedTelegram to @ref sendTelegram
+     * and send it.
+     */
+    void sendPreparedConnectedTelegram();
+
     void actionA00Nothing();
     void actionA01Connect(uint16_t address);
-    bool actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
+    void actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_t seqNo, unsigned char *telegram, uint8_t telLength);
 
     /**
      * Performs action A3 as described in the KNX Spec. 2.1 3/3/4 5.3 p.19
      * @param seqNo Sequence number the T_ACK should be send with
      */
     void actionA03sendAckPduAgain(const int8_t seqNo);
+
+    /**
+     * @brief Performs action A4 as described in the KNX Spec.
+     *        Send a @ref T_NACK_PDU to @ref connectedAddr with system priority
+     *
+     * @param seqNo Received (incorrect) sequence number
+     */
+    void actionA04SendNAck(const uint8_t seqNo);
 
     /**
      * @brief Performs action A5 as described in the KNX Spec.
@@ -227,13 +253,15 @@ private:
     void actionA06DisconnectAndClose();
 
     /**
-     * @brief Sends the direct telegram which is provided in global buffer @ref sendTelegram
-     * @param senderSeqNo Senders sequence number
-     *
-     * @return true if sequence number was added, otherwise false
+     * @brief Sends the direct telegram which is provided in buffer @ref sendConnectedTelegram
      */
     void actionA07SendDirectTelegram();
     void actionA08IncrementSequenceNumber();
+
+    /**
+     * @brief Repeats the last direct telegram in buffer @ref sendConnectedTelegram
+     */
+    void actionA09RepeatMessage();
 
     /**
      * @brief Performs action A10 as described in the KNX Spec.
@@ -243,18 +271,45 @@ private:
      */
     void actionA10Disconnect(uint16_t address);
 
-    int8_t sequenceNumberReceived();
-
-    byte sendCtrlTelegram[TL4_CTRL_TELEGRAM_SIZE];  //!< Short buffer for connection control telegrams.
-
     TLayer4::TL4State state = TLayer4::CLOSED;  //!< Current state of the TL4 state machine
     uint16_t connectedAddr = 0;                 //!< Remote address of the connected partner
     int8_t seqNoSend = -1;                      //!< Sequence number for the next telegram we send
     int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
-    bool telegramReadyToSend = false;           //!< True if a response is ready to be sent after our @ref T_ACK is confirmed
+    int8_t repCount = 0;                        //!< Telegram repetition count
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
+    uint32_t sentTelegramTime = 0;              //!< System time of the last sent telegram
 
-    volatile uint16_t ownAddr;                 //!< Our own physical address on the bus
+    volatile uint16_t ownAddr;                  //!< Our own physical address on the bus
+
+    /**
+     * A buffer for the telegram to send.
+     */
+    byte *sendTelegram;
+
+    /**
+     * Two buffers for connection-oriented telegrams to send. Separate from @ref sendTelegram as repeated sending
+     * can be necessary after seconds, while other telegrams can be received and transmitted.
+     */
+    byte *sendConnectedTelegram;
+    byte *sendConnectedTelegram2;
+
+    enum SendTelegramBufferState
+    {
+        TELEGRAM_FREE,
+        TELEGRAM_ACQUIRED,
+        TELEGRAM_SENDING
+    };
+    enum SendConnectedTelegramBufferState
+    {
+        CONNECTED_TELEGRAM_FREE,
+        CONNECTED_TELEGRAM_WAIT_T_ACK_SENT,
+        CONNECTED_TELEGRAM_WAIT_LOOP,
+        CONNECTED_TELEGRAM_SENDING
+    };
+
+    volatile SendTelegramBufferState sendTelegramBufferState;
+    volatile SendConnectedTelegramBufferState sendConnectedTelegramBufferState;
+    volatile SendConnectedTelegramBufferState sendConnectedTelegramBuffer2State;
 };
 
 inline bool TLayer4::directConnection()
@@ -283,16 +338,6 @@ inline uint16_t TLayer4::connectedTo()
     {
         return (0);
     }
-}
-
-inline int8_t TLayer4::sequenceNumberReceived()
-{
-    return (seqNoRcv);
-}
-
-inline int8_t TLayer4::sequenceNumberSend()
-{
-    return (seqNoSend);
 }
 
 #endif /* TLAYER4_H_ */

@@ -42,6 +42,7 @@ static void tc_setup_1001(Telegram* tel, uint16_t telCount)
 {
     bcuUnderTest->state = TLayer4::CLOSED; // to "reset" connection for next test
     bcuUnderTest->setOwnAddress(0x1001);
+    telegramPreparation(bcuUnderTest, tel, telCount);
 }
 
 static void tc_setup_OpenWait(Telegram* tel, uint16_t telCount)
@@ -74,7 +75,7 @@ static void gatherProtocolState_01(ProtocolTestState * state, ProtocolTestState 
     state->machineState = bcuUnderTest->state;
     state->seqNoSend = bcuUnderTest->seqNoSend;
     state->seqNoRcv = bcuUnderTest->seqNoRcv;
-    state->telegramReadyToSend = bcuUnderTest->telegramReadyToSend;
+    state->sendConnectedTelegramBufferState = bcuUnderTest->sendConnectedTelegramBufferState;
 
     if(refState)
     {
@@ -83,7 +84,7 @@ static void gatherProtocolState_01(ProtocolTestState * state, ProtocolTestState 
         REQUIRE(state->connectedAddrNew == refState->connectedAddrNew);
         REQUIRE(state->seqNoSend == refState->seqNoSend);
         REQUIRE(state->seqNoRcv == refState->seqNoRcv);
-        REQUIRE(state->telegramReadyToSend == refState->telegramReadyToSend);
+        REQUIRE(state->sendConnectedTelegramBufferState == refState->sendConnectedTelegramBufferState);
     }
 }
 
@@ -177,11 +178,11 @@ static Test_Case testCaseTelegramSequence_02 =
 
 static Test_Case testCaseTelegramSequence_03 =
 {
-    "TelSeq 3 Connect from remote device with initial state OPEN_WAIT (style 1)",
+    "TelSeq 3 Connect from remote device with initial state OPEN_WAIT (style 3)",
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup,
+    tc_setup_OpenWait_A001,
     (StateFunction *) gatherProtocolState_03,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
@@ -298,7 +299,7 @@ static Test_Case testCaseTelegramSequence_19 =
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup_OpenWait_A001,
+    tc_setup,
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
@@ -409,6 +410,19 @@ static Test_Case testCaseTelegramSequence_26 =
     testCaseTelegrams_26
 };
 
+static Test_Case testCaseTelegramSequence_30 =
+{
+    "TelSeq 30 Reception of a T_ACK_PDU, with initial state OPEN_IDLE (style 1/2)",
+    MANUFACTURER, DEVICE, VERSION,
+    0,
+    NULL,
+    tc_setup,
+    (StateFunction *) gatherProtocolState_machineState,
+    (TestCaseState *) &protoState[0],
+    (TestCaseState *) &protoState[1],
+    testCaseTelegrams_30
+};
+
 static Test_Case testCaseTelegramSequence_31 =
 {
     "TelSeq 31 Reception of T_ACK with wrong sequence number, with initial state OPEN_IDLE (style 1/2)",
@@ -506,7 +520,7 @@ static Test_Case testCaseTelegramSequence_38 =
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup_OpenWait_A001,
+    tc_setup,
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
@@ -519,7 +533,7 @@ static Test_Case testCaseTelegramSequence_39 =
     MANUFACTURER, DEVICE, VERSION,
     0,
     NULL,
-    tc_setup_OpenWait_A001,
+    tc_setup,
     (StateFunction *) gatherProtocolState_machineState,
     (TestCaseState *) &protoState[0],
     (TestCaseState *) &protoState[1],
@@ -585,17 +599,15 @@ void runTL4TestsOnBcu(BcuType testBcuType, std::string sectionName)
         executeTest(testBcuType, &testCaseTelegramSequence_18);
         executeTest(testBcuType, &testCaseTelegramSequence_19);
         executeTest(testBcuType, &testCaseTelegramSequence_20a);
-
-        ///\todo implement test case 20b correctly
-        // executeTest(testBcuType, &testCaseTelegramSequence_20b);
-
+        executeTest(testBcuType, &testCaseTelegramSequence_20b);
         executeTest(testBcuType, &testCaseTelegramSequence_21);
         executeTest(testBcuType, &testCaseTelegramSequence_22);
         executeTest(testBcuType, &testCaseTelegramSequence_23);
         executeTest(testBcuType, &testCaseTelegramSequence_24);
         executeTest(testBcuType, &testCaseTelegramSequence_25);
         executeTest(testBcuType, &testCaseTelegramSequence_26);
-        // test cases 27-30 not implemented, they are for client only, (T_DATA_CONNECTED from the local user)
+        // test cases 27-29 not implemented, they are for client only, (T_DATA_CONNECTED from the local user)
+        executeTest(testBcuType, &testCaseTelegramSequence_30);
         executeTest(testBcuType, &testCaseTelegramSequence_31); // from KNX Spec note: "Current System 1 implementations (see volume 6) transmit faulty telegrams. This is not allowed for updated versions or new developed system 1 implementations."
         executeTest(testBcuType, &testCaseTelegramSequence_32);
         executeTest(testBcuType, &testCaseTelegramSequence_33);

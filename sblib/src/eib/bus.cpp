@@ -169,7 +169,6 @@ void Bus::begin()
 
 	telegramLen = 0;
 	sendAck = 0;
-	//need_to_send_ack_to_remote=false;
 	rx_error = RX_OK;
 	bus_rx_state = RX_OK;
 	setBusRXStateValid(true);
@@ -178,7 +177,6 @@ void Bus::begin()
 	tx_error = TX_OK;
 	bus_tx_state = TX_OK;
 	sendCurTelegram = nullptr;
-	sendNextTel = nullptr;
 	prepareForSending();
 	state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
 	//initialize bus-timer( e.g. defined as 16bit timer1)
@@ -266,24 +264,12 @@ void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
  */
 void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 {
+    prepareTelegram(telegram, length);
 
-	prepareTelegram(telegram, length);
+    // Wait until there is space in the sending queue
+    while (sendCurTelegram != nullptr);
 
-	// Wait until there is space in the sending queue
-	while (sendNextTel);
-
-	if (!sendCurTelegram)
-    {
-	    sendCurTelegram = telegram;
-    }
-	else if (!sendNextTel)
-    {
-        sendNextTel = telegram;
-    }
-	else
-    {
-	    fatalError(); // soft fault: send buffer overflow
-    }
+    sendCurTelegram = telegram;
 
     DB_TELEGRAM(
         unsigned int t;
@@ -302,8 +288,6 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 	noInterrupts();
 	if (state == IDLE)
 	{
-		prepareForSending();
-
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 		timer.match(timeChannel, 1);
 		timer.matchMode(timeChannel, INTERRUPT | RESET);
@@ -324,7 +308,6 @@ void Bus::idleState()
 	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
 	state = Bus::IDLE;
 	sendAck = 0;
-	//need_to_send_ack_to_remote=false;
 }
 
 void Bus::prepareForSending()
@@ -402,7 +385,6 @@ void Bus::handleTelegram(bool valid)
         }
     );
 
-	//need_to_send_ack_to_remote=false;
 	sendAck = 0; // clear any pending ACK TX
 	int time = SEND_WAIT_TIME -  PRE_SEND_TIME; // default wait time after bus action
 	state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;//  default next state is wait for 50 bit times for pending tx or new rx
@@ -411,7 +393,7 @@ void Bus::handleTelegram(bool valid)
 
 #ifndef BUSMONITOR   // no processing if we are in monitor mode
 
-	// Received a valid telegram with correct checksum and valid control byte ( normal data frame with preamble bits)?
+	// Received a valid telegram with correct checksum and valid control byte (normal data frame with preamble bits)?
 	//todo extended tel, check tel len, give upper layer error info
 	if ( nextByteIndex >= 8 && valid  &&  (( rx_telegram[0] & VALID_DATA_FRAME_TYPE_MASK) == VALID_DATA_FRAME_TYPE_VALUE)
 			&& nextByteIndex <= bcu->maxTelegramSize()  )
@@ -419,31 +401,21 @@ void Bus::handleTelegram(bool valid)
 		int destAddr = (rx_telegram[3] << 8) | rx_telegram[4];
 		bool processTel = false;
 
-		// We ACK the telegram only if it's for us
-		if (rx_telegram[5] & 0x80) // groupr addr or phy addr
+		// Only process the telegram if it is for us
+		if (rx_telegram[5] & 0x80) // group address or physical address
 		{
 		    processTel = (destAddr == 0); // broadcast
-		    processTel |= (bcu->addrTables != nullptr) && (bcu->addrTables->indexOfAddr(destAddr) >= 0); // known group addr
+		    processTel |= (bcu->addrTables != nullptr) && (bcu->addrTables->indexOfAddr(destAddr) >= 0); // known group address
 		}
 		else if (destAddr == bcu->ownAddress())
 		{
 			processTel = true;
 		}
 
-		DB_TELEGRAM(telRXNotProcessed = !processTel);
+        // with disabled TL we also process the telegram, so the application (e.g. ft12, knx-if) can handle it completely by itself
+        processTel |= !(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER);
 
-		// Only process the telegram if it is for us or if we want to get all telegrams
-		if (!(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
-		{ // TL is disabled we might process the telegram
-			processTel = true;
-			// if LL is in normal mode (not busmonitor mode) we send ack back
-			if (bcu->userRam->status() & BCU_STATUS_LINK_LAYER)
-				if (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG )
-				{
-					sendAck = SB_BUS_ACK;
-					//need_to_send_ack_to_remote=true;
-				}
-		}
+        DB_TELEGRAM(telRXNotProcessed = !processTel);
 
 		if (processTel)
 		{// check for repeated telegram, did we already received it
@@ -484,9 +456,12 @@ void Bus::handleTelegram(bool valid)
 				}
 			}
 
-			if (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)
+            // LL_ACK only allowed, if link layer is in normal mode, not busmonitor mode
+            auto suppressAck = !(bcu->userRam->status() & BCU_STATUS_LINK_LAYER);
+            // LL_ACK only allowed for L_Data frames
+            suppressAck |= rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG;
+            if (suppressAck)
 			{
-				// not an L_Data frame, don't send any LL_ACK
 				sendAck = 0;
 			}
 
@@ -514,7 +489,7 @@ void Bus::handleTelegram(bool valid)
 			if (sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
 				tx_error |= TX_RETRY_ERROR;
 			tb_h( 906, tx_error, tb_in);
-			sendNextTelegram();
+			finishSendingTelegram();
 		}
 		else if (parity && currentByte == SB_BUS_BUSY)
 		{
@@ -559,22 +534,19 @@ void Bus::handleTelegram(bool valid)
 }
 
 /*
- * Current telegram was send, send next telegram
+ * Finish the telegram sending process.
  *
- * load data for next telegram, save  send resultState - driven by interrupts of timer and capture input
- * Free send-buffer is indicated by "0" in the header byte: send-buffer[0]=0
- *
+ * Notify upper layer of completion and prepare for next telegram transmission.
  */
-void Bus::sendNextTelegram()
+void Bus::finishSendingTelegram()
 {
     bus_tx_state = tx_error;
 
-    if (sendCurTelegram)
+    if (sendCurTelegram != nullptr)
     {
-        sendCurTelegram[0] = 0;
+        sendCurTelegram = nullptr;
+        bcu->finishedSendingTelegram(!(tx_error & TX_RETRY_ERROR));
     }
-    sendCurTelegram = sendNextTel;
-    sendNextTel = nullptr;
 
     prepareForSending();
 }
@@ -648,7 +620,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 		// or at least one pending Telegram in the queue.
 		// A timeout  (after 0xfffe us) should not be received (indicating no bus activity) match interrupt is disabled
 		// A reception of a new telegram is triggered by the falling edge of the received start bit and we collect the bits in the receiving process
-		// Sending is triggered in idle state by a call to prepareForSending() and state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
+		// Sending is triggered in idle state by state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
 
 	case Bus::IDLE:
 		tb_d( state+100, ttimer.value(), tb_in);
@@ -908,9 +880,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 			{
 				tb_h( state+ 100,sendTries + 10* sendBusyTries, tb_in);
 				tx_error |= TX_RETRY_ERROR;
-				sendNextTelegram();	// then send next  todo: info upper layer on sending error of last telegram
+				finishSendingTelegram();	// then send next, this also informs upper layer on sending error of last telegram
 			}
-			if (sendCurTelegram)  // Send a telegram pending?
+			if (sendCurTelegram != nullptr)  // Send a telegram pending?
 			{		//tb_t( state+200, ttimer.value(), tb_in);
 				tb_h( state+ 200, repeatTelegram, tb_in);
 				//tb_h( state+ 300,sendCurTelegram[0], tb_in);
