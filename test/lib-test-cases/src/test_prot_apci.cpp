@@ -43,11 +43,11 @@ static Telegram apciAdcReadPduTelegrams[] =
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX, 7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. APCI_ADC_READ_PDU
-    {TEL_RX, 8, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x64, 0x01, 0x80}},
+    {TEL_RX, 9, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x62, 0x41, 0x80, 0x89}},
     // 3. Check T_ACK, loop() once so APCI_ADC_RESPONSE_PDU will be send
     {TEL_TX, 7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
-    // 4.  APCI_ADC_RESPONSE_PDU
-    {TEL_TX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x64, 0x41, 0xC0, 0xAB, 0x00, 0x00}},
+    // 4. APCI_ADC_RESPONSE_PDU
+    {TEL_TX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x64, 0x41, 0xC0, 0x89, 0x00, 0x00}},
     {END}
 };
 
@@ -83,6 +83,15 @@ static Telegram apciMemoryWriteTelegrams[] =
 
 static Telegram apciDeviceDescriptorReadTelegrams[] =
 {
+    // 1. APCI_DEVICEDESCRIPTOR_READ_PDU
+    {TEL_RX,  8, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x03, 0x00}},
+    // 2. DeviceDescriptorResponse
+    {TEL_TX, 10, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x63, 0x03, 0x40, dummyMaskVersionHigh, dummyMaskVersionLow}},
+    {END}
+};
+
+static Telegram apciDeviceDescriptorReadConnectedTelegrams[] =
+{
     // 1. T_CONNECT_PDU (0x80) from sourceAddr=10.0.1 to destAddr=10.0.0
     {TEL_RX,  7, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0x80}},
     // 2. APCI_DEVICEDESCRIPTOR_READ_PDU
@@ -113,8 +122,10 @@ static Telegram apciMasterResetTelegrams[] =
     {TEL_RX, 10, 0, 0, NULL, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x61, 0x43, 0x81,  BOOTLOADER_MAGIC_ERASE, BOOTLOADER_MAGIC_CHANNEL}},
     // 3. Check T_ACK, loop() once so APCI_MASTER_RESET_RESPONSE_PDU will be send
     {TEL_TX,  7, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0xC2}},
-    // 4. APCI_MASTER_RESET_RESPONSE_PDU => T_RESTART_NO_ERROR with 1 second
-    {TEL_TX, 11, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x64, 0x43, 0xA1, 0x00, 0x00, 0x01}},
+    // 4. APCI_MASTER_RESET_RESPONSE_PDU => T_RESTART_NO_ERROR with 1 second, loop() once so T_DISCONNECT_PDU will be sent
+    {TEL_TX, 11, 1, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x64, 0x43, 0xA1, 0x00, 0x00, 0x01}},
+    // 5. T_DISCONNECT_PDU
+    {TEL_TX, 7, 0, 0, NULL, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
     {END}
 };
 
@@ -299,6 +310,19 @@ static Test_Case testCaseApciDeviceDescriptorReadPdu =
     apciDeviceDescriptorReadTelegrams
 };
 
+static Test_Case testCaseApciDeviceDescriptorReadConnectedPdu =
+{
+    "APCI_DEVICEDESCRIPTOR_READ_PDU",
+    MANUFACTURER, DEVICE, VERSION,
+    0,    //powerOnDelay
+    NULL, // eePromSetup
+    tc_setup,
+    NULL,
+    NULL,
+    NULL,
+    apciDeviceDescriptorReadConnectedTelegrams
+};
+
 static Test_Case testCaseApciBasicRestartPdu =
 {
     "APCI_BASIC_RESTART_PDU",
@@ -390,6 +414,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadConnectedPdu);
         executeTest(bcuTypeToTest, &testCaseApciBasicRestartPdu);
         executeTest(bcuTypeToTest, &testCaseApciMasterResetPdu);
         executeTest(bcuTypeToTest, &testCaseApciAuthorizeRequestPdu);
@@ -408,6 +433,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadConnectedPdu);
         executeTest(bcuTypeToTest, &testCaseApciBasicRestartPdu);
         executeTest(bcuTypeToTest, &testCaseApciMasterResetPdu);
         executeTest(bcuTypeToTest, &testCaseApciAuthorizeRequestPdu);
@@ -422,6 +448,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadConnectedPdu);
         executeTest(bcuTypeToTest, &testCaseApciBasicRestartPdu);
         executeTest(bcuTypeToTest, &testCaseApciMasterResetPdu);
         executeTest(bcuTypeToTest, &testCaseApciAuthorizeRequestPdu);
@@ -436,6 +463,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadConnectedPdu);
         executeTest(bcuTypeToTest, &testCaseApciBasicRestartPdu);
         executeTest(bcuTypeToTest, &testCaseApciMasterResetPdu);
         executeTest(bcuTypeToTest, &testCaseApciAuthorizeRequestPdu);
@@ -450,6 +478,7 @@ TEST_CASE("APCI processing", "[protocol][APCI]")
         executeTest(bcuTypeToTest, &testCaseApciMemoryReadPdu);
         executeTest(bcuTypeToTest, &testCaseApciMemoryWritePdu);
         executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadPdu);
+        executeTest(bcuTypeToTest, &testCaseApciDeviceDescriptorReadConnectedPdu);
         executeTest(bcuTypeToTest, &testCaseApciBasicRestartPdu);
         executeTest(bcuTypeToTest, &testCaseApciMasterResetPdu);
         executeTest(bcuTypeToTest, &testCaseApciAuthorizeRequestPdu);

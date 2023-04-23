@@ -114,6 +114,19 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
 #   define DB_COM_OBJ(x)
 #endif
 
+#if defined(DUMP_TELEGRAMS)
+#   define DB_TELEGRAM(x) x
+#else
+#   define DB_TELEGRAM(x)
+#endif
+
+// Informational bus debug statements
+#if defined (DEBUG_BUS) || defined (DEBUG_BUS_BITLEVEL) || defined(DUMP_TELEGRAMS)
+#   define DB_BUS(x) x
+#else
+#   define DB_BUS(x)
+#endif
+
 #if !defined(INCLUDE_SERIAL)
 #   undef DB_MEM_OPS
 #   define DB_MEM_OPS(x)
@@ -121,6 +134,10 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
 #   define DB_PROPERTIES(x)
 #   undef DB_COM_OBJ
 #   define DB_COM_OBJ(x)
+#   undef DB_TELEGRAM
+#   define DB_TELEGRAM(x)
+#   undef DB_BUS
+#   define DB_BUS(x)
 #endif
 
 /*

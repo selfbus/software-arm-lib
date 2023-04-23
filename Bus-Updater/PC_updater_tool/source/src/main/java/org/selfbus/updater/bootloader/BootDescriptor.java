@@ -26,15 +26,12 @@ public class BootDescriptor {
      * @throws UpdaterException Exception in case of invalid start or end address
      */
     public BootDescriptor(long startAddress, long endAddress, int crc32, long appVersionAddress) throws UpdaterException {
-        if (startAddress > endAddress) {
-            throw new UpdaterException("startAddress beyond endAddress");
-        }
         this.startAddress = startAddress;
         this.endAddress = endAddress;
         this.crc32 = crc32;
         this.appVersionAddress = appVersionAddress;
 
-        valid = (this.startAddress != 0xFFFFFFFFL);
+        valid = (this.startAddress != 0xFFFFFFFFL) && (startAddress < endAddress);
     }
 
 

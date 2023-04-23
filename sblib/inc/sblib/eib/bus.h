@@ -3,9 +3,6 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
- *
- *  last update: March 2021, Hora,  added some states and debug data definition
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -18,32 +15,6 @@
 
 #include <sblib/timer.h>
 #include <sblib/eib/types.h>
-
-// dump all received and sent telegrams out on the serial interface
-#if defined(INCLUDE_SERIAL)
-#   include <sblib/serial.h>
-#endif
-
-#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
-
-struct s_td {
-	unsigned short ts;   // state
-	unsigned int tt;     // system time
-	unsigned short tcv;  // capture value
-	unsigned short ttmv; // timer match value
-	unsigned short ttv;  // timer value
-	unsigned short tc;   // capture flag
-};
-
-#define tb_lngth 300
-
-extern volatile struct s_td td_b[tb_lngth];
-extern volatile unsigned int tb_in ;
-extern volatile unsigned int tb_out;
-extern volatile unsigned int tbd;
-extern volatile bool  tb_in_ov;
-
-#endif
 
 /**
  * Bus short acknowledgment frame: acknowledged
@@ -107,6 +78,12 @@ public:
      * This powers the bus off.
      */
     void end();
+
+    /**
+     * The Bus processing loop. This is like the application's loop() function,
+     * and is called automatically by main() when the BCU is activated with bcu.begin().
+     */
+    void loop();
 
     /**
      * Test if the bus is idle, no telegram is about to being sent or received.
@@ -179,13 +156,6 @@ public:
     void discardReceivedTelegram();
 
     /**
-     * Set weather the an acknowledgment from the last received byte should be sent.
-     * !!!!!!! critical as this could change the sendAck value during usage in the state machine (SM) - should not be used outside the bus SM!!
-     *  not needed as the SM should check the bit1 in the telegram header to check if the sender is requesting an ACK
-     */
-    void setSendAck(int newSendAck);
-
-    /**
      * Set the number of tries that we do sent a telegram when it is not ACKed.
      *
      * @param tries - the number of tries. Default: 3.
@@ -243,11 +213,10 @@ public:
 		SEND_BIT_0,						//!< Send the first bit of the current byte
 		SEND_BITS_OF_BYTE,				//!< Send the bits of the current byte
 		SEND_WAIT_FOR_HIGH_BIT_END,		//!< Send high bit(s) and wait for receiving a the falling edge of our next 0-bit.
-		SEND_WAIT_FOR_NEXT_TX_CHAR,		//!< Wait between two transmissions, cap disabled, timeout: start sending next char
+		SEND_END_OF_BYTE,				//!< Middle of stop bit reached, decide what to do next
 		SEND_END_OF_TX,					//!< Finish sending current byte
 		SEND_WAIT_FOR_RX_ACK_WINDOW,	//!< after sending we wait for the ack receive window to start, only timeout event enabled
-		SEND_WAIT_FOR_RX_ACK,			//!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
-		STATE_END
+		SEND_WAIT_FOR_RX_ACK			//!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
     };
 
     /**
@@ -277,27 +246,28 @@ public:
      volatile bool bus_rxstate_valid;
      volatile bool bus_txstate_valid;
 
-
-#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined (DUMP_TELEGRAMS)
-    Timer& ttimer = timer32_0;                //!< The debug timer for SM timing
-#endif
-
-
 private:
     /**
-     * Switch to idle state
+     * Switch to @ref Bus::IDLE state
+     * @details Set the Bus state machine to @ref Bus::IDLE state.
+     *          We waited at least 50 Bit times (without cap event enabled),
+     *          now we wait for next Telegram to receive.
+     *          Configure the capture to falling edge and interrupt
+     *          match register for low PWM output
      */
     void idleState();
 
     /**
-     * Switch to the next telegram for sending.
-     *
-     * mark the current send buffer as free -> set first byte of buffer to 0
-     * load a possible waiting/next buffer to current buffer
-     * initialize some low level parameters for the interrupt driven send process
-     *
+     * Initializes all class variables to prepare for the next transmission.
      */
-    void sendNextTelegram();
+    void prepareForSending();
+
+    /**
+     * Finish the telegram sending process.
+     *
+     * Notify upper layer of completion and prepare for next telegram transmission.
+     */
+    void finishSendingTelegram();
 
     /**
      * @fn void prepareTelegram(unsigned char*, unsigned short)const
@@ -317,18 +287,6 @@ private:
      * @param valid - 1 if all bytes had correct parity and the checksum is correct, 0 if not
      */
     void handleTelegram(bool valid);
-
-
-    /**
-     * !!!!!!!!!!! not available in code !!!!!!!!!!!!
-     * Sending Process is waiting for an acknowledgment.
-     * Handle the received byte(s) on a low level. Repeat the last send Telegram in case of invalid ack
-     * This function is called by the function TIMER16_1_IRQHandler() to decide about repetition
-     * of last sent Telegram.
-     *
-     * @param valid - 1 if (all) bytes had correct parity, 0 if not
-     */
-    // void handleAckTelegram(bool valid);
 
 protected:
     friend class TLayer4;
@@ -352,9 +310,8 @@ private:
 
     int currentByte;                //!< The current byte that is received/sent, including the parity bit
     int sendTelegramLen;            //!< The size of the to be sent telegram in bytes (including the checksum).
-    volatile byte *sendCurTelegram; //!< The telegram that is currently being sent.
-    volatile byte *sendNextTel;     //!< The telegram to be sent after sbSendTelegram is done.
-    volatile byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
+    byte *sendCurTelegram;          //!< The telegram that is currently being sent.
+    byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
 
     int bitMask;
     int bitTime;                 //!< The bit-time within a byte when receiving
@@ -364,13 +321,9 @@ private:
     volatile unsigned short rx_error;	//!< hold the rx error flags of the rx process of the state machine
     volatile unsigned short tx_error;	//!< hold the tx error flags of the tx process of the state machine
     bool wait_for_ack_from_remote; //!< sending process is requesting an ack from remote side
-   // bool need_to_send_ack_to_remote; //!< receiving process need to send ack to remote sending side
     bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
-   // bool busy_wait_to_remote; //!< receiving process/ upper layer busy, send busy to remote sender
-    bool repeated;              //!< A send telegram is repeated
     bool repeatTelegram;        //!< need to repeat last  telegram sent
     bool collision;             //!< A collision occurred
-    unsigned int lastRXTimeVal; //!< time measurement between telegrams - last SysTime value
 };
 
 
@@ -387,20 +340,18 @@ private:
 
 //define some error states
 #define RX_OK 0
-#define RX_STARTBIT_ERROR 1             //!< we detected high level few us after cap. event of start bit
-#define RX_STOPBIT_ERROR 2              //!< we received a cap event during stop bit
-#define RX_TIMING_ERROR 4               //!< received edge of bits is not in the timing window n*104-7 - n*104+33
-#define RX_TIMING_ERROR_SPIKE 8         //!< received edge of bit but low pulse is to short
-#define RX_PARITY_ERROR 16              //!< parity not valid
-#define RX_CHECKSUM_ERROR 32            //!< checksum not valid
-#define RX_LENGHT_ERROR 64              //!< received number of byte does not match length value of telegram
-#define RX_BUFFER_BUSY 128              //!< rx buffer still busy by higher layer process while a new telegram was received
-#define RX_INVALID_TELEGRAM_ERROR 256   //!< we received something but not a valid tel frame: to short,  to long, spike
-#define RX_PREAMBLE_ERROR 512		    //!< first char we received has invalid value in bit 0 and bit 1
+#define RX_STOPBIT_ERROR 1              //!< we received a cap event during stop bit
+#define RX_TIMING_ERROR 2               //!< received edge of bits is not in the timing window n*104-7 - n*104+33
+#define RX_TIMING_ERROR_SPIKE 4         //!< received edge of bit with incorrect timing
+#define RX_PARITY_ERROR 8               //!< parity not valid
+#define RX_CHECKSUM_ERROR 16            //!< checksum not valid
+#define RX_LENGHT_ERROR 32              //!< received number of byte does not match length value of telegram
+#define RX_BUFFER_BUSY 64               //!< rx buffer still busy by higher layer process while a new telegram was received
+#define RX_INVALID_TELEGRAM_ERROR 128   //!< we received something but not a valid tel frame: to short,  to long, spike
+#define RX_PREAMBLE_ERROR 256           //!< first char we received has invalid value in bit 0 and bit 1
 
 #define TX_OK 0                     //!< No error
 #define TX_STARTBIT_BUSY_ERROR 1	//!< bus is busy few us before we intended to send a start bit
-#define TX_TIMING_ERROR 2			//!< error during the sending of bits (low bit after high bit was not detected
 #define TX_NACK_ERROR 4				//!< we received a NACK
 #define TX_ACK_TIMEOUT_ERROR 8		//!< we did not received an ACK after sending in the respective time window
 #define TX_REMOTE_BUSY_ERROR 16		//!< AFTER SENDING, REMOTE SIDE SENDS busy BACK
@@ -414,7 +365,7 @@ private:
 //
 inline bool Bus::idle() const
 {
-    return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == 0);
+    return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == nullptr);
 }
 
 inline void Bus::maxSendTries(int tries)
@@ -429,7 +380,7 @@ inline void Bus::maxSendBusyTries(int tries)
 
 inline bool Bus::sendingTelegram() const
 {
-    return sendCurTelegram != 0;
+    return sendCurTelegram != nullptr;
 }
 
 inline bool Bus::telegramReceived() const
@@ -477,8 +428,4 @@ inline void Bus::end()
 {
 }
 
-inline void Bus::setSendAck(int newSendAck)
-{
-	this->sendAck = newSendAck;
-}
 #endif /*sblib_bus_h*/

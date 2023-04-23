@@ -50,15 +50,8 @@
 // for bcu_updater.h
 #if defined(DUMP_TELEGRAMS_LVL2)
 #   define dump2(code) code
-#   define dumpKNXAddress(addr) \
-            {\
-                serial.print(knx_area(addr)); \
-                serial.print(".", knx_line(addr)); \
-                serial.print(".", knx_device(addr)); \
-            }
 #else
 #   define dump2(x)
-#   define dumpKNXAddress(addr)
 #endif
 
 #endif /* DUMP_H_ */

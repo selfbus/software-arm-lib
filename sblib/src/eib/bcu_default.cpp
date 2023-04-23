@@ -22,11 +22,9 @@
 #include <string.h>
 #include <sblib/eib/bus.h>
 
-// static Bus* timerBusObj;
-// The interrupt handler for the EIB bus access object
-// BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, (*timerBusObj))
-
-extern volatile unsigned int systemTime;
+#if defined(INCLUDE_SERIAL)
+#   include <sblib/serial.h>
+#endif
 
 BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables) :
         BcuBase(userRam, addrTables),
@@ -50,20 +48,8 @@ void BcuDefault::_begin()
 #endif
     BcuBase::_begin();
 
-#ifdef DUMP_TELEGRAMS ///\todo move to Bus::begin()
-    IF_DEBUG(serial.println("Telegram dump enabled."));
-#endif
-
 #ifdef DUMP_PROPERTIES ///\todo move to BCU2::begin(...)
     IF_DEBUG(serial.println("Properties dump enabled."));
-#endif
-
-#ifdef DEBUG_BUS ///\todo move to Bus::begin()
-    IF_DEBUG(serial.println("DEBUG_BUS dump enabled."));
-#endif
-
-#ifdef DEBUG_BUS_BITLEVEL ///\todo move to Bus::begin()
-    IF_DEBUG(serial.println("DEBUG_BUS_BITLEVEL dump enabled."));
 #endif
 
 #if defined(INCLUDE_SERIAL)
@@ -143,323 +129,17 @@ void BcuDefault::loop()
 	if (!enabled)
 		return;
 
-
-#ifdef DUMP_TELEGRAMS
-	extern unsigned char telBuffer[];
-	extern unsigned int telLength ; // db_state;
-	extern unsigned char txtelBuffer[];
-	extern unsigned int txtelLength;
-	extern unsigned int tx_rep_count;
-	extern unsigned int tx_busy_rep_count;
-    extern unsigned int tx_telrxerror;
-
-	//extern unsigned int telRXtime;
-	extern unsigned int telRXStartTime;
-	extern unsigned int telTXStartTime;
-	extern unsigned int telRXEndTime;
-	extern unsigned int telTXEndTime;
-	extern unsigned int telTXAck;
-	extern unsigned int telRXWaitInitTime; // Wait for 50 bit time after last RX/TX telegram, could be less- rx will be ignored
-	extern unsigned int telRXWaitIdleTime; // bus is in idle after 50 bit times, now wait for next start of RX/TX
-	//extern unsigned int telRXTelStartTime; // Start Time of a telegram
-	extern unsigned int telRXTelByteStartTime; // Start Time of a byte within a telegram
-	extern unsigned int telRXTelBitTimingErrorL; // Bit error - falling rx edge was not in the expected window -7 till +33us
-	extern unsigned int telRXTelBitTimingErrorE; // Bit error - falling rx edge was not in the expected window -7 till +33us
-    extern unsigned int telrxerror;
-
-	extern bool telcollision;
-	static unsigned int telLastRXEndTime =0;
-	static unsigned int telLastTXEndTime =0;
-
-	if (telTXAck)
-	{
-	    serial.print("TXAck:");
-		serial.println(telTXAck, HEX, 2);
-		telTXAck = 0;
-	}
-
-	//dump transmitting part
-	if (telTXEndTime) // we transmitted a tel
-	{
-			serial.print("TX: (S");
-			serial.print(telTXStartTime, DEC, 6);
-			serial.print(" E");
-			serial.print(telTXEndTime, DEC, 6);
-
-			serial.print(" err: 0x");
-			serial.print(tx_telrxerror, HEX, 4);
-
-
-		if (telLastRXEndTime)
-		{
-			// print time in between last rx-tel and current tx-tel
-			serial.print(" dt RX-TX:");
-			serial.print(( telTXStartTime - telLastRXEndTime), DEC, 6);
-			telLastRXEndTime = 0;
-
-		}else if(telLastTXEndTime)
-		{
-			// print time in between last tx-tel and current tx-tel
-			serial.print(" dt TX-TX:" );
-			serial.print(( telTXStartTime - telLastTXEndTime), DEC, 6);
-			telLastTXEndTime = 0;
-		}
-		serial.print(" rep:");
-		serial.print(( tx_rep_count), DEC, 1);
-		serial.print(" brep:");
-		serial.print(( tx_busy_rep_count), DEC, 1);
-		serial.print(") ");
-
-		//dump tx tel data
-		for (unsigned int i = 0; i < txtelLength; ++i)
-		{
-			if (i) serial.print(" ");
-			serial.print(txtelBuffer[i], HEX, 2);
-		}
-		serial.println();
-
-		telLastTXEndTime = telTXEndTime;
-		telTXEndTime = 0;
-		telTXStartTime = 0;
-	}
-
-
-/*
-//dump wait for idle stuff
-	if (telRXWaitInitTime)
-	{
-		if (telLastTXEndTime)
-		{
-		serial.print("WI-TX:");
-		serial.println(( telRXWaitInitTime -telLastTXEndTime), DEC, 6);
-		//serial.println("");
-		telRXWaitInitTime = 0;
-		}
-		else if (telLastRXEndTime)
-		{
-		serial.print("WI-RX:");
-		serial.println(( telRXWaitInitTime - telLastRXEndTime), DEC, 6);
-		//serial.println("");
-		telRXWaitInitTime = 0;
-		}
-		else
-		{
-		serial.print("WI:");
-		serial.println(( telRXWaitInitTime ), DEC, 6);
-		//serial.print(" ");
-		}
-		telRXWaitInitTime = 0;
-	}
-*/
-/*
-	if (telRXWaitIdleTime)
-	{
-		if (telLastTXEndTime)
-		{
-			serial.print("WID-TX:");
-			serial.print(( telRXWaitIdleTime - telLastTXEndTime), DEC, 6);
-			serial.print(" ");
-		} else if (telLastRXEndTime)
-		{
-			serial.print("WID-RX:");
-			serial.print(( telRXWaitIdleTime - telLastRXEndTime), DEC, 6);
-			serial.print(" ");
-		} else
-		{
-			serial.print("WID:");
-			serial.print(( telRXWaitIdleTime ), DEC, 6);
-			serial.print(" ");
-		}
-		telRXWaitIdleTime = 0;
-	}
-*/
-
-//dump receiving bit error stuff
-//rx bit timing errors
-	if (telRXTelBitTimingErrorL)
-	{
-		serial.print(" ERL:", telRXTelBitTimingErrorL, DEC, 6);
-		serial.print(" ");
-		telRXTelBitTimingErrorL =0;
-	}
-	if (telRXTelBitTimingErrorE)
-	{
-		serial.print(" ERE:", telRXTelBitTimingErrorE, DEC, 6);
-		serial.print(" ");
-		telRXTelBitTimingErrorE =0;
-	}
-
-//dump  tel receiving part
-	if (telLength > 0)
-	{
-	    serial.print("RCV: (S");
-		serial.print(telRXStartTime, DEC, 6 );
-		serial.print(" E");
-		serial.print(telRXEndTime, DEC, 6);
-	//	serial.print(") ");
-	//	serial.print(", LRXE:");
-	//	serial.print(telLastRXEndTime, DEC, 9);
-	//	serial.print(", LTXE:");
-	//	serial.print(telLastTXEndTime, DEC,9);
-		//serial.print(") ");
-
-		if (telLastTXEndTime)
-		{
-			// print time in between last tx-tel and current rx-tel
-			serial.print(" dt TX-RX:");
-			serial.print(( telRXStartTime - telLastTXEndTime), DEC, 6);
-			telLastTXEndTime = 0;
-		}
-		else if(telLastRXEndTime)
-		{
-			// print time in between last rx-tel and current rx-tel
-			serial.print(" dt RX-RX:");
-			serial.print(( telRXStartTime - telLastRXEndTime), DEC, 6);
-		//	serial.println(") ");
-			//telLastRXEndTime = 0;
-		}
-
-		serial.print(" err: 0x");
-		serial.print(telrxerror, HEX, 4);
-		serial.print(") ");
-
-		if (telcollision)  serial.print("collision");
-		//dump tel data
-		for (unsigned int i = 0; i < telLength; ++i)
-		{
-			if (i) serial.print(" ");
-			serial.print(telBuffer[i], HEX, 2);
-		}
-		serial.println();
-//reset all debug data
-		telLength = 0;
-		telLastRXEndTime = telRXEndTime;
-		telRXEndTime = 0;
-		telrxerror = 0;
-		telRXTelByteStartTime = 0;
-	}
-#endif
-
-#ifdef DEBUG_BUS
-	// trace buffer content:
-	// trace point id (start with s) followed by trace data, coding: sittee
-	// i: state machine trace point code
-	//  0000-3999  one timer value
-	//  4000-5999 one hex value
-	//  6000-7999 one dec value
-	//  8000-8999 all timer values at interrupt
-	//  9000 - rx tel data values
-	// tt: trace point number within certain state
-	// ee: state of state machine at trace point
-
-
-
-	static unsigned int t,l, l1, lt,lt1, s, cv,tv, tmv;
-	bool cf;
-	l=0; l1=0;
-	while (tb_in != tb_out && l1 < 5) {
-	//while (tb_in != tb_out) {
-		l1++;
-		s= td_b[tb_out].ts;
-		t= td_b[tb_out].tt;
-		tv= td_b[tb_out].ttv;
-		cv= td_b[tb_out].tcv;
-		tmv= td_b[tb_out].ttmv;
-		cf= td_b[tb_out].tc;
-		if ((s>=8000 && s<=8999) ) {
-			serial.println();
-			serial.print("s");
-			serial.print( (unsigned int) s, DEC, 3);
-			serial.print(" t");
-			serial.print( (unsigned int) t, DEC, 6);
-			serial.print(" dt");
-			serial.print( (unsigned int) t-lt, DEC,4);
-			serial.print(" f");
-			serial.print((unsigned int)cf, DEC, 1);
-			serial.print(" c");
-			serial.print((unsigned int)cv, DEC, 4);
-			serial.print(" t");
-			serial.print((unsigned int)tv, DEC, 4);
-			serial.print(" m");
-			serial.print((unsigned int)tmv, DEC,4);
-/*			serial.print(" i");
-			serial.print((unsigned int)tb_in, DEC,3);
-			serial.print(" o");
-			serial.print((unsigned int)tb_out, DEC,3);
-*/
-			//			serial.print("*");
-			l=1;
-			lt = t;
-			lt1= t;
-		}
-		else if ( s>=9000) {
-			serial.println();
-			serial.print("s");
-			serial.print( (unsigned int) s, DEC, 3);
-			serial.print(" c/v");
-			serial.print((unsigned int)cf, HEX, 2);
-			serial.print(" L");
-			serial.print((unsigned int)tmv, DEC, 2);
-			serial.print(" t");
-			serial.print( (unsigned int) t, HEX, 8);
-			serial.print(" ");
-			serial.print((unsigned int)cv, HEX, 4);
-			serial.print(" ");
-			serial.print((unsigned int)tv, HEX, 4);
-			//serial.print("*");
-		}else if ( s>=9005) {
-			serial.println();
-			serial.print("s");
-			serial.print( (unsigned int) s, DEC, 3);
-			serial.print(" ");
-			serial.print((unsigned int)tmv, HEX,4);
-			serial.print(" ");
-			serial.print( (unsigned int) t, HEX, 8);
-			serial.print(" ");
-			serial.print((unsigned int)cv, HEX, 4);
-			serial.print(" ");
-			serial.print((unsigned int)tv, HEX, 4);
-			serial.print(" d");
-			serial.print((unsigned int)cf, HEX, 4);
-			//serial.print("*");
-		}
-		else  if (s < 4000) { // one  delta timer
-			serial.print("s");
-			serial.print( (unsigned int) s -2000, DEC, 3);
-			serial.print(" dt");
-			serial.print( (unsigned int) t-lt1, DEC, 6);
-			lt1 = t;
-			l++;
-		}
-		else if (s < 5000) { // one hex
-			serial.print("s");
-			serial.print( (unsigned int) s- 4000, DEC, 3);
-			serial.print(" h");
-			serial.print( (unsigned int) t,HEX,4);
-			l++;
-		}
-		else if (s < 6000) { // one dec
-			serial.print("s");
-			serial.print( (unsigned int) s- 5000, DEC, 3);
-			serial.print(" d");
-			serial.print( (unsigned int) t,DEC,4);
-			l++;
-		}
-		if(l >5) {
-			l=0;
-			serial.println();
-//			serial.print("* ");
-		} else  serial.print(" ");
-		if (++tb_out >= tb_lngth){ tb_out =0; tb_in_ov = false;}
-		if(tb_in_ov && tb_out <= tb_in)  serial.print(" !!OV**");
-	}
-#endif
-
     BcuBase::loop(); // check processTelegram and programming button state
 
+    // Rest of this function is only relevant if currently able to send another telegram.
+    if (bus->sendingTelegram())
+    {
+        return;
+    }
+
     // handle group object telegrams only if application is runnning
-    // if bus is not sending (telegram buffer is empty) check for next telegram to be send
-    if (sendGrpTelEnabled && applicationRunning() && !bus->sendingTelegram())
+    // check for next telegram to be send
+    if (sendGrpTelEnabled && applicationRunning())
     {
         // Send group telegram if group telegram rate limit not exceeded
         if (elapsed(groupTelSent) >= groupTelWaitMillis)
@@ -477,7 +157,7 @@ void BcuDefault::loop()
         }
     }
 
-    if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && connectedTo() == 0)
+    if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && !directConnection())
     {
         if (userEeprom->writeDelayElapsed())
         {
@@ -802,14 +482,16 @@ bool BcuDefault::processApciMemoryOperation(unsigned int addressStart, byte *pay
     return (lengthPayLoad == 0);
 }
 
-unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t senderAddr, const int8_t senderSeqNo, bool *sendResponse, unsigned char *telegram, uint8_t telLength)
+bool BcuDefault::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
 {
     uint8_t count;
     uint16_t address;
     uint8_t index;
 
-    unsigned char sendAckTpu = 0;
-    *sendResponse = false;
+    if (BcuBase::processApci(apciCmd, telegram, telLength, sendBuffer))
+    {
+        return (true);
+    }
 
     switch (apciCmd)
     {
@@ -818,13 +500,12 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
                             //!  The value read can be converted to a voltage value by using the following formula: Voltage = ADC_Value * 0,15V
         index = telegram[7] & 0x3f;  // ADC channel
         count = telegram[8];         // number of samples
-        sendTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
-        setApciCommand(sendTelegram, APCI_ADC_RESPONSE_PDU, index);
-        sendTelegram[8] = count;     // read count
-        sendTelegram[9] = 0;         // ADC value high byte
-        sendTelegram[10] = 0;        // ADC value low byte
-        *sendResponse = true;
-        break;
+        sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_ADC_RESPONSE_PDU, index);
+        sendBuffer[8] = count;     // read count
+        sendBuffer[9] = 0;         // ADC value high byte
+        sendBuffer[10] = 0;        // ADC value low byte
+        return (true);
 
     case APCI_MEMORY_READ_PDU:
     case APCI_MEMORY_WRITE_PDU:
@@ -842,118 +523,80 @@ unsigned char BcuDefault::processApci(ApciCommand apciCmd, const uint16_t sender
                     apciCmd = APCI_MEMORY_READ_PDU;
                 }
             }
-            sendAckTpu = T_ACK_PDU;
         }
 
         if (apciCmd == APCI_MEMORY_READ_PDU)
         {
-            if (!processApciMemoryReadPDU(address, &sendTelegram[10], count))
+            if (!processApciMemoryReadPDU(address, &sendBuffer[10], count))
             {
                 // address space unreachable, need to respond with count 0
                 count = 0;
             }
 
             // send a APCI_MEMORY_RESPONSE_PDU response
-            sendTelegram[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
-            setApciCommand(sendTelegram, APCI_MEMORY_RESPONSE_PDU, count);
-            sendTelegram[8] = HIGH_BYTE(address);
-            sendTelegram[9] = lowByte(address);
-            *sendResponse = true;
+            sendBuffer[5] = 0x60 + count + 3; // routing count in high nibble + response length in low nibble
+            setApciCommand(sendBuffer, APCI_MEMORY_RESPONSE_PDU, count);
+            sendBuffer[8] = HIGH_BYTE(address);
+            sendBuffer[9] = lowByte(address);
+            return (true);
         }
         break;
 
     case APCI_DEVICEDESCRIPTOR_READ_PDU:
-        if (processDeviceDescriptorReadTelegram(telegram[7] & 0x3f))
-        {
-            *sendResponse = true;
-        }
-        else
-        {
-            sendAckTpu = T_NACK_PDU; // KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
-        }
-        break;
-
-    case APCI_BASIC_RESTART_PDU:
-        softSystemReset();
-        break; // we should never land on this break
+        return (processDeviceDescriptorReadTelegram(sendBuffer, telegram[7] & 0x3f));
 
     case APCI_MASTER_RESET_PDU:
-        if (processApciMasterResetPDU(telegram, senderSeqNo, telegram[8], telegram[9]))
-        {
-            softSystemReset(); // perform a basic restart;
-        }
-        // APCI_MASTER_RESET_PDU was not processed successfully send prepared response telegram
-        *sendResponse = true;
-        break;
+        return (processApciMasterResetPDU(sendBuffer, telegram[8], telegram[9]));
 
     case APCI_AUTHORIZE_REQUEST_PDU:
-        sendTelegram[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
-        setApciCommand(sendTelegram, APCI_AUTHORIZE_RESPONSE_PDU, 0);
-        sendTelegram[8] = 0x00;
-        *sendResponse = true;
-        break;
+        sendBuffer[5] = 0x60 + 2; // routing count in high nibble + response length in low nibble
+        setApciCommand(sendBuffer, APCI_AUTHORIZE_RESPONSE_PDU, 0);
+        sendBuffer[8] = 0x00;
+        return (true);
 
     default:
-        sendAckTpu = T_NACK_PDU;  // Command not supported, KNX Spec. 3/3/4 5.5.4 p.26 "TL4 Style 1 Rationalised" No Sending of T_NAK frames
         break;
     }
-    return (sendAckTpu);
+    return (false);
 }
 
-bool BcuDefault::processDeviceDescriptorReadTelegram(int id)
+bool BcuDefault::processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id)
 {
     if (id != 0)
     {
         return (false); // unknown device descriptor
     }
 
-    sendTelegram[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
-    setApciCommand(sendTelegram, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
-    sendTelegram[8] = HIGH_BYTE(getMaskVersion());
-    sendTelegram[9] = lowByte(getMaskVersion());
+    sendBuffer[5] = 0x60 + 3; // routing count in high nibble + response length in low nibble
+    setApciCommand(sendBuffer, APCI_DEVICEDESCRIPTOR_RESPONSE_PDU, 0);
+    sendBuffer[8] = HIGH_BYTE(getMaskVersion());
+    sendBuffer[9] = lowByte(getMaskVersion());
     return (true);
 }
 
-bool BcuDefault::processApciMasterResetPDU(unsigned char *telegram, const uint8_t senderSeqNo, uint8_t eraseCode, uint8_t channelNumber)
+bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber)
 {
     if (!checkApciForMagicWord(eraseCode, channelNumber))
     {
         ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+        requestedRestartType = RESTART_BASIC;
         return (false);
     }
 
     // create the APCI_MASTER_RESET_RESPONSE_PDU
-    initLpdu(sendTelegram, priority(telegram), false, FRAME_STANDARD);
-    // sender address will be set by bus.sendTelegram()
-    setDestinationAddress(sendTelegram, connectedTo());
-
-    sendTelegram[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
-    setApciCommand(sendTelegram, APCI_MASTER_RESET_RESPONSE_PDU, 0);
-    setSequenceNumber(sendTelegram, sequenceNumberSend());
-    sendTelegram[8] = T_RESTART_NO_ERROR;
-    sendTelegram[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
-    sendTelegram[10] = 1; // 1 second
+    sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
+    setApciCommand(sendBuffer, APCI_MASTER_RESET_RESPONSE_PDU, 0);
+    sendBuffer[8] = T_RESTART_NO_ERROR;
+    sendBuffer[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
+    sendBuffer[10] = 1; // 1 second
 
     // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
     // set magicWord to start after reset in bootloader mode
 #ifndef IAP_EMULATION
     unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
     *magicWord = BOOTLOADER_MAGIC_WORD;
-
-    // send transport layer 4 ACK
-    sendConControlTelegram(T_ACK_PDU, connectedTo(), senderSeqNo);
-    while (!bus->idle())
-        ;
-    // send APCI_MASTER_RESET_RESPONSE_PDU
-    bus->sendTelegram(sendTelegram, telegramSize(sendTelegram));
-    while (!bus->idle())
-                ;
-    // send disconnect
-    sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
-    while (!bus->idle())
-        ;
-    softSystemReset();
 #endif
+    requestedRestartType = RESTART_MASTER;
     return (true);
 }
 

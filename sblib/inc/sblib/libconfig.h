@@ -82,8 +82,8 @@
  */
 //#define DUMP_TELEGRAMS
 
-/** @def USEPIO_FOR_TEL_END_IND toggle PIN PIO1_4 at end of a received telegram */
-//#define USEPIO_FOR_TEL_END_IND
+/** @def PIO_FOR_TEL_END_IND toggle defined PIO pin at the end of a received telegram */
+//#define PIO_FOR_TEL_END_IND (PIO1_4)
 
 /** @def DUMP_COM_OBJ dump object handling information on app-server level over serial interface */
 //#define DUMP_COM_OBJ
@@ -119,7 +119,7 @@
 #   undef DEBUG_BUS_BITLEVEL
 #   undef BUSMONITOR
 #   undef DUMP_TELEGRAMS
-#	undef USEPIO_FOR_TEL_END_IND
+#	undef PIO_FOR_TEL_END_IND
 #   undef DUMP_COM_OBJ
 #   undef DUMP_MEM_OPS
 #   undef DUMP_PROPERTIES

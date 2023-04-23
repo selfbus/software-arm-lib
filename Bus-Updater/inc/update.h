@@ -25,17 +25,16 @@
 #include "boot_descriptor_block.h"
 
 #define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
-#define RESET_DELAY_MS 500                 //!< Time in milliseconds a System reset should be delayed to
-                                           //!< give the bcu enough time to send it's T_ACK_PDU
 
 /**
  * Handles KNX @ref APCI_USERMSG_MANUFACTURER_0 which encapsulates our UPD/UDP protocol
  *
- * @param data      data buffer received from KNX bus
- * @param size      size of data buffer
- * @return          always T_ACK_PDU, the real return values are encapsulated in bcu.sendTelegram[9..]
+ * @param sendBuffer The buffer to write the response into
+ * @param data       data buffer received from KNX bus
+ * @param size       size of data buffer
+ * @return           whether to return a telegram, the real return values are encapsulated in sendBuffer[9..]
  */
-unsigned char handleApciUsermsgManufacturer(uint8_t * data, uint32_t size);
+bool handleApciUsermsgManufacturer(uint8_t * sendBuffer, uint8_t * data, uint32_t size);
 
 /**
  * @brief Resets the UPD/UDP protocol ramBuffer and global variables to default
@@ -45,9 +44,10 @@ void resetUPDProtocol(void);
 /**
  * Handles deprecated KNX memory requests by sending the old @ref UPD_SEND_LAST_ERROR with old value of @ref UDP_NOT_IMPLEMENTED
  *
- * @return always T_ACK_PDU
+ * @param sendBuffer The buffer to write the response into
+ * @return always true
  */
-unsigned char handleDeprecatedApciMemoryWrite();
+bool handleDeprecatedApciMemoryWrite(uint8_t * sendBuffer);
 
 
 #endif /* UPDATE_H_ */

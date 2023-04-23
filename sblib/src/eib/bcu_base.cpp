@@ -38,7 +38,8 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         userRam(userRam),
         addrTables(addrTables),
         comObjects(nullptr),
-        progButtonDebouncer()
+        progButtonDebouncer(),
+        requestedRestartType(NO_RESTART)
 {
     timerBusObj = bus;
     setFatalErrorPin(progPin);
@@ -54,12 +55,15 @@ void BcuBase::_begin()
 
 void BcuBase::loop()
 {
+    bus->loop();
     TLayer4::loop();
     bool telegramInQueu = bus->telegramReceived();
     telegramInQueu &= (!bus->sendingTelegram());
-	if (telegramInQueu && (bus->state == Bus::IDLE) && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+
+    bool busOK = (bus->state == Bus::IDLE) || (bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE);
+    if (telegramInQueu && busOK && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
 	{
-        processTelegram(&bus->telegram[0], (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
+        processTelegram(bus->telegram, (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
 
 	if (progPin)
@@ -74,6 +78,22 @@ void BcuBase::loop()
 		pinMode(progPin, OUTPUT);
 		digitalWrite(progPin, (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) ^ progPinInv);
 	}
+
+    // Rest of this function is only relevant if currently able to send another telegram.
+    if (bus->sendingTelegram())
+    {
+        return;
+    }
+
+    if (requestedRestartType != NO_RESTART)
+    {
+        if (connectedTo() != 0)
+        {
+            // send disconnect
+            sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
+        }
+        softSystemReset();
+    }
 }
 
 bool BcuBase::setProgrammingMode(bool newMode)
@@ -96,22 +116,28 @@ bool BcuBase::setProgrammingMode(bool newMode)
     return true;
 }
 
+bool BcuBase::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
+{
+    switch (apciCmd)
+    {
+        case APCI_BASIC_RESTART_PDU:
+            requestedRestartType = RESTART_BASIC;
+            return (true);
+        default:
+            break;
+    }
+    return (false);
+}
+
 void BcuBase::sendApciIndividualAddressReadResponse()
 {
-    initLpdu(sendTelegram, PRIORITY_SYSTEM, false, FRAME_STANDARD);
+    auto sendBuffer = acquireSendBuffer();
+    initLpdu(sendBuffer, PRIORITY_SYSTEM, false, FRAME_STANDARD);
     // 1+2 contain the sender address, which is set by bus.sendTelegram()
-    setDestinationAddress(sendTelegram, 0x0000); // Zero target address, it's a broadcast
-    sendTelegram[5] = 0xe0 + 1; // address type & routing count in high nibble + response length in low nibble
-    setApciCommand(sendTelegram, APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU, 0);
-
-    // on a productive bus without this delay, a lot of "more than one device is in programming mode" errors can occur
-    // 03.03.2022 tested 10 different licensed KNX-devices (MDT, Gira, Siemens, Merten), only one MDT line-coupler had also this problem
-    // other devices responded with a delay of 8-40 milliseconds, so we go for ~5ms + 2*4ms = ~13ms
-    // 4.000usec is max. we can delay with delayMicroseconds, so call it twice
-    delayMicroseconds(MAX_DELAY_MICROSECONDS);
-    delayMicroseconds(MAX_DELAY_MICROSECONDS);
-    delayMicroseconds(MAX_DELAY_MICROSECONDS - ((systemTime % (MAX_DELAY_MICROSECONDS/100)) * 10)); // "randomize response delay"
-    bus->sendTelegram(sendTelegram, 8);
+    setDestinationAddress(sendBuffer, 0x0000); // Zero target address, it's a broadcast
+    sendBuffer[5] = 0xe0 + 1; // address type & routing count in high nibble + response length in low nibble
+    setApciCommand(sendBuffer, APCI_INDIVIDUAL_ADDRESS_RESPONSE_PDU, 0);
+    sendPreparedTelegram();
 }
 
 void BcuBase::end()

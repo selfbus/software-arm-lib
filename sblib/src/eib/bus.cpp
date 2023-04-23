@@ -2,227 +2,7 @@
  * bus.cpp - Low level EIB bus access.
  *
  * Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
- *
- * last changes: Oct 2021 by Horst Rauch
- * 				- cleanup of some unused states and idle, convey error-result/status of a RX/TX process on the bus to the com-object level
- * 				- added some comments
- * 				- fixed collision detection issue while sending ACK/NACK/BUSY
- * 				- introduction of collision detection window according to spec for pulse duration of 25us - 70us due to propagation delay
- * 				- added default phy-adr for normal devices and router (compilation with ROUTER defined)
- * 				- added some states to SM for better readability of the code, Busy handling,...
- * 				- added error handling, convey info to upper layers
- * 				- added local rx buffer for parallel processing of rx telegram and receiving and reply with busy to remote sender
- * 				- added busy acknowledgment handling
- * 				- added repeated telegram reception handling
- * 				- added some debug macros, use of timer32_0 for debugging of state machine timing
- * 				- debugging  with high speed serial terminal interface (1.5Mbaud) at PIO2_7 and PIO2_8
- *
- * Functions supported by this module:
- *   - Supported frames:  standard data frame, acknowledge frame. Poll frame  and extended  frame are  not supported
- *   - Bus-Busy detection for start of normal frames and ack-frames
- *   - Collision detection for all send bytes, no support for receiving of remaining telegram after collision, rx telegram is discarded.
- *   - Extended collision detection for Ack frame due to possible parallel sending of devices and bus delay
- *   - repetition of telegram after NACK, no Ack or busy-ack after idle time (50bit) or busy wait (150bit)
- *   - sending busy ack to remote if rx-buffer is not free (higher layer still processing last telegram)
- *   - support of ETS provided repeat value for normal repeat and busy repeat  (loaded from EPROM)
- *   - support of default phy addr (15.15.255) for normal device in case of uninitialized phy. addr. 0.0.0 from EPROM, 0.0.0 is
- *     only allowed for a Router device
- *
- * !!!!The used timer should have the highest priority of the used interrupts in the lib and the app!!!!
- *
- * As the prio is set at reset to the highest level for all peripheral interrupt sources, any used peripheral interrupt should be set to
- * a lower level by a call of the CMSIS "void NVIC_SetPriority (IRQn_t IRQn, uint32_t priority)" function with respective IRQn
- * and a prio >0 (0 is the highest level for periph.).
- *
- * Suport for debugging with some macros and dumping of data on the serial line - ports will be mapped in the serial.cpp module
- * and serial support need to be started with a high baud rate (recommended 1.5Mb) in the app module. Usage of timer32_0 for time
- * measurement on bit/byte level
- *
- * Compile time switches: see libconfig.h
- *
- * Interface to upper layers (see bus.h for details)
- *
- *  For interfacing to higher layers there are data buffer for sending and receiving of telegrams:
- *   tx: bcu->sendTelegram[]  - send buffer
- *   	 sendTelegram(char* telegram,..)  - send a new telegram (pointer to tel to be sent),
- *   	                                    is blocking if no buffer is available (current transmit ongoing).
- *       sendTelegramState() - state of the last send process
- *       sendingTelegram()   - test if there is a tel being sent
- *
- *   rx: bus.telegram[]          - receive buffer
- *       telegramLen             - indicating the number of bytes received in bus.telegram[], telegramLen ==0 indicates an empty buffer,
- *                                 should be set to 0 by the higher layer after telegram was processed, set to the number of rx bytes by the rx process
- *       receivedTelegramState() - state of th last rx process
- *       telegramReceived()      - test if there is a tel waiting in the buffer
- * *
- *
- * Bus access module initializing:
- * Load Phy. Addr. from eprom- if 0.0.0 set to default 15.15.255 if not compiled as router, initialize the timer,
- * tx and rx port and wait for 50 bit times before entering the IDLE sate.
- *
- *  todo load retry and busy-retry from eprom
- *//*
- *
- * The timer16_x is used as follows:
- *
- * Capture register CR0 is used for receiving
- * Match register MR0 or MR1 is used as PWM for sending, depending on which output pin is used
- * Match register MR3 is used for timeouts while sending / receiving
- * depending on state: cap event and/or timeout event are used to trigger interrupt, match to reset the timer.
- * todo- Use of cap event to reset timer in order to have a more precise timing related to the start bit.
- *
- * For receiving: timer is restarted with capture event at falling edge of start-bit, loaded with character time (11 bits) for timeout
- * and reset with timeout after stop-bit.  After send of character, timer is running to measure the next events: eg. next
- * character (after 208us), end of telegram ( after 308us), send of acknowledge  1560us -pre-send-time(104us ->1456us)
- * next state either tx or wait for timeout at idle time (50bit) - pre-send-time (5096us) for next action.
- * No pending action:    continue waiting in idle state for cap event: rx start, or timeout ( set in send telegram): tx start .
- *
- * For transmitting:
- *  Sending of char is using the PWM function in a tricky way. As we need a positive pulse for 35us as first part of the bit
- *  and 69us low pulse as second part of bit we need to shift the phase by 69us relative to normal bit timing on the bus:
- *  -> the  sending is split in the two half bit:  high phase of bit n-1 followed by low phase of bit n. In addition the falling edge
- *  of the 35us pulse is triggering the capture event for the start bit or any low bit following a high bit.
- *
- *  Timer is started  pre-send (104us) time before the falling edge of start bit, start-bit is generated by PWM pulse
- * set for 104us, end of pulse 104us+ 35us pulse time. We are now at the rising edge of the start bit,  following bits by PWM set
- * for 69us low phase, 35us high terminated by pwm period of 104us till end of byte incl parity and stop. After stop-bit, timer is
- * running to measure next time out of 2 filling bits (208us) before next character is send or waiting for ack to be received or
- * start of next action in 50 bit times.
- * For rx of ack, the ack-window start is at 15bit times -5us -margin of 100us,  waiting for ack window ends
- * at 15us +30us+margin of 100us.
- *
- *
- * Telegram/byte/bit sending principle:
- *
- *  The sending is started from higher layers by a call to sendTelegram with a pointer to the tel-buffer and the tel-lenght.
- *  We add our phy addr. and checksum set the match intr, timeout in 1us and set WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE state,
- *  initialize  some parameters (sendTries=0...) for  the telegram. In WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE we check for ACK to be sent
- *  or a necessary repetition of the telegram and set the pre-send waiting time accordingly. A cap event is indicating the reception of the
- *  start bit from us or any other device. We check the receive window (for an ack this is optional with a longer window) if the trigger is not
- *  from our startbit falling edge. If not we continue with the rx process in RECV_WAIT_FOR_STARTBIT_OR_TELEND, else
- *  we wait for a timeout at the rising edge of the start bit and continue with bit0 in SEND_BIT_0 followed by SEND_BITS_OF_BYTE for sending
- *  remaining bits. When we reached the stop bit to send we check for more character to be send -> then we continue after additional
- *  wait time of 3 high bits (stop + 2 filling bits) and start bit with the sending  in SEND_BIT_0. If we reached end of telegram, we send/wait only
- *  for the stop bit  and align the phase shift (-69us) to be in sync with normal bus timing in SEND_END_OF_TX. Next we wait for the ack window
- *  to start in SEND_WAIT_FOR_RX_ACK_WINDOW, with the timeout, we enable cap event intr again and wait for the ACK to be received till end
- *  of ack window in SEND_WAIT_FOR_RX_ACK.  At timeout we need to repeat the telegram and wait in WAIT_FOR_IDLE50 or we continue
- *  receiving the ack with a cap event in WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE. If we receive a positve ack we prepare for next
- *  telegram to send and wait 50 bit times in WAIT_FOR_IDLE50 WAIT. If we received a BUSY from remote, we wait 150 bit time in
- *  WAIT_FOR_IDLE50 WAIT the before we repeat the telegram in WAIT _FOR_NEXT_RX_OR_PENDING_TX.
- *  The end of transmission is indicated to higher layer by the bus_tx_state parameter, which is set after a tx process in send next tel
- *
- *
- * Telegram/byte/bit  high level receiving principle:
- *  A falling edge of a start bit is triggering the capture interrupt. For the first bit of a new telegram, the interrupt is
- *  received in the WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE or IDLE state and all parameter for a new telegram are initialized.
- *  The timer is restarted/re-loaded with the cap and match is to the character length of 11bits.
- *  Bits are received and after the stop bit (timeout) the timer is restarted and match set for next start bit in 2 bit times+margin.
- *  For intermediate bytes,  the cap. interrupt for the first bit of a new byte is received in state  RECV_WAIT_FOR_STARTBIT_OR_TELEND.
- *  If we receive a time out instead, we have the end of the telegram reached (>2bit times after last stop bit) and process it.
- *  If the sending side is waiting for an ack we process the received data as ack or as normal telegram at the data layer.
- *  At the data layer, we check for correct telegram (parity, checksum, length), if it is for us, data is moved to the tx buffer of higher layers and
- *  possible transmission of an ack is prepared and waited to send the ack or waited for next rx or pending tx.
- *
- *  If it is a cap event for the start bit, we initialize the timer- match intr, cap intr, restart, preset with time elapsed
- *  since cap intr. to relate all timings to the start bit falling edge on the bus, set match value to byte time (11 bit: start,
- *  8data, parity, stop:1144us). Next state is RECV_BITS_OF_BYTE to collect all data bits of the character incl parity and stop.
- *  If we receive a timeout in this state, the character ( 11 bits) is completely collected, we set the match to wait the 2 bits
- *  ( incl some margin) between two characters and set next state to  RECV_WAIT_FOR_STARTBIT_OR_TELEND.  A cap. event  is triggering
- *   the reception of a new character and the bits will be collected in RECV_BITS_OF_BYTE. A timeout is indicating the end of the
- *  telegram and we check the received data. After checking of the data, we  typically wait for the window to send an ACK back to the remote
- *  sender in RECV_WAIT_FOR_TX_ACK_WINDOW. The window ends PRE_SEND_TIME before we possibly need to ack the telegram in
- *  RECV_WAIT_FOR_ACK_TX_START,  cap event is re-enabled and sending prepared, or  if no reply needed, we wait 50 bit times in
- *  WAIT_FOR_IDLE50, cap event is re-enabled and enter next state  WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE.
- *
- * The cap. interrupt is disabled during the waiting period between the last action of RX/TX and the start of the WAIT_FOR_IDLE50 state
- * to improve  for bus noise handling.
- * For the rx process a local rx buffer is used to allow for data processing on higher layer of previous buffer and parallel interrupt driven rx of
- * a new telegram. If the processing of the rx buffer at higher layer is not completed when a new telegram was received, a BUSY is send
- * back to the sender as acknowledge and we wait 150 bit times for the repeated telegram. todo we could disable any cap event during
- * waiting.
- *
- *
- * *************** Main requirements based on knx spec****************
- * Physical Layer
- *
- *  Bit decoding timing:				min				typ.			max
- *   Bit time  										104us
- *   bit pulse duration 	 			25us				35us			70us	   due to overlay of same pulse and propagation delay
- *
- *   acceptance window for leading
- *  edge relative to start bit			n*104us-7us		n*104us		n*104us+33us
- *
- *  time distance from start bit to
- *   start bit of next char				13*104us-30us	13*104us		13*104us+30us 	:1322us, 1352us, 1382us
- *
- *
- *  Bit coding timing:				min				typ.			max
- *   Bit time  										104us
- *   bit pulse duration 		 		34us				35us			36us
- *
- *   time from start bit to following bits
- *   within single char				n*104us-2us		n*104us		n*104us+2us
- *
- *  time distance from start bit to	start bit
- *   of next char					13*104us-2us		13*104us		13*104us+5us  : 1350us, 1352us, 1357us
- *
- *	time for bus idle(no traffic on bus)			>53* 104us						: 5512us
- *
- *
- * Character/telegram (frame) timing
- *  (without poll frame timings):
- *   time between 2 normal frames:	53*104us -50us	>=53 * 104us			--			: >=5512us
- *
- *   time between telegram and
- *    repeated telegram:				50*104us -50us	50 * 104us			53*104 -50--		: 5200us
- *
- *   time between end of telegram
- *    and start of ACK/NACK/BUSY:
- *    		for bit coding:				15*104us-5us		15*104us		15*104us+20us	: 1560us
- *    		for bit decoding:			15*104us-5us		15*104us		15*104us+30us	: 1555us, 1560us, 1590us
- *
- *   timeout between end of frame
- *    and wait for ACK/NACK/BUSY:						>=30u+15*104us				: >=1590us
- *
- *   time between end of ACK/NACK/BUSY
- *    and begin of next telegram:					>=50 * 104us					: >=5200us
- *
- *   time between two characters within a telegram  >=2*104us <= 2,5*104us			: 208us <= t <= 260us
- *
- *
- *  Line BUSY detection:
- *   Immediately before transmission of the start bit of a first character of a frame the bus is check   if any other device is already transmitting.
- *   This must be done for start of normal and repeated frame (and fill characters in poll situations - not used).
- *   In case the bus is busy no transmission is started and line_busy is indicated to upper layers.
- *   For the transmission of an ACK/NACK/BUSY and inner frame characters line-busy detection is optional
- *  (is implemented  for Ack/Nack/busy with extended detection window before the start bit).
- *  In case of line-busy, no transmission should be started. Line busy window end 7us before  falling edge of start bit of normal frames
- *  and 16us for ack frames. Any reception after that window will be detected as possible collision.
- *
- *  Collision detection:
- *   Shall be never disabled during transmission ( disable for sent of ACK is an option).
- *   In cased of a collision, the transmission should be stop immediately and indicated to the uppler layer functions.
- *   A collision is detected if a logical 1 (high level) was sent but at the same time a low level
- *   pulse was detected.
- * *
- * Data Link Layer transmit
- *  Typical frames of a device will be acknowledged by the remote receiver with ACK/NACK/BUSY. If the acknowledgment
- *  is positive, the ACK should be indicated to upper layers. In case of BUSY, the frame should be resent after waiting
- *  at least 150 bit times line idle. Resent should be done for max busy_retry times. If BUSY is received for more than
- *  busy_retry times, the upper layer should be informed with transmission status not_ok/error.
- *  In all other cases (NACK, corrupted frame or time out after 30 bit times..) the frame shall be repeated for nak_retry
- *  times after 50 bit times waiting. The status should be indicated to the upper layers.
- *
- * Data Link Layer receive
- *  A received frame should be processed only if it is addressed to the own phy. Address or Group Addr. found in the addr. table
- *   or (broadcast) Group Addr. zero  (not appl. to BUS Monitor etc). If the frame is for us and:
- *   -If the received frame is not correct (parity/checksum,length...error) a NACK should be sent to remote device ???Dest
- *    addr could be wrong???.
- *   -If frame is correct but the device is busy (e.g. input queue full,...) a BUSY should be sent to remote device
- *   -If frame is correct an ACK should be sent
- *
- * -> We send no acknowledge when we did receive an incorrect frame  or correct frame which was not for us
- *
+ * Copyright (c) 2021 Horst Rauch
  * ********************************************************************
  *
  *  This program is free software; you can redistribute it and/or modify
@@ -239,124 +19,35 @@
 #include <sblib/platform.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/bcu_base.h>
-
-#include <sblib/timer.h>
-
-// Enable informational debug statements
-#if defined(INCLUDE_SERIAL)
-#   define DB(x) x
-    //int hw_error =0; //XXX why this is here?
-#else
-#   define DB(x)
-#endif
-
-// pin output macros for debugging with e.g logic analyser - not used
-#define D(x)
-
-// buffer to dump a rx telgramn on the serial line incl collision and rx-timing (in ms) info
-#ifdef DUMP_TELEGRAMS
-    volatile unsigned char telBuffer[32];
-    volatile unsigned int telLength = 0;
-    volatile unsigned char txtelBuffer[32];
-    volatile unsigned int txtelLength = 0;
-    volatile unsigned int tx_rep_count = 0;
-    volatile unsigned int tx_busy_rep_count = 0;
-    volatile unsigned int tx_telrxerror = 0;
-
-    volatile unsigned int telRXtime = 0; // time of the timeout after the last bit of the received telegram
-    volatile bool telcollision;
-    volatile unsigned int telrxerror = 0;
-    volatile unsigned int telRXStartTime = 0; // time when the reception  (startbit of first byte) of a telegram from bus started
-    volatile unsigned int telTXStartTime = 0; // time when the transmission (startbit of first byte)of a telegram to the bus started
-    volatile unsigned int telRXEndTime = 0; // time when the reception  (last stop bit) of a telegram from bus eneded
-    volatile unsigned int telTXEndTime = 0; // time when the transmission (last stop bi)of a telegram to the bus ended
-    volatile unsigned int telTXAck = 0; // ack send by L2
-    volatile unsigned int telRXWaitInitTime= 0; // Wait for 50 bit time after last RX/TX telegram, could be less- rx will be ignored
-    volatile unsigned int telRXWaitIdleTime = 0; // bus is in idle after 50 bit times, now wait for next start of RX/TX
-    volatile unsigned int telRXTelStartTime = 0; // Start Time of a telegram
-    volatile unsigned int telRXTelByteStartTime = 0; // Start Time of a byte within a telegram
-    volatile unsigned int telRXTelBitTimingErrorL = 0; // Bit error - falling rx edge was not in the expected window -late >33us
-    volatile unsigned int telRXTelBitTimingErrorE = 0; // Bit error - falling rx edge was not in the expected window -early -7us
-    //volatile unsigned int db_state= 2000;
-#   define DB_TELEGRAM(x) x
-#else
-#   define DB_TELEGRAM(x)
-#endif
-
-// buffer to dump interrupt event data on the serial line
-#if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL)
-    volatile unsigned int b1=0, b2=0, b3=0, b4=0;
-    volatile unsigned short b5=0;
-    volatile struct s_td td_b[tb_lngth];
-    volatile unsigned int tb_in = 0;
-    volatile unsigned int tb_out = 0;
-    volatile unsigned int tbd = 0;
-    volatile bool  tb_in_ov = false;
-    volatile bool  rec_end = false;
-
-    extern Timer timer32_0;
-
-    // dump telegram data in buffer
-#   define tb2(s, ptc, t,  ptcv, pttv, pttmv,  i) td_b[i].ts=s; \
-            td_b[i].tt=t; td_b[i].tc=ptc; td_b[i].tcv=ptcv; td_b[i].ttv=pttv; td_b[i].ttmv=pttmv;  if ( ++i>=tb_lngth){ i=0; tb_in_ov = true;}
-    //dump a timer value
-    #define tb_t(s, t,  i ) td_b[i].ts=s+2000; td_b[i].tt=t; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-    // dump a hex value
-#   define tb_h(s, t,  i ) td_b[i].ts=s+4000; td_b[i].tt=t; if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-    // dump a decimal value
-#   define tb_d(s, t,  i ) td_b[i].ts=s+5000; td_b[i].tt=t;  if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-
-#   ifdef DEBUG_BUS_BITLEVEL
-        //dump each interrupt with timer data
-#       define tbint(d1, d2, d3, d4, d5, d6,  i)  \
-            td_b[i].ts=d1; td_b[i].tt=d2; td_b[i].tc=d3; td_b[i].tcv=d4; td_b[i].ttv=d5; td_b[i].ttmv=d6;\
-             if (++i>=tb_lngth){ i=0; tb_in_ov = true;}
-#   else
-        //dump on bit level only first bit interrupt to reduce OVF
-#       define tbint(s, t, cf, cv, tv, tmv,  i) \
-            if (!( (s==8000 + RECV_BITS_OF_BYTE || s==8000 + SEND_BITS_OF_BYTE )&& !rec_end) ) {\
-                if(s==800 + RECV_WAIT_FOR_STARTBIT_OR_TELEND || s==8000 + SEND_BIT_0) rec_end = true; else rec_end=false;\
-                td_b[i].tt=t; td_b[i].tc=cf; td_b[i].tcv=cv; td_b[i].ttv=tv; td_b[i].ttmv=tmv; td_b[i].ts=s; \
-                if (++i>=tb_lngth){ i=0; tb_in_ov = true;} }
-#   endif
-#else
-    // no dump at all
-#    define tb2(s, ptc, t,  ptcv, pttv, pttmv,  i) ;
-#    define tb_t(s, t,  i ) ;
-#    define tb_h(s, t,  i ) ;
-#    define tb_d(s, t,  i ) ;
-#    define tbint(s, t, cf, cv, tv, tmv,  i) ;
-#endif
-
-
+#include <sblib/eib/bus_debug.h>
 
 /* L1/L2 msg header control field data bits meaning */
-#define ALLWAYS0       	   0          //  bit 0 is always 0
-#define ACK_REQ_FLAG       1          // 0 ack is requested - for TP-Bus ACK is mandatory for normal telegrams - always 0
-#define PRIO0_FLAG         2          // 00 system priority, 10 alarm prio, 01 high prio, 11 low prio
+#define ALWAYS0       	   0          // bit 0 is always 0
+#define ACK_REQ_FLAG       1          // 0 LL_ACK is requested - for TP-Bus ACK is mandatory for normal telegrams - always 0
+#define PRIO0_FLAG         2          // 00 system priority, 10 alarm priority, 01 high priority, 11 low priority
 #define PRIO1_FLAG         3          //
 #define ACK_FRAME_FLAG     4          // 1 frame is data or poll, 0 ack frame
 #define REPEAT_FLAG        5          // 1 not repeated, 0 repeated frame
 #define DATA_FRAME_FLAG    6          // 1 poll data frame, 0 data frame
 #define LONG_FRAME_FLAG    7          // 1,  short frame <=15 char, 0 long frame > 15 char
-#define HEADER_LENGHT      7          // eib msg header lenght by length indicator =0
+#define HEADER_LENGHT      7          // KNX msg header length by length indicator =0
 
 // telegram control byte bit definitions
-#define SB_TEL_NULL_FLAG        ( 1<< ALLWAYS0)
-#define SB_TEL_ACK_REQ_FLAG     ( 1<< ACK_REQ_FLAG)
-#define SB_TEL_PRIO0_FLAG       ( 1<< PRIO0_FLAG )
-#define SB_TEL_PRIO1_FLAG       ( 1<< PRIO1_FLAG)
-#define SB_TEL_ACK_FRAME_FLAG   ( 1<< ACK_FRAME_FLAG )
-#define SB_TEL_REPEAT_FLAG      ( 1<< REPEAT_FLAG)
-#define SB_TEL_DATA_FRAME_FLAG  ( 1<< DATA_FRAME_FLAG)
-#define SB_TEL_LONG_FRAME_FLAG  ( 1<< LONG_FRAME_FLAG)
-#define SB_TEL_PRIO_FLAG        ( SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
+#define SB_TEL_NULL_FLAG        (1 << ALWAYS0)
+#define SB_TEL_ACK_REQ_FLAG     (1 << ACK_REQ_FLAG)
+#define SB_TEL_PRIO0_FLAG       (1 << PRIO0_FLAG)
+#define SB_TEL_PRIO1_FLAG       (1 << PRIO1_FLAG)
+#define SB_TEL_ACK_FRAME_FLAG   (1 << ACK_FRAME_FLAG)
+#define SB_TEL_REPEAT_FLAG      (1 << REPEAT_FLAG)
+#define SB_TEL_DATA_FRAME_FLAG  (1 << DATA_FRAME_FLAG)
+#define SB_TEL_LONG_FRAME_FLAG  (1 << LONG_FRAME_FLAG)
+#define SB_TEL_PRIO_FLAG        (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG)
 
 // we accept only normal data frames for telegram processing
 #define VALID_DATA_FRAME_TYPE_MASK (SB_TEL_LONG_FRAME_FLAG | SB_TEL_DATA_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG | SB_TEL_ACK_REQ_FLAG | SB_TEL_NULL_FLAG)
 #define VALID_DATA_FRAME_TYPE_VALUE  (SB_TEL_LONG_FRAME_FLAG | SB_TEL_ACK_FRAME_FLAG )
 
-#define PREAMBLE_MASK  (( 1<< ALLWAYS0) | ( 1<< ACK_REQ_FLAG))
+#define PREAMBLE_MASK  (( 1<< ALWAYS0) | ( 1<< ACK_REQ_FLAG))
 
 #define PRIO_FLAG_HIGH	 (SB_TEL_PRIO0_FLAG)
 #define PRIO_FLAG_LOW	 (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
@@ -478,10 +169,15 @@ void Bus::begin()
 
 	telegramLen = 0;
 	sendAck = 0;
-	//need_to_send_ack_to_remote=false;
-	sendCurTelegram = 0;
-	sendNextTel = 0;
+	rx_error = RX_OK;
+	bus_rx_state = RX_OK;
+	setBusRXStateValid(true);
 	collision = false;
+
+	tx_error = TX_OK;
+	bus_tx_state = TX_OK;
+	sendCurTelegram = nullptr;
+	prepareForSending();
 	state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
 	//initialize bus-timer( e.g. defined as 16bit timer1)
 	timer.begin();
@@ -497,8 +193,6 @@ void Bus::begin()
 	timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
 	timer.match(pwmChannel, 0xffff);
 
-    lastRXTimeVal = millis();// time measurement between telegrams
-
 	// wait until output is driven low before enabling output pin.
 	// Using digitalWrite(txPin, 0) does not work with MAT channels.
 	timer.value(0xffff); // trigger the next event immediately
@@ -506,55 +200,39 @@ void Bus::begin()
 	pinMode(txPin, OUTPUT_MATCH);   // Configure bus output
 	pinMode(rxPin, INPUT_CAPTURE | HYSTERESIS);  // Configure bus input
 
-#if defined (DEBUG_BUS) || defined (DEBUG_BUS_BITLEVEL) || defined (DUMP_TELEGRAMS)
-	//we use 32bit timer 0 as debugging timer running with 1Mhz or system clock (48MHz)
-	ttimer.begin();
-	ttimer.start();
-	ttimer.noInterrupts();
-	ttimer.reset();
-	//	ttimer.prescaler(0);
-	ttimer.prescaler(TIMER_PRESCALER);
-
-	DB(serial.print("Bus begin - Timer prescaler: ", (unsigned int)TIMER_PRESCALER, DEC, 6));
-	DB(serial.print(" ttimer prescaler: ", ttimer.prescaler(), DEC, 6));
-	DB(serial.println(" ttimer value: ", ttimer.value(), DEC, 6));
-	DB(serial.print("nak retries: ", sendTriesMax, DEC, 6));
-	DB(serial.print(" busy retries: ", sendBusyTriesMax, DEC, 6));
-	DB(serial.print(" phy addr: ", PHY_ADDR_AREA(bcu->ownAddress()), DEC));
-	DB(serial.print(".", PHY_ADDR_LINE(bcu->ownAddress()), DEC));
-	DB(serial.print(".", PHY_ADDR_DEVICE(bcu->ownAddress()), DEC));
-	DB(serial.print(" (0x",  bcu->ownAddress(), HEX, 4));
-	DB(serial.println(")"));
-
-#ifdef USEPIO_FOR_TEL_END_IND
-#define USEPIO
-	pinMode(PIO1_4, OUTPUT);
-	digitalWrite(PIO1_4, 0);
+    DB_TELEGRAM(serial.println("DUMP_TELEGRAMS Bus telegram dump enabled."));
+#ifdef DEBUG_BUS
+    IF_DEBUG(serial.println("DEBUG_BUS dump enabled."));
 #endif
 
+#ifdef DEBUG_BUS_BITLEVEL
+    IF_DEBUG(serial.println("DEBUG_BUS_BITLEVEL dump enabled."));
 #endif
-	//
-	// Init GPIOs for debugging ?? logic analyser???
-	//
-	D(digitalWrite(PIO3_1, 1));
-	D(digitalWrite(PIO3_0, 1));
 
-	D(pinMode(PIO1_5, OUTPUT));
-	D(pinMode(PIO1_4, OUTPUT));
-	D(pinMode(PIO0_6, OUTPUT));
-	D(pinMode(PIO0_7, OUTPUT));
-	//D(pinMode(PIO2_8, OUTPUT));
-	//D(pinMode(PIO2_9, OUTPUT));
+    DB_BUS(
+        //we use 32bit timer 0 as debugging timer running with 1Mhz or system clock (48MHz)
+        ttimer.begin();
+        ttimer.start();
+        ttimer.noInterrupts();
+        ttimer.reset();
+        // ttimer.prescaler(0);
+        ttimer.prescaler(TIMER_PRESCALER);
+        serial.print("Bus begin - Timer prescaler: ", (unsigned int)TIMER_PRESCALER, DEC, 6);
+        serial.print(" ttimer prescaler: ", ttimer.prescaler(), DEC, 6);
+        serial.println(" ttimer value: ", ttimer.value(), DEC, 6);
+        serial.print("nak retries: ", sendTriesMax, DEC, 6);
+        serial.print(" busy retries: ", sendBusyTriesMax, DEC, 6);
+        serial.print(" phy addr: ", PHY_ADDR_AREA(bcu->ownAddress()), DEC);
+        serial.print(".", PHY_ADDR_LINE(bcu->ownAddress()), DEC);
+        serial.print(".", PHY_ADDR_DEVICE(bcu->ownAddress()), DEC);
+        serial.print(" (0x",  bcu->ownAddress(), HEX, 4);
+        serial.println(")");
+    ); // DB_BUS
 
-	D(digitalWrite(PIO3_0, 0));
-	D(digitalWrite(PIO3_1, 0));
-	D(digitalWrite(PIO1_5, 0));
-	D(digitalWrite(PIO1_4, 0));
-	D(digitalWrite(PIO0_6, 0));
-	D(digitalWrite(PIO0_7, 0));
-	//D(digitalWrite(PIO2_8, 0));
-	//D(digitalWrite(PIO2_9, 0));
-	//D(digitalWrite(PIO2_10, 0));
+#ifdef PIO_FOR_TEL_END_IND
+    pinMode(PIO_FOR_TEL_END_IND, OUTPUT);
+    digitalWrite(PIO_FOR_TEL_END_IND, 0);
+#endif
 }
 
 
@@ -586,47 +264,30 @@ void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
  */
 void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 {
+    prepareTelegram(telegram, length);
 
-	prepareTelegram(telegram, length);
+    // Wait until there is space in the sending queue
+    while (sendCurTelegram != nullptr);
 
-	// Wait until there is space in the sending queue
-	while (sendNextTel);
+    sendCurTelegram = telegram;
 
-	if (!sendCurTelegram)
-    {
-	    sendCurTelegram = telegram;
-    }
-	else if (!sendNextTel)
-    {
-        sendNextTel = telegram;
-    }
-	else
-    {
-	    fatalError(); // soft fault: send buffer overflow
-    }
-
-#ifdef DUMP_TELEGRAMS
-	unsigned int t;
-	t = ttimer.value();
-	serial.print("QSD: (", t, DEC, 8);
-	serial.print(") ");
-	for (int i = 0; i <= length; ++i)
-	{
-		if (i) serial.print(" ");
-		serial.print(telegram[i], HEX, 2);
-	}
-	serial.println();
-#endif
+    DB_TELEGRAM(
+        unsigned int t;
+        t = ttimer.value();
+        serial.print("QUE: (", t, DEC, 8); // queued to send
+        serial.print(") ");
+        for (int i = 0; i <= length; ++i)
+        {
+            if (i) serial.print(" ");
+            serial.print(telegram[i], HEX, 2);
+        }
+        serial.println();
+    );
 
 	// Start sending if the bus is idle or sending will be triggered in WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE after finishing current TX/RX
 	noInterrupts();
 	if (state == IDLE)
 	{
-		sendTries = 0;
-		sendBusyTries =0;
-		repeatTelegram = false;
-
-		wait_for_ack_from_remote = false;
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 		timer.match(timeChannel, 1);
 		timer.matchMode(timeChannel, INTERRUPT | RESET);
@@ -635,14 +296,6 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
 	interrupts();
 }
 
-/*
- *  set the Bus state machine to idle state.
- *  We waited at least 50 Bit times  (without cap event enabled), now we wait for next Telegram to receive.
- *  configure the capture to falling edge and interrupt
- *  match register for low pwm output
- *
- *todo we could stop the timer for energy save reasons
- */
 void Bus::idleState()
 {
 	tb_t( 99, ttimer.value(), tb_in);
@@ -655,7 +308,19 @@ void Bus::idleState()
 	//timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
 	state = Bus::IDLE;
 	sendAck = 0;
-	//need_to_send_ack_to_remote=false;
+}
+
+void Bus::prepareForSending()
+{
+    tx_error = TX_OK;
+    setBusTXStateValid(true);
+
+    sendTries = 0;
+    sendBusyTries = 0;
+    sendTelegramLen = 0;
+    wait_for_ack_from_remote = false;
+    repeatTelegram = false;
+    busy_wait_from_remote = false;
 }
 
 /*
@@ -691,7 +356,7 @@ void Bus::idleState()
  *	telegramLen: rx telegram lenght
  *	sendAck:  !0:  RX process need to send ack to sending side back, set wait timer accordingly
  * 	indicate result of telegram reception/error state to upper layer via bus_rx_state/bus_tx_state
- * 	and bus_rxstae_valid/bus_txstate_valid
+ * 	and bus_rxstate_valid/bus_txstate_valid
  *
  *
  * @param bool of all received char parity and frame checksum error
@@ -706,33 +371,29 @@ void Bus::handleTelegram(bool valid)
 	b4= nextByteIndex;
 	b5= ( collision + (valid ? 2 : 0));
 	tb2( 9000, b5,  b1, b2, b3, b4, tb_in);
-	//    D(digitalWrite(PIO1_4, 1));         // purple: end of telegram
 #endif
 
-#ifdef DUMP_TELEGRAMS
-	//telRXtime= ttimer.value();
-	if (nextByteIndex){
-		for (int i = 0; i < nextByteIndex; ++i)
-		{
-			telBuffer[i] = rx_telegram[i];
-		}
-		telLength = nextByteIndex;
-		telcollision = collision;
-		telrxerror = rx_error;
+    DB_TELEGRAM(
+        //telRXtime= ttimer.value();
+        if (nextByteIndex){
+            for (int i = 0; i < nextByteIndex; ++i)
+            {
+                telBuffer[i] = rx_telegram[i];
+            }
+            telLength = nextByteIndex;
+            telcollision = collision;
+        }
+    );
 
-	}
-#endif
-
-	//need_to_send_ack_to_remote=false;
 	sendAck = 0; // clear any pending ACK TX
 	int time = SEND_WAIT_TIME -  PRE_SEND_TIME; // default wait time after bus action
-	state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;//  default next state is wait for 50 bit times for pending tx or new  rx
+	state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;//  default next state is wait for 50 bit times for pending tx or new rx
 	tb_h( 908, currentByte, tb_in);
 	tb_h( 909, parity, tb_in);
 
 #ifndef BUSMONITOR   // no processing if we are in monitor mode
 
-	// Received a valid telegram with correct checksum and valid control byte ( normal data frame with preamble bits)?
+	// Received a valid telegram with correct checksum and valid control byte (normal data frame with preamble bits)?
 	//todo extended tel, check tel len, give upper layer error info
 	if ( nextByteIndex >= 8 && valid  &&  (( rx_telegram[0] & VALID_DATA_FRAME_TYPE_MASK) == VALID_DATA_FRAME_TYPE_VALUE)
 			&& nextByteIndex <= bcu->maxTelegramSize()  )
@@ -740,114 +401,110 @@ void Bus::handleTelegram(bool valid)
 		int destAddr = (rx_telegram[3] << 8) | rx_telegram[4];
 		bool processTel = false;
 
-		// We ACK the telegram only if it's for us
-		if (rx_telegram[5] & 0x80) // groupr addr or phy addr
+		// Only process the telegram if it is for us
+		if (rx_telegram[5] & 0x80) // group address or physical address
 		{
 		    processTel = (destAddr == 0); // broadcast
-		    processTel |= (bcu->addrTables != nullptr) && (bcu->addrTables->indexOfAddr(destAddr) >= 0); // known group addr
+		    processTel |= (bcu->addrTables != nullptr) && (bcu->addrTables->indexOfAddr(destAddr) >= 0); // known group address
 		}
 		else if (destAddr == bcu->ownAddress())
 		{
 			processTel = true;
 		}
-		else
-		{
-			DB(serial.println(" Bus::handleTelegram not processed: 0x", destAddr, HEX));
-		}
 
-		// Only process the telegram if it is for us or if we want to get all telegrams
-		if (!(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
-		{ // TL is disabled we might process the telegram
-			processTel = true;
-			// if LL is in normal mode (not busmonitor mode) we send ack back
-			if (bcu->userRam->status() & BCU_STATUS_LINK_LAYER)
-				if (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG )
-				{
-					sendAck = SB_BUS_ACK;
-					//need_to_send_ack_to_remote=true;
-				}
-		}
+        // with disabled TL we also process the telegram, so the application (e.g. ft12, knx-if) can handle it completely by itself
+        processTel |= !(bcu->userRam->status() & BCU_STATUS_TRANSPORT_LAYER);
+
+        DB_TELEGRAM(telRXNotProcessed = !processTel);
+
 		if (processTel)
-		{// check for repeated telegram, did we already received it -check that time between telegram is about 50bit times
+		{// check for repeated telegram, did we already received it
 			// check the repeat bit in header and compare with previous received telegram still stored in the telegram[] buffer
 			bool already_received = false;
-			//check time in between the telegrams received should be less than 6ms for repeated tel and the orig tel
-			if ((lastRXTimeVal <= millis() + 6) && !(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
+			if (!(rx_telegram[0] & SB_TEL_REPEAT_FLAG)) // a repeated tel
 			{// compare telegrams
 				if ((rx_telegram[0] & ~SB_TEL_REPEAT_FLAG) == (telegram[0] & ~SB_TEL_REPEAT_FLAG))
-				{// same header- compare data
-
+				{// same header -> compare remaining bytes, excluding the checksum byte
 					int i;
-					for (i =1; i <= nextByteIndex-1 && rx_telegram[i] == telegram[i]; i++);
-					if (i>=nextByteIndex) {
+					for (i = 1; (i < nextByteIndex - 1) && (rx_telegram[i] == telegram[i]); i++);
+					if (i == nextByteIndex - 1) {
 						already_received = true;
 					}
 				}
 			}
 
-			if (!already_received){
-				//  check for space in rx buffer for next telegram, if no space available, send busy back
-				if (telegramLen)
+			// check for space in rx buffer for next telegram, if no space available, send nothing
+			if (telegramLen)
+			{
+				// KNX Spec. 2.1. 3/2/2 2.4.1 p.38
+				// Device should only send a LL_BUSY if it knows that the telegram can be processed within the next 100ms.
+				// Since we know nothing about the running application we better send nothing
+				sendAck = 0;
+				rx_error |= RX_BUFFER_BUSY;
+			}
+			else
+			{
+				sendAck = SB_BUS_ACK;
+				// store data in telegram buffer for higher layers, set telegramLen to indicate data available
+				if (!already_received)
 				{
-					sendAck = SB_BUS_BUSY;
-					//need_to_send_ack_to_remote= true;//  no free rx buffer, send busy back
-					//busy_wait_to_remote = true;
-					rx_error |= RX_BUFFER_BUSY;
-				}
-				else
-				{// store data in telegram buffer for higher layers, set telegramLen to indicate data available
-					//todo check if telegram[] buffer is free
 					for (int i = 0; i < nextByteIndex; i++) telegram[i] = rx_telegram[i];
 					telegramLen = nextByteIndex;
 					bus_rx_state = rx_error;
 					rx_error = 0;
 					setBusRXStateValid(true);
-
-					lastRXTimeVal = millis();
-					//check if an ACK is requested -> not needed for poll frame
-					//if (! ( (rx_telegram[0] & SB_TEL_ACK_REQ_FLAG)  ||   (rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG)) )
-					if (!(rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG) )
-					{
-						//if(destAddr != 0)  // test no ack for BC
-						sendAck = SB_BUS_ACK;
-						//need_to_send_ack_to_remote= true;
-					}
-				}
-				// we received a valid telegram need to send an ack/busy to remote - has priority, no rx/tx  in between
-				if ( sendAck){
-					state = Bus::RECV_WAIT_FOR_ACK_TX_START;
-					time = SEND_ACK_WAIT_TIME - PRE_SEND_TIME;
 				}
 			}
-		} //
-	}
-	else if (nextByteIndex == 1 && parity)   // Received a spike or a bus acknowledgment, only parity, no checksum
-	{
-		currentByte &= 0xff;
-		tb_h( 907, currentByte, tb_in);
-		//  did we send a telegram ( sendTries>=1 and the received telegram is ACK or repetition max  -> send next telegram
-		if ( wait_for_ack_from_remote) {
-			if ((currentByte == SB_BUS_ACK ) ||  sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax)
-			{ // last sending to remote was ok or max retry, prepare for next tx telegram
-				if ( sendTries >=sendTriesMax || sendBusyTries >= sendBusyTriesMax) tx_error|= TX_RETRY_ERROR;
-				tb_h( 906, tx_error, tb_in);
-				sendNextTelegram();
 
-			}else if ( currentByte == SB_BUS_BUSY)
+            // LL_ACK only allowed, if link layer is in normal mode, not busmonitor mode
+            auto suppressAck = !(bcu->userRam->status() & BCU_STATUS_LINK_LAYER);
+            // LL_ACK only allowed for L_Data frames
+            suppressAck |= rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG;
+            if (suppressAck)
 			{
-				time = BUSY_WAIT_150BIT - PRE_SEND_TIME;
-				tx_error |=TX_REMOTE_BUSY_ERROR;
-				busy_wait_from_remote = true;
-				repeatTelegram = true;
+				sendAck = 0;
+			}
 
-			} else
-			{// we received nack or wrong ack, need to repeat last telegram
-				tx_error |= TX_NACK_ERROR;
-				busy_wait_from_remote = false;
-				repeatTelegram = true;
+			if (sendAck)
+			{
+				// ACK has priority, no rx/tx in between
+				state = Bus::RECV_WAIT_FOR_ACK_TX_START;
+				time = SEND_ACK_WAIT_TIME - PRE_SEND_TIME;
 			}
 		}
+	}
+	else if (nextByteIndex == 1 && wait_for_ack_from_remote)   // Received a spike or a bus acknowledgment, only parity, no checksum
+	{
+		tb_h( 907, currentByte, tb_in);
 
+		wait_for_ack_from_remote = false;
+
+		// received an ACK frame so clear checksum bit previously set in ISR Bus::timerInterruptHandler
+		rx_error &= ~RX_CHECKSUM_ERROR;
+
+		// received telegram is ACK or repetition max -> send next telegram
+		if ((parity && currentByte == SB_BUS_ACK) || sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
+		{
+			// last sending to remote was ok or max retry, prepare for next tx telegram
+			if (sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
+				tx_error |= TX_RETRY_ERROR;
+			tb_h( 906, tx_error, tb_in);
+			finishSendingTelegram();
+		}
+		else if (parity && currentByte == SB_BUS_BUSY)
+		{
+			time = BUSY_WAIT_150BIT - PRE_SEND_TIME;
+			tx_error |= TX_REMOTE_BUSY_ERROR;
+			busy_wait_from_remote = true;
+			repeatTelegram = true;
+		}
+		else
+		{
+			// we received nack or something else, need to repeat last telegram
+			tx_error |= TX_NACK_ERROR;
+			busy_wait_from_remote = false;
+			repeatTelegram = true;
+		}
 	}
 	else if (collision) // A collision occurred during sending. Ignore the received bytes
 	{
@@ -855,14 +512,17 @@ void Bus::handleTelegram(bool valid)
 	}
 	else // We received wrong checksum or parity, or more than one byte but too short for a telegram
 	{
-		rx_error |=RX_INVALID_TELEGRAM_ERROR;
+		rx_error |= RX_INVALID_TELEGRAM_ERROR;
 	}
+
+    DB_TELEGRAM(telrxerror = rx_error);
+
 	tb_d( 901, state, tb_in);	tb_d( 902, sendTries, tb_in);	tb_d( 903, sendBusyTries, tb_in);tb_h( 904, sendAck, tb_in);
 	tb_h( 905, rx_error, tb_in); tb_d( 910, telegramLen, tb_in);tb_d( 911, nextByteIndex, tb_in);
 
 #endif
 #ifdef BUSMONITOR
-	rx_error =0;
+	rx_error = 0;
 #endif
 
 
@@ -874,29 +534,21 @@ void Bus::handleTelegram(bool valid)
 }
 
 /*
- * Current telegram was send, send next telegram
+ * Finish the telegram sending process.
  *
- * load data for next telegram, save  send resultState - driven by interrupts of timer and capture input
- * Free send-buffer is indicated by "0" in the header byte: send-buffer[0]=0
- *
+ * Notify upper layer of completion and prepare for next telegram transmission.
  */
-void Bus::sendNextTelegram()
+void Bus::finishSendingTelegram()
 {
     bus_tx_state = tx_error;
-    tx_error = TX_OK;
-    setBusTXStateValid(true);
 
-    if (sendCurTelegram)
+    if (sendCurTelegram != nullptr)
     {
-        sendCurTelegram[0] = 0;
+        sendCurTelegram = nullptr;
+        bcu->finishedSendingTelegram(!(tx_error & TX_RETRY_ERROR));
     }
-    sendCurTelegram = sendNextTel;
-    sendNextTel = 0;
-    sendTries = 0;
-    sendBusyTries = 0;
-    sendTelegramLen = 0;
-    wait_for_ack_from_remote = false;
-    repeatTelegram = false;
+
+    prepareForSending();
 }
 
 
@@ -907,28 +559,44 @@ void Bus::sendNextTelegram()
  * Selecting the right state of SM Bus
  *
  */
-__attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
+__attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 {
-	D(static unsigned short tick = 0);
 	volatile bool timeout;
 	volatile int time;
 	unsigned int dt, tv, cv;
 
-	// Debug output
-	D(digitalWrite(PIO0_6, ++tick & 1));  // brown: interrupt tick
-	D(digitalWrite(PIO3_0, state==Bus::SEND_BIT_0)); // red
-	D(digitalWrite(PIO3_1, 0));           // orange
-	D(digitalWrite(PIO1_5, 0));           // yellow
-
-#ifdef USEPIO
-	digitalWrite(PIO1_4, 0);           // rest PIO
+#ifdef PIO_FOR_TEL_END_IND
+    digitalWrite(PIO_FOR_TEL_END_IND, 0);           // restore handleTelegram() PIO
 #endif
-
-	//D(digitalWrite(PIO2_8, 0));           // blue
-	//    D(digitalWrite(PIO2_9, 0));           //
 
 	// debug processing takes about 7-8us
 	tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
+
+    // If we captured a falling edge (bit), read the pin repeatedly over a duration of 3us.
+    if (timer.flag(captureChannel))
+    {
+        auto captureValue = timer.capture(captureChannel);
+        auto matchValue = timer.match(timeChannel);
+
+        while (true)
+        {
+            // If the pin went HIGH in the meantime, it was just a spike. In this case, just reset the pending bit of
+            // the capture channel (this keeps a potentially set pending bit of the time channel alive) and that's it.
+            if (digitalRead(rxPin))
+            {
+                timer.resetFlag(captureChannel);
+                return;
+            }
+
+            // Break out of the loop after 3 microseconds.
+            auto timerValue = timer.value();
+            auto elapsedMicroseconds = (timerValue >= captureValue) ? (timerValue - captureValue) : (matchValue - captureValue + timerValue);
+            if (elapsedMicroseconds >= 3)
+            {
+                break;
+            }
+        }
+    }
 
 	STATE_SWITCH:
 	switch (state)
@@ -937,9 +605,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	// BCU is in start-up phase, we wait for 50 bits inactivity of the bus
 	case Bus::INIT:
 		tb_t( state, ttimer.value(), tb_in);
-#ifdef DUMP_TELEGRAMS
-		telRXWaitInitTime= ttimer.value(); // if is is less than 50 we have a failure on the bus
-#endif
+        DB_TELEGRAM(telRXWaitInitTime = ttimer.value()); // if it is less than 50 we have a failure on the bus
 
 		if (timer.flag(captureChannel))
 		{// cap event: bus not in idle state before we have a timeout, restart waiting time
@@ -950,18 +616,15 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		idleState();
 		break;
 
-
 		// The bus is idle for at least 50BT. Usually we come here when we finished a TX/RX on the Bus and waited 50BT for next event without receiving a start bit on the Bus
 		// or at least one pending Telegram in the queue.
-		// A timeout  (after 0xfffe us) should not be received( indicating no bus activity) match interrupt is disabled
+		// A timeout  (after 0xfffe us) should not be received (indicating no bus activity) match interrupt is disabled
 		// A reception of a new telegram is triggered by the falling edge of the received start bit and we collect the bits in the receiving process
-		// Sending is triggered in idle state by a call to sendTelegram and state switch from idle to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
+		// Sending is triggered in idle state by state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
 
 	case Bus::IDLE:
 		tb_d( state+100, ttimer.value(), tb_in);
-#ifdef DUMP_TELEGRAMS
-		telRXWaitIdleTime= ttimer.value(); //
-#endif
+        DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
 
 		if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing - timeout??
 			break;
@@ -974,21 +637,19 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	case Bus::INIT_RX_FOR_RECEIVING_NEW_TEL:
 		tb_d( state+100, ttimer.value(), tb_in);
 
-#ifdef DUMP_TELEGRAMS
-		// correct the timer start value by the process time (about 13us) we had since the capture event
-		//unsigned int dt, tv, cv;
-		tv=timer.value(); cv= timer.capture(captureChannel);
-		if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-		else dt = (0xffff-cv) +tv;
+        DB_TELEGRAM(
+            // correct the timer start value by the process time (about 13us) we had since the capture event
+            tv=timer.value(); cv= timer.capture(captureChannel);
+            if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
+            else dt = (0xffff-cv) +tv;
 
-		telRXStartTime= ttimer.value()- dt;
-#endif
+            telRXStartTime= ttimer.value()- dt;
+        );
 
 		nextByteIndex = 0;
 		collision = false;
 		rx_error  = 0;
 		checksum = 0xff;
-		repeatTelegram = false;
 		sendAck = 0;
 		valid = 1;
 
@@ -1001,21 +662,19 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		// we expect that the timer was restarted by the end of the last frame (end of stop bit) and not restarted by a cap event
 		// timer will be pre-set with for the capture timing (few us), mode reset, interrupt, macht of frame time (11bits), capture interrupt
 	case Bus:: RECV_WAIT_FOR_STARTBIT_OR_TELEND:
-		D(digitalWrite(PIO3_1, 1));   // orange
-
 		if (!timer.flag(captureChannel))  // No start bit: then it is a timeout of end of frame
 		{ // did the sending process waited for an ack from remote?
 			{
 				if (checksum)
                 {
-                    rx_error |= RX_CHECKSUM_ERROR; ///\todo 0xCC (short ACKs, maybe also NAK and BUSY?) are flagged with a checksum_error
+                    rx_error |= RX_CHECKSUM_ERROR;
                 }
-#ifdef DUMP_TELEGRAMS
-		telRXEndTime= ttimer.value() - timer.value(); // timer was restarted at end of last stop bit -
-#ifdef USEPIO
-		digitalWrite(PIO1_4, 1);           // set Pin to high till next interrupt as end of Tel indication
-#endif
-#endif
+                DB_TELEGRAM(
+                    telRXEndTime= ttimer.value() - timer.value(); // timer was restarted at end of last stop bit -
+#                   ifdef PIO_FOR_TEL_END_IND
+                        digitalWrite(PIO_FOR_TEL_END_IND, 1); // set Pin to high till next interrupt as end of Tel indication
+#                   endif
+                );
 
 				handleTelegram(valid && !checksum);
 			}
@@ -1024,8 +683,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		//tb_h( state +100, currentByte, tb_in);
 		// we captured a startbit falling edge trigger
-		// read the start bit now (about few us after cap event) if it is still at low level to avoid that spikes will start analysis of rx data
-		if (digitalRead(rxPin)) rx_error |= RX_STARTBIT_ERROR; // we set error flag and continue rx process
 
 		// we received a start bit interrupt - reset timer for next byte reception,
 		// set byte time incl stop bit to 1144us and use that as ref for all succeeding timings in RX process
@@ -1036,7 +693,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		tv=timer.value(); cv= timer.capture(captureChannel);
 		if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-		else dt = (0xffff-cv) +tv;
+		else dt = (timer.match(timeChannel)-cv) +tv;
 		timer.restart();  // restart timer and pre-load with processing time of 2us
 		timer.value(dt+2);
 		timer.match(timeChannel, BYTE_TIME_INCL_STOP);
@@ -1049,12 +706,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		bitMask = 1;
 		parity = 1;
 
-#ifdef DUMP_TELEGRAMS
-		// correct the timer start value by the process time (about 13us) we had since the capture event
-		//unsigned int dt, tv, cv;
-		telRXTelByteStartTime= ttimer.value()- dt;
-#endif
-
+        DB_TELEGRAM(telRXTelByteStartTime = ttimer.value() - dt); // correct the timer start value by the process time (about 13us) we had since the capture event
 		break;
 
 		// we received next capture event for a low bit at position n*104us or timeout if we have end of byte received
@@ -1066,12 +718,10 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		//tb_t( RECV_BITS_OF_BYTE, ttimer.value(), tb_in);
 
 		timeout = timer.flag(timeChannel); // timeout--> end of rx byte
-		if (timeout) time = BYTE_TIME_INCL_STOP; // BYTE_TIME = 11 bits
+		if (timeout) time = timer.match(timeChannel); // end of stop bit
 		else
 		{
 			time = timer.capture(captureChannel); // we received an capt. event: new low bit
-			// read the bit again (about few us after cap event) if it is not at low level we received a spike - set error flag and continue
-			if (digitalRead(rxPin)) rx_error |= RX_TIMING_ERROR_SPIKE; // we set error flag and continue rx process
 		}
 
 		// find the bit position after last low bit and add high bits accordingly, window for the reception of falling edge of a bit is:
@@ -1080,7 +730,8 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		//bittime hold the time of the n-th bit (0..9) time=n*104, timer is counting from startbit edge- should be 104us in advance
 
 		if (time >= bitTime + BIT_TIME - 35 ) // check window should be at least  n*104-7us  *** we use -35us to be more tolerant
-		{ // bit is not to early- check for to late - we might have some high bits received since last low bit
+        {
+            // bit is not to early- check for to late - we might have some high bits received since last low bit
 			bitTime += BIT_TIME; //set bittime to next expected bit edge
 			while (time >= bitTime + BIT_WAIT_TIME && bitMask <= 0x100) // high bit found or bit 9 (stop bit) found - move check to next bit position
 			{
@@ -1090,31 +741,25 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				bitMask <<= 1; // next bit is in bitmask
 			}
 
-			if (time > bitTime  +33 && bitMask <= 0x100)
+			if (time > bitTime + 33 && bitMask <= 0x100)
 			{
-				rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
-
-				//report timing error for debugging
-#ifdef DUMP_TELEGRAMS
-		telRXTelBitTimingErrorL= time;
-#endif
+                rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
+                DB_TELEGRAM(telRXTelBitTimingErrorLate = time); //report timing error for debugging
 			}
 			bitMask <<= 1; //next bit or stop bit
 			//tb_d( RECV_BITS_OF_BYTE +400, time, tb_in);
 			//tb_d( RECV_BITS_OF_BYTE +500, bitTime, tb_in);
-		} else // we might have received a additional edge due to bus reflection, tx-delay, edge should be within bit pulse +30us else ignore edge
-		{
-			rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
-			// report timing error for debugging
-#ifdef DUMP_TELEGRAMS
-		telRXTelBitTimingErrorE= time;
-#endif
+        }
+        else
+        {
+            // we might have received a additional edge due to bus reflection, tx-delay, edge should be within bit pulse +30us else ignore edge
+            rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
+            DB_TELEGRAM(telRXTelBitTimingErrorEarly = time); // report timing error for debugging
 		}
 
 		if (timeout)  // Timer timeout: end of byte
 		{
-			D(digitalWrite(PIO1_5, 1));     // yellow: end of byte
-			D(digitalWrite(PIO3_1, parity));// orange: parity bit ok
+			currentByte &= 0xff;
 
 			// check bit0 and bit 1 of first byte for low level preamble bits
 			if ( (!nextByteIndex) && (currentByte & PREAMBLE_MASK) )
@@ -1125,7 +770,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				rx_telegram[nextByteIndex++] = currentByte;
 				checksum ^= currentByte;
 			} else {
-				nextByteIndex = bcu->maxTelegramSize() -1;
 				rx_error |= RX_LENGHT_ERROR;
 			}
 
@@ -1181,11 +825,10 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		}
 		sendTelegramLen = 0;
 
-#ifdef DUMP_TELEGRAMS
-			telTXAck = sendAck;
-			// set starttime of sending telegram
-			telTXStartTime = ttimer.value() + PRE_SEND_TIME;
-#endif
+        DB_TELEGRAM(
+            telTXAck = sendAck;
+            telTXStartTime = ttimer.value() + PRE_SEND_TIME; // set start time of sending telegram
+        );
 
 		//set timer for TX process: init PWM pulse generation, interrupt at pulse end and cap event (pulse start)
 		timer.match(pwmChannel, PRE_SEND_TIME); // waiting time till start of first bit- falling edge 104us + n*104us ( n=0 or3)
@@ -1224,8 +867,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 	case Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE:
 		tb_t( state, ttimer.value(), tb_in);
-		D(digitalWrite(PIO1_5, 1)); // yellow: prepare transmission
-
 		timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // enable cap event after waiting time for next rx
 
 		if (timer.flag(captureChannel)){ // cap event- start receiving,  maybe ack or early tx from other device - fixme: should not happen here!
@@ -1239,9 +880,9 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			{
 				tb_h( state+ 100,sendTries + 10* sendBusyTries, tb_in);
 				tx_error |= TX_RETRY_ERROR;
-				sendNextTelegram();	// then send next  todo: info upper layer on sending error of last telegram
+				finishSendingTelegram();	// then send next, this also informs upper layer on sending error of last telegram
 			}
-			if (sendCurTelegram)  // Send a telegram pending?
+			if (sendCurTelegram != nullptr)  // Send a telegram pending?
 			{		//tb_t( state+200, ttimer.value(), tb_in);
 				tb_h( state+ 200, repeatTelegram, tb_in);
 				//tb_h( state+ 300,sendCurTelegram[0], tb_in);
@@ -1266,8 +907,8 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			}
 			else  // Send nothing:  wait PRE_SEND_TIME before we set the bus to idle state
 			{
-				DB(
-				   if (sendCurTelegram != 0)
+			    DB_BUS(
+				   if (sendCurTelegram != nullptr)
 				   {
 				       tb_h( state+ 900,sendCurTelegram[0], tb_in);
 				   }
@@ -1292,13 +933,8 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		tx_error = TX_OK;
 		state = Bus::SEND_START_BIT;
 
-#ifdef DUMP_TELEGRAMS
-			// set starttime of sending telegram
-			telTXStartTime = ttimer.value() + time;
-#endif
-
+        DB_TELEGRAM(telTXStartTime = ttimer.value() + time); // set start time of sending telegram
 		break;
-
 
 		/* SEND_START_BIT
 		 * start bit edge is in sync with bus timing!
@@ -1347,7 +983,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		}  else if (timer.flag(timeChannel)){
 			// Timeout: we have a hardware problem as receiving our sent signal does not work. set error and just continue sending bit0
 			tb_t( state+400, ttimer.value(), tb_in);
-			D(digitalWrite(PIO2_8, 1));  // blue: sending bits does not work
 			state = Bus::SEND_BIT_0; //   prepare for to send bit 0
 			tx_error |= TX_PWM_STARTBIT_ERROR;
 		}// no break, continue with bit0 as we have a timeout here
@@ -1386,8 +1021,8 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		 * n-bit low pulse end now after 35us by time match interrupt, send next bit of byte till end of byte (stop bit)
 		 * **/
 	case Bus::SEND_BITS_OF_BYTE:
+	{
 		tb_t( SEND_BITS_OF_BYTE, ttimer.value(), tb_in);
-		D(digitalWrite(PIO1_5, 1));    // yellow: send next bits
 		//tb_h( SEND_BITS_OF_BYTE+100, bitMask, tb_in);
 		//tb_d( SEND_BITS_OF_BYTE+200, time, tb_in);
 		//tb_h( state+100, sendAck, tb_in);
@@ -1402,32 +1037,28 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		}
 		bitMask <<= 1; // next low bit or stop bit if mask > 0x200
 
-		if (time > BIT_TIME ) //  low bit or high bit to send?
-			state = Bus::SEND_WAIT_FOR_HIGH_BIT_END; // high bit to send, detect collisions while sending high bits
-		//tb_h( SEND_BITS_OF_BYTE+300, bitMask, tb_in);
-		//tb_d( SEND_BITS_OF_BYTE+400, time, tb_in);
+		auto stopBitReached = (bitMask > 0x200);
 
-		if (bitMask > 0x200) // stop bit reached
-		{
-			if (nextByteIndex < sendTelegramLen && !sendAck) // if tel. end or ack, stop sending
-			{//  we are at the rising edge of parity bit-> need to send 4 bit:3 high bits (stop bit, 2 fill bits) and start bit pulse of next byte by pwm
-				time += BIT_TIME *3;
-				state = Bus::SEND_BIT_0;  // state for bit-0 of next byte to send
-			}
-			else
-			{//  need to send stop bit and sync with bus timing
-				state = Bus::SEND_END_OF_TX;
-				time += BIT_TIME  - BIT_PULSE_TIME;
-			}
-		}
 		// set next match/interrupt
 		// if we are sending high bits, we wait for next low bit edge by cap interrupt which might be a collision
 		// or timeout interrupt indicating end of bit pulse sending (high or low)
-		if (state == Bus::SEND_WAIT_FOR_HIGH_BIT_END)
+		if (time > BIT_TIME ) //  low bit or high bit to send?
+		{
+			state = Bus::SEND_WAIT_FOR_HIGH_BIT_END; // high bit to send, detect collisions while sending high bits
 			timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-		else timer.captureMode(captureChannel, FALLING_EDGE);
+		}
+		else
+		{
+			timer.captureMode(captureChannel, FALLING_EDGE);
+			if (stopBitReached)
+			{
+				state = Bus::SEND_END_OF_BYTE;
+			}
+		}
+		//tb_h( SEND_BITS_OF_BYTE+300, bitMask, tb_in);
+		//tb_d( SEND_BITS_OF_BYTE+400, time, tb_in);
 
-		if (state == Bus::SEND_END_OF_TX)
+		if (stopBitReached)
 			timer.match(pwmChannel, 0xffff); //stop pwm pulses - low output
 		// as we are at the raising edge of the last pulse, the next falling edge will be n*104 - 35us (min69us) away
 		else timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
@@ -1436,6 +1067,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 
 		timer.match(timeChannel, time); // interrupt at end of low/high bit pulse - next raising edge or after stop bit + 2 wait bits
 		break;
+	}
 
 
 		/* SEND_WAIT_FOR_HIGH_BIT_END
@@ -1453,33 +1085,118 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 		//tb_h( SEND_WAIT_FOR_HIGH_BIT_END+200, timer.captureMode(captureChannel),  tb_in);
 		//tb_h( state+100, sendAck, tb_in);
 
-		if (timer.flag(captureChannel)){
-			if (( timer.capture(captureChannel) < timer.match(pwmChannel) - BIT_WAIT_TIME +30 ) &&  // add bit margin: early 7us, late 30us
-					(timer.capture(captureChannel) > BIT_WAIT_TIME - 7))  // subtract 7 margin for early bit
+		if (timer.flag(captureChannel))
+		{
+			auto captureTime = timer.capture(captureChannel);
+			if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - 7))
 			{
-				tb_d( state+400,timer.capture(captureChannel), tb_in);
+				// Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
+				// (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
+				// This is a spike, ignore it.
+				break;
+			}
+
+			if (( captureTime < timer.match(pwmChannel) - 7 ))
+			{
+				tb_d( state+400, captureTime, tb_in);
 				tb_t( state+300, ttimer.value(), tb_in);
-				// A collision. Stop sending and ignore the current transmission.
-				D(digitalWrite(PIO1_4, 1));  // purple
-				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
-				timer.match(timeChannel, BYTE_TIME_INCL_STOP); // todo we could set the timeout to the time value for remaining bits to receive
-				state = Bus::RECV_BITS_OF_BYTE; // -  try to receive remaining bits of sender - will be discard anyhow, just to be in sync again
+
+				// A collision. Stop sending and switch to receiving the current transmission.
 				collision = true;
 				tx_error |= TX_COLLISION_ERROR;
-				break;
+				rx_error = 0;
+				checksum = 0xff;
+				valid = 1;
+				parity = 1;
 
+				if (sendAck)
+				{
+					// LL acknowledgment frames are not repeated (ACK, NACK, BUSY).
+					sendAck = 0;
+				}
+				else
+				{
+					// Normal frames are repeated.
+					repeatTelegram = true;
+
+					// For TX, nextByteIndex is incremented before we start transmitting. For RX, nextByteIndex is incremented after
+					// we received a byte completely. To account for this difference, we need to decrement when we switch from TX to RX.
+					nextByteIndex--;
+
+					// Copy all bytes we transmitted without collision over to the receive buffer and update checksum accordingly.
+					for (auto i = 0; i < nextByteIndex; i++)
+					{
+						auto b = sendCurTelegram[i];
+						rx_telegram[i] = b;
+						checksum ^= b;
+					}
+				}
+
+				// Scale back bitMask to match the collided bit. pwmChannel is when we would have sent
+				// the next falling edge, captureChannel when we received it. The 33 is to account for
+				// slight timing differences and integer arithmetic.
+				auto collisionBitCount = (timer.match(pwmChannel) - captureTime + 33) / BIT_TIME;
+				bitMask >>= collisionBitCount + 1;
+
+				// Pretend that we also received a 0 bit last time, such that there is no need to set any
+				// bits to 1 in RECV_BITS_OF_BYTE.
+				bitTime = captureTime - BIT_TIME;
+
+				// Only keep those bits of currentByte that we sent without collision, and clear the rest.
+				currentByte &= (bitMask - 1);
+
+				// Adjust timer and parity accordingly. In a non-collided byte, timer starts at 0 and runs
+				// to BYTE_TIME_INCL_STOP with bitTime and captureChannel relative to the start bit's
+				// falling edge. As we cannot set captureChannel, we configure reception of collided bytes
+				// relative to the rising edge of the last non-collided bit.
+				auto missingBits = 10;
+				for (auto i = bitMask >> 1; i; i >>= 1)
+				{
+					missingBits--;
+					if (currentByte & i)
+					{
+						parity = !parity;
+					}
+				}
+
+				timer.match(timeChannel, captureTime + missingBits * BIT_TIME);
+				timer.matchMode(timeChannel, INTERRUPT | RESET);
+
+				timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
+
+				state = Bus::RECV_BITS_OF_BYTE;
+				goto STATE_SWITCH;
 			}
+
 			//tb_t( state+200, ttimer.value(), tb_in);
 			//tb_d( state+500,timer.match(pwmChannel), tb_in);
 			// we captured our sending low bit edge, continue sending, wait for bit ends with match intr
-			state = Bus::SEND_BITS_OF_BYTE;;
+			state = Bus::SEND_BITS_OF_BYTE;
 			break;
 		}
 
-		// timeout event, must be an error
-		state = Bus::SEND_BITS_OF_BYTE;
-		tx_error |= TX_TIMING_ERROR;
-		goto STATE_SWITCH;
+		// timeout event, i.e. sent all 1 bits without any collisions, now are in stop bit
+		state = Bus::SEND_END_OF_BYTE;
+		timer.captureMode(captureChannel, FALLING_EDGE);
+
+		// Completed transmission of parity bit and are in the middle of the stop bit transmission.
+		// What do we need to do next?
+	case Bus::SEND_END_OF_BYTE:
+		tb_t( state, ttimer.value(), tb_in);
+		if (nextByteIndex < sendTelegramLen && !sendAck)
+		{
+			// There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
+			time = 3 * BIT_TIME;
+			state = Bus::SEND_BIT_0;  // state for bit-0 of next byte to send
+			timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
+		}
+		else
+		{
+			// We're done. Finish to send stop bit and sync with bus timing.
+			state = Bus::SEND_END_OF_TX;
+			time = BIT_TIME - BIT_PULSE_TIME;
+		}
+		timer.match(timeChannel, time);
 		break;
 
 		//state is in sync with resp. to bus timing,  entered by match interrupt after last bytes stop bit was send
@@ -1488,10 +1205,7 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	case Bus::SEND_END_OF_TX:
 		tb_t( state, ttimer.value(), tb_in);
 		tb_h( SEND_END_OF_TX+700, repeatTelegram, tb_in);
-		D(digitalWrite(PIO2_9, 1));
-#ifdef DUMP_TELEGRAMS
-		telTXEndTime= ttimer.value();
-#endif
+        DB_TELEGRAM(telTXEndTime = ttimer.value());
 
 		if (sendAck){ // we send an ack for last received frame, wait for idle for next action
 			tb_h( SEND_END_OF_TX+200, tx_error, tb_in);
@@ -1512,7 +1226,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			tb_h( SEND_END_OF_TX+600, repeatTelegram, tb_in);
 
 			// normal data frame,  L2 need to wait for ACK from remote for our telegram
-			//if (!(sendCurTelegram[0] & SB_TEL_ACK_REQ_FLAG)) {
 			wait_for_ack_from_remote = true; // default for data layer: acknowledge each telegram
 			time=  ACK_WAIT_TIME_MIN; //we wait 15BT- marging for ack rx window, cap intr disabled
 			state = Bus::SEND_WAIT_FOR_RX_ACK_WINDOW;
@@ -1524,7 +1237,6 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 				else
 					sendTries++;
 			}
-			//}else wait_for_ack_from_remote = false;
 			// dump previous tx-telegram and repeat counter and busy retry
 			DB_TELEGRAM(
 			    for (int i =0; i< sendTelegramLen; i++)
@@ -1568,11 +1280,12 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 			goto STATE_SWITCH;
 		}
 		repeatTelegram = true;
+		wait_for_ack_from_remote = false;
 		tx_error|= TX_ACK_TIMEOUT_ERROR; // todo  ack timeout - inform upper layer on error state and repeat tx if needed
 		state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 
-		//timer is counting since last stop bit so we need to add the ACK_WAIT_TIME and the char-tx time of 11bits to the 50BT till idle for repated frames
-		timer.match(timeChannel, ACK_WAIT_TIME + BYTE_TIME_INCL_STOP + SEND_WAIT_TIME - PRE_SEND_TIME);
+		//timer is counting since last stop bit so we need to wait 50BT till idle for repeated frames (see KNX spec v2.1 3/2/2 2.3.1 Figure 38)
+		timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME);
 
 		timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait to increase the robustness on bus spikes
 		timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
@@ -1585,4 +1298,19 @@ __attribute__((optimize("O3"))) void Bus::timerInterruptHandler()
 	}
 
 	timer.resetFlags();
+}
+
+void Bus::loop()
+{
+    ///\todo implement enabled property
+    /*
+    if (!enabled)
+    {
+        return;
+    }
+    */
+    DB_TELEGRAM(dumpTelegrams());
+#if defined (DEBUG_BUS) || defined (DEBUG_BUS_BITLEVEL)
+    debugBus();
+#endif
 }

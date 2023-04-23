@@ -3,10 +3,6 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
- *  last change: 10. April 2021 HoRa:
- *  	call to bus:setSendAck() in "connect/disconnect command at Layer4" removed- not needed, will lead to undefined effects when the
- *  	bus state machine is sending an ack in parallel due to asynchronous interrupt process
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.

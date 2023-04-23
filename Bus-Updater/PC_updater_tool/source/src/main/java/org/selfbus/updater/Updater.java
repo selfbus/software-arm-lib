@@ -240,15 +240,15 @@ public class Updater implements Runnable {
         String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
                 result.written(), flashTimeDuration, col, bytesPerSecond, ConColors.RESET);
 
+        if (result.dropCount() > 0) {
+            infoMsg += String.format(" %sDisconnects: %d%s", ConColors.BRIGHT_RED, result.dropCount(), ConColors.RESET);
+        } else {
+            infoMsg += String.format(" %sDisconnect: %d%s", ConColors.BRIGHT_GREEN, result.dropCount(), ConColors.RESET);
+        }
         if (result.timeoutCount() > 0) {
-            infoMsg += String.format(" %sTimeout(s): %d%s", ConColors.BRIGHT_RED, result.timeoutCount(), ConColors.RESET);
+            infoMsg += String.format(" %sTimeouts: %d%s", ConColors.BRIGHT_RED, result.timeoutCount(), ConColors.RESET);
         } else {
             infoMsg += String.format(" %sTimeout: %d%s", ConColors.BRIGHT_GREEN, result.timeoutCount(), ConColors.RESET);
-        }
-        if (result.dropCount() > 0) {
-            infoMsg += String.format(" %sDrop(s): %d%s", ConColors.BRIGHT_RED, result.dropCount(), ConColors.RESET);
-        } else {
-            infoMsg += String.format(" %sDrop: %d%s", ConColors.BRIGHT_GREEN, result.dropCount(), ConColors.RESET);
         }
         logger.info("{}", infoMsg);
     }
@@ -259,7 +259,7 @@ public class Updater implements Runnable {
     public static final IndividualAddress PHYS_ADDRESS_BOOTLOADER = new IndividualAddress(15, 15,192); //!< physical address the bootloader is using
     public static final IndividualAddress PHYS_ADDRESS_OWN = new IndividualAddress(0, 0,0); //!< physical address the Selfbus Updater is using
 
-    public static final int RESPONSE_TIMEOUT_SEC = 2; //!< Time in seconds the Updater shall wait for a KNX Response
+    public static final int RESPONSE_TIMEOUT_SEC = 3; //!< Time in seconds the Updater shall wait for a KNX Response
 
     /*
      * (non-Javadoc)
@@ -291,6 +291,8 @@ public class Updater implements Runnable {
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC, cliOptions.priority());
+
+            dm.setTL4Timeout(cliOptions.tl4Timeout()); ///\todo delete after TL4 Style 3 implementation in sblib
 
             logger.info("KNX connection: {}\n", link);
 

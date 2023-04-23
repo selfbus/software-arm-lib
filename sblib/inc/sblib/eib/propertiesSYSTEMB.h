@@ -25,8 +25,8 @@ public:
 	virtual LoadState handleDataRelativeAllocation(const int objectIdx, const byte* payLoad, const int len);
 	virtual uint16_t crc16(uint8_t* ptr, int len);
 	virtual int loadProperty(int objectIdx, const byte* data, int len);
-	virtual bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start);
-	virtual bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start);
+	virtual bool propertyValueReadTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer);
+	virtual bool propertyValueWriteTelegram(int objectIdx, PropertyID propertyId, int count, int start, uint8_t * sendBuffer);
 
 private:
 	SYSTEMB* bcu;

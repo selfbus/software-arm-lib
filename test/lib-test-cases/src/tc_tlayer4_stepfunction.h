@@ -31,23 +31,12 @@ typedef struct
     int connectedAddrNew;
     byte seqNoSend;
     byte seqNoRcv;
-    bool telegramReadyToSend;
+    TLayer4::SendConnectedTelegramBufferState sendConnectedTelegramBufferState;
 } ProtocolTestState;
 
 static ProtocolTestState protoState[2];
 
 #define VaS(s) ((ProtocolTestState *) (s))
-
-/**
- * \todo when L2->L4 callback L2_ACK sent is implemented
- *       delete this function and replace in with telegrams with connectedOpenIdle
- */
-static void connectedOpenIdleOrWait(void * state, unsigned int param)
-{
-    REQUIRE(param > 0);
-    VaS(state)->connectedAddrNew = param;
-    VaS(state)->machineState = TLayer4::OPEN_WAIT;
-}
 
 static void connect(void * state, unsigned int param)
 {
@@ -55,13 +44,7 @@ static void connect(void * state, unsigned int param)
     VaS(state)->machineState = TLayer4::OPEN_IDLE;
     VaS(state)->seqNoSend = 0;
     VaS(state)->seqNoRcv = 0;
-    VaS(state)->telegramReadyToSend = false;
-}
-
-static void connectWhileConnectedClosed(void * state, unsigned int param)
-{
-    VaS(state)->connectedAddrNew = param;
-    VaS(state)->machineState = TLayer4::CLOSED;
+    VaS(state)->sendConnectedTelegramBufferState = TLayer4::CONNECTED_TELEGRAM_FREE;
 }
 
 static void connectedOpenIdle(void * state, unsigned int param)
