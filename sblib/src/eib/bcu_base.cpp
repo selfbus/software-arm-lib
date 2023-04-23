@@ -122,9 +122,9 @@ bool BcuBase::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t
     {
         case APCI_BASIC_RESTART_PDU:
             requestedRestartType = RESTART_BASIC;
-            return (true);
+            return (false);
         default:
-            break;
+            return (TLayer4::processApci(apciCmd, telegram, telLength, sendBuffer));
     }
     return (false);
 }

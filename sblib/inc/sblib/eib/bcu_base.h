@@ -111,6 +111,16 @@ protected:
      */
     bool setProgrammingMode(bool newMode);
 
+    /**
+     * Processes @ref APCI_BASIC_RESTART_PDU telegrams.
+     * For all other telegrams @ref TLayer4::processApci is invoked.
+     *
+     * @param apciCmd       @ref ApciCommand of the telegram
+     * @param telegram      The APCI-telegram
+     * @param telLength     Telegram length
+     * @param sendBuffer    Pointer to the buffer for a potential response telegram
+     * @return True if a response telegram was prepared, otherwise false
+     */
     virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
 
     void sendApciIndividualAddressReadResponse();

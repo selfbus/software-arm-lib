@@ -488,11 +488,6 @@ bool BcuDefault::processApci(ApciCommand apciCmd, unsigned char * telegram, uint
     uint16_t address;
     uint8_t index;
 
-    if (BcuBase::processApci(apciCmd, telegram, telLength, sendBuffer))
-    {
-        return (true);
-    }
-
     switch (apciCmd)
     {
     case APCI_ADC_READ_PDU: ///\todo implement ADC service for bus voltage and PEI,
@@ -555,7 +550,8 @@ bool BcuDefault::processApci(ApciCommand apciCmd, unsigned char * telegram, uint
         return (true);
 
     default:
-        break;
+        return (BcuBase::processApci(apciCmd, telegram, telLength, sendBuffer));
+
     }
     return (false);
 }

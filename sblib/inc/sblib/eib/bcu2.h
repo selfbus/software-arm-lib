@@ -122,6 +122,19 @@ public:
 	PropertiesBCU2* properties;
 
 protected:
+    /**
+     * Processes @ref APCI_PROPERTY_VALUE_READ_PDU,
+     *           @ref APCI_PROPERTY_VALUE_WRITE_PDU,
+     *           @ref APCI_PROPERTY_DESCRIPTION_READ_PDU telegrams.
+     *
+     * For all other telegrams @ref BcuDefault::processApci is invoked.
+     *
+     * @param apciCmd       @ref ApciCommand of the telegram
+     * @param telegram      The APCI-telegram
+     * @param telLength     Telegram length
+     * @param sendBuffer    Pointer to the buffer for a potential response telegram
+     * @return True if a response telegram was prepared, otherwise false
+     */
     bool processApci(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength, uint8_t * sendBuffer) override;
 
     void sendApciIndividualAddressSerialNumberReadResponse();
