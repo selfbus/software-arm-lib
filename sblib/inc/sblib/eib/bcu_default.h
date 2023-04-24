@@ -132,6 +132,22 @@ public:
      */
     bool processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber);
 
+    /**
+     * Processes @ref APCI_ADC_READ_PDU,
+     *           @ref APCI_MEMORY_READ_PDU,
+     *           @ref APCI_MEMORY_WRITE_PDU,
+     *           @ref APCI_DEVICEDESCRIPTOR_READ_PDU,
+     *           @ref APCI_MASTER_RESET_PDU,
+     *           @ref APCI_AUTHORIZE_REQUEST_PDU telegrams.
+     *
+     * For all other telegrams @ref BcuBase::processApci is invoked.
+     *
+     * @param apciCmd       @ref ApciCommand of the telegram
+     * @param telegram      The APCI-telegram
+     * @param telLength     Telegram length
+     * @param sendBuffer    Pointer to the buffer for a potential response telegram
+     * @return True if a response telegram was prepared, otherwise false
+     */
     virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
 
     /**

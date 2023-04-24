@@ -148,6 +148,15 @@ protected:
      */
     void sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo);
 
+    /**
+     * Processes a APCI telegram
+     *
+     * @param apciCmd       @ref ApciCommand of the telegram
+     * @param telegram      The APCI-telegram
+     * @param telLength     Telegram length
+     * @param sendBuffer    Pointer to the buffer for a potential response telegram
+     * @return Always false
+     */
     virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
 
     bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
