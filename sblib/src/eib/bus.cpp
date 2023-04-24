@@ -180,6 +180,7 @@ void Bus::begin()
 	prepareForSending();
 	state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
 	//initialize bus-timer( e.g. defined as 16bit timer1)
+	timer.setIRQPriority(0); // ensure highest IRQ-priority for the Bus timer
 	timer.begin();
 	timer.pwmEnable(pwmChannel);
 	// any cap intr during start up time is ignored and will reset start up time
