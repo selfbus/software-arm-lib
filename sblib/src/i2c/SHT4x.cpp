@@ -160,39 +160,32 @@ bool SHT4xClass::readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t buffe
 	// as the crc would be incomplete
 	if (bufferLength < 6)
 	{
-		return false;
+	    return false;
 	}
 
-    if (writeCommand(command))
+    if (!writeCommand(command))
     {
-#ifndef DEBUG
-		uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
-#endif
-
-		// loop to receive measurement result within the timeout period
-    	do
-		{
-			#if not DEBUG
-			if ((millis() - timeout) > 0)
-			{
-				i2c_lpcopen_init();
-				return false;
-			}
-			#endif
-			delay(1);
-			resultLength = Chip_I2C_MasterRead(I2C0,eSHT4xAddress,buffer, 6);
-		}
-		while (resultLength == 0);
-
-		// check if CRC of measure result is valid
-		return resultLength == 6 &&
-				 buffer[2] == crc8(buffer, 2) &&
-				 buffer[5] == crc8(buffer + 3, 2);
+        return false;
     }
-    else
+
+	uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
+    // loop to receive measurement result within the timeout period
+    do
     {
-    	return false;
+        if (millis() > timeout)
+        {
+            i2c_lpcopen_init();
+            return false;
+        }
+        delay(1);
+        resultLength = Chip_I2C_MasterRead(I2C0,eSHT4xAddress,buffer, 6);
     }
+    while (resultLength == 0);
+
+    // check if CRC of measure result is valid
+    return resultLength == 6 &&
+             buffer[2] == crc8(buffer, 2) &&
+             buffer[5] == crc8(buffer + 3, 2);
 }
 
 uint8_t SHT4xClass::crc8(const uint8_t *data, int len) {
