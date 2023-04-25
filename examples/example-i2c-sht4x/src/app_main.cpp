@@ -84,24 +84,32 @@ BcuBase* setup()
     return (&bcu);
 }
 
-void ReadSHT4TempHum() {
-	uint16_t error = SHT40.measureHighPrecision();
-	if (error == 6) ///\todo check against the error/success constant
+void readSHT4TempHum()
+{
+	if (!SHT40.measureHighPrecision())
 	{
-	    serial.print("SHT4x temperature: ", SHT40.getTemperature(), 2);
-	    serial.print(" C");
-	    serial.print(" humidity: ", SHT40.getHumidity(), 2);
-	    //serial.print(" Dew point: ", SHT40.getDewPoint(), 2);
-	    //serial.print(" C");
-	    serial.println();
-	}
-	else
-	{
-	    serial.println("error measureHighPrecision() 0x", error, HEX, 4);
+	    serial.println("SHT40.measureHighPrecision() failed.");
+	    return;
 	}
 
-	uint32_t serialnumber = SHT40.getSerialnumber();
-	serial.println("SHT4x serial number: 0x", (unsigned int)serialnumber, HEX, 8);
+    serial.print("SHT4x temperature: ", SHT40.getTemperature(), 2);
+    serial.print(" C");
+    serial.print(" humidity: ", SHT40.getHumidity(), 2);
+    //serial.print(" Dew point: ", SHT40.getDewPoint(), 2);
+    //serial.print(" C");
+    serial.println();
+}
+
+void readSHT4readSerial()
+{
+    uint32_t serialnumber = SHT40.getSerialnumber();
+    if (serialnumber == 0)
+    {
+        serial.println("SHT40.getSerialnumber() failed.");
+        return;
+    }
+
+    serial.println("SHT4x serial number: 0x", (unsigned int)serialnumber, HEX, 8);
 }
 
 /**
@@ -111,7 +119,8 @@ void loop_noapp()
 {
     if(bReadTimer)
     {
-        ReadSHT4TempHum();
+        readSHT4TempHum();
+        readSHT4readSerial();
         bReadTimer=false;
     }
     // Sleep until the next interrupt happens
