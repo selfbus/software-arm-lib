@@ -60,37 +60,32 @@ bool SHT4xClass::measureHighPrecision()
     uint16_t tTicks = 0;
     uint16_t hTicks = 0;
 
-    if (measureHighPrecisionTicks(tTicks, hTicks))
+    if (!measureHighPrecisionTicks(tTicks, hTicks))
     {
-		this->temperature = convertTicksToCelsius(tTicks);
-		this->humidity = convertTicksToPercentRH(hTicks);
-		return true;
+        return false;
     }
-    else
-    {
-    	return false;
-    }
+
+    this->temperature = convertTicksToCelsius(tTicks);
+    this->humidity = convertTicksToPercentRH(hTicks);
+    return true;
 }
 
 bool SHT4xClass::measureHighPrecisionTicks(uint16_t &temperatureTicks, uint16_t &humidityTicks)
 {
 	uint8_t buffer[6] = {};
 
-    if (readSensor(Sht4xCommand::measHi, buffer, sizeof(buffer) / sizeof(*buffer)))
+    if (!readSensor(Sht4xCommand::measHi, buffer, sizeof(buffer) / sizeof(*buffer)))
     {
-		temperatureTicks = buffer[0];
-		temperatureTicks <<= 8;
-		temperatureTicks |= buffer[1];
-		humidityTicks = buffer[3];
-		humidityTicks <<= 8;
-		humidityTicks |= buffer[4];
+        return false;
+    }
 
-		return true;
-    }
-    else
-    {
-    	return false;
-    }
+    temperatureTicks = buffer[0];
+    temperatureTicks <<= 8;
+    temperatureTicks |= buffer[1];
+    humidityTicks = buffer[3];
+    humidityTicks <<= 8;
+    humidityTicks |= buffer[4];
+    return true;
 }
 
 
@@ -133,16 +128,17 @@ float SHT4xClass::getDewPoint(void)
 uint32_t SHT4xClass::getSerialnumber(void)
 {
 	uint8_t result[6] = {};
-	uint32_t serialnumber = 0;
+	uint32_t serialnumber;
 
-	if (readSensor(Sht4xCommand::getSerial, result, sizeof(result) / sizeof(*result)))
+	if (!readSensor(Sht4xCommand::getSerial, result, sizeof(result) / sizeof(*result)))
 	{
-		serialnumber = static_cast<uint32_t>(result[0]) << 24;
-		serialnumber |= static_cast<uint32_t>(result[1]) << 16;
-		serialnumber |= static_cast<uint32_t>(result[3]) << 8;
-		serialnumber |= static_cast<uint32_t>(result[4]);
+	    return 0;
 	}
 
+    serialnumber = static_cast<uint32_t>(result[0]) << 24;
+    serialnumber |= static_cast<uint32_t>(result[1]) << 16;
+    serialnumber |= static_cast<uint32_t>(result[3]) << 8;
+    serialnumber |= static_cast<uint32_t>(result[4]);
 	return serialnumber;
 }
 
