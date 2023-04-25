@@ -47,74 +47,71 @@
 #define WATER_VAPOR         (17.62f) //!< constant for water vapor
 #define BAROMETRIC_PRESSURE (243.5f) //!< constant for barometric pressure
 
-typedef enum {
-  eSHT4xAddress = 0x44,
-} HUM_SENSOR_T;
-
 void SHT4xClass::init(void)
 {
 	i2c_lpcopen_init();
+
+	writeCommand(Sht4xCommand::softReset);
+	delay(1);
 }
 
-uint16_t SHT4xClass::measureHighPrecision()
+bool SHT4xClass::measureHighPrecision()
 {
-    uint16_t error = 0;
     uint16_t tTicks = 0;
     uint16_t hTicks = 0;
 
-    error = measureHighPrecisionTicks(tTicks, hTicks);
-    if (error != 6) ///\todo some constant for error/success
+    if (measureHighPrecisionTicks(tTicks, hTicks))
     {
-        return (error);
+		this->temperature = convertTicksToCelsius(tTicks);
+		this->humidity = convertTicksToPercentRH(hTicks);
+		return true;
     }
-
-    this->temperature = _convertTicksToCelsius(tTicks);
-    this->humidity = _convertTicksToPercentRH(hTicks);
-    return (error);
+    else
+    {
+    	return false;
+    }
 }
 
-uint16_t SHT4xClass::measureHighPrecisionTicks(uint16_t &temperatureTicks, uint16_t &humidityTicks)
+bool SHT4xClass::measureHighPrecisionTicks(uint16_t &temperatureTicks, uint16_t &humidityTicks)
 {
 	uint8_t buffer[6] = {};
-    uint8_t resultLength = 111;
 
-    resultLength = readSensor(Sht4xCommand::measHi, buffer, sizeof(buffer) / sizeof(*buffer));
+    if (readSensor(Sht4xCommand::measHi, buffer, sizeof(buffer) / sizeof(*buffer)))
+    {
+		temperatureTicks = buffer[0];
+		temperatureTicks <<= 8;
+		temperatureTicks |= buffer[1];
+		humidityTicks = buffer[3];
+		humidityTicks <<= 8;
+		humidityTicks |= buffer[4];
 
-	temperatureTicks = buffer[0];
-	temperatureTicks <<= 8;
-	temperatureTicks |= buffer[1];
-	humidityTicks = buffer[3];
-	humidityTicks <<= 8;
-	humidityTicks |= buffer[4];
-
-    return (resultLength);
+		return true;
+    }
+    else
+    {
+    	return false;
+    }
 }
 
 
-float SHT4xClass::_convertTicksToCelsius(uint16_t ticks) {
-    return (static_cast<float>(ticks * 175.0f / 65535.0f - 45.0f));
+float SHT4xClass::convertTicksToCelsius(uint16_t ticks)
+{
+    return static_cast<float>(ticks * 175.0f / 65535.0f - 45.0f);
 }
 
-float SHT4xClass::_convertTicksToPercentRH(uint16_t ticks) {
-    return (static_cast<float>(ticks * 125.0f / 65535.0f - 6.0f));
+float SHT4xClass::convertTicksToPercentRH(uint16_t ticks)
+{
+    return static_cast<float>(ticks * 125.0f / 65535.0f - 6.0f);
 }
 
-//float SHT4xClass::GetHumidity(void)
-//{
-//    float value = readSensor(eRHumidityHoldCmd);
-//    if (value == 0) {
-//        return (0);                       // Some unrealistic value
-//    }
-//    return (-6.0f + 125.0f / 65536.0f * value);
-//}
 float SHT4xClass::getHumidity(void)
 {
-	return (this->humidity);
+	return this->humidity;
 }
 
 float SHT4xClass::getTemperature(void)
 {
-	return (this->temperature);
+	return this->temperature;
 }
 
 float SHT4xClass::getDewPoint(void)
@@ -138,62 +135,68 @@ uint32_t SHT4xClass::getSerialnumber(void)
 	uint8_t result[6] = {};
 	uint32_t serialnumber = 0;
 
-//	int readErgebnis = Chip_I2C_MasterWriteRead(I2C0, eSHT4xAddress, &command, result, 1, 6);
-	readSensor(Sht4xCommand::getSerial, result, sizeof(result));
+	if (readSensor(Sht4xCommand::getSerial, result, sizeof(result) / sizeof(*result)))
+	{
+		serialnumber = static_cast<uint32_t>(result[0]) << 24;
+		serialnumber |= static_cast<uint32_t>(result[1]) << 16;
+		serialnumber |= static_cast<uint32_t>(result[3]) << 8;
+		serialnumber |= static_cast<uint32_t>(result[4]);
+	}
 
-	serialnumber = static_cast<uint32_t>(result[0]) << 24;
-	serialnumber |= static_cast<uint32_t>(result[1]) << 16;
-	serialnumber |= static_cast<uint32_t>(result[3]) << 8;
-	serialnumber |= static_cast<uint32_t>(result[4]);
-
-	return (serialnumber);
+	return serialnumber;
 }
 
 /******************************************************************************
  * Private Functions
  ******************************************************************************/
-
-uint16_t SHT4xClass::readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t expResultLength)
+bool SHT4xClass::writeCommand(Sht4xCommand command)
 {
 	uint8_t cmd = (uint8_t)command;
-	uint8_t resultLength = 0;
-#ifndef DEBUG
-    uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
-#endif
-//
-//  if (!initialized)
-//  {
-//    Init();
-//  }
-//
-//  if (initialized)
-//  {
 
-	if(Chip_I2C_MasterSend(I2C0, eSHT4xAddress, &cmd, sizeof(cmd)) == 0){
+	return Chip_I2C_MasterSend(I2C0, eSHT4xAddress, &cmd, sizeof(cmd)) == sizeof(cmd);
+}
 
-		i2c_lpcopen_init();
-		return (0);
-	}
+bool SHT4xClass::readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t bufferLength)
+{
+	uint8_t resultLength;
 
-    // loop to receive measurement result within the timeout period
-    while (resultLength < expResultLength){
-		#if not DEBUG
-			if ((millis() - timeout) > 0) {
-				i2c_lpcopen_init();
-				return (0);
-			}
-		#endif
-		delay(1);
-		resultLength = Chip_I2C_MasterRead(I2C0,eSHT4xAddress,buffer,6);
-    }
-
-	// check if CRC of measure result is valid
-	if (buffer[2] != crc8(buffer, 2) || buffer[5] != crc8(buffer + 3, 2))
+	// each response is 6 bytes in size, so if buffer is smaller we can't process the response
+	// as the crc would be incomplete
+	if (bufferLength < 6)
 	{
-		return (0);
+		return false;
 	}
 
-    return (resultLength);
+    if (writeCommand(command))
+    {
+#ifndef DEBUG
+		uint32_t timeout = millis() + 300; // 300ms timeout for I2C communication
+#endif
+
+		// loop to receive measurement result within the timeout period
+    	do
+		{
+			#if not DEBUG
+			if ((millis() - timeout) > 0)
+			{
+				i2c_lpcopen_init();
+				return false;
+			}
+			#endif
+			delay(1);
+			resultLength = Chip_I2C_MasterRead(I2C0,eSHT4xAddress,buffer, 6);
+		}
+		while (resultLength == 0);
+
+		// check if CRC of measure result is valid
+		return resultLength == 6 &&
+				 buffer[2] == crc8(buffer, 2) &&
+				 buffer[5] == crc8(buffer + 3, 2);
+    }
+    else
+    {
+    	return false;
+    }
 }
 
 uint8_t SHT4xClass::crc8(const uint8_t *data, int len) {
@@ -211,14 +214,16 @@ uint8_t SHT4xClass::crc8(const uint8_t *data, int len) {
   const uint8_t POLYNOMIAL(0x31);
   uint8_t crc(0xFF);
 
-  for (int j = len; j; --j) {
+  for (int j = len; j; --j)
+  {
     crc ^= *data++;
 
-    for (int i = 8; i; --i) {
+    for (int i = 8; i; --i)
+    {
       crc = (crc & 0x80) ? (crc << 1) ^ POLYNOMIAL : (crc << 1);
     }
   }
-  return (crc);
+  return crc;
 }
 
 

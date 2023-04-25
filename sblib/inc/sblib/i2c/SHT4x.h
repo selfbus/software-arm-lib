@@ -58,7 +58,8 @@ class SHT4xClass
 private:
 	float temperature;
 	float humidity;
-    uint16_t readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t resultlength);
+    bool readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t bufferLength);
+    bool writeCommand(Sht4xCommand command);
 
     /**
      * SHT4x command for a single shot measurement with high repeatability.
@@ -71,10 +72,10 @@ private:
      *
      * @return 0 on success, an error code otherwise
      */
-    uint16_t measureHighPrecisionTicks(uint16_t& temperatureTicks, uint16_t& humidityTicks);
+    bool measureHighPrecisionTicks(uint16_t& temperatureTicks, uint16_t& humidityTicks);
 
-    float _convertTicksToCelsius(uint16_t);
-    float _convertTicksToPercentRH(uint16_t);
+    float convertTicksToCelsius(uint16_t);
+    float convertTicksToPercentRH(uint16_t);
 
     /**
      * Do a CRC validation of result
@@ -85,6 +86,8 @@ private:
      * @return CRC result value
      */
     uint8_t crc8(const uint8_t* data, int len);
+
+    static const uint8_t eSHT4xAddress = 0x44;
 
 public:
   /**
@@ -106,9 +109,9 @@ public:
 
   /**
    * SHT4x command for a single shot measurement with high repeatability.
-   * @return 6 on success, an error code otherwise
+   * @return true on success, and false otherwise
    */
-  uint16_t measureHighPrecision();
+  bool measureHighPrecision();
 
   /**
    * Gets the current dew point based on the current humidity and temperature
