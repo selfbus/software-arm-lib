@@ -39,7 +39,7 @@
  */
 
 #include <stdint.h>
-#include <math.h>
+#include <sblib/math.h>
 #include <sblib/i2c.h>
 #include <sblib/timer.h>
 #include <sblib/i2c/SHT4x.h>
@@ -82,9 +82,11 @@ bool SHT4xClass::measureHighPrecisionTicks(uint16_t &temperatureTicks, uint16_t 
     temperatureTicks = buffer[0];
     temperatureTicks <<= 8;
     temperatureTicks |= buffer[1];
+    this->temperatureTicks = temperatureTicks;
     humidityTicks = buffer[3];
     humidityTicks <<= 8;
     humidityTicks |= buffer[4];
+    this->humidityTicks = humidityTicks;
     return true;
 }
 
@@ -107,6 +109,16 @@ float SHT4xClass::getHumidity(void)
 float SHT4xClass::getTemperature(void)
 {
 	return this->temperature;
+}
+
+uint16_t SHT4xClass::getHumTicks(void)
+{
+	return this->humidityTicks;
+}
+
+uint16_t SHT4xClass::getTempTicks(void)
+{
+	return this->temperatureTicks;
 }
 
 float SHT4xClass::getDewPoint(void)

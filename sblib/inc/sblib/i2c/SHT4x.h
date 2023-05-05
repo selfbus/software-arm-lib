@@ -58,6 +58,9 @@ class SHT4xClass
 private:
 	float temperature;
 	float humidity;
+	uint16_t temperatureTicks;
+	uint16_t humidityTicks;
+
     bool readSensor(Sht4xCommand command, uint8_t* buffer, uint8_t bufferLength);
     bool writeCommand(Sht4xCommand command);
 
@@ -106,6 +109,10 @@ public:
    * @return the current temperature in degree C as float
    */
   float getTemperature(void);
+
+  uint16_t getHumTicks(void);
+
+  uint16_t getTempTicks(void);
 
   /**
    * SHT4x command for a single shot measurement with high repeatability.

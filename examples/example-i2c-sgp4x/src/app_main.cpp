@@ -8,9 +8,7 @@
  *
  * @{
  *
- * @author Erkan Colak <erkanc@gmx.de> Copyright (c) 2015
- * @author Mario Theodoridis Copyright (c) 2021
- * @author Darthyson <darth@maptrack.de> Copyright (c) 2022
+ * @author Darthyson <darth@maptrack.de> Copyright (c) 2023
  * @author Doumanix <doumanix@gmx.de> Copyright (c) 2023
  * @bug No known bugs.
  ******************************************************************************/
@@ -27,12 +25,16 @@
 #include <sblib/eibBCU1.h>
 #include <sblib/serial.h>
 #include <sblib/i2c/SGP4x.h>
+#include <sblib/i2c/SHT4x.h>
 
 #define READ_TIMER (2000) ///> Read values timer in Milliseconds
 bool bReadTimer = false;  ///> Condition to read values if timer reached
 
 SGP4xClass SGP40;
+SHT4xClass SHT4x;
 BCU1 bcu = BCU1();
+bool testDone = false;
+
 
 /**
  * Handler for the timer interrupt.
@@ -58,11 +60,8 @@ BcuBase* setup()
     serial.begin(115200);
     serial.println("Selfbus I2C SGP4x sensor example");
 
-    SGP40.init();
-    uint16_t relativeHumidity = 0;
-    uint16_t temperature = 0;
-    uint16_t srawVoc = 0;
-    SGP40.measureRawSignal(relativeHumidity, temperature, srawVoc);
+
+
 //    SGP40.getSerialnumber();
 
 
@@ -88,15 +87,60 @@ BcuBase* setup()
     timer32_0.matchMode(MAT1, RESET | INTERRUPT);       // On match of MAT1, generate an interrupt and reset the timer
     timer32_0.match(MAT1, READ_TIMER);                  // Match MAT1 when the timer reaches this value (in milliseconds)
     timer32_0.start();                                  // Start now the timer
+
+
+    SGP40.init();
+    SHT4x.init();
+    SGP40.executeConditioning();
+
     return (&bcu);
 }
 
-void ReadSGP4Serial() {
+void readSGP4Serial()
+{
 	uint16_t temp = SGP40.getSerialnumber();
-	SGP40.measureRawSignal(1, 2, temp);
-//	serial.println();
+
+	serial.println();
 //	serial.println("SerialNr[0]: ", temp);
 }
+
+
+void getVocValue()
+{
+	uint16_t srawVoc = 0;
+
+	if (!SHT4x.measureHighPrecision())
+	{
+	    serial.println("SHT40.measureHighPrecision() failed.");
+	    return;
+	}
+    uint16_t relativeHumidity = SHT4x.getHumidity() ;
+	uint16_t temperature = SHT4x.getTemperature() ;
+	serial.println("SGP temp: ", temperature);
+	serial.println("SGP hum: ", relativeHumidity);
+
+
+// use calculated hum / temp value
+// needed when hum / temp is taken from another source than SHT4x
+//	SGP40.measureRawSignal(relativeHumidity * 65535 / 175, temperature * 65535 / 100, srawVoc);
+
+// directly use tTicks and hTicks from SHT4x
+    SGP40.measureRawSignal(SHT4x.getHumTicks(), SHT4x.getTempTicks(), srawVoc);
+    serial.println("SGP VOC Ticks: ", srawVoc);
+}
+
+
+/*
+ * execute SGP4x's built-in self-test
+ * if result is 0 everything is OK
+ * otherwise consult the datasheet
+ */
+void doSelfTest()
+{
+	serial.println("SELFTEST Ergebnis: ", SGP40.executeSelfTest());
+}
+
+
 
 /**
  * The main processing loop while no KNX-application is loaded.
@@ -105,7 +149,18 @@ void loop_noapp()
 {
     if (bReadTimer)
     {
-        ReadSGP4Serial();
+
+        getVocValue();
+
+
+        if(!testDone)
+        {
+        	serial.println("Einmal SELFTEST und SERIAL bitte!");
+        	doSelfTest();
+        	readSGP4Serial();
+        	testDone = true;
+        }
+
         bReadTimer = false;
     }
     // Sleep until the next interrupt happens
