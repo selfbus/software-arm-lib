@@ -18,6 +18,7 @@
 #include <sblib/internal/iap.h>
 #include <sblib/utils.h>
 #include <sblib/math.h>
+#include <sblib/bits.h>
 
 // Specify the constants for water vapor and barometric pressure.
 #define WATER_VAPOR 17.62f
@@ -38,10 +39,6 @@ enum class Sgp4xCommand : uint16_t {
     heaterOff 		= 0x3615,		// sgp4x_turn_heater_off
 	selfTest		= 0x280E		// sgp41_execute_self_test
 };
-
-#define EndianConvert16(w) ((w>>8)|(w<<8));
-
-
 
 /******************************************************************************
  * Global Functions
@@ -122,7 +119,7 @@ uint16_t SGP4xClass::executeConditioning()
 
 uint8_t SGP4xClass::executeSelfTest() {
 //    uint8_t cmd[2] = {0x28, 0x0E};
-	uint16_t cmd = EndianConvert16((uint16_t)Sgp4xCommand::selfTest);
+    uint16_t cmd = reverseByteOrder((uint16_t)Sgp4xCommand::selfTest);
     int tstresult = 0 ;
     tstresult = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, (uint8_t*)&cmd, 3);
         if( tstresult == 0){
@@ -273,7 +270,7 @@ uint64_t SGP4xClass::getSerialnumber(void)
 bool SGP4xClass::readSensor(Sgp4xCommand command, uint8_t* buffer, uint8_t bufferLength)
 {
 // switch byte order since the commands given are big endian and LPC1115 is little endian
-  uint16_t revCmd = EndianConvert16((uint16_t)command);
+  uint16_t revCmd = reverseByteOrder((uint16_t)command);
   serial.println("revCmd = 0x", revCmd, HEX, 2);
   int resultLength = Chip_I2C_MasterWriteRead(I2C0, eSGP4xAddress, (uint8_t*)&revCmd, buffer, 2, 9);
 
