@@ -9,10 +9,14 @@ import org.selfbus.updater.Utils;
 public class BootloaderIdentity {
     private final long versionMajor;
     private final long versionMinor;
+    private final long versionSBLibMajor;
+    private final long versionSBLibMinor;
     private final long features;
     private final long applicationFirstAddress;
 
-    public BootloaderIdentity(long versionMajor, long versionMinor, long features, long applicationFirstAddress) {
+    public BootloaderIdentity(long versionMajor, long versionMinor, long versionSBLibMajor, long versionSBLibMinor, long features, long applicationFirstAddress) {
+        this.versionSBLibMajor = versionSBLibMajor;
+        this.versionSBLibMinor = versionSBLibMinor;
         this.features = features;
         this.applicationFirstAddress = applicationFirstAddress;
         this.versionMajor = versionMajor;
@@ -22,37 +26,51 @@ public class BootloaderIdentity {
     public static BootloaderIdentity fromArray(byte[] parse) {
         long vMajor = parse[0] & 0xff;
         long vMinor = parse[1] & 0xff;
-        long features = Utils.streamToLong(parse, 2);
+        long features = Utils.streamToShort(parse, 2);
+        long versionSBLibMajor = parse[4] & 0xff;
+        long versionSBLibMinor= parse[5] & 0xff;
         long applicationFirstAddress = Utils.streamToLong(parse, 6);
-        return new BootloaderIdentity(vMajor, vMinor, features, applicationFirstAddress );
+        return new BootloaderIdentity(vMajor, vMinor, versionSBLibMajor, versionSBLibMinor, features, applicationFirstAddress );
     }
 
     public String toString() {
-        return String.format("Version: %s, Features: 0x%04X, App-start: 0x%04X",
-                              version(), features(), applicationFirstAddress());
+        return String.format("Version: %s, sbLib Version: %s, Features: 0x%04X, App-start: 0x%04X",
+                              getVersion(), getVersionSBLib(), getFeatures(), getApplicationFirstAddress());
     }
 
-    public long features()
+    public long getFeatures()
     {
         return features;
     }
 
-    public long applicationFirstAddress()
+    public long getApplicationFirstAddress()
     {
         return applicationFirstAddress;
     }
 
-    public long versionMajor()
+    public long getVersionMajor()
     {
         return versionMajor;
     }
 
-    public long versionMinor()
+    public long getVersionMinor()
     {
         return versionMinor;
     }
 
-    public String version() {
-        return String.format("%d.%02d", versionMajor(), versionMinor());
+    public long getVersionSBLibMajor() {
+        return versionSBLibMajor;
+    }
+
+    public long getVersionSBLibMinor() {
+        return versionSBLibMinor;
+    }
+
+    public String getVersion() {
+        return String.format("%d.%02d", getVersionMajor(), getVersionMinor());
+    }
+
+    public String getVersionSBLib() {
+        return String.format("%d.%02d", getVersionSBLibMajor(), getVersionSBLibMinor());
     }
 }

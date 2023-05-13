@@ -30,6 +30,8 @@
 
 #ifdef DEBUG
 #   include <sblib/serial.h>
+#   include <sblib/version.h>
+#   include <sblib/bits.h>
 #   include "flash.h"
 #endif
 
@@ -111,10 +113,12 @@ BcuBase* setup()
     serial.print("Selfbus KNX Bootloader v", BOOTLOADER_MAJOR_VERSION);
     serial.print(".", BOOTLOADER_MINOR_VERSION, DEC, 2);
     serial.println(" DEBUG MODE :-)");
-    serial.print("Build: ");
+    serial.print("Build                       : ");
     serial.print(__DATE__);
     serial.print(" ");
     serial.println(__TIME__);
+    serial.print("Library                     : v", highByte((uint16_t)SBLIB_VERSION), HEX, 2);  // lib version is in hexadecimal
+    serial.println(".", lowByte(SBLIB_VERSION), HEX, 2);
     serial.println("Features                    : 0x", BL_FEATURES, HEX, 6);
     serial.print("Flash      (start,end,size) : 0x", flashFirstAddress());
     serial.print(" 0x", flashLastAddress());

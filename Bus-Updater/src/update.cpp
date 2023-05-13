@@ -530,10 +530,14 @@ static bool updRequestBootloaderIdentity(uint8_t * data)
         return (true);
     }
 
-    uint32_t bootloaderFeatures = BL_FEATURES;
+    uint16_t bootloaderFeatures = BL_FEATURES;
+    uint8_t majorSBLibVersion = highByte((uint16_t)SBLIB_VERSION);
+    uint8_t minorSBLibVersion = lowByte(SBLIB_VERSION);
     uint8_t * appFirstAddress = applicationFirstAddress();
     const uint32_t dataSize = sizeof(BOOTLOADER_MAJOR_VERSION) +
                               sizeof(BOOTLOADER_MINOR_VERSION) +
+                              sizeof(majorSBLibVersion) +
+                              sizeof(minorSBLibVersion) +
                               sizeof(bootloaderFeatures) +
                               sizeof(appFirstAddress);
 
@@ -542,8 +546,12 @@ static bool updRequestBootloaderIdentity(uint8_t * data)
     offset += sizeof(BOOTLOADER_MAJOR_VERSION);
     retTelegram[offset] = BOOTLOADER_MINOR_VERSION;
     offset += sizeof(BOOTLOADER_MINOR_VERSION);
-    uInt32ToStream(retTelegram + offset, bootloaderFeatures);
+    uShort16ToStream(retTelegram + offset, bootloaderFeatures);
     offset += sizeof(bootloaderFeatures);
+    retTelegram[offset] = majorSBLibVersion;
+    offset += sizeof(majorSBLibVersion);
+    retTelegram[offset] = minorSBLibVersion;
+    offset += sizeof(minorSBLibVersion);
     ptrToStream(retTelegram + offset, appFirstAddress);
     d3(serial.print("BL v", BOOTLOADER_MAJOR_VERSION, DEC));
     d3(serial.print(".", BOOTLOADER_MINOR_VERSION, DEC, 2));

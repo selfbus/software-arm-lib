@@ -25,7 +25,7 @@
 #include <stdint.h>
 
 constexpr uint8_t BOOTLOADER_MAJOR_VERSION = 1;  //!< Bootloader major version @note change also in BootloaderLoader's app_main.cpp
-constexpr uint8_t BOOTLOADER_MINOR_VERSION = 10; //!< Bootloader minor version @note change also in BootloaderLoader's app_main.cpp
+constexpr uint8_t BOOTLOADER_MINOR_VERSION = 11; //!< Bootloader minor version @note change also in BootloaderLoader's app_main.cpp
 
 constexpr uint8_t UPDATER_MIN_MAJOR_VERSION = 1; //!< minimum required major version of the Selfbus Updater we are talking to
 constexpr uint8_t UPDATER_MIN_MINOR_VERSION = 0; //!< minimum required minor version of the Selfbus Updater we are talking to
