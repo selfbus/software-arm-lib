@@ -47,12 +47,13 @@
 #define WATER_VAPOR         (17.62f) //!< constant for water vapor
 #define BAROMETRIC_PRESSURE (243.5f) //!< constant for barometric pressure
 
-void SHT4xClass::init(void)
+bool SHT4xClass::init(void)
 {
 	i2c_lpcopen_init();
 
-	writeCommand(Sht4xCommand::softReset);
+	bool initialized = writeCommand(Sht4xCommand::softReset);
 	delay(1);
+	return initialized;
 }
 
 bool SHT4xClass::measureHighPrecision()

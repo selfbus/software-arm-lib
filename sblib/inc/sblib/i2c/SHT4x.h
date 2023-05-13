@@ -95,8 +95,9 @@ private:
 public:
   /**
    * Initialize the SHT4x sensor
+   * @return True if successfully initialized, otherwise false
    */
-  void init(void);
+  bool init(void);
 
   /**
    * Get relative humidity from SHT4x sensor
