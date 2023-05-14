@@ -46,6 +46,51 @@ extern "C" void TIMER32_0_IRQHandler()
 }
 
 /**
+ * Print an @ref SGP4xResult to the serial port with optional new line
+ *
+ * @param result    The SGP4xResult to print
+ * @param newLine   Set True to print a new line character at the end.
+ */
+void printSGP4xResult(SGP4xResult result, bool newLine = true)
+{
+    serial.print(": ");
+    switch (result)
+    {
+        case SGP4xResult::crc8Mismatch:
+            serial.print("crc8 mismatch!");
+            break;
+
+        case SGP4xResult::sendError:
+            serial.print("sending FAILED!");
+            break;
+
+        case SGP4xResult::readError:
+            serial.print("reading FAILED!");
+            break;
+
+        case SGP4xResult::vocPixelError:
+            serial.print("VOC pixel ERROR!");
+            break;
+
+        case SGP4xResult::noxPixelError:
+            serial.print("NOx pixel ERROR!");
+            break;
+
+        case SGP4xResult::success:
+            serial.print("succeeded!");
+            break;
+
+        default:
+            serial.print("UNKNOWN result!");
+            break;
+    }
+    if (newLine)
+    {
+        serial.println();
+    }
+}
+
+/**
  * Executes SGP4x's built-in self-test
  * if result is @ref SGP4xResult::success everything is OK
  * otherwise consult the datasheet
@@ -53,36 +98,8 @@ extern "C" void TIMER32_0_IRQHandler()
 void doSelfTest()
 {
     SGP4xResult result = SGP41.executeSelfTest();
-    switch (result)
-    {
-        case SGP4xResult::crc8Mismatch:
-            serial.println("SGP41.executeSelfTest: crc8 mismatch!");
-            break;
-
-        case SGP4xResult::sendError:
-            serial.println("SGP41.executeSelfTest: sending FAILED!");
-            break;
-
-        case SGP4xResult::readError:
-            serial.println("SGP41.executeSelfTest: reading FAILED!");
-            break;
-
-        case SGP4xResult::vocPixelError:
-            serial.println("SGP41.executeSelfTest: VOC pixel ERROR!");
-            break;
-
-        case SGP4xResult::noxPixelError:
-            serial.println("SGP41.executeSelfTest: NOx pixel ERROR!");
-            break;
-
-        case SGP4xResult::success:
-            serial.println("SGP41 self test succeeded!");
-            break;
-
-        default:
-            serial.println("SGP41.executeSelfTest: UNKNOWN result!");
-            break;
-    }
+    serial.print("SGP41.executeSelfTest");
+    printSGP4xResult(result);
 }
 
 /**
@@ -92,35 +109,20 @@ void readSGP4Serial()
 {
     uint64_t serialNumber = 0;
     SGP4xResult result = SGP41.getSerialnumber(&serialNumber);
-    switch (result)
+    serial.print("SGP41.getSerialnumber");
+    printSGP4xResult(result);
+    if (result != SGP4xResult::success)
     {
-        case SGP4xResult::crc8Mismatch:
-            serial.println("SGP41.getSerialnumber: crc8 mismatch!");
-            break;
-
-        case SGP4xResult::sendError:
-            serial.println("SGP41.getSerialnumber: sending FAILED!");
-            break;
-
-        case SGP4xResult::readError:
-            serial.println("SGP41.getSerialnumber: reading FAILED!");
-            break;
-
-        case SGP4xResult::success:
-            serial.println("SGP41.getSerialnumber succeeded!");
-            serial.print("SerialNr (hex) :");
-            serial.print(" ", (uint8_t)((serialNumber >> 40) & 0xff), HEX, 2);
-            serial.print(" ", (uint8_t)((serialNumber >> 32) & 0xff), HEX, 2);
-            serial.print(" ", (uint8_t)((serialNumber >> 24) & 0xff), HEX, 2);
-            serial.print(" ", (uint8_t)((serialNumber >> 16) & 0xff), HEX, 2);
-            serial.print(" ", (uint8_t)((serialNumber >> 8) & 0xff), HEX, 2);
-            serial.print(" ", (uint8_t)(serialNumber & 0xff), HEX, 2);
-            break;
-
-        default:
-            serial.println("SGP41.getSerialnumber: UNKNOWN result!");
-            break;
+        return;
     }
+
+    serial.print("SerialNr (hex) :");
+    serial.print(" ", (uint8_t)((serialNumber >> 40) & 0xff), HEX, 2);
+    serial.print(" ", (uint8_t)((serialNumber >> 32) & 0xff), HEX, 2);
+    serial.print(" ", (uint8_t)((serialNumber >> 24) & 0xff), HEX, 2);
+    serial.print(" ", (uint8_t)((serialNumber >> 16) & 0xff), HEX, 2);
+    serial.print(" ", (uint8_t)((serialNumber >> 8) & 0xff), HEX, 2);
+    serial.print(" ", (uint8_t)(serialNumber & 0xff), HEX, 2);
 }
 
 /**
@@ -136,12 +138,6 @@ BcuBase* setup()
 
     serial.begin(115200);
     serial.println("Selfbus I2C SGP4x sensor example");
-
-    /*
-    if(I2C::Instance()->bI2CIsInitialized) {  // I2CScan
-        I2C::Instance()->I2CScan();           // check .I2CScan_State ans .I2CScan_uAdress
-    }
-*/
 
     // LED Initialize
     pinMode(PIN_INFO, OUTPUT);	 // Info LED (yellow)
@@ -170,28 +166,8 @@ BcuBase* setup()
     }
 
     SGP4xResult result = SGP41.init(READ_TIMER);
-    switch (result)
-    {
-        case SGP4xResult::crc8Mismatch:
-            serial.println("SGP41.init: crc8 mismatch!");
-            break;
-
-        case SGP4xResult::sendError:
-            serial.println("SGP41.init: sending FAILED!");
-            break;
-
-        case SGP4xResult::readError:
-            serial.println("SGP41.init: reading FAILED!");
-            break;
-
-        case SGP4xResult::success:
-            serial.println("SGP41 initialized successfully!");
-            break;
-
-        default:
-            serial.println("SGP41.init: UNKNOWN result!");
-            break;
-    }
+    serial.print("SGP41.init");
+    printSGP4xResult(result);
 
     doSelfTest();
     readSGP4Serial();
@@ -201,46 +177,48 @@ BcuBase* setup()
 
 void readSGP41Sensor()
 {
+    bool useCompensation = false;
+    float relativeHumidity = 0.f;
+    float temperature = 0.f;
 	if (!SHT4x.measureHighPrecision())
 	{
 	    serial.println("SHT40.measureHighPrecision() failed.");
-	    return;
 	}
-    float relativeHumidity = SHT4x.getHumidity() ;
-    float temperature = SHT4x.getTemperature() ;
-	serial.print("SHT4x temp: ", temperature);
-	serial.println(" hum: ", relativeHumidity);
+	else
+	{
+        relativeHumidity = SHT4x.getHumidity() ;
+        temperature = SHT4x.getTemperature() ;
+        serial.print("SHT4x temp: ", temperature);
+        serial.println(" hum: ", relativeHumidity);
+        useCompensation = true;
+	}
 
+	SGP4xResult result;
 	// use calculated hum / temp value
     // needed when hum / temp is taken from another source than SHT4x
-    // SGP41.measureRawSignal(relativeHumidity * 65535 / 175, temperature * 65535 / 100, srawVoc);
+	// result = SGP41.measureRawSignal(relativeHumidity * 65535 / 175, temperature * 65535 / 100, useCompensation);
 
-	// directly use tTicks and hTicks from SHT4x
-	switch (SGP41.measureRawSignal(SHT4x.getHumTicks(), SHT4x.getTempTicks()))
+	// directly use humidity ticks and temperature ticks from SHT4x
+	result = SGP41.measureRawSignal(SHT4x.getHumTicks(), SHT4x.getTempTicks(), useCompensation);
+	serial.print("SGP41.measureRawSignal");
+	printSGP4xResult(result, false);
+	serial.print(" (compensation ");
+	if (useCompensation)
 	{
-        case SGP4xResult::crc8Mismatch:
-            serial.println("SGP41.measureRawSignal: crc8 mismatch!");
-            break;
+	    serial.print("on");
+	}
+	else
+	{
+	    serial.print("off");
+	}
+	serial.println(")");
 
-        case SGP4xResult::sendError:
-            serial.println("SGP41.measureRawSignal: sending FAILED!");
-            break;
-
-        case SGP4xResult::readError:
-            serial.println("SGP41.measureRawSignal: reading FAILED!");
-            break;
-
-        case SGP4xResult::success:
-            serial.println("SGP41 measureRawSignal succeeded!");
-            serial.print("VOC Ticks: ", (int)SGP41.getRawVocValue());
-            serial.println(" Index: ", (int)SGP41.getVocIndexValue());
-            serial.print("NOx Ticks: ", (int)SGP41.getRawNoxValue());
-            serial.println(" Index: ", (int)SGP41.getNoxIndexValue());
-            break;
-
-        default:
-            serial.println("SGP41.measureRawSignal: UNKNOWN result!");
-            break;
+	if (result == SGP4xResult::success)
+	{
+        serial.print("VOC Ticks: ", (int)SGP41.getRawVocValue());
+        serial.println(" Index: ", (int)SGP41.getVocIndexValue());
+        serial.print("NOx Ticks: ", (int)SGP41.getRawNoxValue());
+        serial.println(" Index: ", (int)SGP41.getNoxIndexValue());
 	}
 }
 
