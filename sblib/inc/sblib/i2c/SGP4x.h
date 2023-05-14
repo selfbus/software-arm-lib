@@ -14,29 +14,34 @@
 #ifndef SGP4X_H
 #define SGP4X_H
 
-//#include <stdint.h>
+#include <stdint.h>
 //#include <sblib/i2c/sensirion_voc_algorithm.h>
 //#include <sblib/i2c/sensirion_arch_config.h>
 #include <sblib/i2c/sensirion_gas_index_algorithm.h>
 
 //VocAlgorithmParams voc_algorithm_params;
 
-
-enum class Sgp4xCommand : uint16_t ;
-//{
-//    getSerial 	= 0x3682,  // 0x3682
-//    measureRaw 	= 0x260F,
-//    heaterOff 	= 0x3615,
-//	selfTest	= 0x280E
-//};
-
 class SGP4xClass
 {
 private:
+  enum class Sgp4xCommand : uint16_t {
+      selfConditioning = 0x2612,      // sgp41_execute_conditioning
+      getSerial       = 0x3682 ,      // sgp4x_get_serial_number 0x3682
+      measureRaw      = 0x2619,       // sgp41_measure_raw_signals
+      heaterOff       = 0x3615,       // sgp4x_turn_heater_off
+      selfTest        = 0x280E        // sgp41_execute_self_test
+  };
   bool readSensor(Sgp4xCommand command, uint8_t* buffer, uint8_t bufferLength);
 
 public:
-  void init(void);
+  /**
+   * Initialize the SGP4x. Calls @ref executeConditioning() to condition the sensor.
+   *
+   * @return >0 if successful,
+   *         -1 if @ref executeConditioning() command sending failed,
+   *         0 if @ref executeConditioning() received no response.
+   */
+  int16_t init(void);
 
   /**
    * executeSelfTest() - This command triggers the built-in self-test checking
@@ -55,7 +60,14 @@ public:
 
   bool measureRawSignal(uint16_t, uint16_t, uint16_t&);
 
-  uint16_t executeConditioning();
+  /**
+   * Shall be executed after each re-start of the SGP4x
+   * sensor returns a VOC value - but this is discarded here.
+   * We just need the conditioning functionality.
+   *
+   * @return Number of bytes read, -1 if command sending failed
+   */
+  int16_t executeConditioning();
 
   void readVocValue();
 

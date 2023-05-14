@@ -31,89 +31,40 @@ typedef enum {
 //VocAlgorithmParams voc_algorithm_params;
 GasIndexAlgorithmParams voc_algorithm_params;
 
-
-enum class Sgp4xCommand : uint16_t {
-	selfConditioning = 0x2612,	// sgp41_execute_conditioning
-	getSerial 		= 0x3682 ,  	// sgp4x_get_serial_number 0x3682
-    measureRaw 		= 0x2619,		// sgp41_measure_raw_signals
-    heaterOff 		= 0x3615,		// sgp4x_turn_heater_off
-	selfTest		= 0x280E		// sgp41_execute_self_test
-};
-
-/******************************************************************************
- * Global Functions
- ******************************************************************************/
-
-/*****************************************************************************
-** Function name:  Init
-**
-** Descriptions:   Initialize the SGP41
-**
-** parameters:     none
-**
-*****************************************************************************/
-void SGP4xClass::init(void)
+int16_t SGP4xClass::init(void)
 {
 	i2c_lpcopen_init();
-
-	serial.setRxPin(PIO1_6); // @ swd/jtag connector
-	serial.setTxPin(PIO1_7); // @ swd/jtag connector
-
-	// serial.setRxPin(PIO2_7); // @ 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
-	// serial.setTxPin(PIO2_8); // @ 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
-
-	serial.begin(115200);
-
-	serial.println("Selfbus I2C example SGP4.cpp");
-
-	serial.print("Target MCU has ", iapFlashSize() / 1024);
-	serial.println("k flash");
-	serial.println();
-	serial.print("DMX4x SGP4x init!!");
-
 	GasIndexAlgorithm_init(&voc_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC);
+    return executeConditioning();
 }
 
-/*
- * Shall be executed after each re-start of the SGP4x
- * sensor returns a VOC value - but this is discarded here.
- * We just need the conditioning functionality.
- */
-uint16_t SGP4xClass::executeConditioning()
+int16_t SGP4xClass::executeConditioning()
 {
-	int srawVoc = 0 ;
-	int tstresult = 0;
-	uint8_t buffer[3] = {};
+    int16_t bytesRead;
+    uint8_t readBuffer[3] = {};
     uint8_t cmd[8] =
     {
-    	      ((uint16_t)Sgp4xCommand::selfConditioning >>  8) & 0xFF,
-			  ((uint16_t)Sgp4xCommand::selfConditioning >>  0) & 0xFF,
-			  0x80,
-			  0x00,
-			  0xA2,
-			  0x66,
-			  0x66,
-			  0x93
+        highByte((uint16_t)Sgp4xCommand::selfConditioning),
+        lowByte((uint16_t)Sgp4xCommand::selfConditioning),
+        0x80,
+        0x00,
+        0xA2,
+        0x66,
+        0x66,
+        0x93
     };
 
-
-    if(Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, 8) == 0){
-		serial.println("CONDI! Konnte nichts SENDEN!");
+    if (Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, sizeof(cmd)/sizeof(*cmd)) == 0) {
 		i2c_lpcopen_init();
-		return 0;
+		return -1;
     }
-
     delay(50);
 
-    tstresult = Chip_I2C_MasterRead(I2C0,eSGP4xAddress,buffer,6);
-	if( tstresult == 0){
-		serial.println("CONDI! Konnte nichts LESEN!");
+    bytesRead = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, sizeof(readBuffer)/sizeof(*readBuffer));
+	if (bytesRead == 0) {
 		i2c_lpcopen_init();
-		return 0;
 	}
-
-	serial.println("ERFOLGREICH KONDITIONIERT!");
-	return tstresult;
+	return bytesRead;
 }
 
 

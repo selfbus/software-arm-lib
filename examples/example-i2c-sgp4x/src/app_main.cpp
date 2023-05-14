@@ -88,10 +88,30 @@ BcuBase* setup()
     timer32_0.match(MAT1, READ_TIMER);                  // Match MAT1 when the timer reaches this value (in milliseconds)
     timer32_0.start();                                  // Start now the timer
 
+    if (!SHT4x.init())
+    {
+        serial.println("SHT4x.init: FAILED!");
+    }
+    else
+    {
+        serial.println("SHT4x initialized successfully!");
+    }
 
-    SGP40.init();
-    SHT4x.init();
-    SGP40.executeConditioning();
+    int16_t bytesRead = SGP40.init();;
+    switch (bytesRead)
+    {
+        case -1:
+            serial.println("SGP40.init: sending FAILED!");
+            break;
+
+        case 0:
+            serial.println("SGP40.init: reading FAILED!");
+            break;
+
+        default:
+            serial.println("SGP40 initialized successfully! bytesRead=", bytesRead);
+            break;
+    }
 
     return (&bcu);
 }
