@@ -156,6 +156,7 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_
     uint8_t readBuffer[6] = {};
     uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
     // default static command without temperature/humidity correction
+    // (same parameter byte values as with 50% relative humidity at 25 degree celsius)
     // 0x26, 0x19, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93
     uint8_t cmd[8] = {
             highByte((uint16_t)Sgp4xCommand::measureRaw),
@@ -166,11 +167,17 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_
     if (useCompensation)
     {
         // set provided relative humidity and temperature in command parameters
-        cmd[2] = lowByte(relativeHumidityTicks);
-        cmd[3] = highByte(relativeHumidityTicks);
+        // 2 bytes of data with most significant bit first!
+        // 1 byte crc8 checksum
+        // e.g. 50% relative humidity => bytes 0x80 0x00 0xA2
+        //      25 degree celsius     => bytes 0x66 0x66 0x93
+        cmd[2] = highByte(relativeHumidityTicks);
+        cmd[3] = lowByte(relativeHumidityTicks);
+        relativeHumidityTicks = reverseByteOrder(relativeHumidityTicks); //we need this, otherwise crc8 is not correct
         cmd[4] = crc8((uint8_t*)&relativeHumidityTicks, sizeof(relativeHumidityTicks));
-        cmd[5] = lowByte(temperatureTicks);
-        cmd[6] = highByte(temperatureTicks);
+        cmd[5] = highByte(temperatureTicks);
+        cmd[6] = lowByte(temperatureTicks);
+        temperatureTicks = reverseByteOrder(temperatureTicks); //we need this, otherwise crc8 is not correct
         cmd[7] = crc8((uint8_t*)&temperatureTicks, sizeof(temperatureTicks));
     }
 
