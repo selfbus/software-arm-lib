@@ -56,6 +56,10 @@ void printSGP4xResult(SGP4xResult result, bool newLine = true)
     serial.print(": ");
     switch (result)
     {
+        case SGP4xResult::invalidCommandBuffer:
+            serial.print("invalid command buffer!");
+            break;
+
         case SGP4xResult::crc8Mismatch:
             serial.print("crc8 mismatch!");
             break;
