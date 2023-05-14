@@ -44,8 +44,20 @@ private:
 
   GasIndexAlgorithmParams voc_algorithm_params;
   GasIndexAlgorithmParams nox_algorithm_params;
+
+  /**
+   * Do a CRC validation of result
+   *
+   * @param data  Pointer to the data to use when calculating the CRC8.
+   * @param len   The number of bytes in 'data'.
+   *
+   * @return CRC result value
+   */
+  uint8_t crc8(const uint8_t* data, int len);
+
 public:
   SGP4xClass();
+  ~SGP4xClass() = default;
 
   /**
    * Initialize the SGP4x. Calls @ref executeConditioning() to condition the sensor.
@@ -104,15 +116,6 @@ public:
    */
   SGP4xResult getSerialnumber(uint64_t * serialNumber);
 
-  /**
-   * Do a CRC validation of result
-   *
-   * @param data  Pointer to the data to use when calculating the CRC8.
-   * @param len   The number of bytes in 'data'.
-   *
-   * @return CRC result value
-   */
-  uint8_t crc8(const uint8_t* data, int len);
 };
 
 #endif
