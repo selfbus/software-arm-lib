@@ -18,6 +18,7 @@
 #include <sblib/i2c/sensirion_gas_index_algorithm.h>
 
 enum class SGP4xResult : int8_t {
+  invalidCommandBuffer = -5,
   vocPixelError = -4,
   noxPixelError = -3,
   crc8Mismatch = -2,
@@ -44,6 +45,19 @@ private:
 
   GasIndexAlgorithmParams voc_algorithm_params;
   GasIndexAlgorithmParams nox_algorithm_params;
+
+  /**
+   * Send a command to the sensor, wait for it to be processed and retrieve the sensor's response
+   *
+   * @param commandBuffer       Buffer containing the command to send and its optional parameters
+   * @param commandBufferSize   Size in bytes of the command buffer
+   * @param readBuffer          Buffer to store the response of the sensor
+   * @param readBufferSize      Size in bytes of the response buffer
+   * @param processDelayMs      Time in milliseconds to wait for command processing by the sensor
+   *
+   * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
+   */
+  SGP4xResult readSensor(uint8_t * commandBuffer, uint8_t commandBufferSize, uint8_t * readBuffer, uint8_t readBufferSize, uint16_t processDelayMs);
 
   /**
    * Do a CRC validation of result
