@@ -116,13 +116,14 @@ void readSGP4Serial()
         return;
     }
 
-    serial.print("SerialNr (hex) :");
-    serial.print(" ", (uint8_t)((serialNumber >> 40) & 0xff), HEX, 2);
-    serial.print(" ", (uint8_t)((serialNumber >> 32) & 0xff), HEX, 2);
-    serial.print(" ", (uint8_t)((serialNumber >> 24) & 0xff), HEX, 2);
-    serial.print(" ", (uint8_t)((serialNumber >> 16) & 0xff), HEX, 2);
-    serial.print(" ", (uint8_t)((serialNumber >> 8) & 0xff), HEX, 2);
-    serial.print(" ", (uint8_t)(serialNumber & 0xff), HEX, 2);
+    serial.print("SerialNr (hex) : ");
+    serial.print((uint8_t)((serialNumber >> 40) & 0xff), HEX, 2);
+    serial.print((uint8_t)((serialNumber >> 32) & 0xff), HEX, 2);
+    serial.print((uint8_t)((serialNumber >> 24) & 0xff), HEX, 2);
+    serial.print((uint8_t)((serialNumber >> 16) & 0xff), HEX, 2);
+    serial.print((uint8_t)((serialNumber >> 8) & 0xff), HEX, 2);
+    serial.print((uint8_t)(serialNumber & 0xff), HEX, 2);
+    serial.println();
 }
 
 /**
