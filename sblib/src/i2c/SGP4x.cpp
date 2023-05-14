@@ -62,6 +62,21 @@ SGP4xResult SGP4xClass::readSensor(uint8_t * commandBuffer, uint8_t commandBuffe
         return SGP4xResult::readError;
     }
 
+    // crc8 checksum is transmitted after every word (2 bytes)
+    // including the checksum we have to receive a multiple of 3 bytes
+    if ((bytesProcessed == 0) || ((bytesProcessed % 3) != 0))
+    {
+        return SGP4xResult::invalidByteCount;
+    }
+
+    for (uint8_t i = 0; i < bytesProcessed; i = i + 3)
+    {
+        if (crc8(&readBuffer[i], 2) != readBuffer[i+2])
+        {
+            return SGP4xResult::crc8Mismatch;
+        }
+    }
+
     return SGP4xResult::success;
 }
 
@@ -98,16 +113,7 @@ SGP4xResult SGP4xClass::executeConditioning()
 
     // max. duration for processing sgp41_execute_conditioning is 50ms
     SGP4xResult result = readSensor(cmd, commandBufferSize, readBuffer, readBufferSize, 50);
-    if (result != SGP4xResult::success)
-    {
-        return result;
-    }
-
-	if (crc8(readBuffer, 2) != readBuffer[readBufferSize - 1]) {
-	    i2c_lpcopen_init();
-	    return SGP4xResult::crc8Mismatch;
-	}
-	return SGP4xResult::success;
+    return result;
 }
 
 
@@ -126,11 +132,6 @@ SGP4xResult SGP4xClass::executeSelfTest() {
     if (result != SGP4xResult::success)
     {
         return result;
-    }
-
-    if (crc8(readBuffer, 2) != readBuffer[readBufferSize - 1]) {
-        i2c_lpcopen_init();
-        return SGP4xResult::crc8Mismatch;
     }
 
     // Datasheet:
@@ -180,19 +181,12 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_
         return result;
     }
 
-	uint16_t vocTics = makeWord(readBuffer[0], readBuffer[1]);
-	if (crc8((uint8_t*)&vocTics, sizeof(vocTics)) != readBuffer[2]) {
-	    return SGP4xResult::crc8Mismatch;
-	}
-	rawVocTics = vocTics;
+	rawVocTics = makeWord(readBuffer[1], readBuffer[0]);
 	GasIndexAlgorithm_process(&voc_algorithm_params, rawVocTics , &vocIndexValue);
 
-	uint16_t noxTics = makeWord(readBuffer[3], readBuffer[4]);
-	if (crc8((uint8_t*)&noxTics, sizeof(noxTics)) != readBuffer[5]) {
-	    return SGP4xResult::crc8Mismatch;
-	}
-	rawNoxTics = noxTics;
+	rawNoxTics = makeWord(readBuffer[4], readBuffer[3]);
 	GasIndexAlgorithm_process(&nox_algorithm_params, rawNoxTics, &noxIndexValue);
+
 	return SGP4xResult::success;
 }
 
@@ -217,8 +211,6 @@ SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
     {
         return result;
     }
-
-    ///\todo add crc8 check of readBuffer
 
     *serialNumber = static_cast<uint64_t>(readBuffer[0]) << 40;
     *serialNumber |= static_cast<uint64_t>(readBuffer[1]) << 32;

@@ -56,6 +56,10 @@ void printSGP4xResult(SGP4xResult result, bool newLine = true)
     serial.print(": ");
     switch (result)
     {
+        case SGP4xResult::invalidByteCount:
+            serial.print("invalid byte count!");
+            break;
+
         case SGP4xResult::invalidCommandBuffer:
             serial.print("invalid command buffer!");
             break;

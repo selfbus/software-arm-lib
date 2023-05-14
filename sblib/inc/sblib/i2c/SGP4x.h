@@ -18,6 +18,7 @@
 #include <sblib/i2c/sensirion_gas_index_algorithm.h>
 
 enum class SGP4xResult : int8_t {
+  invalidByteCount = -6,
   invalidCommandBuffer = -5,
   vocPixelError = -4,
   noxPixelError = -3,
