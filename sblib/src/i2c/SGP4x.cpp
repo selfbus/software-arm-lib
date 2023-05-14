@@ -188,10 +188,10 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_
         return result;
     }
 
-	rawVocTics = makeWord(readBuffer[1], readBuffer[0]);
+	rawVocTics = makeWord(readBuffer[0], readBuffer[1]);
 	GasIndexAlgorithm_process(&voc_algorithm_params, rawVocTics , &vocIndexValue);
 
-	rawNoxTics = makeWord(readBuffer[4], readBuffer[3]);
+	rawNoxTics = makeWord(readBuffer[3], readBuffer[4]);
 	GasIndexAlgorithm_process(&nox_algorithm_params, rawNoxTics, &noxIndexValue);
 
 	return SGP4xResult::success;
