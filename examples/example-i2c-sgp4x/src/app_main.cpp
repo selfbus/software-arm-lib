@@ -30,10 +30,9 @@
 #define READ_TIMER (2000) ///> Read values timer in Milliseconds
 bool bReadTimer = false;  ///> Condition to read values if timer reached
 
-SGP4xClass SGP40;
+SGP4xClass SGP41;
 SHT4xClass SHT4x;
 BCU1 bcu = BCU1();
-bool testDone = false;
 
 
 /**
@@ -44,6 +43,84 @@ extern "C" void TIMER32_0_IRQHandler()
     // Clear the timer interrupt flags, otherwise the interrupt handler is called again immediately after returning.
     timer32_0.resetFlags();
     bReadTimer= true;
+}
+
+/**
+ * Executes SGP4x's built-in self-test
+ * if result is @ref SGP4xResult::success everything is OK
+ * otherwise consult the datasheet
+ */
+void doSelfTest()
+{
+    SGP4xResult result = SGP41.executeSelfTest();
+    switch (result)
+    {
+        case SGP4xResult::crc8Mismatch:
+            serial.println("SGP41.executeSelfTest: crc8 mismatch!");
+            break;
+
+        case SGP4xResult::sendError:
+            serial.println("SGP41.executeSelfTest: sending FAILED!");
+            break;
+
+        case SGP4xResult::readError:
+            serial.println("SGP41.executeSelfTest: reading FAILED!");
+            break;
+
+        case SGP4xResult::vocPixelError:
+            serial.println("SGP41.executeSelfTest: VOC pixel ERROR!");
+            break;
+
+        case SGP4xResult::noxPixelError:
+            serial.println("SGP41.executeSelfTest: NOx pixel ERROR!");
+            break;
+
+        case SGP4xResult::success:
+            serial.println("SGP41 self test succeeded!");
+            break;
+
+        default:
+            serial.println("SGP41.executeSelfTest: UNKNOWN result!");
+            break;
+    }
+}
+
+/**
+ * Reads SGP4x's serial number
+ */
+void readSGP4Serial()
+{
+    uint64_t serialNumber = 0;
+    SGP4xResult result = SGP41.getSerialnumber(&serialNumber);
+    switch (result)
+    {
+        case SGP4xResult::crc8Mismatch:
+            serial.println("SGP41.getSerialnumber: crc8 mismatch!");
+            break;
+
+        case SGP4xResult::sendError:
+            serial.println("SGP41.getSerialnumber: sending FAILED!");
+            break;
+
+        case SGP4xResult::readError:
+            serial.println("SGP41.getSerialnumber: reading FAILED!");
+            break;
+
+        case SGP4xResult::success:
+            serial.println("SGP41.getSerialnumber succeeded!");
+            serial.print("SerialNr (hex) :");
+            serial.print(" ", (uint8_t)((serialNumber >> 40) & 0xff), HEX, 2);
+            serial.print(" ", (uint8_t)((serialNumber >> 32) & 0xff), HEX, 2);
+            serial.print(" ", (uint8_t)((serialNumber >> 24) & 0xff), HEX, 2);
+            serial.print(" ", (uint8_t)((serialNumber >> 16) & 0xff), HEX, 2);
+            serial.print(" ", (uint8_t)((serialNumber >> 8) & 0xff), HEX, 2);
+            serial.print(" ", (uint8_t)(serialNumber & 0xff), HEX, 2);
+            break;
+
+        default:
+            serial.println("SGP41.getSerialnumber: UNKNOWN result!");
+            break;
+    }
 }
 
 /**
@@ -60,12 +137,7 @@ BcuBase* setup()
     serial.begin(115200);
     serial.println("Selfbus I2C SGP4x sensor example");
 
-
-
-//    SGP40.getSerialnumber();
-
-
-/*
+    /*
     if(I2C::Instance()->bI2CIsInitialized) {  // I2CScan
         I2C::Instance()->I2CScan();           // check .I2CScan_State ans .I2CScan_uAdress
     }
@@ -97,78 +169,80 @@ BcuBase* setup()
         serial.println("SHT4x initialized successfully!");
     }
 
-    SGP4xResult result = SGP40.init();
+    SGP4xResult result = SGP41.init(READ_TIMER);
     switch (result)
     {
         case SGP4xResult::crc8Mismatch:
-            serial.println("SGP40.init: crc8 mismatch!");
+            serial.println("SGP41.init: crc8 mismatch!");
             break;
 
         case SGP4xResult::sendError:
-            serial.println("SGP40.init: sending FAILED!");
+            serial.println("SGP41.init: sending FAILED!");
             break;
 
         case SGP4xResult::readError:
-            serial.println("SGP40.init: reading FAILED!");
+            serial.println("SGP41.init: reading FAILED!");
             break;
 
         case SGP4xResult::success:
-            serial.println("SGP40 initialized successfully!");
+            serial.println("SGP41 initialized successfully!");
             break;
 
         default:
-            serial.println("SGP40.init: UNKNOWN result!");
+            serial.println("SGP41.init: UNKNOWN result!");
             break;
     }
+
+    doSelfTest();
+    readSGP4Serial();
 
     return (&bcu);
 }
 
-void readSGP4Serial()
+void readSGP41Sensor()
 {
-	uint16_t temp = SGP40.getSerialnumber();
-
-	serial.println();
-//	serial.println("SerialNr[0]: ", temp);
-}
-
-
-void getVocValue()
-{
-	uint16_t srawVoc = 0;
-
 	if (!SHT4x.measureHighPrecision())
 	{
 	    serial.println("SHT40.measureHighPrecision() failed.");
 	    return;
 	}
-    uint16_t relativeHumidity = SHT4x.getHumidity() ;
-	uint16_t temperature = SHT4x.getTemperature() ;
-	serial.println("SGP temp: ", temperature);
-	serial.println("SGP hum: ", relativeHumidity);
+    float relativeHumidity = SHT4x.getHumidity() ;
+    float temperature = SHT4x.getTemperature() ;
+	serial.print("SHT4x temp: ", temperature);
+	serial.println(" hum: ", relativeHumidity);
 
+	// use calculated hum / temp value
+    // needed when hum / temp is taken from another source than SHT4x
+    // SGP41.measureRawSignal(relativeHumidity * 65535 / 175, temperature * 65535 / 100, srawVoc);
 
-// use calculated hum / temp value
-// needed when hum / temp is taken from another source than SHT4x
-//	SGP40.measureRawSignal(relativeHumidity * 65535 / 175, temperature * 65535 / 100, srawVoc);
+	// directly use tTicks and hTicks from SHT4x
+	switch (SGP41.measureRawSignal(SHT4x.getHumTicks(), SHT4x.getTempTicks()))
+	{
+        case SGP4xResult::crc8Mismatch:
+            serial.println("SGP41.measureRawSignal: crc8 mismatch!");
+            break;
 
-// directly use tTicks and hTicks from SHT4x
-    SGP40.measureRawSignal(SHT4x.getHumTicks(), SHT4x.getTempTicks(), srawVoc);
-    serial.println("SGP VOC Ticks: ", srawVoc);
+        case SGP4xResult::sendError:
+            serial.println("SGP41.measureRawSignal: sending FAILED!");
+            break;
+
+        case SGP4xResult::readError:
+            serial.println("SGP41.measureRawSignal: reading FAILED!");
+            break;
+
+        case SGP4xResult::success:
+            serial.println("SGP41 measureRawSignal succeeded!");
+            serial.print("VOC Ticks: ", (int)SGP41.getRawVocValue());
+            serial.println(" Index: ", (int)SGP41.getVocIndexValue());
+            serial.print("NOx Ticks: ", (int)SGP41.getRawNoxValue());
+            serial.println(" Index: ", (int)SGP41.getNoxIndexValue());
+            break;
+
+        default:
+            serial.println("SGP41.measureRawSignal: UNKNOWN result!");
+            break;
+	}
 }
-
-
-/*
- * execute SGP4x's built-in self-test
- * if result is 0 everything is OK
- * otherwise consult the datasheet
- */
-void doSelfTest()
-{
-	serial.println("SELFTEST Ergebnis: ", SGP40.executeSelfTest());
-}
-
-
 
 /**
  * The main processing loop while no KNX-application is loaded.
@@ -177,18 +251,7 @@ void loop_noapp()
 {
     if (bReadTimer)
     {
-
-        getVocValue();
-
-
-        if(!testDone)
-        {
-        	serial.println("Einmal SELFTEST und SERIAL bitte!");
-        	doSelfTest();
-        	readSGP4Serial();
-        	testDone = true;
-        }
-
+        readSGP41Sensor();
         bReadTimer = false;
     }
     // Sleep until the next interrupt happens

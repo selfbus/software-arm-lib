@@ -15,13 +15,11 @@
 #define SGP4X_H
 
 #include <stdint.h>
-//#include <sblib/i2c/sensirion_voc_algorithm.h>
-//#include <sblib/i2c/sensirion_arch_config.h>
 #include <sblib/i2c/sensirion_gas_index_algorithm.h>
 
-//VocAlgorithmParams voc_algorithm_params;
-
 enum class SGP4xResult : int8_t {
+  vocPixelError = -4,
+  noxPixelError = -3,
   crc8Mismatch = -2,
   sendError = -1,
   readError = 0,
@@ -38,32 +36,41 @@ private:
       heaterOff       = 0x3615,       // sgp4x_turn_heater_off
       selfTest        = 0x280E        // sgp41_execute_self_test
   };
-  bool readSensor(Sgp4xCommand command, uint8_t* buffer, uint8_t bufferLength);
 
+  int32_t rawVocTics;
+  int32_t rawNoxTics;
+  int32_t vocIndexValue;
+  int32_t noxIndexValue;
+
+  GasIndexAlgorithmParams voc_algorithm_params;
+  GasIndexAlgorithmParams nox_algorithm_params;
 public:
+  SGP4xClass();
+
   /**
    * Initialize the SGP4x. Calls @ref executeConditioning() to condition the sensor.
+   * @param samplingIntervalMs Sampling interval for the gas index algorithm in milliseconds
    *
    * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
-  SGP4xResult init(void);
+  SGP4xResult init(uint32_t samplingIntervalMs);
 
   /**
-   * executeSelfTest() - This command triggers the built-in self-test checking
-   * for integrity of both hotplate and MOX material and returns the result of
-   * this test as 2 bytes
+   * Triggers the built-in self-test checking
+   * for integrity of both hotplate and MOX material and checks the 2 byte test result.
    *
-   * @param testResult 0xXX 0xYY: ignore most significant byte 0xXX. The four
-   * least significant bits of the least significant byte 0xYY provide
-   * information if the self-test has or has not passed for each individual
-   * pixel. All zero mean all tests passed successfully. Check the datasheet
-   * for more detailed information.
-   *
-   *
+   * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
-  uint8_t executeSelfTest();
+  SGP4xResult executeSelfTest();
 
-  bool measureRawSignal(uint16_t, uint16_t, uint16_t&);
+  /**
+   * Executes the @ref Sgp4xCommand::measureRaw command to measure VOC and NOX
+   *
+   * @param relativeHumidity
+   * @param temperature
+   * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
+   */
+  SGP4xResult measureRawSignal(uint16_t relativeHumidity, uint16_t temperature);
 
   /**
    * Shall be executed after each re-start of the SGP4x
@@ -74,9 +81,17 @@ public:
    */
   SGP4xResult executeConditioning();
 
-  void readVocValue();
+  int32_t getVocIndexValue();
+  int32_t getNoxIndexValue();
+  int32_t getRawVocValue();
+  int32_t getRawNoxValue();
 
-  uint64_t getSerialnumber(void);
+  /**
+   * Read the sensor's unique serial number
+   *
+   * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
+   */
+  SGP4xResult getSerialnumber(uint64_t * serialNumber);
 
   /**
    * Do a CRC validation of result

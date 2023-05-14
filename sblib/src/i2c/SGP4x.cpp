@@ -14,33 +14,40 @@
 #include <sblib/i2c/SGP4x.h>
 #include <sblib/i2c.h>
 #include <sblib/timer.h>
-#include <sblib/serial.h>
-#include <sblib/internal/iap.h>
-#include <sblib/utils.h>
-#include <sblib/math.h>
 #include <sblib/bits.h>
 
-// Specify the constants for water vapor and barometric pressure.
-#define WATER_VAPOR 17.62f
-#define BAROMETRIC_PRESSURE 243.5f
-
 typedef enum {
-	eSGP4xAddress = 0x59,  //SGP40 (VOC)
+    eSGP4xAddress = 0x59,  // SGP40 (VOC) and SGP41 (VOC & NOx)
 } HUM_SENSOR_T;
 
-//VocAlgorithmParams voc_algorithm_params;
-GasIndexAlgorithmParams voc_algorithm_params;
+SGP4xClass::SGP4xClass():
+        rawVocTics(0),
+        rawNoxTics(0),
+        vocIndexValue(-1),
+        noxIndexValue(-1)
+{
+    // init VOC index algorithm with default sampling interval
+    GasIndexAlgorithm_init_with_sampling_interval(&voc_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, GasIndexAlgorithm_DEFAULT_SAMPLING_INTERVAL);
+    // init NOx index algorithm with default sampling interval
+    GasIndexAlgorithm_init_with_sampling_interval(&nox_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_NOX, GasIndexAlgorithm_DEFAULT_SAMPLING_INTERVAL);
+}
 
-SGP4xResult SGP4xClass::init(void)
+SGP4xResult SGP4xClass::init(uint32_t samplingIntervalMs)
 {
 	i2c_lpcopen_init();
-	GasIndexAlgorithm_init(&voc_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC);
+	rawVocTics = 0;
+	rawNoxTics = 0;
+	vocIndexValue = -1;
+	noxIndexValue = -1;
+	// init VOC index algorithm with provided sampling interval
+	GasIndexAlgorithm_init_with_sampling_interval(&voc_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, (float)(samplingIntervalMs/1000.f));
+	// init NOx index algorithm with provided sampling interval
+	GasIndexAlgorithm_init_with_sampling_interval(&nox_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_NOX, (float)(samplingIntervalMs/1000.f));
     return executeConditioning();
 }
 
 SGP4xResult SGP4xClass::executeConditioning()
 {
-    int16_t bytesRead;
     uint8_t readBuffer[3] = {};
     uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
     uint8_t cmd[8] =
@@ -54,15 +61,17 @@ SGP4xResult SGP4xClass::executeConditioning()
         0x66,
         0x93
     };
+    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
 
-    if (Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, sizeof(cmd)/sizeof(*cmd)) == 0) {
+    int32_t bytesProcessed = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, commandBufferSize);
+    if (bytesProcessed != commandBufferSize) {
 		i2c_lpcopen_init();
 		return SGP4xResult::sendError;
     }
     delay(50);
 
-    bytesRead = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, readBufferSize);
-	if (bytesRead != readBufferSize) {
+    bytesProcessed = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, readBufferSize);
+	if (bytesProcessed != readBufferSize) {
 		i2c_lpcopen_init();
 		return SGP4xResult::readError;
 	}
@@ -75,168 +84,155 @@ SGP4xResult SGP4xClass::executeConditioning()
 }
 
 
-uint8_t SGP4xClass::executeSelfTest() {
-//    uint8_t cmd[2] = {0x28, 0x0E};
-    uint16_t cmd = reverseByteOrder((uint16_t)Sgp4xCommand::selfTest);
-    int tstresult = 0 ;
-    tstresult = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, (uint8_t*)&cmd, 3);
-        if( tstresult == 0){
-			serial.println("SELF! Konnte nichts versenden!");
-			i2c_lpcopen_init();
-			return 0;
-        }
+SGP4xResult SGP4xClass::executeSelfTest() {
+    uint8_t cmd[2] = {
+            highByte((uint16_t)Sgp4xCommand::selfTest),
+            lowByte((uint16_t)Sgp4xCommand::selfTest),
+    };
+    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
+
+    int32_t bytesProcessed = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, commandBufferSize);
+    if (bytesProcessed != commandBufferSize)
+    {
+        i2c_lpcopen_init();
+        return SGP4xResult::sendError;
+    }
 
     delay(350);
 
-    uint8_t buffer[3] = {};
-    uint8_t testResult = 0;
-    tstresult = Chip_I2C_MasterRead(I2C0,eSGP4xAddress,buffer,3);
-    	if( tstresult == 0){
-			serial.println("SELF! Konnte nichts LESEN!");
-			i2c_lpcopen_init();
-			return 123;
-    	}
+    uint8_t readBuffer[3] = {};
+    uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
 
-    	testResult = 0;
-//    	Datasheet: The most significant byte shall be ignored
-//    	testResult = static_cast<uint16_t>(buffer[0]) << 8;
-    	testResult |= static_cast<uint16_t>(buffer[1]);
+    bytesProcessed = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, readBufferSize);
+    if (bytesProcessed != readBufferSize) {
+        i2c_lpcopen_init();
+        return SGP4xResult::readError;
+    }
 
-    	return testResult;
+    if (crc8(readBuffer, 2) != readBuffer[readBufferSize - 1]) {
+        i2c_lpcopen_init();
+        return SGP4xResult::crc8Mismatch;
+    }
+
+    // Datasheet:
+    // The most significant byte shall be ignored and check only nibble of least significant byte
+    // ignore bits 2,3
+
+    // bit 0 set -> VOC pixel error
+    if ((readBuffer[1] & 0x1) != 0) {
+        return SGP4xResult::vocPixelError;
+    }
+
+    // bit 1 set -> NOx pixel error
+    if ((readBuffer[1] & 0x2) != 0) {
+        return SGP4xResult::noxPixelError;
+    }
+
+    return SGP4xResult::success;
 }
 
-/*
- * ToDo: NOx Rückgabe hinzufügen
- */
-bool SGP4xClass::measureRawSignal(uint16_t relativeHumidity, uint16_t temperature, uint16_t& srawVoc)
+SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidity, uint16_t temperature)
 {
-    uint8_t buffer[6] = {};
-    int result = 0 ;
-
-
-    //DMX default temp / hum
-    // nicht löschen!
-//    uint8_t cmd[8] = {0x26, 0x19, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
-
-
-    serial.println("CRC: " , (crc8((uint8_t*)&relativeHumidity, 2)));
-    uint8_t cmd[8] =
-    {
-		((uint16_t)Sgp4xCommand::measureRaw >>  8) & 0xFF,
-		((uint16_t)Sgp4xCommand::measureRaw >>  0) & 0xFF,
-
-		(relativeHumidity >> 0) & 0xFF,
-		(relativeHumidity >> 8) & 0xFF,
-		((uint8_t)crc8((uint8_t*)&relativeHumidity, 2) >> 0) & 0xFF,
-		(temperature >> 0) & 0xFF,
-		(temperature >> 8) & 0xFF,
-		((uint8_t)crc8((uint8_t*)&temperature, 2) >> 0) & 0xFF
-    };
-
-    // static command without temp / hum correction
+    uint8_t readBuffer[6] = {};
+    uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
+    // static command without temperature/humidity correction
     // 0x26, 0x19, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93
+    uint8_t cmd[8] = {
+            highByte((uint16_t)Sgp4xCommand::measureRaw),
+            lowByte((uint16_t)Sgp4xCommand::measureRaw),
+            0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
+    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
 
-    result = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, 8);
-    if( result == 0){
-		serial.println("ARGH! Konnte nichts versenden!");
+    cmd[2] = lowByte(relativeHumidity);
+    cmd[3] = highByte(relativeHumidity);
+    cmd[4] = crc8((uint8_t*)&relativeHumidity, sizeof(relativeHumidity));
+    cmd[5] = lowByte(temperature);
+    cmd[6] = highByte(temperature);
+    cmd[7] = crc8((uint8_t*)&temperature, sizeof(temperature));
+
+    int32_t bytesProcessed = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, commandBufferSize);
+    if (bytesProcessed != commandBufferSize) {
 		i2c_lpcopen_init();
-		return 0;
-    } else
-    	serial.println("result ==== ",result);
+		return SGP4xResult::sendError;
+    }
 
     delay(50);
 
-    result = Chip_I2C_MasterRead(I2C0,eSGP4xAddress,buffer,6);
-	if( result == 0){
-		serial.println("BRGH! Konnte nichts LESEN!");
+    bytesProcessed = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, readBufferSize);
+	if (bytesProcessed != readBufferSize) {
 		i2c_lpcopen_init();
-		return 0;
-	} else
-		serial.println("LESE result ==== ",result);
+		return SGP4xResult::readError;
+	}
 
-	uint16_t vocTics;
-	vocTics = static_cast<uint16_t>(buffer[0]) << 8;
-	vocTics |= static_cast<uint16_t>(buffer[1]);
-	uint16_t nox_tics;
-	nox_tics = static_cast<uint16_t>(buffer[3]) << 8;
-	nox_tics |= static_cast<uint16_t>(buffer[4]);
+	uint16_t vocTics = makeWord(readBuffer[0], readBuffer[1]);
+	if (crc8((uint8_t*)&vocTics, sizeof(vocTics)) != readBuffer[2]) {
+	    return SGP4xResult::crc8Mismatch;
+	}
+	rawVocTics = vocTics;
+	GasIndexAlgorithm_process(&voc_algorithm_params, rawVocTics , &vocIndexValue);
 
-	srawVoc = vocTics;
-
-	int32_t vocRawValue = static_cast<uint32_t>(vocTics); // read from sensor in step 2-3
-	int32_t vocIndexValue;
-	GasIndexAlgorithm_process(&voc_algorithm_params,vocRawValue , &vocIndexValue);
-	serial.println("VOC: ", (float)vocIndexValue);
-
-	return true;
+	uint16_t noxTics = makeWord(readBuffer[3], readBuffer[4]);
+	if (crc8((uint8_t*)&noxTics, sizeof(noxTics)) != readBuffer[5]) {
+	    return SGP4xResult::crc8Mismatch;
+	}
+	rawNoxTics = noxTics;
+	GasIndexAlgorithm_process(&nox_algorithm_params, rawNoxTics, &noxIndexValue);
+	return SGP4xResult::success;
 }
 
-
-
-/**********************************************************
- * 	getSerialnumber
- *	Read the sensor's unique serial number
- *
- * 	@return uint16_t
- **********************************************************/
-uint64_t SGP4xClass::getSerialnumber(void)
+SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
 {
-	uint8_t buffer[9] = {};
+	uint8_t readBuffer[9] = {};
+	uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
+    uint8_t cmd[2] = {
+            highByte((uint16_t)Sgp4xCommand::getSerial),
+            lowByte((uint16_t)Sgp4xCommand::getSerial),
+    };
+    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
 
-    if (!readSensor(Sgp4xCommand::getSerial, buffer, sizeof(buffer) / sizeof(*buffer)))
+    int32_t bytesProcessed = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, commandBufferSize);
+    if (bytesProcessed != commandBufferSize)
     {
-        return false;
+        i2c_lpcopen_init();
+        return SGP4xResult::sendError;
     }
 
-    uint64_t sgp4Serial;
-    sgp4Serial = static_cast<uint64_t>(buffer[0]) << 40;
-    sgp4Serial |= static_cast<uint64_t>(buffer[1]) << 32;
-    sgp4Serial |= static_cast<uint64_t>(buffer[3]) << 24;
-    sgp4Serial |= static_cast<uint64_t>(buffer[4]) << 16;
-    sgp4Serial |= static_cast<uint64_t>(buffer[6]) << 8;
-    sgp4Serial |= static_cast<uint64_t>(buffer[7]);
+    delay(1000); // max. duration for processing sgp4x_get_serial_number is 1 second
 
-    //sblib cannot print 64 bit value to serial console
-    // lossy cast to int -  hoping its big enough
-    // just for test serial output
-    serial.println("SerialNumber:", (int)sgp4Serial);
+    bytesProcessed = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, readBufferSize);
+    if (bytesProcessed != readBufferSize) {
+        i2c_lpcopen_init();
+        return SGP4xResult::readError;
+    }
 
-	uint16_t serialnr[3] = {};
-	serialnr[0] = buffer[0] << 8;
-	serialnr[0] |= buffer[1];
-
-	serialnr[1] = buffer[3] << 8;
-	serialnr[1] |= buffer[4];
-
-	serialnr[2] = buffer[6] << 8;
-	serialnr[2] |= buffer[7];
-
-	serial.print("HEX SerialNr:");
-	serial.print("0x", serialnr[0], HEX, 2);
-	serial.print(" 0x", serialnr[1], HEX, 2);
-	serial.println(" 0x", serialnr[2], HEX, 2);
-
-	return sgp4Serial;
+    *serialNumber = static_cast<uint64_t>(readBuffer[0]) << 40;
+    *serialNumber |= static_cast<uint64_t>(readBuffer[1]) << 32;
+    *serialNumber |= static_cast<uint64_t>(readBuffer[3]) << 24;
+    *serialNumber |= static_cast<uint64_t>(readBuffer[4]) << 16;
+    *serialNumber |= static_cast<uint64_t>(readBuffer[6]) << 8;
+    *serialNumber |= static_cast<uint64_t>(readBuffer[7]);
+	return SGP4xResult::success;
 }
 
-
-/******************************************************************************
- * Private Functions
- ******************************************************************************/
-
-
-bool SGP4xClass::readSensor(Sgp4xCommand command, uint8_t* buffer, uint8_t bufferLength)
+int32_t SGP4xClass::getVocIndexValue()
 {
-// switch byte order since the commands given are big endian and LPC1115 is little endian
-  uint16_t revCmd = reverseByteOrder((uint16_t)command);
-  serial.println("revCmd = 0x", revCmd, HEX, 2);
-  int resultLength = Chip_I2C_MasterWriteRead(I2C0, eSGP4xAddress, (uint8_t*)&revCmd, buffer, 2, 9);
-
-  serial.println("readSensor Ergebnislänge: ", resultLength);
-  return true;
+    return vocIndexValue;
 }
 
+int32_t SGP4xClass::getNoxIndexValue()
+{
+    return noxIndexValue;
+}
 
+int32_t SGP4xClass::getRawVocValue()
+{
+    return rawVocTics;
+}
+
+int32_t SGP4xClass::getRawNoxValue()
+{
+    return rawNoxTics;
+}
 
 uint8_t SGP4xClass::crc8(const uint8_t *data, int len) {
   /*
@@ -264,5 +260,3 @@ uint8_t SGP4xClass::crc8(const uint8_t *data, int len) {
   }
   return crc;
 }
-
-//SGP4xClass SGP4x;
