@@ -131,11 +131,11 @@ SGP4xResult SGP4xClass::executeSelfTest() {
     return SGP4xResult::success;
 }
 
-SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidity, uint16_t temperature)
+SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_t temperatureTicks, bool useCompensation)
 {
     uint8_t readBuffer[6] = {};
     uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
-    // static command without temperature/humidity correction
+    // default static command without temperature/humidity correction
     // 0x26, 0x19, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93
     uint8_t cmd[8] = {
             highByte((uint16_t)Sgp4xCommand::measureRaw),
@@ -143,13 +143,16 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidity, uint16_t tem
             0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
     uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
 
-    cmd[2] = lowByte(relativeHumidity);
-    cmd[3] = highByte(relativeHumidity);
-    cmd[4] = crc8((uint8_t*)&relativeHumidity, sizeof(relativeHumidity));
-    cmd[5] = lowByte(temperature);
-    cmd[6] = highByte(temperature);
-    cmd[7] = crc8((uint8_t*)&temperature, sizeof(temperature));
-
+    if (useCompensation)
+    {
+        // set provided relative humidity and temperature in command parameters
+        cmd[2] = lowByte(relativeHumidityTicks);
+        cmd[3] = highByte(relativeHumidityTicks);
+        cmd[4] = crc8((uint8_t*)&relativeHumidityTicks, sizeof(relativeHumidityTicks));
+        cmd[5] = lowByte(temperatureTicks);
+        cmd[6] = highByte(temperatureTicks);
+        cmd[7] = crc8((uint8_t*)&temperatureTicks, sizeof(temperatureTicks));
+    }
     int32_t bytesProcessed = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, commandBufferSize);
     if (bytesProcessed != commandBufferSize) {
 		i2c_lpcopen_init();
@@ -178,6 +181,11 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidity, uint16_t tem
 	rawNoxTics = noxTics;
 	GasIndexAlgorithm_process(&nox_algorithm_params, rawNoxTics, &noxIndexValue);
 	return SGP4xResult::success;
+}
+
+SGP4xResult SGP4xClass::measureRawSignal()
+{
+    return measureRawSignal(0, 0, false);
 }
 
 SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
