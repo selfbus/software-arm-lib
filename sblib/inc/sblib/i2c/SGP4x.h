@@ -21,6 +21,13 @@
 
 //VocAlgorithmParams voc_algorithm_params;
 
+enum class SGP4xResult : int8_t {
+  crc8Mismatch = -2,
+  sendError = -1,
+  readError = 0,
+  success = 1,
+};
+
 class SGP4xClass
 {
 private:
@@ -37,11 +44,9 @@ public:
   /**
    * Initialize the SGP4x. Calls @ref executeConditioning() to condition the sensor.
    *
-   * @return >0 if successful,
-   *         -1 if @ref executeConditioning() command sending failed,
-   *         0 if @ref executeConditioning() received no response.
+   * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
-  int16_t init(void);
+  SGP4xResult init(void);
 
   /**
    * executeSelfTest() - This command triggers the built-in self-test checking
@@ -65,9 +70,9 @@ public:
    * sensor returns a VOC value - but this is discarded here.
    * We just need the conditioning functionality.
    *
-   * @return Number of bytes read, -1 if command sending failed
+   * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
-  int16_t executeConditioning();
+  SGP4xResult executeConditioning();
 
   void readVocValue();
 

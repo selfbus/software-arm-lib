@@ -97,19 +97,27 @@ BcuBase* setup()
         serial.println("SHT4x initialized successfully!");
     }
 
-    int16_t bytesRead = SGP40.init();;
-    switch (bytesRead)
+    SGP4xResult result = SGP40.init();
+    switch (result)
     {
-        case -1:
+        case SGP4xResult::crc8Mismatch:
+            serial.println("SGP40.init: crc8 mismatch!");
+            break;
+
+        case SGP4xResult::sendError:
             serial.println("SGP40.init: sending FAILED!");
             break;
 
-        case 0:
+        case SGP4xResult::readError:
             serial.println("SGP40.init: reading FAILED!");
             break;
 
+        case SGP4xResult::success:
+            serial.println("SGP40 initialized successfully!");
+            break;
+
         default:
-            serial.println("SGP40 initialized successfully! bytesRead=", bytesRead);
+            serial.println("SGP40.init: UNKNOWN result!");
             break;
     }
 

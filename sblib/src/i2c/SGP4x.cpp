@@ -31,17 +31,18 @@ typedef enum {
 //VocAlgorithmParams voc_algorithm_params;
 GasIndexAlgorithmParams voc_algorithm_params;
 
-int16_t SGP4xClass::init(void)
+SGP4xResult SGP4xClass::init(void)
 {
 	i2c_lpcopen_init();
 	GasIndexAlgorithm_init(&voc_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC);
     return executeConditioning();
 }
 
-int16_t SGP4xClass::executeConditioning()
+SGP4xResult SGP4xClass::executeConditioning()
 {
     int16_t bytesRead;
     uint8_t readBuffer[3] = {};
+    uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
     uint8_t cmd[8] =
     {
         highByte((uint16_t)Sgp4xCommand::selfConditioning),
@@ -56,15 +57,21 @@ int16_t SGP4xClass::executeConditioning()
 
     if (Chip_I2C_MasterSend(I2C0, eSGP4xAddress, cmd, sizeof(cmd)/sizeof(*cmd)) == 0) {
 		i2c_lpcopen_init();
-		return -1;
+		return SGP4xResult::sendError;
     }
     delay(50);
 
-    bytesRead = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, sizeof(readBuffer)/sizeof(*readBuffer));
-	if (bytesRead == 0) {
+    bytesRead = Chip_I2C_MasterRead(I2C0, eSGP4xAddress, readBuffer, readBufferSize);
+	if (bytesRead != readBufferSize) {
 		i2c_lpcopen_init();
+		return SGP4xResult::readError;
 	}
-	return bytesRead;
+
+	if (crc8(readBuffer, 2) != readBuffer[readBufferSize - 1]) {
+	    i2c_lpcopen_init();
+	    return SGP4xResult::crc8Mismatch;
+	}
+	return SGP4xResult::success;
 }
 
 
