@@ -229,6 +229,19 @@ SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
 	return SGP4xResult::success;
 }
 
+SGP4xResult SGP4xClass::turnHeaterOffAndReturnToIdle()
+{
+    uint8_t cmd[2] = {
+            highByte((uint16_t)Sgp4xCommand::heaterOff),
+            lowByte((uint16_t)Sgp4xCommand::heaterOff),
+    };
+    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
+
+    // max. duration for processing sgp4x_turn_heater_off is 1 second
+    SGP4xResult result = readSensor(cmd, commandBufferSize, nullptr, 0, 1000);
+    return result;
+}
+
 int32_t SGP4xClass::getVocIndexValue()
 {
     return vocIndexValue;

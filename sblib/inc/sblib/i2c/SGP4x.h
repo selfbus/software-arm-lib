@@ -118,6 +118,17 @@ public:
    */
   SGP4xResult executeConditioning();
 
+  /**
+   * Executes the @ref Sgp4xCommand::heaterOff command which
+   * - turns the hotplate off
+   * - stops the measurement
+   * - sets the sensor to idle mode
+   *
+   * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
+   */
+  SGP4xResult turnHeaterOffAndReturnToIdle();
+
+
   int32_t getVocIndexValue();
   int32_t getNoxIndexValue();
   int32_t getRawVocValue();
