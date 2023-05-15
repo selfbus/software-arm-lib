@@ -32,13 +32,16 @@ SGP4xClass::SGP4xClass():
     GasIndexAlgorithm_init_with_sampling_interval(&nox_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_NOX, GasIndexAlgorithm_DEFAULT_SAMPLING_INTERVAL);
 }
 
-SGP4xResult SGP4xClass::readSensor(uint8_t * commandBuffer, uint8_t commandBufferSize,
+SGP4xResult SGP4xClass::readSensor(Sgp4xCommand command, uint8_t * commandBuffer, uint8_t commandBufferSize,
         uint8_t * readBuffer, uint8_t readBufferSize, uint16_t processDelayMs)
 {
-    if ((commandBuffer == nullptr) || (commandBufferSize == 0))
+    if ((commandBuffer == nullptr) || (commandBufferSize < 2))
     {
         return SGP4xResult::invalidCommandBuffer;
     }
+
+    commandBuffer[0] = highByte((uint16_t)command);
+    commandBuffer[1] = lowByte((uint16_t)command);
 
     int32_t bytesProcessed = Chip_I2C_MasterSend(I2C0, eSGP4xAddress, commandBuffer, commandBufferSize);
     if (bytesProcessed != commandBufferSize) {
@@ -96,39 +99,27 @@ SGP4xResult SGP4xClass::init(uint32_t samplingIntervalMs)
 
 SGP4xResult SGP4xClass::executeConditioning()
 {
-    uint8_t readBuffer[3] = {};
+    uint8_t readBuffer[3];
     uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
-    uint8_t cmd[8] =
-    {
-        highByte((uint16_t)Sgp4xCommand::selfConditioning),
-        lowByte((uint16_t)Sgp4xCommand::selfConditioning),
-        0x80,
-        0x00,
-        0xA2,
-        0x66,
-        0x66,
-        0x93
-    };
-    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
+
+    uint8_t cmdBuffer[8] = {0x00, 0x00, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
+    uint8_t commandBufferSize = sizeof(cmdBuffer)/sizeof(*cmdBuffer);
 
     // max. duration for processing sgp41_execute_conditioning is 50ms
-    SGP4xResult result = readSensor(cmd, commandBufferSize, readBuffer, readBufferSize, 50);
+    SGP4xResult result = readSensor(Sgp4xCommand::selfConditioning, cmdBuffer, commandBufferSize, readBuffer, readBufferSize, 50);
     return result;
 }
 
 
 SGP4xResult SGP4xClass::executeSelfTest() {
-    uint8_t cmd[2] = {
-            highByte((uint16_t)Sgp4xCommand::selfTest),
-            lowByte((uint16_t)Sgp4xCommand::selfTest),
-    };
-    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
+    uint8_t cmdBuffer[2];
+    uint8_t commandBufferSize = sizeof(cmdBuffer)/sizeof(*cmdBuffer);
 
-    uint8_t readBuffer[3] = {};
+    uint8_t readBuffer[3];
     uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
 
     // max. duration for processing sgp41_execute_self_test is 320ms (we add a margin of 30ms to be on the safe side)
-    SGP4xResult result = readSensor(cmd, commandBufferSize, readBuffer, readBufferSize, 350);
+    SGP4xResult result = readSensor(Sgp4xCommand::selfTest, cmdBuffer, commandBufferSize, readBuffer, readBufferSize, 350);
     if (result != SGP4xResult::success)
     {
         return result;
@@ -153,16 +144,13 @@ SGP4xResult SGP4xClass::executeSelfTest() {
 
 SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_t temperatureTicks, bool useCompensation)
 {
-    uint8_t readBuffer[6] = {};
+    uint8_t readBuffer[6];
     uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
     // default static command without temperature/humidity correction
     // (same parameter byte values as with 50% relative humidity at 25 degree celsius)
-    // 0x26, 0x19, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93
-    uint8_t cmd[8] = {
-            highByte((uint16_t)Sgp4xCommand::measureRaw),
-            lowByte((uint16_t)Sgp4xCommand::measureRaw),
-            0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
-    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
+    //                      0x26, 0x19, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93
+    uint8_t cmdBuffer[8] = {0x00, 0x00, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
+    uint8_t commandBufferSize = sizeof(cmdBuffer)/sizeof(*cmdBuffer);
 
     if (useCompensation)
     {
@@ -171,18 +159,18 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_
         // 1 byte crc8 checksum
         // e.g. 50% relative humidity => bytes 0x80 0x00 0xA2
         //      25 degree celsius     => bytes 0x66 0x66 0x93
-        cmd[2] = highByte(relativeHumidityTicks);
-        cmd[3] = lowByte(relativeHumidityTicks);
+        cmdBuffer[2] = highByte(relativeHumidityTicks);
+        cmdBuffer[3] = lowByte(relativeHumidityTicks);
         relativeHumidityTicks = reverseByteOrder(relativeHumidityTicks); //we need this, otherwise crc8 is not correct
-        cmd[4] = crc8((uint8_t*)&relativeHumidityTicks, sizeof(relativeHumidityTicks));
-        cmd[5] = highByte(temperatureTicks);
-        cmd[6] = lowByte(temperatureTicks);
+        cmdBuffer[4] = crc8((uint8_t*)&relativeHumidityTicks, sizeof(relativeHumidityTicks));
+        cmdBuffer[5] = highByte(temperatureTicks);
+        cmdBuffer[6] = lowByte(temperatureTicks);
         temperatureTicks = reverseByteOrder(temperatureTicks); //we need this, otherwise crc8 is not correct
-        cmd[7] = crc8((uint8_t*)&temperatureTicks, sizeof(temperatureTicks));
+        cmdBuffer[7] = crc8((uint8_t*)&temperatureTicks, sizeof(temperatureTicks));
     }
 
     // max. duration for processing sgp41_measure_raw_signals is 50ms
-    SGP4xResult result = readSensor(cmd, commandBufferSize, readBuffer, readBufferSize, 50);
+    SGP4xResult result = readSensor(Sgp4xCommand::measureRaw, cmdBuffer, commandBufferSize, readBuffer, readBufferSize, 50);
     if (result != SGP4xResult::success)
     {
         return result;
@@ -204,16 +192,13 @@ SGP4xResult SGP4xClass::measureRawSignal()
 
 SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
 {
-	uint8_t readBuffer[9] = {};
+	uint8_t readBuffer[9];
 	uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
-    uint8_t cmd[2] = {
-            highByte((uint16_t)Sgp4xCommand::getSerial),
-            lowByte((uint16_t)Sgp4xCommand::getSerial),
-    };
-    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
+    uint8_t cmdBuffer[2];
+    uint8_t commandBufferSize = sizeof(cmdBuffer)/sizeof(*cmdBuffer);
 
     // max. duration for processing sgp4x_get_serial_number is 1 second
-    SGP4xResult result = readSensor(cmd, commandBufferSize, readBuffer, readBufferSize, 1000);
+    SGP4xResult result = readSensor(Sgp4xCommand::getSerial, cmdBuffer, commandBufferSize, readBuffer, readBufferSize, 1000);
     if (result != SGP4xResult::success)
     {
         return result;
@@ -230,14 +215,11 @@ SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
 
 SGP4xResult SGP4xClass::turnHeaterOffAndReturnToIdle()
 {
-    uint8_t cmd[2] = {
-            highByte((uint16_t)Sgp4xCommand::heaterOff),
-            lowByte((uint16_t)Sgp4xCommand::heaterOff),
-    };
-    uint8_t commandBufferSize = sizeof(cmd)/sizeof(*cmd);
+    uint8_t cmdBuffer[2];
+    uint8_t commandBufferSize = sizeof(cmdBuffer)/sizeof(*cmdBuffer);
 
     // max. duration for processing sgp4x_turn_heater_off is 1 second
-    SGP4xResult result = readSensor(cmd, commandBufferSize, nullptr, 0, 1000);
+    SGP4xResult result = readSensor(Sgp4xCommand::heaterOff, cmdBuffer, commandBufferSize, nullptr, 0, 1000);
     return result;
 }
 

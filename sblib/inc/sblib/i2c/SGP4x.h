@@ -50,6 +50,7 @@ private:
   /**
    * Send a command to the sensor, wait for it to be processed and retrieve the sensor's response
    *
+   * @param command             The @ref Sgp4xCommand to send
    * @param commandBuffer       Buffer containing the command to send and its optional parameters
    * @param commandBufferSize   Size in bytes of the command buffer
    * @param readBuffer          Buffer to store the response of the sensor
@@ -58,7 +59,7 @@ private:
    *
    * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
-  SGP4xResult readSensor(uint8_t * commandBuffer, uint8_t commandBufferSize, uint8_t * readBuffer, uint8_t readBufferSize, uint16_t processDelayMs);
+  SGP4xResult readSensor(Sgp4xCommand command, uint8_t * commandBuffer, uint8_t commandBufferSize, uint8_t * readBuffer, uint8_t readBufferSize, uint16_t processDelayMs);
 
   /**
    * Do a CRC validation of result
