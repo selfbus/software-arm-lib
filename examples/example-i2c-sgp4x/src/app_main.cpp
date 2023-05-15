@@ -201,13 +201,8 @@ void readSGP41Sensor()
         useCompensation = true;
 	}
 
-	SGP4xResult result;
-	// use calculated hum / temp value
-    // needed when hum / temp is taken from another source than SHT4x
-	// result = SGP41.measureRawSignal(relativeHumidity * 65535 / 100, (temperature + 45) * 65535 / 175, useCompensation);
+	SGP4xResult result = SGP41.measureRawSignal(relativeHumidity, temperature, useCompensation);
 
-	// directly use humidity ticks and temperature ticks from SHT4x
-	result = SGP41.measureRawSignal(SHT4x.getHumTicks(), SHT4x.getTempTicks(), useCompensation);
 	serial.print("SGP41.measureRawSignal");
 	printSGP4xResult(result, false);
 	serial.print(" (compensation ");

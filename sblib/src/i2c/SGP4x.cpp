@@ -142,7 +142,7 @@ SGP4xResult SGP4xClass::executeSelfTest() {
     return SGP4xResult::success;
 }
 
-SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_t temperatureTicks, bool useCompensation)
+SGP4xResult SGP4xClass::measureRawSignal(float relativeHumidity, float temperature, bool useCompensation)
 {
     uint8_t readBuffer[6];
     uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
@@ -152,8 +152,13 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_
     uint8_t cmdBuffer[8] = {0x00, 0x00, 0x80, 0x00, 0xA2, 0x66, 0x66, 0x93};
     uint8_t commandBufferSize = sizeof(cmdBuffer)/sizeof(*cmdBuffer);
 
+    uint16_t relativeHumidityTicks;
+    uint16_t temperatureTicks;
+
     if (useCompensation)
     {
+        relativeHumidityTicks = relativeHumidity * 65535/100;
+        temperatureTicks = (temperature + 45.f) * 65535/175;
         // set provided relative humidity and temperature in command parameters
         // 2 bytes of data with most significant bit first!
         // 1 byte crc8 checksum
@@ -187,7 +192,7 @@ SGP4xResult SGP4xClass::measureRawSignal(uint16_t relativeHumidityTicks, uint16_
 
 SGP4xResult SGP4xClass::measureRawSignal()
 {
-    return measureRawSignal(0, 0, false);
+    return measureRawSignal(50.f, 25.f, false);
 }
 
 SGP4xResult SGP4xClass::getSerialnumber(uint8_t * serialNumber, uint8_t length)

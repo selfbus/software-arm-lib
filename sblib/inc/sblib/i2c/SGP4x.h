@@ -95,13 +95,13 @@ public:
    * Executes the @ref Sgp4xCommand::measureRaw command to measure VOC and NOX
    * with optional temperature and relative humidity compensation
    *
-   * @param relativeHumidityTicks   Relative humidity ticks as provided by e.g. an SHT4x.
-   * @param temperatureTicks        Temperature ticks as provided by e.g. an SHT4x.
-   * @param useCompensation         Set true to use SGP4x internal temperature/humidity compensation
+   * @param relativeHumidity    Relative humidity in percent
+   * @param temperature         Temperature in degree celsius
+   * @param useCompensation     Set true to use SGP4x internal temperature/humidity compensation
    *
    * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
-  SGP4xResult measureRawSignal(uint16_t relativeHumidityTicks, uint16_t temperatureTicks, bool useCompensation);
+  SGP4xResult measureRawSignal(float relativeHumidity, float temperature, bool useCompensation);
 
   /**
    * Executes the @ref Sgp4xCommand::measureRaw command to measure VOC and NOX
