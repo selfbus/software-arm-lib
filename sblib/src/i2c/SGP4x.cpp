@@ -190,7 +190,7 @@ SGP4xResult SGP4xClass::measureRawSignal()
     return measureRawSignal(0, 0, false);
 }
 
-SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
+SGP4xResult SGP4xClass::getSerialnumber(uint8_t * serialNumber, uint8_t length)
 {
 	uint8_t readBuffer[9];
 	uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
@@ -204,12 +204,20 @@ SGP4xResult SGP4xClass::getSerialnumber(uint64_t * serialNumber)
         return result;
     }
 
-    *serialNumber = static_cast<uint64_t>(readBuffer[0]) << 40;
-    *serialNumber |= static_cast<uint64_t>(readBuffer[1]) << 32;
-    *serialNumber |= static_cast<uint64_t>(readBuffer[3]) << 24;
-    *serialNumber |= static_cast<uint64_t>(readBuffer[4]) << 16;
-    *serialNumber |= static_cast<uint64_t>(readBuffer[6]) << 8;
-    *serialNumber |= static_cast<uint64_t>(readBuffer[7]);
+    uint8_t idxBuffer = 0;
+    uint8_t idxSerial = 0;
+    while ((idxBuffer < readBufferSize) && (idxSerial < length))
+    {
+        *serialNumber = readBuffer[idxBuffer];
+        serialNumber++;
+        idxSerial++;
+        idxBuffer++;
+        if ((idxBuffer != 0) && ((idxBuffer % 3) == 2))
+        {
+            idxBuffer++; // skip crc8 byte in readBuffer
+        }
+    }
+
 	return SGP4xResult::success;
 }
 

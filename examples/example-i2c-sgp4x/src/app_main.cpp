@@ -115,8 +115,9 @@ void doSelfTest()
  */
 void readSGP4Serial()
 {
-    uint64_t serialNumber = 0;
-    SGP4xResult result = SGP41.getSerialnumber(&serialNumber);
+    uint8_t serialNumber[SGP4xClass::maxSerialNumberLength];
+    const uint8_t length = sizeof(serialNumber)/sizeof(*serialNumber);
+    SGP4xResult result = SGP41.getSerialnumber(&serialNumber[0], length);
     serial.print("SGP41.getSerialnumber");
     printSGP4xResult(result);
     if (result != SGP4xResult::success)
@@ -125,12 +126,10 @@ void readSGP4Serial()
     }
 
     serial.print("SerialNr (hex) : ");
-    serial.print((uint8_t)((serialNumber >> 40) & 0xff), HEX, 2);
-    serial.print((uint8_t)((serialNumber >> 32) & 0xff), HEX, 2);
-    serial.print((uint8_t)((serialNumber >> 24) & 0xff), HEX, 2);
-    serial.print((uint8_t)((serialNumber >> 16) & 0xff), HEX, 2);
-    serial.print((uint8_t)((serialNumber >> 8) & 0xff), HEX, 2);
-    serial.print((uint8_t)(serialNumber & 0xff), HEX, 2);
+    for (uint8_t i = 0; i < length; i++)
+    {
+        serial.print(serialNumber[i], HEX, 2);
+    }
     serial.println();
 }
 

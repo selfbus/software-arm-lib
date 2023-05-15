@@ -139,10 +139,13 @@ public:
   /**
    * Read the sensor's unique serial number
    *
+   * @param serialNumber    Buffer to store the serial number of the sensor
+   * @param length          Length in bytes of the provided buffer
    * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
-  SGP4xResult getSerialnumber(uint64_t * serialNumber);
+  SGP4xResult getSerialnumber(uint8_t * serialNumber, uint8_t length);
 
+  static constexpr uint8_t maxSerialNumberLength = 6;
 };
 
 #endif
