@@ -10,6 +10,7 @@
 #ifndef sblib_utils_h
 #define sblib_utils_h
 
+#include <cstddef>
 #include <sblib/types.h>
 #include <sblib/libconfig.h>
 

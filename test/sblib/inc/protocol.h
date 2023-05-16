@@ -17,8 +17,8 @@
 #define private   public
 #define protected public
 #   include <sblib/eib/bus.h>
-#   include <sblib/eib/BCU1.h>
-#   include <sblib/eib/BCU2.h>
+#   include <sblib/eib/bcu1.h>
+#   include <sblib/eib/bcu2.h>
 #   include <sblib/eib/mask0701.h>
 #   include <sblib/eib/mask0705.h>
 #   include <sblib/eib/systemb.h>
