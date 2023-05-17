@@ -118,14 +118,14 @@ void readSGP4Serial()
     uint8_t serialNumber[SGP4xClass::maxSerialNumberLength];
     const uint8_t length = sizeof(serialNumber)/sizeof(*serialNumber);
     SGP4xResult result = SGP41.getSerialnumber(&serialNumber[0], length);
-    serial.print("SGP41.getSerialnumber");
-    printSGP4xResult(result);
     if (result != SGP4xResult::success)
     {
+        serial.print("SGP41.getSerialnumber");
+        printSGP4xResult(result);
         return;
     }
 
-    serial.print("SerialNr (hex) : ");
+    serial.print("SGP41 SerialNr (hex) : ");
     for (uint8_t i = 0; i < length; i++)
     {
         serial.print(" ", serialNumber[i], HEX, 2);
@@ -174,18 +174,56 @@ BcuBase* setup()
     }
 
     SGP4xResult result = SGP41.init(READ_TIMER);
-    serial.print("SGP41.init");
-    printSGP4xResult(result);
+    if (result != SGP4xResult::success)
+    {
+        serial.print("SGP41.init");
+        printSGP4xResult(result);
+    }
 
     result = SGP41.readFeatureSet();
-    serial.print("SGP41.readFeatureSet");
-    printSGP4xResult(result);
-    serial.println("featureSet: 0x", SGP41.getFeatureSet(), HEX, 4);
+    if (result != SGP4xResult::success)
+    {
+        serial.print("SGP41.readFeatureSet");
+        printSGP4xResult(result);
+    }
+    serial.println("SGP41.getFeatureSet: 0x", SGP41.getFeatureSet(), HEX, 4);
 
     doSelfTest();
     readSGP4Serial();
 
     return (&bcu);
+}
+
+void printCompensationValues(float relHumity, float temperature, bool compensate)
+{
+    if (compensate)
+    {
+        serial.print("rel. humidity ", relHumity, 2);
+        serial.print(", temperature ", temperature, 2);
+    }
+    else
+    {
+        serial.print("compensation off");
+    }
+    serial.print(":");
+}
+
+void measureAndPrintResults(float relHumity, float temperature, bool compensate)
+{
+    SGP4xResult result = SGP41.measureRawSignal(relHumity, temperature, compensate);
+    if (result != SGP4xResult::success)
+    {
+        serial.print("SGP41.measureRawSignal");
+        printSGP4xResult(result, true);
+        return;
+    }
+
+    printCompensationValues(relHumity, temperature, compensate);
+    serial.println();
+    serial.print("  Ticks: VOC: ", (int)SGP41.getRawVocValue());
+    serial.println(" NOx: ", (int)SGP41.getRawNoxValue());
+    serial.print("  Index: VOC: ", (int)SGP41.getVocIndexValue());
+    serial.println(" NOx: ", (int)SGP41.getNoxIndexValue());
 }
 
 void readSGP41Sensor()
@@ -201,33 +239,19 @@ void readSGP41Sensor()
 	{
         relativeHumidity = SHT4x.getHumidity() ;
         temperature = SHT4x.getTemperature() ;
-        serial.print("SHT4x temp: ", temperature);
-        serial.println(" hum: ", relativeHumidity);
+        // serial.print("SHT4x rel. humidity: ", relativeHumidity);
+        // serial.println(" temperature: ", temperature);
         useCompensation = true;
 	}
 
-	SGP4xResult result = SGP41.measureRawSignal(relativeHumidity, temperature, useCompensation);
+	measureAndPrintResults(relativeHumidity, temperature, useCompensation);
 
-	serial.print("SGP41.measureRawSignal");
-	printSGP4xResult(result, false);
-	serial.print(" (compensation ");
-	if (useCompensation)
-	{
-	    serial.print("on");
-	}
-	else
-	{
-	    serial.print("off");
-	}
-	serial.println(")");
-
-	if (result == SGP4xResult::success)
-	{
-        serial.print("VOC Ticks: ", (int)SGP41.getRawVocValue());
-        serial.println(" Index: ", (int)SGP41.getVocIndexValue());
-        serial.print("NOx Ticks: ", (int)SGP41.getRawNoxValue());
-        serial.println(" Index: ", (int)SGP41.getNoxIndexValue());
-	}
+	// uncomment to test default and min/max values for compensation
+	// measureAndPrintResults(50.f, 25.f, false);
+	// measureAndPrintResults(50.f, 25.f, true);   // should give the same result as with compensation disabled
+	// measureAndPrintResults(0.f, -45.f, true);   // test supported minimum values
+	// measureAndPrintResults(100.f, 130.f, true); // test supported maximum values
+	serial.println();
 }
 
 /**
