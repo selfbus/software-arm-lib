@@ -128,7 +128,7 @@ void readSGP4Serial()
     serial.print("SerialNr (hex) : ");
     for (uint8_t i = 0; i < length; i++)
     {
-        serial.print(serialNumber[i], HEX, 2);
+        serial.print(" ", serialNumber[i], HEX, 2);
     }
     serial.println();
 }
