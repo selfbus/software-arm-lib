@@ -36,13 +36,31 @@ private:
       getSerial       = 0x3682 ,      // sgp4x_get_serial_number 0x3682
       measureRaw      = 0x2619,       // sgp41_measure_raw_signals
       heaterOff       = 0x3615,       // sgp4x_turn_heater_off
-      selfTest        = 0x280E        // sgp41_execute_self_test
-  };
+      selfTest        = 0x280E,       // sgp41_execute_self_test
+
+      /**
+       * featureSet is not documented in sgp4x datasheet.\n
+       * Got it from\n
+       * https://github.com/winkj/sensirion-ess/blob/e506f5dda0d28bd46e7f6eebf7d2b06bde41699c/sensirion_ess.cpp#L187 \n
+       * https://github.com/adafruit/Adafruit_SGP40/blob/b31a6a56da76588073de977e68ea09421e507cda/src/Adafruit_SGP40.cpp#L63 \n
+       * looks like product type is encoded in the high nibble of the high byte of featuresSet as \n
+       * productType = featureSet >> 12 \n
+       * productType: \n
+       * - 0 => SGP30, SGP40 ??
+       * - 1 => SGPC3
+       *
+       * featureSetVersion = featureSet & 0xff \n
+       * - 0x40 => SGP40
+       *
+       * @ref readFeatureSet returns 0x0240 for my SGP40
+       */
+      featureSet      = 0x202f  };
 
   int32_t rawVocTics;
   int32_t rawNoxTics;
   int32_t vocIndexValue;
   int32_t noxIndexValue;
+  uint16_t featureSet;
 
   GasIndexAlgorithmParams voc_algorithm_params;
   GasIndexAlgorithmParams nox_algorithm_params;
@@ -130,11 +148,13 @@ public:
    */
   SGP4xResult turnHeaterOffAndReturnToIdle();
 
+  SGP4xResult readFeatureSet();
 
   int32_t getVocIndexValue();
   int32_t getNoxIndexValue();
   int32_t getRawVocValue();
   int32_t getRawNoxValue();
+  uint16_t getFeatureSet();
 
   /**
    * Read the sensor's unique serial number

@@ -177,6 +177,11 @@ BcuBase* setup()
     serial.print("SGP41.init");
     printSGP4xResult(result);
 
+    result = SGP41.readFeatureSet();
+    serial.print("SGP41.readFeatureSet");
+    printSGP4xResult(result);
+    serial.println("featureSet: 0x", SGP41.getFeatureSet(), HEX, 4);
+
     doSelfTest();
     readSGP4Serial();
 

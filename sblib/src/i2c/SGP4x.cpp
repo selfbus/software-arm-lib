@@ -24,7 +24,8 @@ SGP4xClass::SGP4xClass():
         rawVocTics(0),
         rawNoxTics(0),
         vocIndexValue(-1),
-        noxIndexValue(-1)
+        noxIndexValue(-1),
+        featureSet(0)
 {
     // init VOC index algorithm with default sampling interval
     GasIndexAlgorithm_init_with_sampling_interval(&voc_algorithm_params, GasIndexAlgorithm_ALGORITHM_TYPE_VOC, GasIndexAlgorithm_DEFAULT_SAMPLING_INTERVAL);
@@ -236,6 +237,24 @@ SGP4xResult SGP4xClass::turnHeaterOffAndReturnToIdle()
     return result;
 }
 
+SGP4xResult SGP4xClass::readFeatureSet() {
+    uint8_t cmdBuffer[2];
+    uint8_t commandBufferSize = sizeof(cmdBuffer)/sizeof(*cmdBuffer);
+
+    uint8_t readBuffer[3];
+    uint8_t readBufferSize = sizeof(readBuffer)/sizeof(*readBuffer);
+
+    // max. duration 10ms
+    SGP4xResult result = readSensor(Sgp4xCommand::featureSet, cmdBuffer, commandBufferSize, readBuffer, readBufferSize, 10);
+    if (result != SGP4xResult::success)
+    {
+        return result;
+    }
+
+    featureSet = makeWord(readBuffer[0], readBuffer[1]);
+    return SGP4xResult::success;
+}
+
 int32_t SGP4xClass::getVocIndexValue()
 {
     return vocIndexValue;
@@ -254,6 +273,11 @@ int32_t SGP4xClass::getRawVocValue()
 int32_t SGP4xClass::getRawNoxValue()
 {
     return rawNoxTics;
+}
+
+uint16_t SGP4xClass::getFeatureSet()
+{
+    return featureSet;
 }
 
 uint8_t SGP4xClass::crc8(const uint8_t *data, int len) {
