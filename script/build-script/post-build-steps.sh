@@ -23,8 +23,7 @@
 set -e
 
 # error handler
-exit_on_error()
-{
+exit_on_error() {
     echo "Last command failed. Exiting..."
     exit 1
 }
@@ -59,7 +58,7 @@ sbLibprefix="libv"
 # App version prefix
 appVersionPrefix="v"
 
-# searchstrings and subfolders for .hex output directory
+# search strings and subfolders for .hex output directory
 debug="debug"
 release="release"
 flashstart="flashstart"
@@ -86,14 +85,14 @@ sbLibVersionHeaderDir="${scriptDir}"/"${scriptPathDepth}"/"${sbLibSubModuleRepoF
 sbLibVersionWithDot=$(get_sbLibVersionWithDot "$sbLibVersionHeaderDir")
 
 if [ -z "${sbLibVersionWithDot}" ]; then
-  # check if we are in the sblib repo and seach there
+  # check if we are in the sblib repo and search there
   sbLibVersionHeaderDir="${scriptDir}"/"${scriptPathDepth}"/"${sbLibVersionSubDir}"
   sbLibVersionWithDot=$(get_sbLibVersionWithDot "$sbLibVersionHeaderDir")
 
   # check if sbLibVersionWithDot was not found
   if [ -z "${sbLibVersionWithDot}" ]; then
     sbLibVersionWithDot="x.x"
-    echo "Selfbus library version was not found in repository, set to "${sbLibVersionWithDot}""
+    echo "Selfbus library version was not found in the repository, set to "${sbLibVersionWithDot}""
   fi
 fi
 
@@ -155,7 +154,7 @@ fi
 
 cp --verbose "${CurrentWorkingDirectory}"/"${newName}.hex" "${hexDir}"/
 
-# Do not activate checksum, not sure why, but at least .hex files gets corrupted
+# Do not activate checksum, not sure why, but at least .hex files get corrupted
 # see also https://community.nxp.com/t5/Blogs/Hex-file-settings-in-MCUxpresso/bc-p/1131124/highlight/true#M53
 # add checksums
 #checksum -p ${TargetChip} -d "${newName}.bin"
