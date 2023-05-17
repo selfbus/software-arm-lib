@@ -63,10 +63,10 @@ debug="debug"
 release="release"
 flashstart="flashstart"
 
-CurrentWorkingDirectory="${1}"
-TargetChip="${2}"
-BuildArtifactFileName="${3}"
-BuildArtifactFileBaseName="${4}"
+currentWorkingDirectory="${1}"
+targetChip="${2}"
+buildArtifactFileName="${3}"
+buildArtifactFileBaseName="${4}"
 appConfigName="${5}"
 appVersion="${6}"
 hexDir="${7}"
@@ -98,7 +98,7 @@ fi
 
 echo "Creating .hex/.bin files and adding sblib version "${sbLibVersionWithDot}" to filename"
 
-newName="${BuildArtifactFileBaseName}"
+newName="${buildArtifactFileBaseName}"
 # append build config name and app version
 newName="${newName}"_"${appConfigName}"_"${appVersionPrefix}""${appVersion}"
 # replace spaces with underscores
@@ -118,11 +118,11 @@ newName="${newName}_${sbLibprefix}${sbLibVersionWithDot}"
 echo "${newName}"
 
 # post-build-step from eclipse
-arm-none-eabi-size "${BuildArtifactFileName}"
+arm-none-eabi-size "${buildArtifactFileName}"
 # create .bin file
-arm-none-eabi-objcopy -v -O binary "${BuildArtifactFileName}" "${newName}.bin"
+arm-none-eabi-objcopy -v -O binary "${buildArtifactFileName}" "${newName}.bin"
 # create .hex file
-arm-none-eabi-objcopy -v -O ihex "${BuildArtifactFileName}" "${newName}.hex"
+arm-none-eabi-objcopy -v -O ihex "${buildArtifactFileName}" "${newName}.hex"
 
 # check if hexDir is defined
 if [ -z "${hexDir}" ]; then
@@ -152,11 +152,11 @@ if [ ! -d "${hexDir}" ]; then
   mkdir -p "${hexDir}"
 fi
 
-cp --verbose "${CurrentWorkingDirectory}"/"${newName}.hex" "${hexDir}"/
+cp --verbose "${currentWorkingDirectory}"/"${newName}.hex" "${hexDir}"/
 
 # Do not activate checksum, not sure why, but at least .hex files get corrupted
 # see also https://community.nxp.com/t5/Blogs/Hex-file-settings-in-MCUxpresso/bc-p/1131124/highlight/true#M53
 # add checksums
-#checksum -p ${TargetChip} -d "${newName}.bin"
-#checksum -p ${TargetChip} -d "${newName}.hex"
+#checksum -p ${targetChip} -d "${newName}.bin"
+#checksum -p ${targetChip} -d "${newName}.hex"
 
