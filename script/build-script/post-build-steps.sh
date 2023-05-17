@@ -98,31 +98,31 @@ fi
 
 echo "Creating .hex/.bin files and adding sblib version "${sbLibVersionWithDot}" to filename"
 
-newName="${buildArtifactFileBaseName}"
+outputFileName="${buildArtifactFileBaseName}"
 # append build config name and app version
-newName="${newName}"_"${appConfigName}"_"${appVersionPrefix}""${appVersion}"
+outputFileName="${outputFileName}"_"${appConfigName}"_"${appVersionPrefix}""${appVersion}"
 # replace spaces with underscores
-newName="${newName// /_}"
+outputFileName="${outputFileName// /_}"
 # replace missing options (--)
-newName="${newName//--/_}"
+outputFileName="${outputFileName//--/_}"
 # fix trailing missing option
-newName="${newName//-_/_}"
+outputFileName="${outputFileName//-_/_}"
 # fix leading missing option
-newName="${newName//_-/_}"
+outputFileName="${outputFileName//_-/_}"
 # replace duplicate underscores
-newName="${newName//__/_}"
+outputFileName="${outputFileName//__/_}"
 # convert to lowercase
-newName=`echo "${newName}" | tr '[:upper:]' '[:lower:]'`
+outputFileName=`echo "${outputFileName}" | tr '[:upper:]' '[:lower:]'`
 # add lib version
-newName="${newName}_${sbLibprefix}${sbLibVersionWithDot}"
-echo "${newName}"
+outputFileName="${outputFileName}_${sbLibprefix}${sbLibVersionWithDot}"
+echo "${outputFileName}"
 
 # post-build-step from eclipse
 arm-none-eabi-size "${buildArtifactFileName}"
 # create .bin file
-arm-none-eabi-objcopy -v -O binary "${buildArtifactFileName}" "${newName}.bin"
+arm-none-eabi-objcopy -v -O binary "${buildArtifactFileName}" "${outputFileName}.bin"
 # create .hex file
-arm-none-eabi-objcopy -v -O ihex "${buildArtifactFileName}" "${newName}.hex"
+arm-none-eabi-objcopy -v -O ihex "${buildArtifactFileName}" "${outputFileName}.hex"
 
 # check if hexDir is defined
 if [ -z "${hexDir}" ]; then
@@ -131,7 +131,7 @@ if [ -z "${hexDir}" ]; then
 fi
 
 # add release/debug to hex output directory
-case ${newName} in
+case ${outputFileName} in
   *"${debug}"*)
     hexDir="${hexDir}"/"${debug}"
     ;;
@@ -142,7 +142,7 @@ case ${newName} in
 esac
 
 # check adding flashstart to hex output directory
-if [[ "$newName" =~ .*"$flashstart".* ]]; then
+if [[ "$outputFileName" =~ .*"$flashstart".* ]]; then
   hexDir="${hexDir}"/"${flashstart}"
 fi
 
@@ -152,11 +152,10 @@ if [ ! -d "${hexDir}" ]; then
   mkdir -p "${hexDir}"
 fi
 
-cp --verbose "${currentWorkingDirectory}"/"${newName}.hex" "${hexDir}"/
+cp --verbose "${currentWorkingDirectory}"/"${outputFileName}.hex" "${hexDir}"/
 
 # Do not activate checksum, not sure why, but at least .hex files get corrupted
 # see also https://community.nxp.com/t5/Blogs/Hex-file-settings-in-MCUxpresso/bc-p/1131124/highlight/true#M53
 # add checksums
-#checksum -p ${targetChip} -d "${newName}.bin"
-#checksum -p ${targetChip} -d "${newName}.hex"
-
+#checksum -p ${targetChip} -d "${outputFileName}.bin"
+#checksum -p ${targetChip} -d "${outputFileName}.hex"
