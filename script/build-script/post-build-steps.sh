@@ -142,7 +142,7 @@ case ${outputFileName} in
 esac
 
 # check adding flashstart to hex output directory
-if [[ "$outputFileName" =~ .*"$flashstart".* ]]; then
+if [[ "${outputFileName}" =~ .*"${flashstart}".* ]]; then
   hexDir="${hexDir}"/"${flashstart}"
 fi
 
