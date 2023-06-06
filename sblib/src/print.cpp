@@ -9,6 +9,7 @@
  */
 
 #include <sblib/print.h>
+#include <sblib/math.h>
 
 #include <string.h>
 
@@ -64,6 +65,35 @@ int Print::print(const char* str, uintptr_t value, Base base, int digits)
     return wlen;
 }
 
+int Print::print(float value, int precision)
+{
+    int number = (int)value;
+    float fraction = abs((float)(value - number));
+    int wlen = print(number);
+
+    if (precision < 1)
+    {
+        return (wlen);
+    }
+
+    precision = min(7, precision);
+
+    wlen += print(".");
+    for (uint8_t i = 0; i < precision; i++)
+    {
+        fraction *= 10.0f;
+    }
+    wlen += print((int)fraction, DEC, precision);
+    return wlen;
+}
+
+int Print::print(const char* str, float value, int precision)
+{
+    int wlen = print(str);
+    wlen += print(value, precision);
+    return wlen;
+}
+
 int Print::println()
 {
     return write('\r') + write('\n');
@@ -97,6 +127,20 @@ int Print::println(const char* str, uintptr_t value, Base base, int digits)
 int Print::println(const char* str, int value, Base base, int digits)
 {
     int wlen = print(str, value, base, digits);
+    wlen += println();
+    return wlen;
+}
+
+int Print::println(float value, int precision)
+{
+    int wlen = print(value, precision);
+    wlen += println();
+    return wlen;
+}
+
+int Print::println(const char* str, float value, int precision)
+{
+    int wlen = print(str, value, precision);
     wlen += println();
     return wlen;
 }

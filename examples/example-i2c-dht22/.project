@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>example-i2c</name>
+	<name>example-i2c-dht22</name>
 	<comment></comment>
 	<projects>
 		<project>CMSIS_CORE_LPC11xx</project>

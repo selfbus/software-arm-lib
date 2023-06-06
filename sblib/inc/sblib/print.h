@@ -66,6 +66,15 @@ public:
     int print(int value, Base base = DEC, int digits = -1);
 
     /**
+     * Print a float with a given precision.
+     * @param value The float to print
+     * @param precision The precision to print, default 2
+     * @return The number of bytes that were written.
+     * @warning Maximum precision supported is 7
+     */
+    int print(float value, int precision = 2);
+
+    /**
      * Print a zero terminated string followed by a number.
      *
      * @param str - the string to print
@@ -118,6 +127,16 @@ public:
      * @return The number of bytes that were written.
      */
     int print(const char* str, const void * ptr);
+
+    /**
+     * Print a zero terminated string followed by a float with a given precision.
+     * @param str   The string to print
+     * @param value The float to print
+     * @param precision The precision to print, default 2
+     * @return The number of bytes that were written.
+     * @warning Maximum precision supported is 9
+     */
+    int print(const char* str, float value, int precision = 2);
 
     /**
      * Print a new line by sending a carriage return '\r' (ASCII 13) followed
@@ -180,6 +199,15 @@ public:
     int println(const void * ptr);
 
     /**
+     * Print a float with a given precision followed by a new line.
+     * @param value The float to print
+     * @param precision The precision to print, default 2
+     * @return The number of bytes that were written.
+     * @warning Maximum precision supported is 7
+     */
+    int println(float value, int precision = 2);
+
+    /**
      * Print a zero terminated string followed by an unsigned number and a new line.
      *
      * @param str - the string to print
@@ -200,6 +228,16 @@ public:
      * @return The number of bytes that were written.
      */
     int println(const char* str, const void * ptr);
+
+    /**
+     * Print a zero terminated string followed by a float with a given precision and a new line.
+     * @param str   The string to print
+     * @param value The float to print
+     * @param precision The precision to print, default is 2
+     * @return The number of bytes that were written.
+     * @warning Maximum precision supported is 9
+     */
+    int println(const char* str, float value, int precision = 2);
 
     /**
      * Write a zero terminated string.
