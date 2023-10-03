@@ -597,9 +597,6 @@
 		<configuration configurationName="Release (LPC11xx)">
 			<resource resourceType="PROJECT" workspacePath="/Bus-Updater"/>
 		</configuration>
-		<configuration configurationName="Release (LPC11XX)">
-			<resource resourceType="PROJECT" workspacePath="/Bus-Updater"/>
-		</configuration>
 		<configuration configurationName="Debug (LPC11XX)">
 			<resource resourceType="PROJECT" workspacePath="/Bus-Updater"/>
 		</configuration>
