@@ -4,7 +4,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.debug.29419348">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.29419348" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.10"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -137,7 +137,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.189047520">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.189047520" moduleId="org.eclipse.cdt.core.settings" name="Release">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.10"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -265,7 +265,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.debug.29419348.296615997">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.29419348.296615997" moduleId="org.eclipse.cdt.core.settings" name="Flashstart 0x7000 Debug">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.10"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -402,7 +402,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.189047520.1083885240">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.189047520.1083885240" moduleId="org.eclipse.cdt.core.settings" name="Flashstart 0x3000 Release">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.10"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -530,7 +530,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.189047520.847119930">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.189047520.847119930" moduleId="org.eclipse.cdt.core.settings" name="Release APROG">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.10"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -658,7 +658,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.189047520.847119930.1337538615">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.189047520.847119930.1337538615" moduleId="org.eclipse.cdt.core.settings" name="Flashstart 0x3000 Release APROG">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.10"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -786,7 +786,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.189047520.1134010857">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.189047520.1134010857" moduleId="org.eclipse.cdt.core.settings" name="Flashstart 0xA000 Release">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.10"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
 				</macros>
 				<externalSettings/>
 				<extensions>

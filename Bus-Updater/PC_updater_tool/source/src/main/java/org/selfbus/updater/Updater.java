@@ -367,17 +367,17 @@ public class Updater implements Runnable {
             }
 
             // Check if FW image has correct offset for MCUs bootloader size
-            if (newFirmware.startAddress() < bootLoaderIdentity.applicationFirstAddress()) {
+            if (newFirmware.startAddress() < bootLoaderIdentity.getApplicationFirstAddress()) {
                 logger.error("{}  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                logger.error("{}  Firmware needs to start at or beyond 0x{}{}", ConColors.BRIGHT_RED, String.format("%04X", bootLoaderIdentity.applicationFirstAddress()), ConColors.RESET);
+                logger.error("{}  Firmware needs to start at or beyond 0x{}{}", ConColors.BRIGHT_RED, String.format("%04X", bootLoaderIdentity.getApplicationFirstAddress()), ConColors.RESET);
                 throw new UpdaterException("Firmware offset not correct!");
             }
-            else if (newFirmware.startAddress() == bootLoaderIdentity.applicationFirstAddress()) {
+            else if (newFirmware.startAddress() == bootLoaderIdentity.getApplicationFirstAddress()) {
                 logger.info("  {}Firmware starts directly beyond bootloader.{}", ConColors.BRIGHT_GREEN, ConColors.RESET);
             }
             else {
                 logger.info("  {}Info: There are {} bytes of unused flash between bootloader and firmware.{}",
-                            ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.applicationFirstAddress(), ConColors.RESET);
+                            ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
             }
 
             // Request current main firmware boot descriptor from device
