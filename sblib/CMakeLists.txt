@@ -53,7 +53,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/sensors/ds18x20.h
         inc/sblib/analog_pin.h
         inc/sblib/arrays.h
-        inc/sblib/binary.h
         inc/sblib/bits.h
         inc/sblib/buffered_stream.h
         inc/sblib/core.h
