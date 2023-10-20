@@ -95,7 +95,8 @@ public:
 
   /**
    * Initialize the SGP4x. Calls @ref executeConditioning() to condition the sensor.
-   * @param samplingIntervalMs Sampling interval for the gas index algorithm in milliseconds
+   * @param samplingIntervalMs Sampling interval for the gas index algorithm in milliseconds.\n
+   *                           1s (1000ms) is recommend by sensirion, see @ref GasIndexAlgorithm_init_with_sampling_interval in @ref sensirion_gas_index_algorithm.h)
    *
    * @return @ref SGP4xResult::success if successful, otherwise a @ref SGP4xResult
    */
