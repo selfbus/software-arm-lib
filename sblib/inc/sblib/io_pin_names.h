@@ -12,7 +12,7 @@
 #include <sblib/ioports.h>
 
 
-#if defined (__LPC11XX_IO16__)
+#if defined (__LPC11XX_GNAXBOARD__)
 	#define PIN_PROG 	PIO2_11
 	#define PIN_INFO 	PIO1_0
 	#define PIN_RUN 	PIO2_10
