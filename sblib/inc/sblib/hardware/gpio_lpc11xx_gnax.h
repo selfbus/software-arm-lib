@@ -40,15 +40,15 @@
 #define PIN_IO14    ()
 #define PIN_IO15    ()
 
-#define PIN_SSEL0   ()
-#define PIN_SCK0    ()
-#define PIN_MISO0   ()
-#define PIN_MOSI0   ()
+#define PIN_SSEL0   PIO2_0
+#define PIN_SCK0    PIO2_1
+#define PIN_MISO0   PIO2_2
+#define PIN_MOSI0   PIO2_3
 
-#define PIN_SSEL1   ()
-#define PIN_SCK1    ()
-#define PIN_MISO1   ()
-#define PIN_MOSI1   ()
+#define PIN_SSEL1   PIN_SSEL0
+#define PIN_SCK1    PIN_SCK0
+#define PIN_MISO1   PIN_MISO0
+#define PIN_MOSI1   PIN_MOSI0
 
 #define PIN_LT1     ()
 #define PIN_LT2     ()
