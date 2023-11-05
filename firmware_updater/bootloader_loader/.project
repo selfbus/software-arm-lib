@@ -3,6 +3,7 @@
 	<name>bootloader-loader</name>
 	<comment></comment>
 	<projects>
+		<project>bootloader</project>
 		<project>CMSIS_CORE_LPC11xx</project>
 		<project>sblib</project>
 	</projects>
