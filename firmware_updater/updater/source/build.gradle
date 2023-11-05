@@ -1,0 +1,81 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'org.selfbus'
+version '1.11' ///\todo also change in ../README.md and ToolInfo.java (String version)
+
+sourceCompatibility = 11
+
+application {
+    mainClass = 'org.selfbus.updater.Updater' // avoids warning "The JavaExec.main property has been deprecated" see https://youtrack.jetbrains.com/issue/IDEA-279280
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': 'org.selfbus.updater.Updater'
+    }
+}
+
+task fatJar(type: Jar) {
+    manifest.from jar.manifest
+    archiveClassifier.set('all')
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        /*
+        exclude "META-INF/*.SF"
+        exclude "META-INF/*.DSA"
+        exclude "META-INF/*.RSA"
+        exclude "META-INF/LICENSE"
+        exclude "META-INF/LICENSE.txt"
+        exclude "META-INF/NOTICE.txt"
+        exclude "META-INF/LGPL2.1"
+        exclude "META-INF/AL2.0"
+        exclude "META-INF/versions/9/module-info.class"
+         */
+    }
+
+    with jar
+}
+
+artifacts {
+    archives fatJar
+}
+
+repositories {
+    mavenCentral()
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+}
+
+gradle.projectsEvaluated{
+    tasks.withType(JavaCompile){
+        options.compilerArgs << "-Xlint:unchecked"
+        options.compilerArgs << "-Xlint:deprecation"
+        options.compilerArgs << "-Xlint:all"
+    }
+}
+
+dependencies {
+    // calimero knx bus access library
+    implementation 'com.github.calimero:calimero-core:2.5.1'
+
+    // calimero serial tx/rx lib for ft1.2 and tpuart support
+    implementation 'com.github.calimero:calimero-rxtx:2.5.1'
+
+    // find specific directories under linux and windows
+    implementation 'net.harawata:appdirs:1.2.1'
+
+    // For search in byte array
+    implementation 'com.google.guava:guava:31.1-jre'
+
+    // command line option
+    implementation 'commons-cli:commons-cli:1.5.0'
+
+    // console and file logging
+    implementation 'ch.qos.logback:logback-classic:1.4.5'
+
+    // unit test
+    testImplementation group: 'junit', name: 'junit', version: '4.13.2'
+}
