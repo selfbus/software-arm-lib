@@ -11,10 +11,10 @@ import tuwien.auto.calimero.Settings;
  */
 public final class ToolInfo
 {
-    private static final long versionMajor = 1; ///\todo change also in README.md and build.gradle
+    private static final long versionMajor = 1; ///\todo change also in ../README.md and build.gradle
     private static final long versionMinor = 11;
 
-    private static final long minMajorVersionBootloader = 1; ///\todo change also in README.md
+    private static final long minMajorVersionBootloader = 1; ///\todo change also in ../README.md
     private static final long minMinorVersionBootloader = 0;
 
     private static final Logger logger = LoggerFactory.getLogger(ToolInfo.class.getName());
