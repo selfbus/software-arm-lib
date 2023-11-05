@@ -2,7 +2,7 @@
 .global incbin_bl_start
 .balign 16
 incbin_bl_start:
-.incbin "Bus-Updater.bin" // path to Bus-Updater.bin is set under "Project Properties->MCU Assembler->General->Include paths (-I)"
+.incbin "bootloader.bin" // path to bootloader.bin is set under "Project Properties->MCU Assembler->General->Include paths (-I)"
 
 .global incbin_bl_end
 .balign 1

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>SB_updater</name>
-	<comment>Project Selfbus-updater created by Buildship.</comment>
+	<name>updater</name>
+	<comment>Selfbus-Updater</comment>
 	<projects>
 	</projects>
 	<buildSpec>
