@@ -1,10 +1,10 @@
-Bootloader and PC Tool
-======================
+Selfbus Bootloader and Updater
+==============================
 
-Bootloader and PC tool for updating the application software of Selfbus devices
+Bootloader and Updater for updating the application software of Selfbus devices.
 
-Always use the bootloader and the PC tool with the same version number!
-*[Wiki entry about the Bus Updater Tool](https://selfbus.org/wiki/software/tools/7-selfbus-bus-updater-tool)*
+Always use the bootloader and the Updater with the same version number!
+*[Wiki entry about the Bootloader and Updater](https://selfbus.org/wiki/software/tools/7-selfbus-bus-updater-tool)*
 
 ## Important:
 The memory settings of the application to be flashed must be set in MCUxpresso as follows:
@@ -33,10 +33,10 @@ All build configurations link against the *release version* of the sblib.
 
 
 # Deutsch:
-Bootloader und PC Tool zum Updaten der Applikationssoftware von Selfbus Geräten
+Bootloader und Updater zum Updaten der Applikationssoftware von Selfbus Geräten
 
 Immer den Bootloader und das PC-Tool mit der gleichen Versionsnummer verwenden!
-*[Wiki-Eintrag zum Bus Updater Tool](https://selfbus.org/wiki/software/tools/7-selfbus-bus-updater-tool)*
+*[Wiki-Eintrag zum Bootloader und Updater](https://selfbus.org/wiki/software/tools/7-selfbus-bus-updater-tool)*
 
 ## WICHTIG:
 Die Speicher Einstellungen der zu flashenden App müssen in

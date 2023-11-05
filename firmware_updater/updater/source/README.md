@@ -4,7 +4,7 @@
 
 * JDK 11+
 * gradle >=7.4
-* Selfbus device with flashed [bus-updater/bootloader](../) version 1.00 or higher
+* Selfbus device with flashed [bootloader](../../bootloader) version 1.00 or higher
 
 ## Build
 ```
@@ -71,7 +71,7 @@ Selfbus KNX-Firmware update tool options:
     --statistic                             show more statistic data
 ```
 ## Common use cases:
-Recommended for new firmware versions if UID is unknown (requires active Prog. mode to unlock device):
+Recommended for new firmware versions if UID is unknown (requires active programming mode to unlock the device):
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -nat
 ```
