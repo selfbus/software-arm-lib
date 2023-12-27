@@ -345,7 +345,7 @@ private:
 #define RX_TIMING_ERROR_SPIKE 4         //!< received edge of bit with incorrect timing
 #define RX_PARITY_ERROR 8               //!< parity not valid
 #define RX_CHECKSUM_ERROR 16            //!< checksum not valid
-#define RX_LENGHT_ERROR 32              //!< received number of byte does not match length value of telegram
+#define RX_LENGTH_ERROR 32              //!< received number of byte does not match length value of telegram
 #define RX_BUFFER_BUSY 64               //!< rx buffer still busy by higher layer process while a new telegram was received
 #define RX_INVALID_TELEGRAM_ERROR 128   //!< we received something but not a valid tel frame: to short,  to long, spike
 #define RX_PREAMBLE_ERROR 256           //!< first char we received has invalid value in bit 0 and bit 1

@@ -30,7 +30,6 @@
 #define REPEAT_FLAG        5          // 1 not repeated, 0 repeated frame
 #define DATA_FRAME_FLAG    6          // 1 poll data frame, 0 data frame
 #define LONG_FRAME_FLAG    7          // 1,  short frame <=15 char, 0 long frame > 15 char
-#define HEADER_LENGHT      7          // KNX msg header length by length indicator =0
 
 // telegram control byte bit definitions
 #define SB_TEL_NULL_FLAG        (1 << ALWAYS0)
@@ -354,7 +353,7 @@ void Bus::prepareForSending()
  * Output data:
  * 	processTel: indicate telegram reception to the looping function by setting <processTel> to true
  *	telegram[]: received telegram in telegram buffer <telegram[]>, length in telegramLen
- *	telegramLen: rx telegram lenght
+ *	telegramLen: rx telegram length
  *	sendAck:  !0:  RX process need to send ack to sending side back, set wait timer accordingly
  * 	indicate result of telegram reception/error state to upper layer via bus_rx_state/bus_tx_state
  * 	and bus_rxstate_valid/bus_txstate_valid
@@ -771,7 +770,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 				rx_telegram[nextByteIndex++] = currentByte;
 				checksum ^= currentByte;
 			} else {
-				rx_error |= RX_LENGHT_ERROR;
+				rx_error |= RX_LENGTH_ERROR;
 			}
 
 			if (!parity) rx_error |= RX_PARITY_ERROR;
