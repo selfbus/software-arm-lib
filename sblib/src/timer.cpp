@@ -129,8 +129,9 @@ void Timer::matchMode(int channel, int mode)
     // Configure the match control channel
 
     offset = channel * 3;
-    timer->MCR &= ~(7 << offset);
-    timer->MCR |= (mode & 7) << offset;
+    timer->MCR = (timer->MCR
+               & ~(7 << offset))
+               | ((mode & 7) << offset);
 
     // Configure the external match channel
     matchModePinConfig(channel, mode);
@@ -161,8 +162,9 @@ void Timer::captureMode(int channel, int mode)
     if (mode & INTERRUPT)
         val |= 4;
 
-    timer->CCR &= ~(7 << offset);
-    timer->CCR |= val << offset;
+    timer->CCR = (timer->CCR
+               & ~(7 << offset))
+               | (val << offset);
 }
 
 int Timer::captureMode(int channel) const
