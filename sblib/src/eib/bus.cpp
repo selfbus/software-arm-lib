@@ -492,7 +492,7 @@ void Bus::handleTelegram(bool valid)
 			tb_h( 906, tx_error, tb_in);
 			finishSendingTelegram();
 		}
-		else if (parity && currentByte == SB_BUS_BUSY)
+		else if (parity && (currentByte == SB_BUS_BUSY || currentByte == SB_BUS_NACK_BUSY))
 		{
 			time = BUSY_WAIT_150BIT - PRE_SEND_TIME;
 			tx_error |= TX_REMOTE_BUSY_ERROR;
