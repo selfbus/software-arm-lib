@@ -67,8 +67,6 @@
 #define objectSize(x) bcu.comObjects->objectSize(x)
 
 
-#define indexOfAddr(x) bcu.addrTables->indexOfAddr(x)
-
 #define userEepromData userEeprom.userEepromData
 #define userRamData userRam.userRamData
 #define userEeprom (*(bcu.userEeprom))
