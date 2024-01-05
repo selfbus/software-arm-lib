@@ -42,22 +42,6 @@
  */
 uint16_t makeWord(byte high, byte low);
 
-/**
- * Reverse the byte order of an integer.
- *
- * @param val - the value to reverse.
- * @return The value with reversed byte order.
- */
-unsigned int reverseByteOrder(unsigned int val);
-
-/**
- * Reverse the byte order of a short integer.
- *
- * @param val - the value to reverse.
- * @return The value with reversed byte order.
- */
-unsigned short reverseByteOrder(unsigned short val);
-
 
 //
 //  Inline functions
@@ -66,16 +50,6 @@ unsigned short reverseByteOrder(unsigned short val);
 inline uint16_t makeWord(byte high, byte low)
 {
     return ((uint16_t)((high << 8) | low));
-}
-
-inline unsigned int reverseByteOrder(unsigned int val)
-{
-    return __REV(val);
-}
-
-inline unsigned short reverseByteOrder(unsigned short val)
-{
-    return __REV16(val);
 }
 
 #endif /*sblib_bits_h*/
