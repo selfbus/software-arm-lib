@@ -28,8 +28,6 @@ BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, (*timerBusObj))
 #   include <sblib/serial.h>
 #endif
 
-extern volatile unsigned int systemTime;
-
 BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         TLayer4(maxTelegramSize()),
         bus(new Bus(this, timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0)),
