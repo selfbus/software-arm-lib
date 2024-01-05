@@ -21,7 +21,6 @@
  -----------------------------------------------------------------------------*/
 
 #include <cstring>
-#include <sblib/eib.h>
 #include <sblib/eib/bus.h>
 #include <sblib/eib/knx_tpdu.h>
 #include <sblib/eib/apci.h>

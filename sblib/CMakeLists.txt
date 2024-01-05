@@ -58,7 +58,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/core.h
         inc/sblib/debounce.h
         inc/sblib/digital_pin.h
-        inc/sblib/eib.h
         inc/sblib/i2c.h
         inc/sblib/interrupt.h
         inc/sblib/io_pin_names.h

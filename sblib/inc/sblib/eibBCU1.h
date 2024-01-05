@@ -1,5 +1,5 @@
 /*
- *  eib.h - Include the EIB / BCU related header files.
+ *  eibBCU1.h - Include the BCU1 related header files.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
