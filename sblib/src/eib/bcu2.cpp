@@ -11,13 +11,8 @@
 #include <sblib/eib/bcu2.h>
 #include <sblib/eib/apci.h>
 #include <sblib/eib/knx_lpdu.h>
-#include <sblib/eib/com_objects.h>
 #include <string.h>
-#include <sblib/internal/variables.h>
-#include <sblib/mem_mapper.h>
 #include <sblib/internal/iap.h>
-#include <sblib/eib/propertiesBCU2.h>
-#include <sblib/eib/bus.h>
 
 void BCU2::setOwnAddress(uint16_t addr)
 {

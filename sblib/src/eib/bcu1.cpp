@@ -9,12 +9,6 @@
  */
 
 #include <sblib/eib/bcu1.h>
-#include <sblib/eib/apci.h>
-#include <sblib/eib/com_objects.h>
-#include <string.h>
-#include <sblib/internal/variables.h>
-#include <sblib/mem_mapper.h>
-#include <sblib/eib/bus.h>
 
 BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
 {}

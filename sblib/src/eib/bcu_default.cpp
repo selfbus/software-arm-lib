@@ -8,17 +8,8 @@
  *  published by the Free Software Foundation.
  */
 
-#include <sblib/io_pin_names.h>
 #include <sblib/eib/knx_lpdu.h>
-#include <sblib/eib/knx_npdu.h>
 #include <sblib/eib/bcu_default.h>
-#include <sblib/eib/addr_tables.h>
-#include <sblib/internal/variables.h>
-#include <sblib/internal/iap.h>
-#include <sblib/eib/userEeprom.h>
-#include <sblib/eib/userRam.h>
-#include <sblib/eib/apci.h>
-#include <sblib/utils.h>
 #include <string.h>
 #include <sblib/eib/bus.h>
 
