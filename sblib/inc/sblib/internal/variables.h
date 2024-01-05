@@ -13,12 +13,4 @@
 // System time in milliseconds (from timer.cpp)
 extern volatile unsigned int systemTime;
 
-#if 0
-#if BCU_TYPE != BCU1_TYPE
-// Table of interface/property objects (eib/property_defs.cpp)
-extern const PropertyDef* const propertiesTab[NUM_PROP_OBJECTS];
-
-#endif
-#endif
-
 #endif /*sblib_internal_variables_h*/
