@@ -265,6 +265,6 @@ const char* DS18x20::TypeStr(int deviceNum)
 float DS18x20::ConvertTemperature(float fTemperature, eScale Scale)
 {
   if (Scale == FARENHEIT) return (fTemperature * 9 / 5 + 32);
-  else if (Scale == KELVIN) return (float)(fTemperature + 273.15);
+  else if (Scale == KELVIN) return (float)(fTemperature + 273.15f);
   else return fTemperature;
 }
