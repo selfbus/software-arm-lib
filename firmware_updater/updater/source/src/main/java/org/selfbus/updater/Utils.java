@@ -2,9 +2,9 @@ package org.selfbus.updater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.knxnetip.TcpConnection;
+import io.calimero.KNXException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.knxnetip.TcpConnection;
 
 import java.io.File;
 import java.net.InetAddress;

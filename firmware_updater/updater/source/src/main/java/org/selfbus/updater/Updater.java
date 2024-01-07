@@ -6,19 +6,19 @@ import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.Settings;
-import tuwien.auto.calimero.knxnetip.SecureConnection;
-import tuwien.auto.calimero.link.KNXNetworkLink;
-import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
-import tuwien.auto.calimero.link.KNXNetworkLinkIP;
-import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.link.medium.TPSettings;
+import io.calimero.IndividualAddress;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.Settings;
+import io.calimero.knxnetip.SecureConnection;
+import io.calimero.link.KNXNetworkLink;
+import io.calimero.link.KNXNetworkLinkFT12;
+import io.calimero.link.KNXNetworkLinkIP;
+import io.calimero.link.KNXNetworkLinkTpuart;
+import io.calimero.link.medium.KNXMediumSettings;
+import io.calimero.link.medium.RFSettings;
+import io.calimero.link.medium.TPSettings;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -145,11 +145,7 @@ public class Updater implements Runnable {
         logger.debug("Creating KNX network link {}...", medium);
         if (cliOptions.ft12().length() > 0) {
             // create FT1.2 network link
-            try {
-                return new KNXNetworkLinkFT12(Integer.parseInt(cliOptions.ft12()), medium);
-            } catch (final NumberFormatException e) {
-                return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
-            }
+            return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
         } else if (cliOptions.tpuart().length() > 0) {
             // create TPUART network link
             KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.tpuart(), medium, Collections.emptyList());

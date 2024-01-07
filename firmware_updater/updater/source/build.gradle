@@ -6,7 +6,9 @@ plugins {
 group 'org.selfbus'
 version '1.11' ///\todo also change in ../README.md and ToolInfo.java (String version)
 
-sourceCompatibility = 11
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+}
 
 application {
     mainClass = 'org.selfbus.updater.Updater' // avoids warning "The JavaExec.main property has been deprecated" see https://youtrack.jetbrains.com/issue/IDEA-279280
@@ -46,7 +48,7 @@ artifacts {
 
 repositories {
     mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
 }
 
 gradle.projectsEvaluated{
@@ -59,10 +61,10 @@ gradle.projectsEvaluated{
 
 dependencies {
     // calimero knx bus access library
-    implementation 'com.github.calimero:calimero-core:2.5.1'
+    implementation 'io.calimero:calimero-core:3.0-SNAPSHOT'
 
     // calimero serial tx/rx lib for ft1.2 and tpuart support
-    implementation 'com.github.calimero:calimero-rxtx:2.5.1'
+    implementation 'io.calimero:calimero-rxtx:3.0-SNAPSHOT'
 
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.2.1'

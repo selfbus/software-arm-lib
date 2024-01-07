@@ -5,10 +5,10 @@ import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.KNXRemoteException;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.mgmt.KNXDisconnectException;
+import io.calimero.KNXRemoteException;
+import io.calimero.KNXTimeoutException;
+import io.calimero.link.KNXLinkClosedException;
+import io.calimero.mgmt.KNXDisconnectException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
