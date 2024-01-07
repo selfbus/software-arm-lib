@@ -68,7 +68,7 @@ dependencies {
     implementation 'net.harawata:appdirs:1.2.1'
 
     // For search in byte array
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.google.guava:guava:32.0.0-jre'
 
     // command line option
     implementation 'commons-cli:commons-cli:1.5.0'
