@@ -617,7 +617,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         if (timer.flag(captureChannel))
         {// cap event: bus not in idle state before we have a timeout, restart waiting time
-        timer.value (0); // restart the timer
+            timer.value (0); // restart the timer
             break;
         }
         // timeout- we set bus to idle state
