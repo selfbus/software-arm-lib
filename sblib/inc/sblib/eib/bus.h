@@ -202,21 +202,21 @@ public:
     /** The states of the telegram sending/receiving state machine */
     enum State
     {
-    	INIT,	//!< The Lib is initializing, waiting for 50bit time inactivity on the bus
-		IDLE,	//!< The lib is idle. there was no receiving or sending for at least 50bit times, only cap intr enabled, no timeout intr
-		INIT_RX_FOR_RECEIVING_NEW_TEL, //! The Lib received a cap event and we need to start/init receiving of a new Telegram
-		RECV_WAIT_FOR_STARTBIT_OR_TELEND,	//!< The lib is waiting for Startbit (cap intr (low bit received) or timeout (end of stop bit: char end)) intr enabeld
-		RECV_BITS_OF_BYTE,	//!< The lib is collecting all bit of a character
-		RECV_WAIT_FOR_ACK_TX_START,		//!< After Tel is received the lib is waiting for start sending an ACK to remote side.
-		WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, 	//!< Timeout event: Start sending the telegram (also triggered in sbSendTelegram[]), cap event: start RX of a new tel
-		SEND_START_BIT,					//!< Send a start bit
-		SEND_BIT_0,						//!< Send the first bit of the current byte
-		SEND_BITS_OF_BYTE,				//!< Send the bits of the current byte
-		SEND_WAIT_FOR_HIGH_BIT_END,		//!< Send high bit(s) and wait for receiving a the falling edge of our next 0-bit.
-		SEND_END_OF_BYTE,				//!< Middle of stop bit reached, decide what to do next
-		SEND_END_OF_TX,					//!< Finish sending current byte
-		SEND_WAIT_FOR_RX_ACK_WINDOW,	//!< after sending we wait for the ack receive window to start, only timeout event enabled
-		SEND_WAIT_FOR_RX_ACK			//!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
+        INIT,   //!< The Lib is initializing, waiting for 50bit time inactivity on the bus
+        IDLE,   //!< The lib is idle. there was no receiving or sending for at least 50bit times, only cap intr enabled, no timeout intr
+        INIT_RX_FOR_RECEIVING_NEW_TEL,      //! The Lib received a cap event and we need to start/init receiving of a new Telegram
+        RECV_WAIT_FOR_STARTBIT_OR_TELEND,   //!< The lib is waiting for Startbit (cap intr (low bit received) or timeout (end of stop bit: char end)) intr enabeld
+        RECV_BITS_OF_BYTE,                  //!< The lib is collecting all bit of a character
+        RECV_WAIT_FOR_ACK_TX_START,         //!< After Tel is received the lib is waiting for start sending an ACK to remote side.
+        WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE,    //!< Timeout event: Start sending the telegram (also triggered in sbSendTelegram[]), cap event: start RX of a new tel
+        SEND_START_BIT,                 //!< Send a start bit
+        SEND_BIT_0,                     //!< Send the first bit of the current byte
+        SEND_BITS_OF_BYTE,              //!< Send the bits of the current byte
+        SEND_WAIT_FOR_HIGH_BIT_END,     //!< Send high bit(s) and wait for receiving a the falling edge of our next 0-bit.
+        SEND_END_OF_BYTE,               //!< Middle of stop bit reached, decide what to do next
+        SEND_END_OF_TX,                 //!< Finish sending current byte
+        SEND_WAIT_FOR_RX_ACK_WINDOW,    //!< after sending we wait for the ack receive window to start, only timeout event enabled
+        SEND_WAIT_FOR_RX_ACK            //!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
     };
 
     /**
@@ -228,23 +228,23 @@ public:
     /**
       * The total length of the received telegram in telegram[].
       */
-     volatile int telegramLen;
+    volatile int telegramLen;
 
-     /**
-      * The result of the rx process on the bus.
-      */
-     volatile int bus_rx_state;
+    /**
+     * The result of the rx process on the bus.
+     */
+    volatile int bus_rx_state;
 
-     /**
-      * The result of the tx process on the bus.
-      */
-     volatile int bus_tx_state;
+    /**
+     * The result of the tx process on the bus.
+     */
+    volatile int bus_tx_state;
 
-     /**
-      * The state of the tx/rx process on the bus available and valid.
-      */
-     volatile bool bus_rxstate_valid;
-     volatile bool bus_txstate_valid;
+    /**
+     * The state of the tx/rx process on the bus available and valid.
+     */
+    volatile bool bus_rxstate_valid;
+    volatile bool bus_txstate_valid;
 
 private:
     /**
@@ -318,8 +318,8 @@ private:
     int parity;                  //!< Parity bit of the current byte
     int valid;                   //!< 1 if parity is valid for all bits of the telegram
     int checksum;                //!< Checksum of the telegram: 0 if valid at end of telegram
-    volatile unsigned short rx_error;	//!< hold the rx error flags of the rx process of the state machine
-    volatile unsigned short tx_error;	//!< hold the tx error flags of the tx process of the state machine
+    volatile unsigned short rx_error;    //!< hold the rx error flags of the rx process of the state machine
+    volatile unsigned short tx_error;    //!< hold the tx error flags of the tx process of the state machine
     bool wait_for_ack_from_remote; //!< sending process is requesting an ack from remote side
     bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
     bool repeatTelegram;        //!< need to repeat last  telegram sent
@@ -351,13 +351,13 @@ private:
 #define RX_PREAMBLE_ERROR 256           //!< first char we received has invalid value in bit 0 and bit 1
 
 #define TX_OK 0                     //!< No error
-#define TX_STARTBIT_BUSY_ERROR 1	//!< bus is busy few us before we intended to send a start bit
-#define TX_NACK_ERROR 4				//!< we received a NACK
-#define TX_ACK_TIMEOUT_ERROR 8		//!< we did not received an ACK after sending in the respective time window
-#define TX_REMOTE_BUSY_ERROR 16		//!< AFTER SENDING, REMOTE SIDE SENDS busy BACK
-#define TX_PWM_STARTBIT_ERROR 32	//!< we could not receive our send start bit as cap event, possible HW fault
-#define TX_COLLISION_ERROR 64		//!< collision, we tried to send high bit but low bit was detected- send from other device
-#define TX_RETRY_ERROR 128			//!< max number of retries reached, tx process terminated
+#define TX_STARTBIT_BUSY_ERROR 1    //!< bus is busy few us before we intended to send a start bit
+#define TX_NACK_ERROR 4             //!< we received a NACK
+#define TX_ACK_TIMEOUT_ERROR 8      //!< we did not received an ACK after sending in the respective time window
+#define TX_REMOTE_BUSY_ERROR 16     //!< AFTER SENDING, REMOTE SIDE SENDS busy BACK
+#define TX_PWM_STARTBIT_ERROR 32    //!< we could not receive our send start bit as cap event, possible HW fault
+#define TX_COLLISION_ERROR 64       //!< collision, we tried to send high bit but low bit was detected- send from other device
+#define TX_RETRY_ERROR 128          //!< max number of retries reached, tx process terminated
 
 
 //
@@ -401,7 +401,7 @@ inline int Bus::sendTelegramState() const
 inline void Bus::setBusTXStateValid(bool state)
 {
     bus_txstate_valid = state;
-	return;
+    return;
 }
 inline bool Bus::getBusTXStateValid() const
 {
@@ -411,7 +411,7 @@ inline bool Bus::getBusTXStateValid() const
 inline void Bus::setBusRXStateValid(bool state)
 {
     bus_rxstate_valid = state;
-	return;
+    return;
 }
 inline bool Bus::getBusRXStateValid() const
 {
