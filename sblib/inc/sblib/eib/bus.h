@@ -17,25 +17,15 @@
 #include <sblib/eib/types.h>
 
 /**
- * Bus short acknowledgment frame: acknowledged
+ * Data link layer short acknowledgment frames
  */
-#define SB_BUS_ACK 0xcc
-
-/**
- * Bus short acknowledgment frame: not acknowledged
- */
-#define SB_BUS_NACK 0x0c
-
-/**
- * Bus short acknowledgment frame: busy
- */
-#define SB_BUS_BUSY 0xc0
-
-/**
- * Bus short acknowledgment frame: not acknowledged & busy
- * Shall be handled as SB_BUS_BUSY
- */
-#define SB_BUS_NACK_BUSY 0x00
+enum ShortAcknowledgeFrame
+{
+    SB_BUS_ACK       = 0xcc, //!< Acknowledged
+    SB_BUS_NACK      = 0x0c, //!< Not acknowledged
+    SB_BUS_BUSY      = 0xc0, //!< Busy
+    SB_BUS_NACK_BUSY = 0x00, //!< Not acknowledged & busy. Shall be handled as @ref SB_BUS_BUSY
+};
 
 /**
  * Low level class for EIB bus access.

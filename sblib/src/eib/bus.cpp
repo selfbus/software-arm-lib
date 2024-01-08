@@ -827,7 +827,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //fixme: should not happen here, probably timing error
 
         if (timer.flag(captureChannel)){
-            sendAck = 0;  // we stop sending an Ack to remote side and stat receiving the char
+            sendAck = 0;  // we stop sending an Ack to remote side and start receiving the char
             state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;  // init RX of new telegram
             goto STATE_SWITCH;
         }
