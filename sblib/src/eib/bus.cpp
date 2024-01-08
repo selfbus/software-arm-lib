@@ -451,7 +451,7 @@ void Bus::handleTelegram(bool valid)
 					for (int i = 0; i < nextByteIndex; i++) telegram[i] = rx_telegram[i];
 					telegramLen = nextByteIndex;
 					bus_rx_state = rx_error;
-					rx_error = 0;
+					rx_error = RX_OK;
 					setBusRXStateValid(true);
 				}
 			}
@@ -522,7 +522,7 @@ void Bus::handleTelegram(bool valid)
 
 #endif
 #ifdef BUSMONITOR
-	rx_error = 0;
+	rx_error = RX_OK;
 #endif
 
 
@@ -648,7 +648,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
 		nextByteIndex = 0;
 		collision = false;
-		rx_error  = 0;
+		rx_error  = RX_OK;
 		checksum = 0xff;
 		sendAck = 0;
 		valid = 1;
@@ -1104,7 +1104,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 				// A collision. Stop sending and switch to receiving the current transmission.
 				collision = true;
 				tx_error |= TX_COLLISION_ERROR;
-				rx_error = 0;
+				rx_error = RX_OK;
 				checksum = 0xff;
 				valid = 1;
 				parity = 1;
