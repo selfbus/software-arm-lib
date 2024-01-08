@@ -148,7 +148,6 @@ Bus::Bus(BcuBase* bcuInstance, Timer& aTimer, int aRxPin, int aTxPin, TimerCaptu
     state = Bus::INIT;
 }
 
-
 /**
  * Start BUS operation
  *
@@ -234,7 +233,6 @@ void Bus::begin()
     digitalWrite(PIO_FOR_TEL_END_IND, 0);
 #endif
 }
-
 
 void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
 {
@@ -332,17 +330,17 @@ void Bus::prepareForSending()
  * check for need of sending ACK to sender side and start respective process:  time for ACK (15BT) or inter telegram wait (50BT)
  * and set WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE state
  * If we had a collision,  no action
- *  **  End of telegram is indicated by a timeout. As the timer is still running we have the accurate time since the last stop bit.
+ * End of telegram is indicated by a timeout. As the timer is still running we have the accurate time since the last stop bit.
  *
- *  copy local rx-data to 2nd rx buffer for parallel processing on higher layer and SM
+ * copy local rx-data to 2nd rx buffer for parallel processing on higher layer and SM
 
  * Provide some Data-layer functions:
- *  check telegram type
- *  check if it is for us (phy adr, or Grp Adr belong to us)
- *  check if we want it anyhow (TL, LL info)
- *  send ACK/NACK if requested
- *  send BUSYACK if we are still busy on higher layers - no free buffer available
- *  handling of repeated telegrams
+ *    check telegram type
+ *    check if it is for us (phy adr, or Grp Adr belong to us)
+ *    check if we want it anyhow (TL, LL info)
+ *    send ACK/NACK if requested
+ *    send BUSYACK if we are still busy on higher layers - no free buffer available
+ *    handling of repeated telegrams
  *
  * Input by global data:
  *    timer flags: timeout indicates end of last telegram, timer value hold the time since rx of last stop bit
@@ -355,8 +353,8 @@ void Bus::prepareForSending()
  *    telegram[]: received telegram in telegram buffer <telegram[]>, length in telegramLen
  *    telegramLen: rx telegram length
  *    sendAck:  !0:  RX process need to send ack to sending side back, set wait timer accordingly
- *     indicate result of telegram reception/error state to upper layer via bus_rx_state/bus_tx_state
- *     and bus_rxstate_valid/bus_txstate_valid
+ *    indicate result of telegram reception/error state to upper layer via bus_rx_state/bus_tx_state
+ *    and bus_rxstate_valid/bus_txstate_valid
  *
  *
  * @param bool of all received char parity and frame checksum error
@@ -391,12 +389,12 @@ void Bus::handleTelegram(bool valid)
     tb_h( 908, currentByte, tb_in);
     tb_h( 909, parity, tb_in);
 
-#ifndef BUSMONITOR   // no processing if we are in monitor mode
+#ifndef BUSMONITOR // no processing if we are in monitor mode
 
     // Received a valid telegram with correct checksum and valid control byte (normal data frame with preamble bits)?
     //todo extended tel, check tel len, give upper layer error info
-    if ( nextByteIndex >= 8 && valid  &&  (( rx_telegram[0] & VALID_DATA_FRAME_TYPE_MASK) == VALID_DATA_FRAME_TYPE_VALUE)
-         && nextByteIndex <= bcu->maxTelegramSize()  )
+    if (nextByteIndex >= 8 && valid && (( rx_telegram[0] & VALID_DATA_FRAME_TYPE_MASK) == VALID_DATA_FRAME_TYPE_VALUE)
+        && nextByteIndex <= bcu->maxTelegramSize()  )
     {
         int destAddr = (rx_telegram[3] << 8) | rx_telegram[4];
         bool processTel = false;
@@ -473,7 +471,7 @@ void Bus::handleTelegram(bool valid)
             }
         }
     }
-    else if (nextByteIndex == 1 && wait_for_ack_from_remote)   // Received a spike or a bus acknowledgment, only parity, no checksum
+    else if (nextByteIndex == 1 && wait_for_ack_from_remote) // Received a spike or a bus acknowledgment, only parity, no checksum
     {
         tb_h( 907, currentByte, tb_in);
 
@@ -538,7 +536,6 @@ void Bus::handleTelegram(bool valid)
     rx_error = RX_OK;
 #endif
 
-
     //we received a telegram, next action wait to send ack back or wait 50 bit times for next rx/tx (todo check for improved noise margin with cap event disabled)
     timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer for next action: ack or telegram  start bit time -PRE_SEND_TIME
     //timer.captureMode(captureChannel, FALLING_EDGE); // no capture during wait- improves bus noise margin l
@@ -570,7 +567,6 @@ void Bus::finishSendingTelegram()
  *
  * Interrupt prolog  (from event at cap pin or timer match) takes about 3-5us processing time (incl SM state select)
  * Selecting the right state of SM Bus
- *
  */
 __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 {
@@ -614,7 +610,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     STATE_SWITCH:
     switch (state)
     {
-
     // BCU is in start-up phase, we wait for 50 bits inactivity of the bus
     case Bus::INIT:
         tb_t( state, ttimer.value(), tb_in);
@@ -634,14 +629,12 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     // A timeout  (after 0xfffe us) should not be received (indicating no bus activity) match interrupt is disabled
     // A reception of a new telegram is triggered by the falling edge of the received start bit and we collect the bits in the receiving process
     // Sending is triggered in idle state by state switch from IDLE to WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE to send pending the telegram
-
     case Bus::IDLE:
         tb_d( state+100, ttimer.value(), tb_in);
         DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
 
         if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing - timeout??
             break;
-
 
     // RX process functions
     //initialize the RX process for a new telegram reception.
@@ -726,7 +719,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     // bitMask hold the position of the expected low bit, bitTime the start-time of the expected expected low bit
     // if we received an edge interrupt later than the expected bitTime we had some high bits in between and need to calculate how many.
     // bitMask: bit8 : parity; bit9 : stop bit
-
     case Bus::RECV_BITS_OF_BYTE:
         //tb_t( RECV_BITS_OF_BYTE, ttimer.value(), tb_in);
 
@@ -782,7 +774,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             {
                 rx_telegram[nextByteIndex++] = currentByte;
                 checksum ^= currentByte;
-            } else {
+            }
+            else
+            {
                 rx_error |= RX_LENGTH_ERROR;
             }
 
@@ -802,7 +796,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
 
         }// cap event during stop bit: error, we should received byte-timeout later
-        else if (time > BYTE_TIME_EXCL_STOP ) rx_error |= RX_STOPBIT_ERROR;
+        else if (time > BYTE_TIME_EXCL_STOP )
+            rx_error |= RX_STOPBIT_ERROR;
         //tb_h( RECV_BITS_OF_BYTE +200, rx_error, tb_in);
         break;
 
@@ -854,7 +849,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         break;
 
-
     /*
      * ************Sending states**************
      * To allow for the use of the timer PWM generator, the timing of the sending process is in phase shift of -69us with respect to
@@ -864,20 +858,17 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
      * All bus wait time before a TX could start are therefore reduced by PRE_SEND_TIME (104us). This allows to set the PWM and timer match
      * to begin the start bit of first byte  in PRE_SEND_TIME and check for any bus activity before the edge of the our start bit is received
      * if any other device did send a start bit before us (bus busy window before start bit).
-     *
-     *
-     ***/
+     **/
 
-    /*  WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
+    /* WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
      * is entered by match interrupt some usec (PRE_SEND_TIME or 1us coming from idle state) before sending the start bit of the first byte
      * of a pending telegram. It is always entered after receiving or sending is done and we waited the respective time for next action. If no tel
      * is pending, we enter idle state. Any new sending or receiving process will be started there. If there is a tel pending, we check for prio
-     *  and start sending after pre-send-time of 104us or if we have a normal Telegram after pre-send-time + 3*BitTime,
-     *  resulting in 50/53BT between telegrams
+     * and start sending after pre-send-time of 104us or if we have a normal Telegram after pre-send-time + 3*BitTime,
+     * resulting in 50/53BT between telegrams
      *
-     *   State should be entered with timer reset by match to have valid ref point for tx cap event with timer still running
+     * State should be entered with timer reset by match to have valid ref point for tx cap event with timer still running
      **/
-
     case Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE:
         tb_t( state, ttimer.value(), tb_in);
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // enable cap event after waiting time for next rx
@@ -895,6 +886,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             tx_error |= TX_RETRY_ERROR;
             finishSendingTelegram(); // then send next, this also informs upper layer on sending error of last telegram
         }
+
         if (sendCurTelegram != nullptr)  // Send a telegram pending?
         {    //tb_t( state+200, ttimer.value(), tb_in);
             tb_h( state+ 200, repeatTelegram, tb_in);
@@ -914,7 +906,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             if (((sendCurTelegram[0] & SB_TEL_REPEAT_FLAG)) && ((sendCurTelegram[0] & PRIO_FLAG_HIGH)) ) {
                 time = PRE_SEND_TIME + 3 * BIT_TIME;
             }
-            else time = PRE_SEND_TIME;
+            else
+                time = PRE_SEND_TIME;
             //tb_d( state+ 300, time, tb_in);
             //tb_h( state+ 400,sendCurTelegram[0], tb_in);
         }
@@ -993,7 +986,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             state = Bus::SEND_BIT_0; //  we received our start bit edge in time, prepare for to send bit 0
             break;
 
-        } else if (timer.flag(timeChannel)){
+        }
+        else if (timer.flag(timeChannel)){
             // Timeout: we have a hardware problem as receiving our sent signal does not work. set error and just continue sending bit0
             tb_t( state+400, ttimer.value(), tb_in);
             state = Bus::SEND_BIT_0; //   prepare for to send bit 0
@@ -1022,7 +1016,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         // Calculate the parity bit
         for (bitMask = 1; bitMask < 0x100; bitMask <<= 1)
         {
-            if (currentByte & bitMask)  // current bit high
+            if (currentByte & bitMask) // current bit high
                 currentByte ^= 0x100;  // toggle/xor parity bit
         }
         bitMask = 1;
@@ -1032,7 +1026,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     /* SEND_BITS_OF_BYTE
      * state is in phase shift,  entered by match/period interrupt from pwm
      * n-bit low pulse end now after 35us by time match interrupt, send next bit of byte till end of byte (stop bit)
-     * **/
+     **/
     case Bus::SEND_BITS_OF_BYTE:
     {
         tb_t( SEND_BITS_OF_BYTE, ttimer.value(), tb_in);
@@ -1074,14 +1068,14 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         if (stopBitReached)
             timer.match(pwmChannel, 0xffff); //stop pwm pulses - low output
         // as we are at the raising edge of the last pulse, the next falling edge will be n*104 - 35us (min69us) away
-        else timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
+        else
+            timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
         //tb_d( SEND_BITS_OF_BYTE+500, time, tb_in);
         //tb_h( SEND_BITS_OF_BYTE+600, timer.captureMode(captureChannel),  tb_in);
 
         timer.match(timeChannel, time); // interrupt at end of low/high bit pulse - next raising edge or after stop bit + 2 wait bits
         break;
     }
-
 
     /* SEND_WAIT_FOR_HIGH_BIT_END
      * state is in phase shift,  entered by  cap event or match/period interrupt from pwm
@@ -1234,7 +1228,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             state= Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
             time =  SEND_WAIT_TIME - PRE_SEND_TIME;// we wait 50 BT- pre-send-time for next rx/tx window, cap intr disabled
             // todo inform receiving process of pos ack tx
-        }else
+        }
+        else
         {
             tb_h( SEND_END_OF_TX+600, repeatTelegram, tb_in);
 
@@ -1299,7 +1294,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         //timer is counting since last stop bit so we need to wait 50BT till idle for repeated frames (see KNX spec v2.1 3/2/2 2.3.1 Figure 38)
         timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME);
-
         timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait to increase the robustness on bus spikes
         timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
         break;

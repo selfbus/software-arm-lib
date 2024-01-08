@@ -204,7 +204,7 @@ public:
     {
         INIT,   //!< The Lib is initializing, waiting for 50bit time inactivity on the bus
         IDLE,   //!< The lib is idle. there was no receiving or sending for at least 50bit times, only cap intr enabled, no timeout intr
-        INIT_RX_FOR_RECEIVING_NEW_TEL,      //! The Lib received a cap event and we need to start/init receiving of a new Telegram
+        INIT_RX_FOR_RECEIVING_NEW_TEL,      //!< The Lib received a cap event and we need to start/init receiving of a new Telegram
         RECV_WAIT_FOR_STARTBIT_OR_TELEND,   //!< The lib is waiting for Startbit (cap intr (low bit received) or timeout (end of stop bit: char end)) intr enabeld
         RECV_BITS_OF_BYTE,                  //!< The lib is collecting all bit of a character
         RECV_WAIT_FOR_ACK_TX_START,         //!< After Tel is received the lib is waiting for start sending an ACK to remote side.
