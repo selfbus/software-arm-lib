@@ -49,27 +49,27 @@
 #define PREAMBLE_MASK  (( 1<< ALWAYS0) | ( 1<< ACK_REQ_FLAG))
 
 #define PRIO_FLAG_HIGH     (SB_TEL_PRIO0_FLAG)
-#define PRIO_FLAG_LOW     (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
+//#define PRIO_FLAG_LOW     (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
 
 
 //  **************define some default values for data/link layer based on the knx spec ***********
 
 #define NACK_RETRY_DEFAULT 3        //!> default NACK retry
 #define BUSY_RETRY_DEFAULT 3        //!> default BUSY retry
-#define ROUTE_CNT_DEFAULT 6         //!> default Route Count
+//#define ROUTE_CNT_DEFAULT 6         //!> default Route Count
 
-#define PHY_ADDR_AREA(address) ((address >> 12) & 0x0f) //!> return the area number of a given physical KNX address
-#define PHY_ADDR_LINE(address) ((address >> 8) & 0x0f)  //!> return the line number of a given physical KNX address
-#define PHY_ADDR_DEVICE(address) (address & 0xff)       //!> return device number of a given physical KNX address
+//#define PHY_ADDR_AREA(address) ((address >> 12) & 0x0f) //!> return the area number of a given physical KNX address
+//#define PHY_ADDR_LINE(address) ((address >> 8) & 0x0f)  //!> return the line number of a given physical KNX address
+//#define PHY_ADDR_DEVICE(address) (address & 0xff)       //!> return device number of a given physical KNX address
 
 
 //  **************define some flags and timing values based on the knx spec ***********
 
 // Mask for the timer flag of the capture channel
-#define CAPTURE_FLAG (8 << captureChannel)
+//#define CAPTURE_FLAG (8 << captureChannel)
 
 // Mask for the timer flag of the time channel
-#define TIME_FLAG (8 << timeChannel)
+//#define TIME_FLAG (8 << timeChannel)
 
 
 
@@ -95,7 +95,7 @@
 #define BYTE_TIME_EXCL_STOP 1040
 
 // Maximum time from start bit to next bytes start bit  + 13*104 +30 margin
-#define START_BIT_BYTE_TIME_MAX 1382
+//#define START_BIT_BYTE_TIME_MAX 1382
 
 // Maximum time from end of stop bit to start bit of next byte 2 Bit time + 100us marging = timeout for end of telegram
 #define MAX_INTER_CHAR_TIME 308
@@ -104,19 +104,19 @@
 #define SEND_ACK_WAIT_TIME 15*BIT_TIME
 
 // Time to wait  for window to prepare  sending an ACK  15* BIT Time: approximately - 69us should be enough
-#define SEND_ACK_WINDOW_START_TIME  SEND_ACK_WAIT_TIME  -  BIT_WAIT_TIME
+//#define SEND_ACK_WINDOW_START_TIME  SEND_ACK_WAIT_TIME  -  BIT_WAIT_TIME
 
 //for rx process: Time from end of stop bit to start of ACK = 15* bit time -5us/+30us acc to spec,
 //we add add marging of 100us as we have seen some early acks on the bus
 //
-#define ACK_WAIT_TIME 15*BIT_TIME
+//#define ACK_WAIT_TIME 15*BIT_TIME
 #define ACK_WAIT_TIME_MIN 15*BIT_TIME -5 - 100
 #define ACK_WAIT_TIME_MAX 15*BIT_TIME +30 + 100
 
 // after TX wait for ack reception from remote side
-#define RX_ACK_WAIT_TIME          15* BIT_TIME  //
-#define RX_ACK_WAIT_TIME_MAX      15* BIT_TIME +30 // we wait 15*BT -5 min,   1560 +30us max
-#define RX_ACK_WAIT_TIME_MIN      15* BIT_TIME -5 //
+//#define RX_ACK_WAIT_TIME          15* BIT_TIME  //
+//#define RX_ACK_WAIT_TIME_MAX      15* BIT_TIME +30 // we wait 15*BT -5 min,   1560 +30us max
+//#define RX_ACK_WAIT_TIME_MIN      15* BIT_TIME -5 //
 
 // Time to wait before starting to send: BIT_TIME * 50
 #define SEND_WAIT_TIME 5200
