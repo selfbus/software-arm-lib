@@ -510,9 +510,22 @@ void Bus::handleTelegram(bool valid)
 	{
 		collision = false;
 	}
-	else // We received wrong checksum or parity, or more than one byte but too short for a telegram
+	else // We received an acknowledge frame, wrong checksum/parity or more than one byte but too short for a telegram
 	{
-		rx_error |= RX_INVALID_TELEGRAM_ERROR;
+	    auto isAcknowledgeFrame = (nextByteIndex == 1) &&
+	                              (currentByte == SB_BUS_ACK ||
+	                               currentByte == SB_BUS_NACK ||
+	                               currentByte == SB_BUS_BUSY ||
+	                               currentByte == SB_BUS_NACK_BUSY);
+	    if (isAcknowledgeFrame)
+	    {
+	        rx_error &= ~RX_INVALID_TELEGRAM_ERROR;
+	        rx_error &= ~RX_CHECKSUM_ERROR; // received an ACK frame so clear checksum bit previously set in ISR Bus::timerInterruptHandler
+	    }
+	    else
+	    {
+	        rx_error |= RX_INVALID_TELEGRAM_ERROR;
+	    }
 	}
 
     DB_TELEGRAM(telrxerror = rx_error);
