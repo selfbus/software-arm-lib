@@ -858,7 +858,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
      * All bus wait time before a TX could start are therefore reduced by PRE_SEND_TIME (104us). This allows to set the PWM and timer match
      * to begin the start bit of first byte  in PRE_SEND_TIME and check for any bus activity before the edge of the our start bit is received
      * if any other device did send a start bit before us (bus busy window before start bit).
-     **/
+     */
 
     /* WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
      * is entered by match interrupt some usec (PRE_SEND_TIME or 1us coming from idle state) before sending the start bit of the first byte
@@ -868,7 +868,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
      * resulting in 50/53BT between telegrams
      *
      * State should be entered with timer reset by match to have valid ref point for tx cap event with timer still running
-     **/
+     */
     case Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE:
         tb_t( state, ttimer.value(), tb_in);
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // enable cap event after waiting time for next rx
@@ -950,7 +950,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
      * For start of normal frames we check for bus free in a window  < -7us of before the start bit is send.  If bus is busy (capture received
      * in window), we stop sending and start receiving instead. For sending of ACK, bus free detection  is optional (windows < - 16us before
      * start bit) as other devices probably responding with ack as well (defined in Vol8.2.2).
-     **/
+     */
     case Bus::SEND_START_BIT:
         //tb_d( SEND_START_BIT+100, timer.match (pwmChannel), tb_in);
         //tb_h(SEND_START_BIT+200, timer.captureMode(captureChannel),  tb_in);
@@ -1000,7 +1000,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
      *  start bit low pulse end now after 35us by time match interrupt, we are in the middle of the start bit at rising edge of start
      *  bit pulse. Prepare for sending bits of frame.
      *
-     **/
+     */
     case Bus::SEND_BIT_0:
         //tb_d( state+100, timer.match (pwmChannel), tb_in);
         // get byte to send
@@ -1026,7 +1026,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     /* SEND_BITS_OF_BYTE
      * state is in phase shift,  entered by match/period interrupt from pwm
      * n-bit low pulse end now after 35us by time match interrupt, send next bit of byte till end of byte (stop bit)
-     **/
+     */
     case Bus::SEND_BITS_OF_BYTE:
     {
         tb_t( SEND_BITS_OF_BYTE, ttimer.value(), tb_in);
@@ -1085,7 +1085,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
      * next bit start window is in 69us, and the n-bit low pulse starts at n*104 - 35us and ends at n*104 -> check for edge window: the high phase
      * of the last bit : 69us - margin till 69us before next falling edge at pwmChannel time + margin
      * Timeout event indicated a bus timing error
-     **/
+     */
     case Bus::SEND_WAIT_FOR_HIGH_BIT_END:
         //tb_t( state, ttimer.value(), tb_in);
         //tb_d( state+100,timer.match(pwmChannel), tb_in);
