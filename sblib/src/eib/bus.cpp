@@ -1298,9 +1298,10 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
         break;
 
+    // we should never land here, except someone has forgotten to implement a state
     default:
-        idleState();
         tb_d( 9999, ttimer.value(), tb_in);
+        fatalError();
         break;
     }
 
