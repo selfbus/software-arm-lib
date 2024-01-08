@@ -160,8 +160,7 @@ void BcuDefault::loop()
 void BcuDefault::end()
 {
     flushUserMemory(UsrCallbackType::bcu_end, true);
-    bus->end();
-    enabled = false;
+    BcuBase::end();
 }
 
 byte* BcuDefault::userMemoryPtr(unsigned int addr)

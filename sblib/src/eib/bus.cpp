@@ -565,7 +565,7 @@ void Bus::finishSendingTelegram()
 /*
  * State Machine - driven by interrupts of timer and capture input
  *
- * Interrupt prolog  (from event at cap pin or timer match) takes about 3-5us processing time (incl SM state select)
+ * Interrupt prolog (from event at cap pin or timer match) takes about 3-5us processing time (incl SM state select)
  * Selecting the right state of SM Bus
  */
 __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
@@ -579,7 +579,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 #endif
 
     // debug processing takes about 7-8us
-    tbint( state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
+    tbint(state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
 
     // If we captured a falling edge (bit), read the pin repeatedly over a duration of 3us.
     if (timer.flag(captureChannel))
