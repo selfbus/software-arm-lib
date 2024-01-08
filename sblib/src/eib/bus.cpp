@@ -959,8 +959,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         {
             // Bus busy check: Abort sending if we receive a start bit early enough to abort.
             // We will receive our own start bit here too.
-            if ((( timer.capture(captureChannel)< timer.match(pwmChannel) - BUS_BUSY_DETECTION_FRAME)&& !sendAck )||
-                ((timer.capture(captureChannel) < timer.match(pwmChannel) - BUS_BUSY_DETECTION_ACK) && sendAck)) // optional
+            auto earliestAllowedStartBitOffset = sendAck ? BUS_BUSY_DETECTION_ACK : BUS_BUSY_DETECTION_FRAME;
+            if (timer.capture(captureChannel) < (timer.match(pwmChannel) - earliestAllowedStartBitOffset))
             {
                 // received edge of bit before our own bit was triggered - stop sending process and go to receiving process
                 tb_d( state+300, ttimer.value(), tb_in);
