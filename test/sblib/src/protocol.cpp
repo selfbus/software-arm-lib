@@ -12,6 +12,7 @@
 #include <sblib/eib/knx_npdu.h>
 #include <sblib/internal/variables.h>
 #include <sblib/internal/iap.h>
+#include <sblib/eib/bus_const.h>
 #include <sblib/bits.h>
 
 extern unsigned int wfiSystemTimeInc;
