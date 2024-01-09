@@ -17,49 +17,6 @@
 #include <sblib/eib/types.h>
 
 /**
- * Data link layer short acknowledgment frames
- */
-enum ShortAcknowledgeFrame
-{
-    SB_BUS_ACK       = 0xcc, //!< Acknowledged
-    SB_BUS_NACK      = 0x0c, //!< Not acknowledged
-    SB_BUS_BUSY      = 0xc0, //!< Busy
-    SB_BUS_NACK_BUSY = 0x00, //!< Not acknowledged & busy. Shall be handled as @ref SB_BUS_BUSY
-};
-
-/**
- * Rx error code values
- */
-enum RxErrorCode
-{
-    RX_OK                     = 0,   //!< No Rx error
-    RX_STOPBIT_ERROR          = 1,   //!< we received a cap event during stop bit
-    RX_TIMING_ERROR           = 2,   //!< received edge of bits is not in the timing window n*104-7 - n*104+33
-    RX_TIMING_ERROR_SPIKE     = 4,   //!< received edge of bit with incorrect timing
-    RX_PARITY_ERROR           = 8,   //!< parity not valid
-    RX_CHECKSUM_ERROR         = 16,  //!< checksum not valid
-    RX_LENGTH_ERROR           = 32,  //!< received number of byte does not match length value of telegram
-    RX_BUFFER_BUSY            = 64,  //!< rx buffer still busy by higher layer process while a new telegram was received
-    RX_INVALID_TELEGRAM_ERROR = 128, //!< we received something but not a valid tel frame: to short,  to long, spike
-    RX_PREAMBLE_ERROR         = 256, //!< first char we received has invalid value in bit 0 and bit 1
-};
-
-/**
- * Tx error code values
- */
-enum TxErrorCode
-{
-    TX_OK                  = 0,   //!< No Tx error
-    TX_STARTBIT_BUSY_ERROR = 1,   //!< bus is busy few us before we intended to send a start bit
-    TX_NACK_ERROR          = 4,   //!< we received a NACK
-    TX_ACK_TIMEOUT_ERROR   = 8,   //!< we did not received an ACK after sending in the respective time window
-    TX_REMOTE_BUSY_ERROR   = 16,  //!< AFTER SENDING, REMOTE SIDE SENDS busy BACK
-    TX_PWM_STARTBIT_ERROR  = 32,  //!< we could not receive our send start bit as cap event, possible HW fault
-    TX_COLLISION_ERROR     = 64,  //!< collision, we tried to send high bit but low bit was detected- send from other device
-    TX_RETRY_ERROR         = 128, //!< max number of retries reached, tx process terminated
-};
-
-/**
  * Low level class for EIB bus access.
  *
  * When creating a bus object, the handler for the timer must also be
