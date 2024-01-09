@@ -663,23 +663,21 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         // we continue with receiving of start bit.
 
     // A start bit (by cap event) is expected to arrive here. If we have a timeout instead, the
-    // transmission of a frame is over.  (after 11  bit plus 2 fill bits :13*104us  + margin (1452us) after start of last char)
+    // transmission of a frame is over.  (after 11 bit plus 2 fill bits :13*104us  + margin (1452us) after start of last char)
     // we expect that the timer was restarted by the end of the last frame (end of stop bit) and not restarted by a cap event
-    // timer will be pre-set with for the capture timing (few us), mode reset, interrupt, macht of frame time (11bits), capture interrupt
+    // timer will be pre-set with for the capture timing (few us), mode reset, interrupt, match of frame time (11bits), capture interrupt
     case Bus:: RECV_WAIT_FOR_STARTBIT_OR_TELEND:
         if (!timer.flag(captureChannel))  // No start bit: then it is a timeout of end of frame
-        { // did the sending process waited for an ack from remote?
+        {
+            if (checksum)
             {
-                if (checksum)
-                {
-                    rx_error |= RX_CHECKSUM_ERROR;
-                }
-                DB_TELEGRAM(telRXEndTime= ttimer.value() - timer.value();); // timer was restarted at end of last stop bit
-#               ifdef PIO_FOR_TEL_END_IND
-                    digitalWrite(PIO_FOR_TEL_END_IND, 1); // set handleTelegram() PIO
-#               endif
-                handleTelegram(valid && !checksum);
+                rx_error |= RX_CHECKSUM_ERROR;
             }
+            DB_TELEGRAM(telRXEndTime= ttimer.value() - timer.value();); // timer was restarted at end of last stop bit
+#           ifdef PIO_FOR_TEL_END_IND
+                digitalWrite(PIO_FOR_TEL_END_IND, 1); // set handleTelegram() PIO
+#           endif
+            handleTelegram(valid && !checksum);
             break;
         }
 
