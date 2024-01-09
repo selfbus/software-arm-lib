@@ -577,10 +577,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     volatile int time;
     unsigned int dt, tv, cv;
 
-#ifdef PIO_FOR_TEL_END_IND
-    digitalWrite(PIO_FOR_TEL_END_IND, 0); // restore handleTelegram() PIO
-#endif
-
     // debug processing takes about 7-8us
     tbint(state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
 
@@ -678,13 +674,10 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 {
                     rx_error |= RX_CHECKSUM_ERROR;
                 }
-                DB_TELEGRAM(
-                    telRXEndTime= ttimer.value() - timer.value(); // timer was restarted at end of last stop bit -
-#                   ifdef PIO_FOR_TEL_END_IND
-                        digitalWrite(PIO_FOR_TEL_END_IND, 1); // set Pin to high till next interrupt as end of Tel indication
-#                   endif
-                );
-
+                DB_TELEGRAM(telRXEndTime= ttimer.value() - timer.value();); // timer was restarted at end of last stop bit
+#               ifdef PIO_FOR_TEL_END_IND
+                    digitalWrite(PIO_FOR_TEL_END_IND, 1); // set handleTelegram() PIO
+#               endif
                 handleTelegram(valid && !checksum);
             }
             break;
@@ -987,6 +980,10 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             }
             tb_t( state+400, ttimer.value(), tb_in);
             state = Bus::SEND_BIT_0; //  we received our start bit edge in time, prepare for to send bit 0
+#       ifdef PIO_FOR_TEL_END_IND
+            if (sendAck)
+                digitalWrite(PIO_FOR_TEL_END_IND, 0);
+#       endif
             break;
 
         }
