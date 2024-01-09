@@ -97,8 +97,11 @@
 // Maximum time from start bit to next bytes start bit  + 13*104 +30 margin
 //#define START_BIT_BYTE_TIME_MAX 1382
 
-// Maximum time from end of stop bit to start bit of next byte 2 Bit time + 100us marging = timeout for end of telegram
-#define MAX_INTER_CHAR_TIME 308
+/**
+ * Maximum time from end of stop bit to start bit of next byte = timeout for end of telegram,
+ * KNX Spec. 2.1 3/2/2 p. 34 figure 39, inner_frame_char
+ */
+#define MAX_INTER_CHAR_TIME 2 * BIT_TIME + 5
 
 // Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
 #define SEND_ACK_WAIT_TIME 15*BIT_TIME
