@@ -106,9 +106,9 @@ enum TxErrorCode
 
 /**
  * Maximum time from end of stop bit to start bit of next byte = timeout for end of telegram,
- * KNX Spec. 2.1 3/2/2 p. 34 figure 39, inner_frame_char
+ * KNX Spec. 2.1 3/2/2 p. 35 figure 40, inner_frame_char
  */
-#define MAX_INTER_CHAR_TIME 2*BIT_TIME + 5
+#define MAX_INTER_CHAR_TIME 2*BIT_TIME + 30
 
 #define SEND_ACK_WAIT_TIME 15*BIT_TIME //!< Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
 

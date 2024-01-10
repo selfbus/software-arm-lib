@@ -665,7 +665,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
             //wait for the next byte's start bit or end of telegram and set timer to inter byte time + margin
             //timeout was at 11 bit times (1144us), timeout for end of telegram - no more bytes after 2bit times after
-            //last stop bit: >2 bit times, << ack waiting time -> 2*BITTIME + 100us margin (308- 450 us) seems to be ok.
+            //last stop bit, with up to 30us extra time
             //we disable reset of timer by match to have fixed ref point at end of last RX-byte,
             //timer was restarted by timeout event at end of stop bit, we just set new match value
             //next state interrupt at start bit falling edge
