@@ -445,6 +445,7 @@ void Bus::handleTelegram(bool valid)
 
 #           ifdef ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER
                 suppressAck = true;
+#               warning "LL_ACK sending DISABLED."
 #           endif
 
             if (suppressAck)
