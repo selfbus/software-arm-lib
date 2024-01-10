@@ -29,6 +29,10 @@
 
 #define PHY_ADDR_DEFAULT (0xffff)   //!> default physical address 15.15.255
 
+#define PHY_ADDR_AREA(address) ((address >> 12) & 0x0f) //!> Return the area number of a given physical KNX address
+#define PHY_ADDR_LINE(address) ((address >> 8) & 0x0f)  //!> Return the line number of a given physical KNX address
+#define PHY_ADDR_DEVICE(address) (address & 0xff)       //!> Return device number of a given physical KNX addres
+
 #define LPDU_CONTROL_BYTE           (0)
 #define LPDU_SENDER_HIGH_BYTE       (1)
 #define LPDU_SENDER_LOW_BYTE        (2)
