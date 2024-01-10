@@ -108,7 +108,7 @@ public class CliOptions {
 
     private static final int PRINT_WIDTH = 100;
     private final static List<String> VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
-    private final static List<String> VALID_PRIORITIES = Arrays.asList("SYSTEM", "NORMAL", "URGENT", "LOW");
+    private final static List<String> VALID_PRIORITIES = Arrays.asList("SYSTEM", "HIGH", "ALARM", "LOW");
 
 
     private final Options cliOptions = new Options();
@@ -285,7 +285,7 @@ public class CliOptions {
                 .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) quotation marks(\") in password may not work").build();
 
         Option knxPriority = Option.builder(null).longOpt(OPT_LONG_PRIORITY)
-                .argName("SYSTEM|NORMAL|URGENT|LOW")
+                .argName("SYSTEM|ALARM|HIGH|LOW")
                 .hasArg()
                 .required(false)
                 .type(String.class)
