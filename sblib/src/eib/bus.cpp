@@ -112,6 +112,11 @@ void Bus::begin()
     pinMode(PIO_FOR_TEL_END_IND, OUTPUT);
     digitalWrite(PIO_FOR_TEL_END_IND, 0);
 #endif
+
+#ifdef PIO_ACKNOWLEDGE_FRAME_END
+    pinMode(PIO_ACKNOWLEDGE_FRAME_END, OUTPUT);
+    digitalWrite(PIO_ACKNOWLEDGE_FRAME_END, false);
+#endif
 }
 
 void Bus::pause(bool waitForTelegramSent)
@@ -437,6 +442,11 @@ void Bus::handleTelegram(bool valid)
             auto suppressAck = !(bcu->userRam->status() & BCU_STATUS_LINK_LAYER);
             // LL_ACK only allowed for L_Data frames
             suppressAck |= rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG;
+
+#           ifdef ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER
+                suppressAck = true;
+#           endif
+
             if (suppressAck)
             {
                 sendAck = 0;
@@ -492,6 +502,9 @@ void Bus::handleTelegram(bool valid)
                                    currentByte == SB_BUS_NACK_BUSY);
         if (isAcknowledgeFrame)
         {
+#           ifdef ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER
+                digitalWrite(PIO_ACKNOWLEDGE_FRAME_END, true);
+#           endif
             rx_error &= ~RX_INVALID_TELEGRAM_ERROR;
             rx_error &= ~RX_CHECKSUM_ERROR; // received an ACK frame so clear checksum bit previously set in ISR Bus::timerInterruptHandler
         }
@@ -569,6 +582,10 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     int time;
     unsigned int dt, tv, cv;
     auto isCaptureEvent = timer.flag(captureChannel);
+
+#   ifdef PIO_ACKNOWLEDGE_FRAME_END
+        digitalWrite(PIO_ACKNOWLEDGE_FRAME_END, false);
+#   endif
 
     // debug processing takes about 7-8us
     tbint(state+8000, ttimer.value(), isCaptureEvent, timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
@@ -1262,6 +1279,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 tx_busy_rep_count = sendBusyRetries;
                 tx_telrxerror = tx_error;
             );
+#           ifdef ACKNOWLEDGE_FRAME_SENT_TRIGGER
+                digitalWrite(PIO_ACKNOWLEDGE_FRAME_END, true);
+#           endif
 
             sendAck = 0;
             state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;

@@ -80,7 +80,22 @@
 //#define DUMP_TELEGRAMS
 
 /** @def PIO_FOR_TEL_END_IND toggle defined PIO pin at the end of a received telegram */
-//#define PIO_FOR_TEL_END_IND (PIO1_4)
+//#define PIO_FOR_TEL_END_IND (PIO3_5)
+
+/**
+ * @def PIO_ACKNOWLEDGE_FRAME_END
+ * Set GPIO pin at the end of a short acknowledge frame (LL_ACK, LL_NACK, LL_BUSY, LL_NACK+BUSY).
+ * @note - Define @ref ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER to trigger on received short acknowledge frame.
+ *       - Define @ref ACKNOWLEDGE_FRAME_SENT_TRIGGER to trigger on finished sending of an short acknowledge frame
+ * @warning This also deactivates the sending of our own LL_ACKs.
+*/
+//#define PIO_ACKNOWLEDGE_FRAME_END (PIO3_5)
+
+/** @def ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER Trigger on received short acknowledge frame. */
+//#define ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER
+
+/** @def Trigger on finished sending of an short acknowledge frame*/
+//#define ACKNOWLEDGE_FRAME_SENT_TRIGGER
 
 /** @def DUMP_COM_OBJ dump object handling information on app-server level over serial interface */
 //#define DUMP_COM_OBJ
@@ -116,7 +131,10 @@
 #   undef DEBUG_BUS_BITLEVEL
 #   undef BUSMONITOR
 #   undef DUMP_TELEGRAMS
-#	undef PIO_FOR_TEL_END_IND
+#   undef PIO_FOR_TEL_END_IND
+#   undef PIO_ACKNOWLEDGE_FRAME_END
+#   undef TRIGGER_ACKNOWLEDGE_FRAME_RECEIVED
+#   undef TRIGGER_ACKNOWLEDGE_FRAME_SENT
 #   undef DUMP_COM_OBJ
 #   undef DUMP_MEM_OPS
 #   undef DUMP_PROPERTIES
@@ -154,6 +172,19 @@
 #   warning "Default debugging serial port speed set to 115200"
 #   define SERIAL_SPEED 115200
 #endif
+
+#if defined(PIO_ACKNOWLEDGE_FRAME_END) && (!defined(ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER) && !defined(ACKNOWLEDGE_FRAME_SENT_TRIGGER))
+#   error "Define ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER or ACKNOWLEDGE_FRAME_SENT_TRIGGER to use PIO_ACKNOWLEDGE_FRAME_END"
+#endif
+
+#if (!defined(PIO_ACKNOWLEDGE_FRAME_END)) && (defined(ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER) || defined(ACKNOWLEDGE_FRAME_SENT_TRIGGER))
+#   error "Must define PIO_ACKNOWLEDGE_FRAME_END to use ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER or ACKNOWLEDGE_FRAME_SENT_TRIGGER"
+#endif
+
+#if (defined(ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER) && defined(ACKNOWLEDGE_FRAME_SENT_TRIGGER))
+#   warning "ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER and ACKNOWLEDGE_FRAME_SENT_TRIGGER are defined. Is this intentional?"
+#endif
+
 
 #endif /* SBLIB_LIBCONFIG_H_ */
 
