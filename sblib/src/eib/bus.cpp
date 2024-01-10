@@ -783,7 +783,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             }
             // if we have repetition of telegram or system or alarm prio, we wait only 50bit time
             if (((sendCurTelegram[0] & SB_TEL_REPEAT_FLAG)) && ((sendCurTelegram[0] & PRIO_FLAG_HIGH)) ) {
-                time = PRE_SEND_TIME + 3 * BIT_TIME;
+                time = PRE_SEND_TIME + BIT_TIMES(3);
             }
             else
                 time = PRE_SEND_TIME;
@@ -1076,7 +1076,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         if (nextByteIndex < sendTelegramLen && !sendAck)
         {
             // There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
-            time = 3 * BIT_TIME;
+            time = BIT_TIMES(3);
             state = Bus::SEND_BIT_0;  // state for bit-0 of next byte to send
             timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
         }
