@@ -85,57 +85,51 @@ enum TxErrorCode
 #define PREAMBLE_MASK  (( 1<< ALWAYS0) | ( 1<< ACK_REQ_FLAG))
 
 #define PRIO_FLAG_HIGH     (SB_TEL_PRIO0_FLAG)
-//#define PRIO_FLAG_LOW     (SB_TEL_PRIO0_FLAG | SB_TEL_PRIO1_FLAG )
 
 
 #define NACK_RETRY_DEFAULT  3   //!< default NACK retry
 #define BUSY_RETRY_DEFAULT  3   //!< default BUSY retry
 //#define ROUTE_CNT_DEFAULT 6     //!< default Route Count
 
+
+/* Timing related macros */
+
+#define TICKS_PER_SECOND    1000000                                  //!< Timer is in microseconds (usec)
+#define TIMER_PRESCALER     (SystemCoreClock / TICKS_PER_SECOND - 1) //!< The value for the prescaler
+#define BIT_TIMES(x)        (((x) * TICKS_PER_SECOND + 4800) / 9600) //!< Microseconds of x bits on the bus, with integer rounding
+
 #define BUS_BUSY_DETECTION_FRAME 7  //!< >=7 us before start bit check for bus busy for normal frame
 #define BUS_BUSY_DETECTION_ACK  16  //!< >=16 us before start bit check for bus busy for ACK frame
 
-#define BIT_TIME      104 //!< Default time between two bits (104 usec)
-#define BIT_WAIT_TIME  69 //!< Time between two bits (69 usec) - high level part of the pulse on the bus
-#define BIT_PULSE_TIME 35 //!< Pulse duration of a bit (35 usec)
+#define BIT_TIME            BIT_TIMES(1)               //!< Default time between two bits (104 usec)
+#define BIT_WAIT_TIME       ((BIT_TIME * 4 + 3) / 6)   //!< Time between two bits (69 usec) - high level part of the pulse on the bus
+#define BIT_PULSE_TIME      (BIT_TIME - BIT_WAIT_TIME) //!< Pulse duration of a bit (35 usec)
 
-//#define BYTE_TIME 1090  //!< Maximum time from start bit to stop bit, including a safety extra: BIT_TIME*10 + BIT_TIME/2
-#define BYTE_TIME_INCL_STOP 1144 //!< Maximum time from start bit to end of stop bit: BIT_TIME*11
-#define BYTE_TIME_EXCL_STOP 1040 //!< Maximum time from start bit to start of stop bit: BIT_TIME*10
-//#define START_BIT_BYTE_TIME_MAX 1382 //!< Maximum time from start bit to next bytes start bit  + 13*104 +30 margin
+#define BYTE_TIME_INCL_STOP BIT_TIMES(11) //!< Maximum time from start bit to end of stop bit: BIT_TIME*11
+#define BYTE_TIME_EXCL_STOP BIT_TIMES(10) //!< Maximum time from start bit to start of stop bit: BIT_TIME*10
 
 /**
  * Maximum time from end of stop bit to start bit of next byte = timeout for end of telegram,
  * KNX Spec. 2.1 3/2/2 p. 35 figure 40, inner_frame_char
  */
-#define MAX_INTER_CHAR_TIME 2*BIT_TIME + 30
+#define MAX_INTER_CHAR_TIME (BIT_TIMES(2) + 30)
 
-#define SEND_ACK_WAIT_TIME 15*BIT_TIME //!< Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
-
-//!< Time to wait  for window to prepare  sending an ACK  15* BIT Time: approximately - 69us should be enough
-//#define SEND_ACK_WINDOW_START_TIME  SEND_ACK_WAIT_TIME  -  BIT_WAIT_TIME
+#define SEND_ACK_WAIT_TIME  BIT_TIMES(15) //!< Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
 
 /**
  * For rx process: Time from end of stop bit to start of ACK = 15* bit time -5us/+30us according to spec.
  * We add an marging of 100us as we have seen some early acks on the bus
  */
-#define ACK_WAIT_TIME_MIN 15*BIT_TIME - 5 - 100
-#define ACK_WAIT_TIME_MAX 15*BIT_TIME +30 + 100
+#define ACK_WAIT_TIME_MIN   (BIT_TIMES(15) - 5 - 100)
+#define ACK_WAIT_TIME_MAX   (BIT_TIMES(15) +30 + 100)
 
-// after TX wait for ack reception from remote side
-//#define RX_ACK_WAIT_TIME          15* BIT_TIME
-//#define RX_ACK_WAIT_TIME_MAX      15* BIT_TIME +30 // we wait 15*BT -5 min,   1560 +30us max
-//#define RX_ACK_WAIT_TIME_MIN      15* BIT_TIME -5
-
-#define SEND_WAIT_TIME 5200 //!< Time to wait before starting to send: BIT_TIME * 50
-#define WAIT_50BIT_FOR_IDLE 5200 //!< Time to wait before bus is in idle state: BIT_TIME * 50
+#define SEND_WAIT_TIME      BIT_TIMES(50) //!< Time to wait before starting to send: BIT_TIME * 50
+#define WAIT_50BIT_FOR_IDLE BIT_TIMES(50) //!< Time to wait before bus is in idle state: BIT_TIME * 50
 
 //!< Time to wait before repetition of sending a telegram due to busy from remote side  BIT_TIME * 150
-#define BUSY_WAIT_150BIT  (150 * BIT_TIME)
+#define BUSY_WAIT_150BIT    BIT_TIMES(150)
 
-#define PRE_SEND_TIME 104 //!< Time to listen for bus activity before sending starts: BIT_TIME * 1
-
-#define TIMER_PRESCALER (SystemCoreClock / 1000000 - 1) //!< The value for the prescaler
+#define PRE_SEND_TIME       BIT_TIMES(1) //!< Time to listen for bus activity before sending starts: BIT_TIME * 1
 
 #endif /* SBLIB_KNX_BUS_CONST_H_ */
 
