@@ -12,6 +12,7 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
+import tuwien.auto.calimero.knxnetip.TcpConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
@@ -28,6 +29,7 @@ import java.util.Collections;
 
 import static org.selfbus.updater.Utils.shortenPath;
 import static org.selfbus.updater.Utils.tcpConnection;
+import static tuwien.auto.calimero.knxnetip.KNXnetIPRouting.DefaultMulticast;
 
 /**
  * A Tool for updating firmware of a Selfbus device in a KNX network.
@@ -128,6 +130,35 @@ public class Updater implements Runnable {
         }
     }
 
+    private KNXNetworkLink createSecureTunnelingLink(InetSocketAddress local, InetSocketAddress remote,
+                                                     KNXMediumSettings medium) throws KNXException, InterruptedException {
+        // KNX IP Secure TCP tunneling v2 connection
+        logger.info("Connect using KNX IP Secure tunneling...");
+        byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.devicePassword().toCharArray());
+        byte[] userKey = SecureConnection.hashUserPassword(cliOptions.userPassword().toCharArray());
+        final var session = tcpConnection(local, remote).newSecureSession(cliOptions.userId(), userKey, deviceAuthCode);
+        return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
+    }
+
+    private KNXNetworkLink createTunnelingLinkV2(InetSocketAddress local, InetSocketAddress remote,
+                                                 KNXMediumSettings medium) throws KNXException, InterruptedException {
+        logger.info("Connect using TCP tunneling v2...");
+        final var session = tcpConnection(local, remote);
+        return KNXNetworkLinkIP.newTunnelingLink(session, medium);
+    }
+
+    private KNXNetworkLink createTunnelingLinkV1(InetSocketAddress local, InetSocketAddress remote, boolean useNat,
+                                                     KNXMediumSettings medium) throws KNXException, InterruptedException {
+        logger.info("{}Connect using UDP tunneling v1 (nat:{})...{}", ConColors.YELLOW, useNat, ConColors.RESET);
+        return KNXNetworkLinkIP.newTunnelingLink(local, remote, useNat, medium);
+    }
+
+    private KNXNetworkLink createRoutingLink(InetSocketAddress local, KNXMediumSettings medium) throws KNXException {
+        logger.info("{}Connect using routing (multicast:{})...{}", ConColors.YELLOW, DefaultMulticast, ConColors.RESET);
+
+        return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), DefaultMulticast, medium);
+    }
+
     /**
      * Creates the KNX network link to access the network specified in
      * <code>options</code>.
@@ -143,14 +174,14 @@ public class Updater implements Runnable {
             InterruptedException, UpdaterException {
         final KNXMediumSettings medium = getMedium(cliOptions.medium(), ownAddress);
         logger.debug("Creating KNX network link {}...", medium);
-        if (cliOptions.ft12().length() > 0) {
+        if (!cliOptions.ft12().isEmpty()) {
             // create FT1.2 network link
             try {
                 return new KNXNetworkLinkFT12(Integer.parseInt(cliOptions.ft12()), medium);
             } catch (final NumberFormatException e) {
                 return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
             }
-        } else if (cliOptions.tpuart().length() > 0) {
+        } else if (!cliOptions.tpuart().isEmpty()) {
             // create TPUART network link
             KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.tpuart(), medium, Collections.emptyList());
             linkTpuart.addAddress(cliOptions.ownAddress()); //\todo check if this is rly needed
@@ -158,34 +189,47 @@ public class Updater implements Runnable {
         }
 
         // create local and remote socket address for network link
-        InetSocketAddress local;
-        local = createLocalSocket(cliOptions.localhost(), cliOptions.localport());
-        if (local == null) {
-            local = new InetSocketAddress(0);
-        }
+        InetSocketAddress local = createLocalSocket(cliOptions.localhost(), cliOptions.localport());
 
         final InetSocketAddress remote = new InetSocketAddress(cliOptions.knxInterface(), cliOptions.port());
+
+        // Connect using KNX IP Secure
+        if ((!cliOptions.devicePassword().isEmpty()) && (!cliOptions.userPassword().isEmpty())) {
+            return createSecureTunnelingLink(local, remote, medium);
+        }
+
+        if (cliOptions.tunnelingV2()) {
+            return createTunnelingLinkV2(local, remote, medium);
+        }
+
+        if (cliOptions.tunnelingV1()) {
+            return createTunnelingLinkV1(local, remote, cliOptions.nat(), medium);
+        }
+
         if (cliOptions.routing()) {
-            //KNXNetworkLinkIP.ROUTING
-            //return KNXNetworkLinkIP.newRoutingLink(local, remote,	cliOptions.nat(), medium);
-            logger.error("{}Routing not implemented.{}", ConColors.RED, ConColors.RESET);
-            throw new UpdaterException("Routing not implemented.");
-            //return KNXNetworkLinkIP.newRoutingLink(local, remote, medium);
+            return createRoutingLink(local, medium);
         }
-        else {
-            if ((cliOptions.devicePassword().length() == 0) && (cliOptions.userPassword().length() == 0)) {
-                // default UDP unsecure tunneling connection
-                return KNXNetworkLinkIP.newTunnelingLink(local, remote, cliOptions.nat(), medium);
-            }
-            else {
-                // KNX IP Secure TCP tunneling connection
-                byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.devicePassword().toCharArray());
-                byte[] userKey = SecureConnection.hashUserPassword(cliOptions.userPassword().toCharArray());
-                final var session = tcpConnection(local, remote).newSecureSession(cliOptions.userId(), userKey, deviceAuthCode);
-                return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
-            }
+
+        // try unsecure TCP tunneling v2 connection
+        try {
+            return createTunnelingLinkV2(local, remote, medium);
         }
+        catch (final KNXException | InterruptedException e) {
+            logger.info("failed with {}", e.toString());
+        }
+
+        // try unsecure UDP tunneling v1 connection with nat option set on cli
+        try {
+            return createTunnelingLinkV1(local, remote, cliOptions.nat(), medium);
+        }
+        catch (final KNXException | InterruptedException e) {
+            logger.info("{}failed with {}{}", ConColors.YELLOW, e, ConColors.RESET);
+        }
+
+        // last chance try unsecure UDP tunneling v1 connection with INVERTED nat option set on cli
+        return createTunnelingLinkV1(local, remote, !cliOptions.nat(), medium);
     }
+
     static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
     {
         final int p = port != null ? port.intValue() : 0;

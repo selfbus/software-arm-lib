@@ -22,8 +22,9 @@ windows: gradlew.bat fatJar
 java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
        <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|ALARM|HIGH|LOW>]
        [--user <id>] [--user-pwd <password>] [--device-pwd <password>] [-u <uid>] [-f1] [-H
-       <localhost>] [-P <localport>] [-p <port>] [-n] [-r] [-a <address>] [-h | -v]  [--delay <ms>]
-       [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
+       <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-a <address>] [-h | -v]
+       [--delay <ms>] [--timeout] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>]
+       [-f0] [--statistic]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
@@ -50,6 +51,8 @@ Selfbus KNX-Firmware update tool options:
  -H,--localhost <localhost>                 local IP/host name
  -P,--localport <localport>                 local UDP port (default system assigned)
  -p,--port <port>                           UDP port on <KNX Interface> (default 3671)
+ -t2,--tunnelingv2                          use KNXnet/IP tunneling v2 (TCP) (experimental)
+ -t1,--tunneling                            use KNXnet/IP tunneling v1 (UDP) 
  -n,--nat                                   enable Network Address Translation (NAT)
  -r,--routing                               use KNXnet/IP routing (not implemented)
  -a,--appVersionPtr <address>               pointer address to APP_VERSION string in new firmware

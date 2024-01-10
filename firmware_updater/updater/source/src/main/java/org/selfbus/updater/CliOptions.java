@@ -78,6 +78,10 @@ public class CliOptions {
 
     private static final String OPT_LONG_DELAY = "delay";
 
+    private static final String OPT_SHORT_TUNNEL_V2 = "t2";
+    private static final String OPT_LONG_TUNNEL_V2 = "tunnelingv2";
+    private static final String OPT_SHORT_TUNNEL_V1 = "t1";
+    private static final String OPT_LONG_TUNNEL_V1 = "tunneling";
     private static final String OPT_SHORT_NAT = "n";
     private static final String OPT_LONG_NAT = "nat";
     private static final String OPT_SHORT_ROUTING = "r";
@@ -128,6 +132,8 @@ public class CliOptions {
     private boolean nat = false;
     private String ft12 = "";
     private String tpuart = "";
+    private boolean tunnelingV2 = false;
+    private boolean tunnelingV1 = false;
     private boolean routing = false;
     private String medium = "tp1";
 
@@ -167,8 +173,10 @@ public class CliOptions {
         this.progDevice = progDevice;
         this.ownAddress = ownAddress;
 
-        Option nat = new Option(OPT_SHORT_NAT, OPT_LONG_NAT, false, "enable Network Address Translation (NAT)");
-        Option routing = new Option(OPT_SHORT_ROUTING, OPT_LONG_ROUTING, false, "use KNXnet/IP routing (not implemented)");
+        Option tunnelingV2 = new Option(OPT_SHORT_TUNNEL_V2, OPT_LONG_TUNNEL_V2, false, "use KNXnet/IP tunneling v2 (TCP) (experimental)");
+        Option tunnelingV1 = new Option(OPT_SHORT_TUNNEL_V1, OPT_LONG_TUNNEL_V1, false, "use KNXnet/IP tunneling v1 (UDP)");
+        Option nat = new Option(OPT_SHORT_NAT, OPT_LONG_NAT, false, "enable Network Address Translation (NAT) (only available with tunneling v1)");
+        Option routing = new Option(OPT_SHORT_ROUTING, OPT_LONG_ROUTING, false, "use KNXnet/IP routing/multicast (experimental)");
         Option full = new Option(OPT_SHORT_FULL, OPT_LONG_FULL, false, "force full upload mode (disables differential mode)");
         Option help = new Option(OPT_SHORT_HELP, OPT_LONG_HELP, false, "show this help message");
         Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
@@ -318,6 +326,8 @@ public class CliOptions {
         cliOptions.addOption(localhost);
         cliOptions.addOption(localport);
         cliOptions.addOption(port);
+        cliOptions.addOption(tunnelingV2);
+        cliOptions.addOption(tunnelingV1);
         cliOptions.addOption(nat);
         cliOptions.addOption(routing);
         cliOptions.addOption(appVersionPtr);
@@ -420,6 +430,16 @@ public class CliOptions {
             }
             logger.debug("full={}", full);
 
+            if (cmdLine.hasOption(OPT_SHORT_TUNNEL_V2)) {
+                tunnelingV2 = true;
+            }
+            logger.debug("tunnelingV2={}", tunnelingV2);
+
+            if (cmdLine.hasOption(OPT_SHORT_TUNNEL_V1)) {
+                tunnelingV1 = true;
+            }
+            logger.debug("tunneling={}", tunnelingV1);
+
             if (cmdLine.hasOption(OPT_SHORT_ROUTING)) {
                 routing = true;
             }
@@ -507,7 +527,7 @@ public class CliOptions {
             }
             logger.debug("tpuart={}", tpuart);
 
-            if ((ft12.length() == 0) && (tpuart.length() == 0)) {
+            if ((ft12.isEmpty()) && (tpuart.isEmpty())) {
                 // no ft12 or tpuart => get the <KNX Interface>
                 if (cmdLine.getArgs().length <= 0) {
                     throw new ParseException("No <KNX Interface>, ft12 or tpuart specified.");
@@ -544,6 +564,21 @@ public class CliOptions {
                 logger.info("{}--{} is set. --> switching to full flash mode{}", ConColors.RED, OPT_LONG_ERASEFLASH, ConColors.RESET);
             }
 
+            if (nat() && (!tunnelingV1())) {
+                throw new ParseException(String.format("%sOption --%s can only be used together with --%s%s", ConColors.RED, OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ConColors.RESET));
+            }
+
+            int interfacesSet = 0;
+            if (!(userPassword().isEmpty()) && !(devicePassword().isEmpty())) interfacesSet++;
+            if (tunnelingV2()) interfacesSet++;
+            if (tunnelingV1()) interfacesSet++;
+            if (routing()) interfacesSet++;
+            if (!ft12().isEmpty()) interfacesSet++;
+            if (!tpuart().isEmpty()) interfacesSet++;
+
+            if (interfacesSet > 1) {
+                throw new ParseException(String.format("%sOnly one bus interface can be used.%s", ConColors.RED, ConColors.RESET));
+            }
 
         } catch (ParseException | KNXFormatException e) {
             StringBuilder cliParsed = new StringBuilder();
@@ -620,6 +655,10 @@ public class CliOptions {
     public String tpuart() {
         return tpuart;
     }
+
+    public boolean tunnelingV2() { return tunnelingV2; }
+
+    public boolean tunnelingV1() { return tunnelingV1; }
 
     public boolean routing() {
         return routing;
