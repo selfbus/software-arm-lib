@@ -444,8 +444,8 @@ void Bus::handleTelegram(bool valid)
             suppressAck |= rx_telegram[0] & SB_TEL_DATA_FRAME_FLAG;
 
 #           ifdef ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER
-                suppressAck = true;
-#               warning "LL_ACK sending DISABLED."
+                // suppressAck = true;
+#               // warning "LL_ACK sending DISABLED."
 #           endif
 
             if (suppressAck)
@@ -838,6 +838,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     //if cap event, we received an early ack - continue with rx process
     //todo disable cap event in previous state - not needed during waiting for ack start
     case Bus::RECV_WAIT_FOR_ACK_TX_START:
+#           ifdef ACKNOWLEDGE_FRAME_RECEIVED_TRIGGER
+                digitalWrite(PIO_ACKNOWLEDGE_FRAME_END, true);
+#           endif
         tb_t( state, ttimer.value(), tb_in);
 
         //cap event- should not happen here;  start receiving,  maybe ack or early tx from other device,
