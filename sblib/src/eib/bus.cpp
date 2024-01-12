@@ -822,28 +822,23 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         {
             // Bus busy check: Abort sending if we receive a start bit early enough to abort.
             // We will receive our own start bit here too.
-            auto earliestAllowedStartBitOffset = sendAck ? BUS_BUSY_DETECTION_ACK : BUS_BUSY_DETECTION_FRAME;
-            if (timer.capture(captureChannel) < (timer.match(pwmChannel) - earliestAllowedStartBitOffset))
+            if (timer.capture(captureChannel) < (timer.match(pwmChannel) - BUS_BUSY_DETECTION_FRAME))
             {
-                // received edge of bit before our own bit was triggered - stop sending process and go to receiving process
-                tb_d( state+300, ttimer.value(), tb_in);
-                timer.match(pwmChannel, 0xffff); // stop our bit set pwm output to low
+                if (!sendAck)
+                {
+                    // received edge of bit before our own bit was triggered - stop sending process and go to receiving process
+                    tb_d( state+300, ttimer.value(), tb_in);
+                    timer.match(pwmChannel, 0xffff); // stop our bit set pwm output to low
 
-                /* set up of timer for RX  is done in RECV_WAIT_FOR_STARTBIT_OR_TELEND state, skip here
-                // correct the timer start value by the process time (about 13us) we had since the capture event
-                tv=timer.value(); cv= timer.capture(captureChannel);
-                if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-                else dt = (0xffff-cv) +tv;
-                timer.reset();  // reset timer and pre-load with processing time
-                timer.value(dt);
-                timer.matchMode(timeChannel, INTERRUPT | RESET);
-                timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT); // next state interrupt at start bit  - falling edge, no reset fixme should be bit0 as we received startbit here
-                timer.match(timeChannel, BYTE_TIME_INCL_STOP);
-                //timer.counterMode(DISABLE,  DISABLE); // disabled the  timer reset by the falling edge of cap event
-                */
-//                state = Bus:: RECV_WAIT_FOR_STARTBIT_OR_TELEND; // start reception of byte
-                state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;  // init RX for reception of telegram
-                goto STATE_SWITCH;
+                    state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;  // init RX for reception of telegram
+                    goto STATE_SWITCH;
+                }
+                else
+                {
+                    // send acknowledge frame overlapping to the other device
+                    timer.match(pwmChannel, timer.value() + 1);
+                    timer.match(timeChannel, timer.capture(captureChannel) + BIT_PULSE_TIME);
+                }
             }
             tb_t( state+400, ttimer.value(), tb_in);
             state = Bus::SEND_BIT_0; //  we received our start bit edge in time, prepare for to send bit 0
