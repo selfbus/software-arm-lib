@@ -795,7 +795,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         timer.match(pwmChannel, time); // waiting time till start of first bit- falling edge 104us + n*104us ( n=0 or3)
         timer.match(timeChannel, time + BIT_PULSE_TIME); // end of bit pulse 35us later
         timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer after bit pulse end
-        timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
         nextByteIndex = 0;
         tx_error = TX_OK;
         state = Bus::SEND_START_BIT;
