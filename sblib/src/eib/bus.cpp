@@ -680,21 +680,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //tb_h( RECV_BITS_OF_BYTE +200, rx_error, tb_in);
         break;
 
-/*
-    //We arrive here after a telegram was received and we probably need to send an ACK back to remote side or continue waiting
-    //ACK tx/rx  windows starts now after the timeout event
-    // enable cap event and wait for sending  ACK or receiving ack
-    case Bus::RECV_WAIT_FOR_TX_ACK_WINDOW:
-        tb_t( state, ttimer.value(), tb_in);
-
-        state = Bus::RECV_WAIT_FOR_ACK_TX_START;
-        timer.match(timeChannel, SEND_ACK_WAIT_TIME - PRE_SEND_TIME); // we wait 15BT for our ack tx , cap intr enabled
-        timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // we might receive an ack if the last rx-msg was a broadcast
-        //todo disable cap event,   possible ack will be capture in send-startbit
-        timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer at ack start bit time -PRE_SEND_TIME
-        break;
-*/
-
     //timeout: we waited 15BT - PRE_SEND_TIME after rx process, start sending an ack
     //timer was reseted by match for ref for tx process
     //if cap event, we received an early ack - continue with rx process
@@ -790,7 +775,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             //tb_d( state+ 300, time, tb_in);
             //tb_h( state+ 400,sendCurTelegram[0], tb_in);
         }
-        else  // Send nothing:  wait PRE_SEND_TIME before we set the bus to idle state
+        else  // Send nothing: transition to idle state
         {
             DB_BUS(
                if (sendCurTelegram != nullptr)
@@ -800,9 +785,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                //tb_t( state*100+4, ttimer.value(), tb_in);
             );
 
-//            timer.match(timeChannel, PRE_SEND_TIME); // end of 50 bit waiting for idle
-//            state = Bus::INIT; // we use init state for the timeout to set the bus to IDLE state
-//            break;
             idleState();
             break;
         }
