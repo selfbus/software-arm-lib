@@ -98,8 +98,8 @@ enum TxErrorCode
 #define TIMER_PRESCALER     (SystemCoreClock / TICKS_PER_SECOND - 1) //!< The value for the prescaler
 #define BIT_TIMES(x)        (((x) * TICKS_PER_SECOND + 4800) / 9600) //!< Microseconds of x bits on the bus, with integer rounding
 
-#define BUS_BUSY_DETECTION_FRAME 7  //!< >=7 us before start bit check for bus busy for normal frame
-#define BUS_BUSY_DETECTION_ACK  16  //!< >=16 us before start bit check for bus busy for ACK frame
+#define BUS_STARTBIT_OFFSET_MIN 7  //!< >=7 us before expected start bit check for bus busy
+#define BUS_STARTBIT_OFFSET_MAX 33 //!< <=33 us after expected start bit is still ok
 
 #define BIT_TIME            BIT_TIMES(1)               //!< Default time between two bits (104 usec)
 #define BIT_WAIT_TIME       ((BIT_TIME * 4 + 3) / 6)   //!< Time between two bits (69 usec) - high level part of the pulse on the bus

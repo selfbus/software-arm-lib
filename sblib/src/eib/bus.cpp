@@ -625,7 +625,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 bitMask <<= 1; // next bit is in bitmask
             }
 
-            if (time > bitTime + 33 && bitMask <= 0x100)
+            if (time > bitTime + BUS_STARTBIT_OFFSET_MAX && bitMask <= 0x100)
             {
                 rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
                 DB_TELEGRAM(telRXTelBitTimingErrorLate = time); //report timing error for debugging
@@ -822,7 +822,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         {
             // Bus busy check: Abort sending if we receive a start bit early enough to abort.
             // We will receive our own start bit here too.
-            if (timer.capture(captureChannel) < (timer.match(pwmChannel) - BUS_BUSY_DETECTION_FRAME))
+            if (timer.capture(captureChannel) < (timer.match(pwmChannel) - BUS_STARTBIT_OFFSET_MIN))
             {
                 if (!sendAck)
                 {
@@ -957,7 +957,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         if (timer.flag(captureChannel))
         {
             auto captureTime = timer.capture(captureChannel);
-            if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - 7))
+            if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - BUS_STARTBIT_OFFSET_MIN))
             {
                 // Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
                 // (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
@@ -965,7 +965,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 break;
             }
 
-            if (( captureTime < timer.match(pwmChannel) - 7 ))
+            if (( captureTime < timer.match(pwmChannel) - BUS_STARTBIT_OFFSET_MIN ))
             {
                 tb_d( state+400, captureTime, tb_in);
                 tb_t( state+300, ttimer.value(), tb_in);
@@ -1004,7 +1004,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 // Scale back bitMask to match the collided bit. pwmChannel is when we would have sent
                 // the next falling edge, captureChannel when we received it. The 33 is to account for
                 // slight timing differences and integer arithmetic.
-                auto collisionBitCount = (timer.match(pwmChannel) - captureTime + 33) / BIT_TIME;
+                auto collisionBitCount = (timer.match(pwmChannel) - captureTime + BUS_STARTBIT_OFFSET_MAX) / BIT_TIME;
                 bitMask >>= collisionBitCount + 1;
 
                 // Pretend that we also received a 0 bit last time, such that there is no need to set any
