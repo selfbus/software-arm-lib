@@ -774,7 +774,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 time = PRE_SEND_TIME;
             // KNX spec 2.1 chapter 3/2/2 section 2.3.4 p. 37: Guarantee of access fairness
             // Add some random delay of up to 3 bit times.
-            time += millis() % BIT_TIMES(3);
+            time += (millis() * RANDOMIZE_FACTOR) % RANDOMIZE_MODULUS;
             //tb_d( state+ 300, time, tb_in);
             //tb_h( state+ 400,sendCurTelegram[0], tb_in);
         }

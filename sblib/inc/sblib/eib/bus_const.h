@@ -123,8 +123,10 @@ enum TxErrorCode
 #define ACK_WAIT_TIME_MIN   (BIT_TIMES(15) - 5 - 100)
 #define ACK_WAIT_TIME_MAX   (BIT_TIMES(15) +30 + 100)
 
-#define SEND_WAIT_TIME      BIT_TIMES(50) //!< Time to wait before starting to send: BIT_TIME * 50
 #define WAIT_50BIT_FOR_IDLE BIT_TIMES(50) //!< Time to wait before bus is in idle state: BIT_TIME * 50
+#define SEND_WAIT_TIME      BIT_TIMES(50) //!< Time to wait before starting to send: BIT_TIME * 50
+#define RANDOMIZE_FACTOR    131           //!< Factor for calculation of randomized additional time before starting to send
+#define RANDOMIZE_MODULUS   BIT_TIMES(3)  //!< Modulus for calculation of randomized additional time before starting to send
 
 //!< Time to wait before repetition of sending a telegram due to busy from remote side  BIT_TIME * 150
 #define BUSY_WAIT_150BIT    BIT_TIMES(150)
