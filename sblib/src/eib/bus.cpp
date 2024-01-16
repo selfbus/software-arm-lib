@@ -985,8 +985,18 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 }
                 else
                 {
-                    // Normal frames are repeated.
-                    repeatTelegram = true;
+                    // KNX spec 2.1 chapter 3/2/2 section 2.3.1 p. 35: "After detection that the bus
+                    // is not free and after a collision, the device shall wait until the end of the
+                    // message cycle in progress and shall make another attempt to transmit the data
+                    // link request PDU after 50 bit times or more line idle time."
+                    //
+                    // KNX spec 2.1 chapter 3/2/2 section 2.4.1 p. 39: "repetition: this shall specify
+                    // whether the local Data Link Layer shall repeat the Frame on the medium in case
+                    // of transmission errors (NAK, BUSY or acknowledge time-out)"
+                    //
+                    // Both citations yield the same conclusion: On collision, the frame is transmitted
+                    // again, but the "repeat flag" in the Control field and therefore also the timing
+                    // does not change. This means we must not set repeatTelegram here.
 
                     // For TX, nextByteIndex is incremented before we start transmitting. For RX, nextByteIndex is incremented after
                     // we received a byte completely. To account for this difference, we need to decrement when we switch from TX to RX.
