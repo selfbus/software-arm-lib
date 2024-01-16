@@ -425,7 +425,6 @@ void Bus::handleTelegram(bool valid)
 #endif
 
     //we received a telegram, next action wait to send ack back or wait 50 bit times for next rx/tx (todo check for improved noise margin with cap event disabled)
-    timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer for next action: ack or telegram  start bit time -PRE_SEND_TIME
     //timer.captureMode(captureChannel, FALLING_EDGE); // no capture during wait- improves bus noise margin l
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // todo enable timer reset by cap event
     timer.match(timeChannel,time); // todo adjust time value by processing timer since we had the end of telegram detection
@@ -552,7 +551,18 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     // we expect that the timer was restarted by the end of the last frame (end of stop bit) and not restarted by a cap event
     // timer will be pre-set with for the capture timing (few us), mode reset, interrupt, match of frame time (11bits), capture interrupt
     case Bus:: RECV_WAIT_FOR_STARTBIT_OR_TELEND:
-        if (!timer.flag(captureChannel))  // No start bit: then it is a timeout of end of frame
+        // Regardless of the concrete situation (captured start bit, end of data frame, end of acknowledge frame),
+        // we will enter the next state after some time and will need that time as reference, so it's safe
+        // to enable RESET right away -- provided we update the match value to a big one beforehand such that
+        // the timer does not wrap around inadvertently.
+        // The match value will be overwritten with the correct value later in processing.
+        // Doing this so early in this state simplifies debugging: If we would not set these values here,
+        // we'd see the timer count up to 0xffff and trigger a PWM pulse of 1us length before it wraps around.
+        timer.match(timeChannel, 0xfffe);
+        timer.matchMode(timeChannel, INTERRUPT | RESET);
+
+        // No start bit: then it is a timeout of end of frame
+        if (!timer.flag(captureChannel))
         {
             if (checksum)
             {
@@ -582,7 +592,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         timer.restart();  // restart timer and pre-load with processing time of 2us
         timer.value(dt+2);
         timer.match(timeChannel, BYTE_TIME_INCL_STOP);
-        timer.matchMode(timeChannel, INTERRUPT | RESET);
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT); // next state interrupt at first low bit  - falling edge, no reset
         //timer.counterMode(DISABLE,  DISABLE); // disabled the timer reset by the falling edge of cap event
         state = Bus::RECV_BITS_OF_BYTE;
