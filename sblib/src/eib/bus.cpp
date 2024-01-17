@@ -970,7 +970,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             {
                 // Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
                 // (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
-                // This is a spike, ignore it.
+                // This can be a long spike or another device sending too early. Whatever it is, it is not
+                // spec-compliant, so ignore it.
                 break;
             }
 
@@ -1063,9 +1064,22 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             break;
         }
 
-        // timeout event, i.e. sent all 1 bits without any collisions, now are in stop bit
+        // timeout event, i.e. sent all bits without any collisions
+        // This can either mean that we reached the end of the byte (good and expected case), or it can mean
+        // that another device sent one or more 0 bits too early, those bits overlapped our falling edge(s)
+        // and thus we need to continue sending. We have seen devices that send their bits on non-spec-compliant
+        // timing, so it's practical experience that this can happen.
+        if (bitMask <= 0x200)
+        {
+            // Stop bit not reached yet, continue sending.
+            state = Bus::SEND_BITS_OF_BYTE;
+            goto STATE_SWITCH;
+        }
+
+        // Stop bit reached.
         state = Bus::SEND_END_OF_BYTE;
         timer.captureMode(captureChannel, FALLING_EDGE);
+        // Intentionally fall through to SEND_END_OF_BYTE.
 
     // Completed transmission of parity bit and are in the middle of the stop bit transmission.
     // What do we need to do next?
