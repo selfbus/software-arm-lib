@@ -558,6 +558,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         // The match value will be overwritten with the correct value later in processing.
         // Doing this so early in this state simplifies debugging: If we would not set these values here,
         // we'd see the timer count up to 0xffff and trigger a PWM pulse of 1us length before it wraps around.
+        time = timer.match(timeChannel);
         timer.match(timeChannel, 0xfffe);
         timer.matchMode(timeChannel, INTERRUPT | RESET);
 
@@ -588,7 +589,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         tv=timer.value(); cv= timer.capture(captureChannel);
         if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-        else dt = (timer.match(timeChannel)-cv) +tv;
+        else dt = (time-cv) +tv;
         timer.restart();  // restart timer and pre-load with processing time of 2us
         timer.value(dt+2);
         timer.match(timeChannel, BYTE_TIME_INCL_STOP);
