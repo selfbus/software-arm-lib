@@ -76,7 +76,7 @@ void Bus::begin()
     timer.interrupts();
     timer.prescaler(TIMER_PRESCALER);
     timer.reset();
-    timer.match(timeChannel, WAIT_50BIT_FOR_IDLE);
+    timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
     timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
     timer.match(pwmChannel, 0xffff);
 
@@ -427,7 +427,7 @@ void Bus::handleTelegram(bool valid)
     //we received a telegram, next action wait to send ack back or wait 50 bit times for next rx/tx (todo check for improved noise margin with cap event disabled)
     //timer.captureMode(captureChannel, FALLING_EDGE); // no capture during wait- improves bus noise margin l
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // todo enable timer reset by cap event
-    timer.match(timeChannel,time); // todo adjust time value by processing timer since we had the end of telegram detection
+    timer.match(timeChannel, time - 1); // todo adjust time value by processing timer since we had the end of telegram detection
 }
 
 /*
@@ -482,7 +482,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
             // Break out of the loop after 3 microseconds.
             auto timerValue = timer.value();
-            auto elapsedMicroseconds = (timerValue >= captureValue) ? (timerValue - captureValue) : (matchValue - captureValue + timerValue);
+            auto elapsedMicroseconds = (timerValue >= captureValue) ? (timerValue - captureValue) : (matchValue + 1 - captureValue + timerValue);
             if (elapsedMicroseconds >= 3)
             {
                 break;
@@ -588,11 +588,11 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         // and check the capture event to be in the allowed time window for the start bit
 
         tv=timer.value(); cv= timer.capture(captureChannel);
-        if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-        else dt = (time-cv) +tv;
+        if ( tv >= cv ) dt= tv - cv; // check for timer overflow since cap event
+        else dt = (time + 1 - cv) + tv;
         timer.restart();  // restart timer and pre-load with processing time of 2us
         timer.value(dt+2);
-        timer.match(timeChannel, BYTE_TIME_INCL_STOP);
+        timer.match(timeChannel, BYTE_TIME_INCL_STOP - 1);
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT); // next state interrupt at first low bit  - falling edge, no reset
         //timer.counterMode(DISABLE,  DISABLE); // disabled the timer reset by the falling edge of cap event
         state = Bus::RECV_BITS_OF_BYTE;
@@ -612,7 +612,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //tb_t( RECV_BITS_OF_BYTE, ttimer.value(), tb_in);
 
         timeout = timer.flag(timeChannel); // timeout--> end of rx byte
-        if (timeout) time = timer.match(timeChannel); // end of stop bit
+        if (timeout) time = timer.match(timeChannel) + 1; // end of stop bit
         else
         {
             time = timer.capture(captureChannel); // we received an capt. event: new low bit
@@ -680,7 +680,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             //timer was restarted by timeout event at end of stop bit, we just set new match value
             //next state interrupt at start bit falling edge
             state = Bus:: RECV_WAIT_FOR_STARTBIT_OR_TELEND;
-            timer.match(timeChannel, MAX_INTER_CHAR_TIME);
+            timer.match(timeChannel, MAX_INTER_CHAR_TIME - 1);
             timer.matchMode(timeChannel, INTERRUPT);
             timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
 
@@ -714,7 +714,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         //set timer for TX process: init PWM pulse generation, interrupt at pulse end and cap event (pulse start)
         timer.match(pwmChannel, PRE_SEND_TIME); // waiting time till start of first bit- falling edge 104us + n*104us ( n=0 or3)
-        timer.match(timeChannel, PRE_SEND_TIME  + BIT_PULSE_TIME); // end of bit pulse 35us later
+        timer.match(timeChannel, PRE_SEND_TIME  + BIT_PULSE_TIME - 1); // end of bit pulse 35us later
         timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer after bit pulse end
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
         nextByteIndex = 0;
@@ -806,7 +806,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tb_d( state+600, time, tb_in);
         // set timer for TX process: init PWM pulse generation, interrupt at pulse end and cap event (pulse start)
         timer.match(pwmChannel, time); // waiting time till start of first bit- falling edge 104us + n*104us ( n=0 or3)
-        timer.match(timeChannel, time + BIT_PULSE_TIME); // end of bit pulse 35us later
+        timer.match(timeChannel, time + BIT_PULSE_TIME - 1); // end of bit pulse 35us later
         timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer after bit pulse end
         nextByteIndex = 0;
         tx_error = TX_OK;
@@ -847,7 +847,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 {
                     // send acknowledge frame overlapping to the other device
                     timer.match(pwmChannel, timer.value() + 1);
-                    timer.match(timeChannel, timer.capture(captureChannel) + BIT_PULSE_TIME);
+                    timer.match(timeChannel, timer.capture(captureChannel) + BIT_PULSE_TIME - 1);
                 }
             }
             tb_t( state+400, ttimer.value(), tb_in);
@@ -945,7 +945,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //tb_d( SEND_BITS_OF_BYTE+500, time, tb_in);
         //tb_h( SEND_BITS_OF_BYTE+600, timer.captureMode(captureChannel),  tb_in);
 
-        timer.match(timeChannel, time); // interrupt at end of low/high bit pulse - next raising edge or after stop bit + 2 wait bits
+        timer.match(timeChannel, time - 1); // interrupt at end of low/high bit pulse - next raising edge or after stop bit + 2 wait bits
         break;
     }
 
@@ -1049,7 +1049,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                     }
                 }
 
-                timer.match(timeChannel, captureTime + missingBits * BIT_TIME);
+                timer.match(timeChannel, captureTime + missingBits * BIT_TIME - 1);
                 timer.matchMode(timeChannel, INTERRUPT | RESET);
 
                 timer.match(pwmChannel, 0xffff); // set PWM bit to low next interrupt is on timeChannel match (value :time)
@@ -1099,7 +1099,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             state = Bus::SEND_END_OF_TX;
             time = BIT_TIME - BIT_PULSE_TIME;
         }
-        timer.match(timeChannel, time);
+        timer.match(timeChannel, time - 1);
         break;
 
     //state is in sync with resp. to bus timing,  entered by match interrupt after last bytes stop bit was send
@@ -1157,7 +1157,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tb_d( SEND_END_OF_TX+400, sendTries , tb_in);
         tb_d(SEND_END_OF_TX+500, sendBusyTries , tb_in);
 
-        timer.match(timeChannel, time); // we wait respective time - pre-send-time for next rx/tx window, cap intr disabled
+        timer.match(timeChannel, time - 1); // we wait respective time - pre-send-time for next rx/tx window, cap intr disabled
         break;
 
     //ACK receive windows starts now after the timeout event
@@ -1170,7 +1170,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
         //timer.counterMode(DISABLE,  captureChannel  | FALLING_EDGE); // enabled the  timer reset by the falling edge of cap event
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT );
-        timer.match(timeChannel, ACK_WAIT_TIME_MAX); // we wait 15BT+ marging for ack rx window, cap intr enabled
+        timer.match(timeChannel, ACK_WAIT_TIME_MAX - 1); // we wait 15BT+ marging for ack rx window, cap intr enabled
         break;
 
     // we wait here for the cap event of the ACK. If we receive a timeout- no ack was received and we need
@@ -1189,7 +1189,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
 
         //timer is counting since last stop bit so we need to wait 50BT till idle for repeated frames (see KNX spec v2.1 3/2/2 2.3.1 Figure 38)
-        timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME);
+        timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME - 1);
         timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait to increase the robustness on bus spikes
         timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
         break;
