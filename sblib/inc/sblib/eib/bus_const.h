@@ -117,7 +117,7 @@ enum TxErrorCode
 #define SEND_ACK_WAIT_TIME  BIT_TIMES(15) //!< Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
 
 /**
- * For rx process: Time from end of stop bit to start of ACK = 15* bit time -5us/+30us according to spec.
+ * For rx process: Time from end of stop bit to start of ACK = 15* bit time -5us/+30us according to KNX Spec 2.1 3/2/2 2.3.1 p.35 figure 40 (ack_char)
  * We add an marging of 100us as we have seen some early acks on the bus
  */
 #define ACK_WAIT_TIME_MIN   (BIT_TIMES(15) - 5 - 100)
