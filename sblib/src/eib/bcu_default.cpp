@@ -150,13 +150,13 @@ void BcuDefault::loop()
 
     if (userEeprom->isModified() && !directConnection() && userEeprom->writeDelayElapsed())
     {
-        flushUserMemory(UsrCallbackType::flash, true);
+        flushUserMemory(UsrCallbackType::flash);
     }
 }
 
 void BcuDefault::end()
 {
-    flushUserMemory(UsrCallbackType::bcu_end, true);
+    flushUserMemory(UsrCallbackType::bcu_end);
     BcuBase::end();
 }
 
@@ -584,23 +584,19 @@ bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCo
 
 void BcuDefault::softSystemReset()
 {
-    bool waitIdle = true;
-#ifdef IAP_EMULATION
-    waitIdle = false; ///\todo workaround for lib test cases running later into a infinitive loop at ' while (!bus->idle())'
-#endif
-    flushUserMemory(UsrCallbackType::reset, waitIdle);
+    flushUserMemory(UsrCallbackType::reset);
     BcuBase::softSystemReset();
 }
 
-bool BcuDefault::flushUserMemory(UsrCallbackType reason, bool waitIdle)
+bool BcuDefault::flushUserMemory(UsrCallbackType reason)
 {
-    if (waitIdle)
+///\todo workaround for lib test cases running into an infinitive loop
+#ifndef IAP_EMULATION
+    while (!bus->idle()) // wait for an idle bus
     {
-        while (!bus->idle()) // wait for an idle bus
-        {
-            ;
-        }
+        ;
     }
+#endif
 
     if (usrCallback)
     {

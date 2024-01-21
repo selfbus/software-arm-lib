@@ -237,10 +237,9 @@ protected:
      * Flushes all pending write operations to user memory (eeprom, memmapper) and sends a callback to the user
      *
      * @param reason    The reason, why the memory is flushed
-     * @param waitIdle  set true to wait for an idle bus
      * @return  True if eeprom was flushed, otherwise false
      */
-    bool flushUserMemory(UsrCallbackType reason, bool waitIdle);
+    bool flushUserMemory(UsrCallbackType reason);
 
     MemMapper *memMapper;
     UsrCallback *usrCallback;
