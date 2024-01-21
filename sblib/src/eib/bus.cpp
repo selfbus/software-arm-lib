@@ -56,12 +56,9 @@ void Bus::begin()
     telegramLen = 0;
     sendAck = 0;
     rx_error = RX_OK;
-    bus_rx_state = RX_OK;
-    setBusRXStateValid(true);
     collision = false;
 
     tx_error = TX_OK;
-    bus_tx_state = TX_OK;
     sendCurTelegram = nullptr;
     prepareForSending();
     state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
@@ -199,7 +196,6 @@ void Bus::idleState()
 void Bus::prepareForSending()
 {
     tx_error = TX_OK;
-    setBusTXStateValid(true);
 
     sendTries = 0;
     sendBusyTries = 0;
@@ -241,8 +237,6 @@ void Bus::prepareForSending()
  *    telegram[]: received telegram in telegram buffer <telegram[]>, length in telegramLen
  *    telegramLen: rx telegram length
  *    sendAck:  !0:  RX process need to send ack to sending side back, set wait timer accordingly
- *    indicate result of telegram reception/error state to upper layer via bus_rx_state/bus_tx_state
- *    and bus_rxstate_valid/bus_txstate_valid
  *
  *
  * @param bool of all received char parity and frame checksum error
@@ -336,9 +330,7 @@ void Bus::handleTelegram(bool valid)
                 {
                     for (int i = 0; i < nextByteIndex; i++) telegram[i] = rx_telegram[i];
                     telegramLen = nextByteIndex;
-                    bus_rx_state = rx_error;
                     rx_error = RX_OK;
-                    setBusRXStateValid(true);
                 }
             }
 
@@ -437,8 +429,6 @@ void Bus::handleTelegram(bool valid)
  */
 void Bus::finishSendingTelegram()
 {
-    bus_tx_state = tx_error;
-
     if (sendCurTelegram != nullptr)
     {
         sendCurTelegram = nullptr;

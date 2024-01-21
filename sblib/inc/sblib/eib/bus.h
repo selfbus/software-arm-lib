@@ -107,21 +107,6 @@ public:
 
 
     /**
-     * Get the state of the last send Telegram
-     *
-     * @return  0 if no error, or tx error state
-     */
-    int sendTelegramState() const;
-
-    /**
-     * Get the state of the last received Telegram
-     *
-     * @return  0 if no error, or rx error state
-     */
-    int receivedTelegramState() const;
-
-
-    /**
      * Test if there is a received telegram in bus.telegram[].
      *
      * @return True if there is a telegram in bus.telegram[], false if not.
@@ -147,34 +132,6 @@ public:
      * @param tries - the number of tries. Default: 3.
      */
     void maxSendBusyTries(int tries);
-
-    /**
-     * Set the tx bus state.
-     *
-     * @param state - true if state is valid/available
-     */
-    void setBusTXStateValid(bool state) ;
-
-    /**
-     * get the tx bus state.
-     *
-     * @return state - true if state is valid/available
-     */
-    bool getBusTXStateValid(void)const ;
-
-    /**
-     * Set the rx bus state.
-     *
-     * @param state - true if state is valid/available
-     */
-    void setBusRXStateValid(bool state) ;
-
-    /**
-     * get the rx bus state.
-     *
-     * @return state - true if state is valid/available
-     */
-    bool getBusRXStateValid(void)const;
 
 
 
@@ -208,22 +165,6 @@ public:
       * The total length of the received telegram in telegram[].
       */
     volatile int telegramLen;
-
-    /**
-     * The result of the rx process on the bus.
-     */
-    volatile int bus_rx_state;
-
-    /**
-     * The result of the tx process on the bus.
-     */
-    volatile int bus_tx_state;
-
-    /**
-     * The state of the tx/rx process on the bus available and valid.
-     */
-    volatile bool bus_rxstate_valid;
-    volatile bool bus_txstate_valid;
 
 private:
     /**
@@ -344,37 +285,6 @@ inline bool Bus::telegramReceived() const
 {
     return telegramLen != 0;
 }
-
-inline int Bus::receivedTelegramState() const
-{
-    return bus_rx_state;
-}
-
-inline int Bus::sendTelegramState() const
-{
-    return bus_tx_state;
-}
-
-inline void Bus::setBusTXStateValid(bool state)
-{
-    bus_txstate_valid = state;
-    return;
-}
-inline bool Bus::getBusTXStateValid() const
-{
-    return bus_txstate_valid;
-}
-
-inline void Bus::setBusRXStateValid(bool state)
-{
-    bus_rxstate_valid = state;
-    return;
-}
-inline bool Bus::getBusRXStateValid() const
-{
-    return bus_rxstate_valid;
-}
-
 
 inline void Bus::discardReceivedTelegram()
 {
