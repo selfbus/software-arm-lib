@@ -966,6 +966,11 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 break;
             }
 
+            // It's an edge at a time when edges are allowed to happen, i.e. it is from another device that sends
+            // concurrently. If it is before (timer.match(pwmChannel) - BUS_STARTBIT_OFFSET_MIN), that means we
+            // receive a 0-bit while we're sending a 1-bit, i.e. it is a collision and we need to switch to RX.
+            // Otherwise, it's either our own 0-bit or a foreign 0-bit that just starts a bit earlier than ours,
+            // and we need to continue sending and let collision detection sort it out in a later bit.
             if (( captureTime < timer.match(pwmChannel) - BUS_STARTBIT_OFFSET_MIN ))
             {
                 tb_d( state+400, captureTime, tb_in);
