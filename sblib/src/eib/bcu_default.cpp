@@ -148,12 +148,9 @@ void BcuDefault::loop()
         }
     }
 
-    if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && !directConnection())
+    if (userEeprom->isModified() && !directConnection() && userEeprom->writeDelayElapsed())
     {
-        if (userEeprom->writeDelayElapsed())
-        {
-            flushUserMemory(UsrCallbackType::flash, true);
-        }
+        flushUserMemory(UsrCallbackType::flash, true);
     }
 }
 
