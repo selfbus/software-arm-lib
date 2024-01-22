@@ -287,6 +287,11 @@ void dumpRXTelegram()
         //serial.println(") ");
         //telLastRXEndTime = 0;
     }
+    else
+    {
+        serial.print(" dt ---RX:");
+        timeDelta = 0;
+    }
     serial.print(timeDelta, DEC, 8);
 
     if (telrxerror != 0)
