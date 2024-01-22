@@ -390,7 +390,9 @@ static bool updEraseAddressRange(uint8_t * data)
 {
     uint8_t * startAddress = streamToPtr(&data[0]);
     uint8_t * endAddress = streamToPtr(&data[4]);
+    bcu.bus->pause();
     setLastError(eraseAddressRange(startAddress, endAddress));
+    bcu.bus->resume();
     resetUPDProtocol();
     return (true);
 }
@@ -404,7 +406,9 @@ static bool updEraseAddressRange(uint8_t * data)
  */
 static bool updEraseFullFlash()
 {
+    bcu.bus->pause();
     setLastError(eraseFullFlash());
+    bcu.bus->resume();
     resetUPDProtocol();
     return (true);
 }
@@ -495,7 +499,9 @@ static bool updProgram(uint8_t * data)
     d3(serial.println(" crc 0x", (uintptr_t)crcRamBuffer, HEX, 8));
 
     bytesFlashed += flash_count;
+    bcu.bus->pause();
     UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
+    bcu.bus->resume();
     setLastError(error);
     return (true);
 }
@@ -756,7 +762,9 @@ static bool updUpdateBootDescriptorBlock(uint8_t * data)
 
         d3(serial.print("Flash Page:"));
 
+        bcu.bus->pause();
         result = executeProgramFlash(address, ramBuffer, FLASH_PAGE_SIZE, true); // no less than 256byte can be flashed
+        bcu.bus->resume();
         d3(
            updResult2Serial(result);
            serial.println();
@@ -860,7 +868,9 @@ static bool updProgramDecompressedDataToFlash(uint8_t * data)
     }
 
     dline("CRC OK");
+    bcu.bus->pause();
     setLastError(decompressor.pageCompletedDoFlash());
+    bcu.bus->resume();
     resetUPDProtocol(); // we need this, otherwise updSendDataToDecompress will run into a buffer overflow
 #endif
     return (true);

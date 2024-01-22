@@ -592,10 +592,7 @@ bool BcuDefault::flushUserMemory(UsrCallbackType reason)
 {
 ///\todo workaround for lib test cases running into an infinitive loop
 #ifndef IAP_EMULATION
-    while (!bus->idle()) // wait for an idle bus
-    {
-        ;
-    }
+    bus->pause();
 #endif
 
     if (usrCallback)
@@ -609,6 +606,8 @@ bool BcuDefault::flushUserMemory(UsrCallbackType reason)
     {
         memMapper->doFlash();
     }
+
+    bus->resume();
     return (true);
 }
 

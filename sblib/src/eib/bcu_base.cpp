@@ -160,6 +160,7 @@ void BcuBase::send(unsigned char* telegram, unsigned short length)
 
 void BcuBase::softSystemReset()
 {
+    bus->end();
     NVIC_SystemReset();
 }
 

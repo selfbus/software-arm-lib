@@ -52,6 +52,19 @@ public:
     void begin();
 
     /**
+     * Waits for a safe time to pause bus access, then pauses bus access.
+     *
+     * @param waitForTelegramSent - Whether to wait for an enqueued telegram to be sent or not.
+     *                              When passing false, the enqueued telegram is sent out after resume().
+     */
+    void pause(bool waitForTelegramSent = false);
+
+    /**
+     * Resume bus access after it had been paused.
+     */
+    void resume();
+
+    /**
      * End using the bus.
      *
      * This powers the bus off.
@@ -168,6 +181,13 @@ public:
 
 private:
     /**
+     * Determines whether it is currently safe to pause bus access.
+     *
+     * @param waitForTelegramSent - Whether to wait for an enqueued telegram to be sent or not.
+     */
+    bool canPause(bool waitForTelegramSent);
+
+    /**
      * Switch to @ref Bus::IDLE state
      * @details Set the Bus state machine to @ref Bus::IDLE state.
      *          We waited at least 50 Bit times (without cap event enabled),
@@ -176,6 +196,11 @@ private:
      *          match register for low PWM output
      */
     void idleState();
+
+    /**
+     * Switch to @ref Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE state to trigger sending
+     */
+    void startSendingImmediately();
 
     /**
      * Initializes all class variables to prepare for the next transmission.
@@ -293,6 +318,7 @@ inline void Bus::discardReceivedTelegram()
 
 inline void Bus::end()
 {
+    pause(true);
 }
 
 #endif /*sblib_bus_h*/

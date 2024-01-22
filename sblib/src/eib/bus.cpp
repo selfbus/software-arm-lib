@@ -119,6 +119,85 @@ void Bus::begin()
 #endif
 }
 
+void Bus::pause(bool waitForTelegramSent)
+{
+    auto paused = false;
+
+    while (!paused)
+    {
+        // Need to be atomic here, otherwise we could transition to a non-pausable state after we've
+        // determined it's possible to pause.
+        noInterrupts();
+
+        if (canPause(waitForTelegramSent))
+        {
+            // Continue capturing falling edges on the bus to enable optimized resume.
+            timer.captureMode(captureChannel, FALLING_EDGE);
+            timer.matchMode(timeChannel, RESET);
+            timer.match(timeChannel, 0xfffe);
+            timer.value(timer.capture(captureChannel));
+            // In both pausable states, pwmChannel is set to 0xffff already.
+            state = INIT;
+            paused = true;
+        }
+
+        interrupts();
+        waitForInterrupt();
+    }
+}
+
+void Bus::resume()
+{
+    auto timerValue = timer.value();
+    auto captureValue = timer.capture(captureChannel);
+    auto timeSinceLastFallingEdge =
+        (timerValue > captureValue)
+        ? (timerValue - captureValue)
+        : ((0xfffe + 1 - captureValue) + timerValue);
+
+    // With enough time passed since the last falling edge, immediately resume in IDLE,
+    // otherwise wait the remaining time in INIT.
+    if (timeSinceLastFallingEdge >= WAIT_50BIT_FOR_IDLE)
+    {
+        noInterrupts();
+        idleState();
+        interrupts();
+    }
+    else
+    {
+        timer.value(timeSinceLastFallingEdge);
+        timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
+        timer.matchMode(timeChannel, INTERRUPT | RESET);
+        timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
+    }
+}
+
+bool Bus::canPause(bool waitForTelegramSent)
+{
+    // Trivial case: IDLE is always safe.
+    if (state == IDLE)
+        return true;
+
+    // WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE might be safe (see below), but all others are not.
+    if (state != WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)
+        return false;
+
+    // In case we want to send a telegram, if we
+    // * have sent the telegram at least once and received a negative (or no) confirmation, we
+    //   cannot pause as we must retry within a certain time frame.
+    // * have not sent the telegram yet, it depends on @ref waitForTelegramSent whether the user
+    //   wants us to pause or not.
+    if (sendingTelegram())
+    {
+        if (repeatTelegram)
+            return false;
+
+        return !waitForTelegramSent;
+    }
+
+    return true;
+}
+
 void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
 {
     setSenderAddress(telegram, (uint16_t)bcu->ownAddress());
@@ -171,10 +250,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
     noInterrupts();
     if (state == IDLE)
     {
-        state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
-        timer.match(timeChannel, 1);
-        timer.matchMode(timeChannel, INTERRUPT | RESET);
-        timer.value(0);
+        startSendingImmediately();
     }
     interrupts();
 }
@@ -191,6 +267,20 @@ void Bus::idleState()
     //timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
     state = Bus::IDLE;
     sendAck = 0;
+
+    // After resume, we can end up in IDLE state even if there is a telegram to send. Send it out now.
+    if (sendCurTelegram)
+    {
+        startSendingImmediately();
+    }
+}
+
+void Bus::startSendingImmediately()
+{
+    state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
+    timer.match(timeChannel, 1);
+    timer.matchMode(timeChannel, INTERRUPT | RESET);
+    timer.value(0);
 }
 
 void Bus::prepareForSending()
