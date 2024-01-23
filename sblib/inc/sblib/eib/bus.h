@@ -78,13 +78,6 @@ public:
     void loop();
 
     /**
-     * Test if the bus is idle, no telegram is about to being sent or received.
-     *
-     * @return true when idle, false when not.
-     */
-    bool idle() const;
-
-    /**
      * Interface to upper layer for sending a telegram
      *
      * Is called from within the BCU-loop method. Is blocking if there is no free buffer pointer.
@@ -286,11 +279,6 @@ private:
 //
 //  Inline functions
 //
-inline bool Bus::idle() const
-{
-    return ((state == IDLE) || (state == INIT)) && (sendCurTelegram == nullptr);
-}
-
 inline void Bus::maxSendTries(int tries)
 {
     sendTriesMax = tries;
