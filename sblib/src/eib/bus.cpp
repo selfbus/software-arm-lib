@@ -1175,8 +1175,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         {
             // There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
             time = BIT_TIMES(3);
-            state = Bus::SEND_BIT_0;  // state for bit-0 of next byte to send
-            timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
+            state = Bus::SEND_START_BIT;  // state for bit-0 of next byte to send
+            timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
+            timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will trigger cap interrupt
         }
         else
         {
