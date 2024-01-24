@@ -715,7 +715,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 bitMask <<= 1; // next bit is in bitmask
             }
 
-            if (time > bitTime + BUS_STARTBIT_OFFSET_MAX && bitMask <= 0x100)
+            if (time > bitTime + BIT_OFFSET_MAX && bitMask <= 0x100)
             {
                 rx_error |= RX_TIMING_ERROR_SPIKE; // bit edge receive but pulse to short late- window error
                 DB_TELEGRAM(telRXTelBitTimingErrorLate = time); //report timing error for debugging
@@ -908,41 +908,54 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //tb_d( SEND_START_BIT+100, timer.match (pwmChannel), tb_in);
         //tb_h(SEND_START_BIT+200, timer.captureMode(captureChannel),  tb_in);
 
+        // We will receive our own start bit here too.
         if (timer.flag(captureChannel))
         {
-            // Bus busy check: Abort sending if we receive a start bit early enough to abort.
-            // We will receive our own start bit here too.
-            if (timer.capture(captureChannel) < (timer.match(pwmChannel) - BUS_STARTBIT_OFFSET_MIN))
-            {
-                if (!sendAck)
-                {
-                    // received edge of bit before our own bit was triggered - stop sending process and go to receiving process
-                    tb_d( state+300, ttimer.value(), tb_in);
-                    timer.match(pwmChannel, 0xffff); // stop our bit set pwm output to low
+            auto captureTime = timer.capture(captureChannel);
+            auto pwmTime = timer.match(pwmChannel);
 
-                    state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;  // init RX for reception of telegram
-                    goto STATE_SWITCH;
+            // If it's too early, we can either ignore it or switch to RX.
+            if (captureTime < (pwmTime - STARTBIT_OFFSET_MIN))
+            {
+                if (sendAck || nextByteIndex)
+                {
+                    // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: No bus free detection
+                    // for p_class ack_char and inner_Frame_char. This means we simply ignore
+                    // spikes as well as other concurrently sending devices and rock on.
+                    break;
                 }
                 else
                 {
-                    // send acknowledge frame overlapping to the other device
-                    timer.match(pwmChannel, timer.value() + 1);
-                    timer.match(timeChannel, timer.capture(captureChannel) + BIT_PULSE_TIME - 1);
+                    // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: Do bus free detection
+                    // for p_class start_of_Frame. This means we switch to RX.
+                    tb_d( state+300, ttimer.value(), tb_in);
+                    timer.match(pwmChannel, 0xffff);
+                    state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;
+                    goto STATE_SWITCH;
                 }
             }
+
+            // If it's at most 30us earlier than the falling edge we were about to send, sync to it.
+            if (captureTime < pwmTime)
+            {
+                tb_d( state+300, ttimer.value(), tb_in);
+                timer.match(pwmChannel, timer.value() + 1);
+                timer.match(timeChannel, captureTime + BIT_PULSE_TIME - 1);
+            }
+
             tb_t( state+400, ttimer.value(), tb_in);
-            state = Bus::SEND_BIT_0; //  we received our start bit edge in time, prepare for to send bit 0
+            state = Bus::SEND_BIT_0; // start bit edge in time, prepare to send bit 0 when timer times out (rising edge)
 #       ifdef PIO_FOR_TEL_END_IND
             if (sendAck)
                 digitalWrite(PIO_FOR_TEL_END_IND, 0);
 #       endif
             break;
-
         }
-        else if (timer.flag(timeChannel)){
+        else
+        {
             // Timeout: we have a hardware problem as receiving our sent signal does not work. set error and just continue sending bit0
             tb_t( state+400, ttimer.value(), tb_in);
-            state = Bus::SEND_BIT_0; //   prepare for to send bit 0
+            state = Bus::SEND_BIT_0; //   prepare to send bit 0 immediately
             tx_error |= TX_PWM_STARTBIT_ERROR;
         }// no break, continue with bit0 as we have a timeout here
 
@@ -1047,7 +1060,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         if (timer.flag(captureChannel))
         {
             auto captureTime = timer.capture(captureChannel);
-            if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - BUS_STARTBIT_OFFSET_MIN))
+            if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - BIT_OFFSET_MIN))
             {
                 // Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
                 // (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
@@ -1057,11 +1070,11 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             }
 
             // It's an edge at a time when edges are allowed to happen, i.e. it is from another device that sends
-            // concurrently. If it is before (timer.match(pwmChannel) - BUS_STARTBIT_OFFSET_MIN), that means we
+            // concurrently. If it is before (timer.match(pwmChannel) - BIT_OFFSET_MIN), that means we
             // receive a 0-bit while we're sending a 1-bit, i.e. it is a collision and we need to switch to RX.
             // Otherwise, it's either our own 0-bit or a foreign 0-bit that just starts a bit earlier than ours,
             // and we need to continue sending and let collision detection sort it out in a later bit.
-            if (( captureTime < timer.match(pwmChannel) - BUS_STARTBIT_OFFSET_MIN ))
+            if (( captureTime < timer.match(pwmChannel) - BIT_OFFSET_MIN ))
             {
                 tb_d( state+400, captureTime, tb_in);
                 tb_t( state+300, ttimer.value(), tb_in);
@@ -1110,7 +1123,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 // Scale back bitMask to match the collided bit. pwmChannel is when we would have sent
                 // the next falling edge, captureChannel when we received it. The 33 is to account for
                 // slight timing differences and integer arithmetic.
-                auto collisionBitCount = (timer.match(pwmChannel) - captureTime + BUS_STARTBIT_OFFSET_MAX) / BIT_TIME;
+                auto collisionBitCount = (timer.match(pwmChannel) - captureTime + BIT_OFFSET_MAX) / BIT_TIME;
                 bitMask >>= collisionBitCount + 1;
 
                 // Pretend that we also received a 0 bit last time, such that there is no need to set any

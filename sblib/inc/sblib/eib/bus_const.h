@@ -98,8 +98,10 @@ enum TxErrorCode
 #define TIMER_PRESCALER     (SystemCoreClock / TICKS_PER_SECOND - 1) //!< The value for the prescaler
 #define BIT_TIMES(x)        (((x) * TICKS_PER_SECOND + 4800) / 9600) //!< Microseconds of x bits on the bus, with integer rounding
 
-#define BUS_STARTBIT_OFFSET_MIN 7  //!< >=7 us before expected start bit check for bus busy
-#define BUS_STARTBIT_OFFSET_MAX 33 //!< <=33 us after expected start bit is still ok
+#define STARTBIT_OFFSET_MIN 30  //!< >=30 us before expected start bit it's a spike
+#define STARTBIT_OFFSET_MAX 30  //!< <=30 us after expected start bit is still ok
+#define BIT_OFFSET_MIN 7        //!< >=7 us before expected bit check for bus busy
+#define BIT_OFFSET_MAX 33       //!< <=33 us after expected bit is still ok
 
 #define BIT_TIME            BIT_TIMES(1)               //!< Default time between two bits (104 usec)
 #define BIT_WAIT_TIME       ((BIT_TIME * 4 + 3) / 6)   //!< Time between two bits (69 usec) - high level part of the pulse on the bus
@@ -112,7 +114,7 @@ enum TxErrorCode
  * Maximum time from end of stop bit to start bit of next byte = timeout for end of telegram,
  * KNX Spec. 2.1 3/2/2 p. 35 figure 40, inner_frame_char
  */
-#define MAX_INTER_CHAR_TIME (BIT_TIMES(2) + 30)
+#define MAX_INTER_CHAR_TIME (BIT_TIMES(2) + STARTBIT_OFFSET_MAX)
 
 #define SEND_ACK_WAIT_TIME  BIT_TIMES(15) //!< Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
 
