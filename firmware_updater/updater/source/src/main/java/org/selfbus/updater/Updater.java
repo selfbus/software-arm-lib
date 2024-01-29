@@ -1,21 +1,14 @@
 package org.selfbus.updater;
 
 import com.google.common.primitives.Bytes;
+import io.calimero.*;
+import io.calimero.link.*;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.calimero.IndividualAddress;
-import io.calimero.KNXException;
-import io.calimero.KNXFormatException;
-import io.calimero.KNXIllegalArgumentException;
-import io.calimero.Settings;
 import io.calimero.knxnetip.SecureConnection;
-import io.calimero.link.KNXNetworkLink;
-import io.calimero.link.KNXNetworkLinkFT12;
-import io.calimero.link.KNXNetworkLinkIP;
-import io.calimero.link.KNXNetworkLinkTpuart;
 import io.calimero.link.medium.KNXMediumSettings;
 import io.calimero.link.medium.RFSettings;
 import io.calimero.link.medium.TPSettings;
@@ -28,6 +21,8 @@ import java.util.Collections;
 
 import static org.selfbus.updater.Utils.shortenPath;
 import static org.selfbus.updater.Utils.tcpConnection;
+
+import org.selfbus.updater.gui.GuiMain;
 
 /**
  * A Tool for updating firmware of a Selfbus device in a KNX network.
@@ -97,17 +92,27 @@ public class Updater implements Runnable {
         }
     }
 
+    public Updater(CliOptions cliOptions){
+        this.cliOptions = cliOptions;
+        logger.info(ConColors.BRIGHT_BOLD_GREEN + ToolInfo.getToolAndVersion() + " \n" +
+                ConColors.RESET);
+    }
+
     public static void main(final String[] args) {
-        try {
-            final Updater d = new Updater(args);
-            final ShutdownHandler sh = new ShutdownHandler().register();
-            d.run();
-            sh.unregister();
-        } catch (final Throwable t) {
-            logger.error("parsing options ", t);
-        } finally {
-            logger.info("\n\n");
-            logger.debug("main exit");
+        if(args.length == 0) {
+            GuiMain.startSwingGui();
+        }else {
+            try {
+                final Updater d = new Updater(args);
+                final ShutdownHandler sh = new ShutdownHandler().register();
+                d.run();
+                sh.unregister();
+            } catch (final Throwable t) {
+                logger.error("parsing options ", t);
+            } finally {
+                logger.info("\n\n");
+                logger.debug("main exit");
+            }
         }
     }
 
@@ -441,6 +446,37 @@ public class Updater implements Runnable {
         }
     }
 
-    
+    public String requestUid(){
+        Exception thrown = null;
+        boolean canceled = false;
+        KNXNetworkLink link = null;
+        try {
+            int appVersionAddress = cliOptions.appVersionPtr();
+            byte[] uid = cliOptions.uid();
+            link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC, cliOptions.priority());
+
+            dm.setTL4Timeout(cliOptions.tl4Timeout()); ///\todo delete after TL4 Style 3 implementation in sblib
+
+            logger.info("KNX connection: {}\n", link);
+
+            logger.info("Telegram priority: {}", cliOptions.priority());
+
+            //for option --device restart the device in bootloader mode
+            if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
+                dm.checkDeviceInProgrammingMode(null); // check that before no device is in programming mode
+                dm.restartDeviceToBootloader(link, cliOptions.device());
+            }
+
+            dm.checkDeviceInProgrammingMode(cliOptions.progDevice());
+
+            uid = dm.requestUIDFromDevice();
+
+            return Utils.byteArrayToHex(uid);
+
+        } catch (InterruptedException | UpdaterException | KNXException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
