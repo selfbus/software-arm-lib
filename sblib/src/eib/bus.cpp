@@ -66,7 +66,6 @@ void Bus::begin()
     timer.pwmEnable(pwmChannel);
     //timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // todo  enabled the timer reset by the falling edge of cap event
     timer.start();
-    timer.interrupts();
     timer.prescaler(TIMER_PRESCALER);
     initState();
 
@@ -76,6 +75,9 @@ void Bus::begin()
     while (timer.getMatchChannelLevel(pwmChannel) == true);
     pinMode(txPin, OUTPUT_MATCH);   // Configure bus output
     pinMode(rxPin, INPUT_CAPTURE | HYSTERESIS);  // Configure bus input
+
+    timer.resetFlags();
+    timer.interrupts();
 
     DB_TELEGRAM(serial.println("DUMP_TELEGRAMS Bus telegram dump enabled."));
 #ifdef DEBUG_BUS
@@ -253,11 +255,10 @@ void Bus::initState()
     // any cap intr during start up time is ignored and will reset start up time
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
     timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
-    timer.value(0);
+    timer.reset();
     timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
     timer.match(pwmChannel, 0xffff);
     state = INIT;
-    sendAck = 0;
 }
 
 void Bus::idleState()
