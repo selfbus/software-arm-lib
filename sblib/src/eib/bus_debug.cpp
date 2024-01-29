@@ -209,7 +209,12 @@ void dumpTXTelegram()
 
 void dumpRXTelegram()
 {
-    serial.print("RX : (S", telRXStartTime, DEC, 6 );
+    // Cache telRXStartTime, because the next telegram might start before we're done logging the last one.
+    // Does not apply to end times, because if these get overwritten before we log them, then all logged
+    // telegram content is wrong as well.
+    auto startTime = telRXStartTime;
+
+    serial.print("RX : (S", startTime, DEC, 6 );
     serial.print(" E", telRXEndTime, DEC, 6);
     /*
     serial.print(") ");
@@ -220,13 +225,13 @@ void dumpRXTelegram()
     if (telLastTXEndTime)
     {
         // print time in between last tx-tel and current rx-tel
-        serial.print(" dt TX-RX:", (telRXStartTime - telLastTXEndTime), DEC, 8);
+        serial.print(" dt TX-RX:", (startTime - telLastTXEndTime), DEC, 8);
         telLastTXEndTime = 0;
     }
     else if(telLastRXEndTime)
     {
         // print time in between last rx-tel and current rx-tel
-        serial.print(" dt RX-RX:", (telRXStartTime - telLastRXEndTime), DEC, 8);
+        serial.print(" dt RX-RX:", (startTime - telLastRXEndTime), DEC, 8);
         //serial.println(") ");
         //telLastRXEndTime = 0;
     }
