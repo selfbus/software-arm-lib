@@ -61,21 +61,15 @@ void Bus::begin()
     tx_error = TX_OK;
     sendCurTelegram = nullptr;
     prepareForSending();
-    state = Bus::INIT;  // we wait bus idle time (50 bit times) before setting bus to idle
     //initialize bus-timer( e.g. defined as 16bit timer1)
     timer.setIRQPriority(0); // ensure highest IRQ-priority for the Bus timer
     timer.begin();
     timer.pwmEnable(pwmChannel);
-    // any cap intr during start up time is ignored and will reset start up time
-    timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
     //timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); // todo  enabled the timer reset by the falling edge of cap event
     timer.start();
     timer.interrupts();
     timer.prescaler(TIMER_PRESCALER);
-    timer.reset();
-    timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
-    timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
-    timer.match(pwmChannel, 0xffff);
+    initState();
 
     // wait until output is driven low before enabling output pin.
     // Using digitalWrite(txPin, 0) does not work with MAT channels.
@@ -253,6 +247,17 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
         startSendingImmediately();
     }
     interrupts();
+}
+
+void Bus::initState()
+{
+    // any cap intr during start up time is ignored and will reset start up time
+    timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
+    timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
+    timer.value(0);
+    timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
+    timer.match(pwmChannel, 0xffff);
+    state = INIT;
 }
 
 void Bus::idleState()
@@ -825,7 +830,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
      */
     case Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE:
         tb_t( state, ttimer.value(), tb_in);
-        timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT ); // enable cap event after waiting time for next rx
 
         if (timer.flag(captureChannel)){ // cap event- start receiving,  maybe ack or early tx from other device - fixme: should not happen here!
             state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;
@@ -920,8 +924,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 if (sendAck || nextByteIndex)
                 {
                     // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: No bus free detection
-                    // for p_class ack_char and inner_Frame_char. This means we simply ignore
-                    // spikes as well as other concurrently sending devices and rock on.
+                    // for p_class ack_char and inner_Frame_char, but collision avoidance.
+                    // This means we stop our transmission and let the other device continue.
+                    initState();
                     break;
                 }
                 else
@@ -989,83 +994,33 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tb_h( SEND_BIT_0 +200, currentByte, tb_in);
 
     /* SEND_BITS_OF_BYTE
-     * state is in phase shift,  entered by match/period interrupt from pwm
+     * state is in phase shift, entered by cap event or match/period interrupt from pwm
      * n-bit low pulse end now after 35us by time match interrupt, send next bit of byte till end of byte (stop bit)
      */
     case Bus::SEND_BITS_OF_BYTE:
     {
-        tb_t( SEND_BITS_OF_BYTE, ttimer.value(), tb_in);
-        //tb_h( SEND_BITS_OF_BYTE+100, bitMask, tb_in);
-        //tb_d( SEND_BITS_OF_BYTE+200, time, tb_in);
+        tb_t( state, ttimer.value(), tb_in);
+        //tb_h( state+100, bitMask, tb_in);
+        //tb_d( state+200, time, tb_in);
         //tb_h( state+100, sendAck, tb_in);
-
-        // Search for the next zero bit and count the one bits for the wait time only till we reach the parity bit
-        // next bit after parity will be low in telegram-byte.  for stop bit and 2 waiting bits the bus will be high, no need to trigger in between
-        time = BIT_TIME ;
-        while ((currentByte & bitMask) && bitMask <= 0x100)
-        {
-            bitMask <<= 1;
-            time += BIT_TIME;
-        }
-        bitMask <<= 1; // next low bit or stop bit if mask > 0x200
-
-        auto stopBitReached = (bitMask > 0x200);
-
-        // set next match/interrupt
-        // if we are sending high bits, we wait for next low bit edge by cap interrupt which might be a collision
-        // or timeout interrupt indicating end of bit pulse sending (high or low)
-        if (time > BIT_TIME ) //  low bit or high bit to send?
-        {
-            state = Bus::SEND_WAIT_FOR_HIGH_BIT_END; // high bit to send, detect collisions while sending high bits
-            timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-        }
-        else
-        {
-            timer.captureMode(captureChannel, FALLING_EDGE);
-            if (stopBitReached)
-            {
-                state = Bus::SEND_END_OF_BYTE;
-            }
-        }
-        //tb_h( SEND_BITS_OF_BYTE+300, bitMask, tb_in);
-        //tb_d( SEND_BITS_OF_BYTE+400, time, tb_in);
-
-        if (stopBitReached)
-            timer.match(pwmChannel, 0xffff); //stop pwm pulses - low output
-        // as we are at the raising edge of the last pulse, the next falling edge will be n*104 - 35us (min69us) away
-        else
-            timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
-        //tb_d( SEND_BITS_OF_BYTE+500, time, tb_in);
-        //tb_h( SEND_BITS_OF_BYTE+600, timer.captureMode(captureChannel),  tb_in);
-
-        timer.match(timeChannel, time - 1); // interrupt at end of low/high bit pulse - next raising edge or after stop bit + 2 wait bits
-        break;
-    }
-
-    /* SEND_WAIT_FOR_HIGH_BIT_END
-     * state is in phase shift,  entered by  cap event or match/period interrupt from pwm
-     * Wait for a capture event from bus-in. This should be from us sending a zero bit, but it might as well be from somebody else in case of a
-     * collision. Our low bit starts at pwmChannel time and ends at match of timeChannel.
-     * Check for collision during sending of high bits. As our timing is related to the rising edge of a bit we need to measure accordingly:
-     * next bit start window is in 69us, and the n-bit low pulse starts at n*104 - 35us and ends at n*104 -> check for edge window: the high phase
-     * of the last bit : 69us - margin till 69us before next falling edge at pwmChannel time + margin
-     * Timeout event indicated a bus timing error
-     */
-    case Bus::SEND_WAIT_FOR_HIGH_BIT_END:
-        //tb_t( state, ttimer.value(), tb_in);
-        //tb_d( state+100,timer.match(pwmChannel), tb_in);
-        //tb_h( SEND_WAIT_FOR_HIGH_BIT_END+200, timer.captureMode(captureChannel),  tb_in);
-        //tb_h( state+100, sendAck, tb_in);
+        //tb_d( state+100, timer.match(pwmChannel), tb_in);
+        //tb_h( state+200, timer.captureMode(captureChannel), tb_in);
 
         if (timer.flag(captureChannel))
         {
+            /* Capture event from bus-in. This should be from us sending a zero bit, but it might as well be from somebody else in case of a
+             * collision. Our low bit starts at pwmChannel time and ends at match of timeChannel.
+             * Check for collision during sending of high bits. As our timing is related to the rising edge of a bit we need to measure accordingly:
+             * next bit start window is in 69us, and the n-bit low pulse starts at n*104 - 35us and ends at n*104 -> check for edge window: the high phase
+             * of the last bit : 69us - margin till 69us before next falling edge at pwmChannel time + margin
+             */
             auto captureTime = timer.capture(captureChannel);
             if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - BIT_OFFSET_MIN))
             {
                 // Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
                 // (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
-                // This can be a long spike or another device sending too early. Whatever it is, it is not
-                // spec-compliant, so ignore it.
+                // Collision avoidance says we must stop sending.
+                initState();
                 break;
             }
 
@@ -1158,27 +1113,47 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
             //tb_t( state+200, ttimer.value(), tb_in);
             //tb_d( state+500,timer.match(pwmChannel), tb_in);
-            // we captured our sending low bit edge, continue sending, wait for bit ends with match intr
-            state = Bus::SEND_BITS_OF_BYTE;
+            // we captured our sending low bit edge, continue sending, wait for bit end with match intr
             break;
         }
 
-        // timeout event, i.e. sent all bits without any collisions
-        // This can either mean that we reached the end of the byte (good and expected case), or it can mean
-        // that another device sent one or more 0 bits too early, those bits overlapped our falling edge(s)
-        // and thus we need to continue sending. We have seen devices that send their bits on non-spec-compliant
-        // timing, so it's practical experience that this can happen.
+        // Timeout event. Either we reached the end of the byte or the end of a 0 bit.
         if (bitMask <= 0x200)
         {
             // Stop bit not reached yet, continue sending.
-            state = Bus::SEND_BITS_OF_BYTE;
-            goto STATE_SWITCH;
+            // Search for the next zero bit and count the one bits for the wait time only till we reach the parity bit
+            time = BIT_TIME ;
+            while ((currentByte & bitMask) && bitMask <= 0x100)
+            {
+                bitMask <<= 1;
+                time += BIT_TIME;
+            }
+            bitMask <<= 1; // next low bit or stop bit if mask > 0x200
+
+            auto stopBitReached = (bitMask > 0x200);
+
+            // set next match/interrupt
+            // if we are sending high bits, we wait for next low bit edge by cap interrupt which might be a collision
+            // or timeout interrupt indicating end of bit pulse sending (high or low)
+            //tb_h( SEND_BITS_OF_BYTE+300, bitMask, tb_in);
+            //tb_d( SEND_BITS_OF_BYTE+400, time, tb_in);
+
+            if (stopBitReached)
+                timer.match(pwmChannel, 0xffff); //stop pwm pulses - low output
+            // as we are at the raising edge of the last pulse, the next falling edge will be n*104 - 35us (min69us) away
+            else
+                timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will not trigger cap interrupt
+            //tb_d( SEND_BITS_OF_BYTE+500, time, tb_in);
+            //tb_h( SEND_BITS_OF_BYTE+600, timer.captureMode(captureChannel),  tb_in);
+
+            timer.match(timeChannel, time - 1); // interrupt at end of low/high bit pulse - next raising edge or after stop bit + 2 wait bits
+            break;
         }
 
         // Stop bit reached.
         state = Bus::SEND_END_OF_BYTE;
-        timer.captureMode(captureChannel, FALLING_EDGE);
         // Intentionally fall through to SEND_END_OF_BYTE.
+    }
 
     // Completed transmission of parity bit and are in the middle of the stop bit transmission.
     // What do we need to do next?
@@ -1189,7 +1164,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             // There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
             time = BIT_TIMES(3);
             state = Bus::SEND_START_BIT;  // state for bit-0 of next byte to send
-            timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
             timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will trigger cap interrupt
         }
         else
@@ -1197,6 +1171,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             // We're done. Finish to send stop bit and sync with bus timing.
             state = Bus::SEND_END_OF_TX;
             time = BIT_TIME - BIT_PULSE_TIME;
+            timer.captureMode(captureChannel, FALLING_EDGE);
         }
         timer.match(timeChannel, time - 1);
         break;
@@ -1220,8 +1195,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             );
 
             sendAck = 0;
-            state= Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
-            time =  SEND_WAIT_TIME - PRE_SEND_TIME;// we wait 50 BT- pre-send-time for next rx/tx window, cap intr disabled
+            state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
+            time =  SEND_WAIT_TIME - PRE_SEND_TIME;// we wait 50 BT- pre-send-time for next rx/tx window
+            timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
             // todo inform receiving process of pos ack tx
         }
         else
@@ -1230,7 +1206,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
             // normal data frame,  L2 need to wait for ACK from remote for our telegram
             wait_for_ack_from_remote = true; // default for data layer: acknowledge each telegram
-            time=  ACK_WAIT_TIME_MIN; //we wait 15BT- marging for ack rx window, cap intr disabled
+            time = ACK_WAIT_TIME_MIN; //we wait 15BT-margin for ack rx window, cap intr disabled
             state = Bus::SEND_WAIT_FOR_RX_ACK_WINDOW;
             timer.matchMode(timeChannel, INTERRUPT); // no timer reset after timeout
             if (repeatTelegram) // if last telegram was repeated, increase respective counter
@@ -1289,7 +1265,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         //timer is counting since last stop bit so we need to wait 50BT till idle for repeated frames (see KNX spec v2.1 3/2/2 2.3.1 Figure 38)
         timer.match(timeChannel, SEND_WAIT_TIME - PRE_SEND_TIME - 1);
-        timer.captureMode(captureChannel, FALLING_EDGE| INTERRUPT  );// todo disable cap int during wait to increase the robustness on bus spikes
         timer.matchMode(timeChannel, INTERRUPT | RESET); // timer reset after timeout to have ref point in next RX/TX state
         break;
 

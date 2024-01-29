@@ -154,7 +154,6 @@ public:
         SEND_START_BIT,                 //!< Send a start bit
         SEND_BIT_0,                     //!< Send the first bit of the current byte
         SEND_BITS_OF_BYTE,              //!< Send the bits of the current byte
-        SEND_WAIT_FOR_HIGH_BIT_END,     //!< Send high bit(s) and wait for receiving a the falling edge of our next 0-bit.
         SEND_END_OF_BYTE,               //!< Middle of stop bit reached, decide what to do next
         SEND_END_OF_TX,                 //!< Finish sending current byte
         SEND_WAIT_FOR_RX_ACK_WINDOW,    //!< after sending we wait for the ack receive window to start, only timeout event enabled
@@ -179,6 +178,12 @@ private:
      * @param waitForTelegramSent - Whether to wait for an enqueued telegram to be sent or not.
      */
     bool canPause(bool waitForTelegramSent);
+
+    /**
+     * Switch to @ref Bus::INIT state
+     * @details Re-sync to bus by ignoring all edges, until there was no edge for at least 50 bit times.
+     */
+    void initState();
 
     /**
      * Switch to @ref Bus::IDLE state
