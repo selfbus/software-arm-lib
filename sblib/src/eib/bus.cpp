@@ -54,7 +54,6 @@ void Bus::begin()
     sendBusyTriesMax = BUSY_RETRY_DEFAULT; // default
 
     telegramLen = 0;
-    sendAck = 0;
     rx_error = RX_OK;
     collision = false;
 
@@ -258,6 +257,7 @@ void Bus::initState()
     timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
     timer.match(pwmChannel, 0xffff);
     state = INIT;
+    sendAck = 0;
 }
 
 void Bus::idleState()
