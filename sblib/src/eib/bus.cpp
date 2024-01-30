@@ -1077,9 +1077,10 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 }
 
                 // Scale back bitMask to match the collided bit. pwmChannel is when we would have sent
-                // the next falling edge, captureChannel when we received it. The 33 is to account for
-                // slight timing differences and integer arithmetic.
-                auto collisionBitCount = (timer.match(pwmChannel) - captureTime + BIT_OFFSET_MAX) / BIT_TIME;
+                // the next falling edge, captureTime when we received it. Unfortunately, pwmChannel can
+                // be 0xffff in case there are no 0 bits left to send. Thus, use (timeChannel - BIT_PULSE_TIME)
+                // instead. BIT_OFFSET_MAX is to account for slight timing differences and integer arithmetic.
+                auto collisionBitCount = (timer.match(timeChannel) - captureTime - BIT_PULSE_TIME + BIT_OFFSET_MAX) / BIT_TIME;
                 bitMask >>= collisionBitCount + 1;
 
                 // Pretend that we also received a 0 bit last time, such that there is no need to set any
