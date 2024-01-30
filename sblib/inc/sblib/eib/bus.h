@@ -126,18 +126,18 @@ public:
     void discardReceivedTelegram();
 
     /**
-     * Set the number of tries that we do sent a telegram when it is not ACKed.
+     * Set the number of retries that we do send a telegram when it is not ACKed.
      *
-     * @param tries - the number of tries. Default: 3.
+     * @param retries - the number of retries. Default: 3.
      */
-    void maxSendTries(int tries);
+    void maxSendRetries(int retries);
 
     /**
-     * Set the number of busy tries that we do sent a telegram when we received a BUSY from remote.
+     * Set the number of busy retries that we do send a telegram when we receive a BUSY from remote.
      *
-     * @param tries - the number of tries. Default: 3.
+     * @param retries - the number of retries. Default: 3.
      */
-    void maxSendBusyTries(int tries);
+    void maxSendBusyRetries(int retries);
 
 
 
@@ -244,12 +244,12 @@ protected:
     volatile int sendAck;        //!< Send an acknowledge or not-acknowledge byte if != 0
 
 private:
-    volatile State state;          //!< The state of the lib's telegram sending/receiving
-    volatile int sendTries;        //!< The number of repeats when sending a telegram
-    volatile int sendTriesMax;     //!< The maximum number of repeats when sending a telegram. Default: 3 todo hora: load from EPROM
-    volatile int sendBusyTries;    //!< The number of busy repeats when sending a telegram
-    volatile int sendBusyTriesMax; //!< The maximum number of busy repeats when sending a telegram. Default: 3 todo hora: load from EPROM
-    int nextByteIndex;             //!< The number of the next byte in the telegram
+    volatile State state;            //!< The state of the lib's telegram sending/receiving
+    volatile int sendRetries;        //!< The number of repeats when sending a telegram
+    volatile int sendRetriesMax;     //!< The maximum number of repeats when sending a telegram. Default: 3
+    volatile int sendBusyRetries;    //!< The number of busy repeats when sending a telegram
+    volatile int sendBusyRetriesMax; //!< The maximum number of busy repeats when sending a telegram. Default: 3
+    int nextByteIndex;               //!< The number of the next byte in the telegram
 
     int currentByte;                //!< The current byte that is received/sent, including the parity bit
     int sendTelegramLen;            //!< The size of the to be sent telegram in bytes (including the checksum).
@@ -284,14 +284,14 @@ private:
 //
 //  Inline functions
 //
-inline void Bus::maxSendTries(int tries)
+inline void Bus::maxSendRetries(int retries)
 {
-    sendTriesMax = tries;
+    sendRetriesMax = retries;
 }
 
-inline void Bus::maxSendBusyTries(int tries)
+inline void Bus::maxSendBusyRetries(int retries)
 {
-    sendBusyTriesMax = tries;
+    sendBusyRetriesMax = retries;
 }
 
 inline bool Bus::sendingTelegram() const

@@ -34,6 +34,8 @@ Bus::Bus(BcuBase* bcuInstance, Timer& aTimer, int aRxPin, int aTxPin, TimerCaptu
 {
     timeChannel = (TimerMatch) ((pwmChannel + 2) & 3);  // +2 to be compatible to old code during refactoring
     state = Bus::INIT;
+    sendRetriesMax = NACK_RETRY_DEFAULT;
+    sendBusyRetriesMax = BUSY_RETRY_DEFAULT;
 }
 
 /**
@@ -47,11 +49,9 @@ Bus::Bus(BcuBase* bcuInstance, Timer& aTimer, int aRxPin, int aTxPin, TimerCaptu
  */
 void Bus::begin()
 {
-    //todo load send-retries from eprom
-    //sendTriesMax =  userEeprom.maxRetransmit & 0x03;
-    //sendBusyTriesMax = (userEeprom.maxRetransmit >>5) & 0x03; // default
-    sendTriesMax =  NACK_RETRY_DEFAULT;
-    sendBusyTriesMax = BUSY_RETRY_DEFAULT; // default
+    //todo load send-retries from eprom -- this should actually be done by the BCU
+    //sendRetriesMax = userEeprom.maxRetransmit & 0x03;
+    //sendBusyRetriesMax = (userEeprom.maxRetransmit >> 5) & 0x03;
 
     telegramLen = 0;
     rx_error = RX_OK;
@@ -99,8 +99,8 @@ void Bus::begin()
         serial.print("Bus begin - Timer prescaler: ", (unsigned int)TIMER_PRESCALER, DEC, 6);
         serial.print(" ttimer prescaler: ", ttimer.prescaler(), DEC, 6);
         serial.println(" ttimer value: ", ttimer.value(), DEC, 6);
-        serial.print("nak retries: ", sendTriesMax, DEC, 6);
-        serial.print(" busy retries: ", sendBusyTriesMax, DEC, 6);
+        serial.print("nak retries: ", sendRetriesMax, DEC, 6);
+        serial.print(" busy retries: ", sendBusyRetriesMax, DEC, 6);
         serial.print(" phy addr: ", PHY_ADDR_AREA(bcu->ownAddress()), DEC);
         serial.print(".", PHY_ADDR_LINE(bcu->ownAddress()), DEC);
         serial.print(".", PHY_ADDR_DEVICE(bcu->ownAddress()), DEC);
@@ -293,8 +293,8 @@ void Bus::prepareForSending()
 {
     tx_error = TX_OK;
 
-    sendTries = 0;
-    sendBusyTries = 0;
+    sendRetries = 0;
+    sendBusyRetries = 0;
     sendTelegramLen = 0;
     wait_for_ack_from_remote = false;
     repeatTelegram = false;
@@ -457,10 +457,10 @@ void Bus::handleTelegram(bool valid)
         rx_error &= ~RX_CHECKSUM_ERROR;
 
         // received telegram is ACK or repetition max -> send next telegram
-        if ((parity && currentByte == SB_BUS_ACK) || sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
+        if ((parity && currentByte == SB_BUS_ACK) || sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax)
         {
             // last sending to remote was ok or max retry, prepare for next tx telegram
-            if (sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
+            if (sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax)
                 tx_error |= TX_RETRY_ERROR;
             tb_h( 906, tx_error, tb_in);
             finishSendingTelegram();
@@ -504,7 +504,7 @@ void Bus::handleTelegram(bool valid)
 
     DB_TELEGRAM(telrxerror = rx_error);
 
-    tb_d( 901, state, tb_in);    tb_d( 902, sendTries, tb_in);   tb_d( 903, sendBusyTries, tb_in); tb_h( 904, sendAck, tb_in);
+    tb_d( 901, state, tb_in);    tb_d( 902, sendRetries, tb_in);   tb_d( 903, sendBusyRetries, tb_in); tb_h( 904, sendAck, tb_in);
     tb_h( 905, rx_error, tb_in); tb_d( 910, telegramLen, tb_in); tb_d( 911, nextByteIndex, tb_in);
 
 #endif
@@ -839,9 +839,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         // timeout -  check if there is anything to send
         // check if we have max resend for last telegram.
-        if (sendTries >= sendTriesMax || sendBusyTries >= sendBusyTriesMax)
+        if (sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax)
         {
-            tb_h( state+ 100,sendTries + 10* sendBusyTries, tb_in);
+            tb_h( state+ 100, sendRetries + 10 * sendBusyRetries, tb_in);
             tx_error |= TX_RETRY_ERROR;
             finishSendingTelegram(); // then send next, this also informs upper layer on sending error of last telegram
         }
@@ -856,8 +856,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
             if (repeatTelegram && (sendCurTelegram[0] & SB_TEL_REPEAT_FLAG) )
             {// If it is the first repeat, then mark the telegram as being repeated and correct the checksum
-                tb_d( state+ 700, sendTries, tb_in);
-                tb_d( state+ 800, sendBusyTries, tb_in);
+                tb_d( state+ 700, sendRetries, tb_in);
+                tb_d( state+ 800, sendBusyRetries, tb_in);
                 sendCurTelegram[0] &= ~SB_TEL_REPEAT_FLAG;
                 sendCurTelegram[sendTelegramLen - 1] ^= SB_TEL_REPEAT_FLAG;
             }
@@ -1191,8 +1191,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             DB_TELEGRAM(
                 txtelBuffer[0] = sendAck;
                 txtelLength = 1;
-                tx_rep_count = sendTries;
-                tx_busy_rep_count = sendBusyTries;
+                tx_rep_count = sendRetries;
+                tx_busy_rep_count = sendBusyRetries;
                 tx_telrxerror = tx_error;
             );
 
@@ -1214,9 +1214,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             if (repeatTelegram) // if last telegram was repeated, increase respective counter
             {
                 if (busy_wait_from_remote)
-                    sendBusyTries++;
+                    sendBusyRetries++;
                 else
-                    sendTries++;
+                    sendRetries++;
             }
             // dump previous tx-telegram and repeat counter and busy retry
             DB_TELEGRAM(
@@ -1225,14 +1225,14 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                     txtelBuffer[i] = sendCurTelegram[i];
                 }
                 txtelLength = sendTelegramLen;
-                tx_rep_count = sendTries;
-                tx_busy_rep_count = sendBusyTries;
+                tx_rep_count = sendRetries;
+                tx_busy_rep_count = sendBusyRetries;
                 tx_telrxerror = tx_error;
             );
         }
         tb_d( SEND_END_OF_TX+300, wait_for_ack_from_remote , tb_in);
-        tb_d( SEND_END_OF_TX+400, sendTries , tb_in);
-        tb_d(SEND_END_OF_TX+500, sendBusyTries , tb_in);
+        tb_d( SEND_END_OF_TX+400, sendRetries, tb_in);
+        tb_d(SEND_END_OF_TX+500, sendBusyRetries, tb_in);
 
         timer.match(timeChannel, time - 1); // we wait respective time - pre-send-time for next rx/tx window, cap intr disabled
         break;
