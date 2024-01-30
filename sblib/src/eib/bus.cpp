@@ -460,7 +460,7 @@ void Bus::handleTelegram(bool valid)
         if ((parity && currentByte == SB_BUS_ACK) || sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax)
         {
             // last sending to remote was ok or max retry, prepare for next tx telegram
-            if (sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax)
+            if (!(parity && currentByte == SB_BUS_ACK))
                 tx_error |= TX_RETRY_ERROR;
             tb_h( 906, tx_error, tb_in);
             finishSendingTelegram();
@@ -839,7 +839,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         // timeout -  check if there is anything to send
         // check if we have max resend for last telegram.
-        if (sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax)
+        if (repeatTelegram && (sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax))
         {
             tb_h( state+ 100, sendRetries + 10 * sendBusyRetries, tb_in);
             tx_error |= TX_RETRY_ERROR;
