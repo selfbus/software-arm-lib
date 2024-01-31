@@ -47,13 +47,8 @@ void BcuBase::loop()
 {
     bus->loop();
     TLayer4::loop();
-    bool telegramInQueu = bus->telegramReceived();
-    telegramInQueu &= (!bus->sendingTelegram());
 
-    // Typically, telegrams are processed in WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, but if an app needs
-    // extremely long for something, we might even transition to IDLE before the next loop() iteration.
-    bool busOK = (bus->state == Bus::IDLE) || (bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE);
-    if (telegramInQueu && busOK && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+    if (bus->telegramReceived() && !bus->sendingTelegram() && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
 	{
         processTelegram(bus->telegram, (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
 	}
