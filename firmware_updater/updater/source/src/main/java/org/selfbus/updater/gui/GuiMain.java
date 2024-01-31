@@ -682,10 +682,6 @@ public class GuiMain extends JFrame {
         if (label6Font != null) label6.setFont(label6Font);
         this.$$$loadLabelText$$$(label6, this.$$$getMessageFromBundle$$$("GuiTranslation", "KnxBusSettings"));
         panel1.add(label6, new GridConstraints(20, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        textFieldDeviceAddress = new JTextField();
-        panel1.add(textFieldDeviceAddress, new GridConstraints(21, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
-        textFieldBootloaderDeviceAddress = new JTextField();
-        panel1.add(textFieldBootloaderDeviceAddress, new GridConstraints(22, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         labelBootloaderDeviceAddr = new JLabel();
         this.$$$loadLabelText$$$(labelBootloaderDeviceAddr, this.$$$getMessageFromBundle$$$("GuiTranslation", "knxProgDeviceAddr"));
         panel1.add(labelBootloaderDeviceAddr, new GridConstraints(21, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
@@ -746,6 +742,10 @@ public class GuiMain extends JFrame {
         scrollPane1.setViewportView(jLoggingPane);
         final JSeparator separator2 = new JSeparator();
         panel1.add(separator2, new GridConstraints(19, 1, 1, 3, GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, new Dimension(-1, 1), 0, false));
+        textFieldBootloaderDeviceAddress = new JTextField();
+        panel1.add(textFieldBootloaderDeviceAddress, new GridConstraints(21, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
+        textFieldDeviceAddress = new JTextField();
+        panel1.add(textFieldDeviceAddress, new GridConstraints(22, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
     }
 
     /**
