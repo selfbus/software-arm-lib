@@ -239,14 +239,14 @@ public class GuiMain extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //setGuiElementsVisibility();
-                setGuiElementsVisibilityNEW();
+                setGuiElementsVisibility();
             }
         });
 
         advancedSettingsCheckBox.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                setGuiElementsVisibilityNEW();
+                setGuiElementsVisibility();
             }
         });
     }
@@ -264,8 +264,8 @@ public class GuiMain extends JFrame {
 
     private void setCliOptions() throws KNXFormatException, ParseException {
         ArrayList<String> argsList = new ArrayList<>();
-
-        argsList.add(((CalimeroSearchComboItem) Objects.requireNonNull(comboBoxIpGateways.getSelectedItem())).value.remoteEndpoint().getAddress().getHostAddress());
+        
+        argsList.add(textBoxKnxGatewayIpAddr.getText());
 
         argsList.add("-f" + textFieldFileName.getText());
         if (textFieldPort.isVisible() && !Objects.equals(textFieldPort.getText(), ""))
@@ -509,7 +509,7 @@ public class GuiMain extends JFrame {
     }
 
 
-    private void setGuiElementsVisibilityNEW() {
+    private void setGuiElementsVisibility() {
         ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");
 
         final GuiObjsVisOpts selectedScenario = (GuiObjsVisOpts) ((ComboItem) Objects.requireNonNull(comboBoxScenario.getSelectedItem())).getValue();
