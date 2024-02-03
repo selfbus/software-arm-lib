@@ -35,7 +35,7 @@
     volatile unsigned int tx_telrxerror = 0;
 
     volatile unsigned int telRXtime = 0;
-    volatile bool telcollision;
+    volatile uint8_t telcollisions;
     volatile unsigned int telrxerror = 0;
     volatile unsigned int telRXStartTime = 0;
     volatile unsigned int telTXStartTime = 0;
@@ -246,9 +246,10 @@ void dumpRXTelegram()
     }
     serial.print(") ");
 
-    if (telcollision)
+    if (telcollisions)
     {
-        serial.print("collision ");
+        serial.print("collision ", telcollisions, DEC, 1);
+        serial.print(" ");
     }
 
     if (telRXNotProcessed)

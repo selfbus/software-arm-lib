@@ -89,6 +89,7 @@ enum TxErrorCode
 
 #define NACK_RETRY_DEFAULT  3   //!< default NACK retry
 #define BUSY_RETRY_DEFAULT  3   //!< default BUSY retry
+#define COLLISION_RETRY_MAX 3   //!< Number of retries of collided telegrams
 //#define ROUTE_CNT_DEFAULT 6     //!< default Route Count
 
 

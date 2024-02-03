@@ -55,7 +55,6 @@ void Bus::begin()
 
     telegramLen = 0;
     rx_error = RX_OK;
-    collision = false;
 
     tx_error = TX_OK;
     sendCurTelegram = nullptr;
@@ -293,6 +292,7 @@ void Bus::prepareForSending()
 {
     tx_error = TX_OK;
 
+    collisions = 0;
     sendRetries = 0;
     sendBusyRetries = 0;
     sendTelegramLen = 0;
@@ -345,7 +345,7 @@ void Bus::handleTelegram(bool valid)
     b2= ( ((unsigned int)rx_telegram[4]<<8) | (rx_telegram[5]));
     b3= (( unsigned int)rx_telegram[6]<<8)|((unsigned int)rx_telegram[7]);
     b4= nextByteIndex;
-    b5= ( collision + (valid ? 2 : 0));
+    b5= ( collisions + (valid ? 8 : 0));
     tb2( 9000, b5,  b1, b2, b3, b4, tb_in);
 #endif
 
@@ -357,7 +357,7 @@ void Bus::handleTelegram(bool valid)
                 telBuffer[i] = rx_telegram[i];
             }
             telLength = nextByteIndex;
-            telcollision = collision;
+            telcollisions = collisions;
         }
     );
 
@@ -479,10 +479,6 @@ void Bus::handleTelegram(bool valid)
             busy_wait_from_remote = false;
             repeatTelegram = true;
         }
-    }
-    else if (collision) // A collision occurred during sending. Ignore the received bytes
-    {
-        collision = false;
     }
     else // We received an acknowledge frame, wrong checksum/parity or more than one byte but too short for a telegram
     {
@@ -622,7 +618,6 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         );
 
         nextByteIndex = 0;
-        collision = false;
         rx_error  = RX_OK;
         checksum = 0xff;
         sendAck = 0;
@@ -839,9 +834,10 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         // timeout -  check if there is anything to send
         // check if we have max resend for last telegram.
-        if (repeatTelegram && (sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax))
+        if ((repeatTelegram && (sendRetries >= sendRetriesMax || sendBusyRetries >= sendBusyRetriesMax)) ||
+            collisions > COLLISION_RETRY_MAX)
         {
-            tb_h( state+ 100, sendRetries + 10 * sendBusyRetries, tb_in);
+            tb_h( state+ 100, sendRetries + 10 * sendBusyRetries + 100 * collisions, tb_in);
             tx_error |= TX_RETRY_ERROR;
             finishSendingTelegram(); // then send next, this also informs upper layer on sending error of last telegram
         }
@@ -927,6 +923,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                     // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: No bus free detection
                     // for p_class ack_char and inner_Frame_char, but collision avoidance.
                     // This means we stop our transmission and let the other device continue.
+                    collisions++;
                     initState();
                     break;
                 }
@@ -1021,6 +1018,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 // Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
                 // (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
                 // Collision avoidance says we must stop sending.
+                collisions++;
                 initState();
                 break;
             }
@@ -1036,7 +1034,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 tb_t( state+300, ttimer.value(), tb_in);
 
                 // A collision. Stop sending and switch to receiving the current transmission.
-                collision = true;
+                collisions++;
                 tx_error |= TX_COLLISION_ERROR;
                 rx_error = RX_OK;
                 checksum = 0xff;

@@ -266,7 +266,7 @@ private:
     bool wait_for_ack_from_remote; //!< sending process is requesting an ack from remote side
     bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
     bool repeatTelegram;        //!< need to repeat last  telegram sent
-    bool collision;             //!< A collision occurred
+    uint8_t collisions;         //!< Number of collisions when sending @ref sendCurTelegram
 };
 
 

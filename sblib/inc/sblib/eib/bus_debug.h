@@ -50,7 +50,7 @@
     extern volatile unsigned int tx_telrxerror;
 
     extern volatile unsigned int telRXtime; //!< time of the timeout after the last bit of the received telegram
-    extern volatile bool telcollision;
+    extern volatile uint8_t telcollisions;
     extern volatile unsigned int telrxerror;
     extern volatile unsigned int telRXStartTime; //!< time when the reception  (start bit of first byte) of a telegram from bus started
     extern volatile unsigned int telTXStartTime; //!< time when the transmission (start bit of first byte)of a telegram to the bus started
