@@ -546,28 +546,33 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     // debug processing takes about 7-8us
     tbint(state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
 
-    // If we captured a falling edge (bit), read the pin repeatedly over a duration of 3us.
+    // If we captured a falling edge (bit), read the pin repeatedly over a duration of 3us to ensure it's not just
+    // a spike. Except it's us who are pulling down the bus, then this would be a waste of time.
     if (timer.flag(captureChannel))
     {
         auto captureValue = timer.capture(captureChannel);
         auto matchValue = timer.match(timeChannel);
 
-        while (true)
+        // If captureValue is >= timer.match(pwmChannel), then it's us pulling down the bus.
+        if (captureValue < timer.match(pwmChannel))
         {
-            // If the pin went HIGH in the meantime, it was just a spike. In this case, just reset the pending bit of
-            // the capture channel (this keeps a potentially set pending bit of the time channel alive) and that's it.
-            if (digitalRead(rxPin))
+            while (true)
             {
-                timer.resetFlag(captureChannel);
-                return;
-            }
+                // If the pin went HIGH in the meantime, it was just a spike. In this case, just reset the pending bit of
+                // the capture channel (this keeps a potentially set pending bit of the time channel alive) and that's it.
+                if (digitalRead(rxPin))
+                {
+                    timer.resetFlag(captureChannel);
+                    return;
+                }
 
-            // Break out of the loop after 3 microseconds.
-            auto timerValue = timer.value();
-            auto elapsedMicroseconds = (timerValue >= captureValue) ? (timerValue - captureValue) : (matchValue + 1 - captureValue + timerValue);
-            if (elapsedMicroseconds >= 3)
-            {
-                break;
+                // Break out of the loop after 3 microseconds.
+                auto timerValue = timer.value();
+                auto elapsedMicroseconds = (timerValue >= captureValue) ? (timerValue - captureValue) : (matchValue + 1 - captureValue + timerValue);
+                if (elapsedMicroseconds >= 3)
+                {
+                    break;
+                }
             }
         }
     }
