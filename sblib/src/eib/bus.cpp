@@ -546,8 +546,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     // debug processing takes about 7-8us
     tbint(state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
 
-    // If we captured a falling edge (bit), read the pin repeatedly over a duration of 3us to ensure it's not just
-    // a spike. Except it's us who are pulling down the bus, then this would be a waste of time.
+    // If we captured a falling edge (bit), read the pin repeatedly over a duration of at least 3us to ensure it's
+    // not just a spike. Except it's us who are pulling down the bus, then this would be a waste of time.
     if (timer.flag(captureChannel))
     {
         auto captureValue = timer.capture(captureChannel);
@@ -566,10 +566,14 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                     return;
                 }
 
-                // Break out of the loop after 3 microseconds.
+                // Break out of the loop after at least 3 microseconds elapsed. The falling edge can occur at a
+                // high value of the prescale counter, e.g. when a fractional representation of the timer value
+                // would be 1.9us. Then captureValue is 1 (it's an integer) and we must ensure to wait until
+                // timerValue is 5 such that the real wait time is >=3us -- if we would only wait till 4, the
+                // real wait time would only be >=2us.
                 auto timerValue = timer.value();
                 auto elapsedMicroseconds = (timerValue >= captureValue) ? (timerValue - captureValue) : (matchValue + 1 - captureValue + timerValue);
-                if (elapsedMicroseconds >= 3)
+                if (elapsedMicroseconds > 3)
                 {
                     break;
                 }
