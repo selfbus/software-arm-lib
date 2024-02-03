@@ -1022,6 +1022,14 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
              * of the last bit : 69us - margin till 69us before next falling edge at pwmChannel time + margin
              */
             auto captureTime = timer.capture(captureChannel);
+
+            if (captureTime < REFLECTION_IGNORE_DELAY)
+            {
+                // We finished pulling the bus low, i.e. sent a rising edge, which caused a reflection. Ignore it
+                // and continue sending.
+                break;
+            }
+
             if ((captureTime % BIT_TIME) < (BIT_WAIT_TIME - BIT_OFFSET_MIN))
             {
                 // Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok

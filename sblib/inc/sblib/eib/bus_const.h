@@ -99,6 +99,7 @@ enum TxErrorCode
 #define TIMER_PRESCALER     (SystemCoreClock / TICKS_PER_SECOND - 1) //!< The value for the prescaler
 #define BIT_TIMES(x)        (((x) * TICKS_PER_SECOND + 4800) / 9600) //!< Microseconds of x bits on the bus, with integer rounding
 
+#define REFLECTION_IGNORE_DELAY 3  //!< The first 3us after a rising edge caused by us, ignore falling edges as they are likely to be reflections
 #define STARTBIT_OFFSET_MIN 30  //!< >=30 us before expected start bit it's a spike
 #define STARTBIT_OFFSET_MAX 30  //!< <=30 us after expected start bit is still ok
 #define BIT_OFFSET_MIN 7        //!< >=7 us before expected bit check for bus busy
