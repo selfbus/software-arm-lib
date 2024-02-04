@@ -589,14 +589,15 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tb_t( state, ttimer.value(), tb_in);
         DB_TELEGRAM(telRXWaitInitTime = ttimer.value()); // if it is less than 50 we have a failure on the bus
 
-        if (timer.flag(captureChannel))
-        {// cap event: bus not in idle state before we have a timeout, restart waiting time
-            timer.value (0); // restart the timer
+        if (!timer.flag(timeChannel))
+        {
+            // cap event: bus not in idle state before we have a timeout, restart waiting time
+            timer.restart();
             break;
         }
-        // timeout- we set bus to idle state
+        // timeout- we set bus to idle state, and start receiving right away if it's a cap event at the same time
         idleState();
-        break;
+        goto STATE_SWITCH;
 
     // The bus is idle for at least 50BT. Usually we come here when we finished a TX/RX on the Bus and waited 50BT for next event without receiving a start bit on the Bus
     // or at least one pending Telegram in the queue.
@@ -607,7 +608,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tb_d( state+100, ttimer.value(), tb_in);
         DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
 
-        if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing - timeout??
+        if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing
             break;
 
     // RX process functions
@@ -919,7 +920,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //tb_h(SEND_START_BIT+200, timer.captureMode(captureChannel),  tb_in);
 
         // We will receive our own start bit here too.
-        if (timer.flag(captureChannel))
+        if (!timer.flag(timeChannel))
         {
             auto captureTime = timer.capture(captureChannel);
             auto pwmTime = timer.match(pwmChannel);
@@ -1013,7 +1014,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //tb_d( state+100, timer.match(pwmChannel), tb_in);
         //tb_h( state+200, timer.captureMode(captureChannel), tb_in);
 
-        if (timer.flag(captureChannel))
+        if (!timer.flag(timeChannel))
         {
             /* Capture event from bus-in. This should be from us sending a zero bit, but it might as well be from somebody else in case of a
              * collision. Our low bit starts at pwmChannel time and ends at match of timeChannel.
