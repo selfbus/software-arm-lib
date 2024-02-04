@@ -542,13 +542,14 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     volatile bool timeout;
     volatile int time;
     unsigned int dt, tv, cv;
+    auto isCaptureEvent = timer.flag(captureChannel);
 
     // debug processing takes about 7-8us
-    tbint(state+8000, ttimer.value(), timer.flag(captureChannel),  timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
+    tbint(state+8000, ttimer.value(), isCaptureEvent, timer.capture(captureChannel), timer.value(), timer.match(timeChannel), tb_in);
 
     // If we captured a falling edge (bit), read the pin repeatedly over a duration of at least 3us to ensure it's
     // not just a spike. Except it's us who are pulling down the bus, then this would be a waste of time.
-    if (timer.flag(captureChannel))
+    if (isCaptureEvent)
     {
         auto captureValue = timer.capture(captureChannel);
         auto matchValue = timer.match(timeChannel);
@@ -608,7 +609,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tb_d( state+100, ttimer.value(), tb_in);
         DB_TELEGRAM(telRXWaitIdleTime = ttimer.value());
 
-        if (!timer.flag(captureChannel)) // Not a bus-in signal or Tel in the queue: do nothing
+        if (!isCaptureEvent) // Not a bus-in signal or Tel in the queue: do nothing
             break;
 
     // RX process functions
@@ -654,7 +655,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         timer.matchMode(timeChannel, INTERRUPT | RESET);
 
         // No start bit: then it is a timeout of end of frame
-        if (!timer.flag(captureChannel))
+        if (!isCaptureEvent)
         {
             if (checksum)
             {
@@ -791,7 +792,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         //cap event- should not happen here;  start receiving,  maybe ack or early tx from other device,
         //fixme: should not happen here, probably timing error
 
-        if (timer.flag(captureChannel)){
+        if (isCaptureEvent)
+        {
             sendAck = 0;  // we stop sending an Ack to remote side and start receiving the char
             state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;  // init RX of new telegram
             goto STATE_SWITCH;
@@ -837,7 +839,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     case Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE:
         tb_t( state, ttimer.value(), tb_in);
 
-        if (timer.flag(captureChannel)){ // cap event- start receiving,  maybe ack or early tx from other device - fixme: should not happen here!
+        if (isCaptureEvent) // cap event- start receiving,  maybe ack or early tx from other device - fixme: should not happen here!
+        {
             state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;
             goto STATE_SWITCH;
         }
@@ -1271,7 +1274,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
     case Bus::SEND_WAIT_FOR_RX_ACK:
         tb_t( state, ttimer.value(), tb_in);
 
-        if (timer.flag(captureChannel)){
+        if (isCaptureEvent){
             state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;  // start bit of ack received - continue rx process for rest of byte
             // todo rx-ack process ongoing inform to RX process for optimization??
             goto STATE_SWITCH;
