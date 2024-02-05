@@ -43,14 +43,13 @@
 
 // KNX/EIB specific settings
 #define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
-#define MANUFACTURER 0x04 //!< Manufacturer ID -> Jung
-#define DEVICETYPE 0x2060 //!< Device Type -> 2138.10
-#define APPVERSION 0x01   //!< Application Version -> 0.1
 
 BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
 
 Timeout runModeTimeout; //!< running mode LED blinking timeout
 bool blinky = false;
+
+bool startup();
 
 uint32_t getProgrammingButton()
 {
@@ -62,19 +61,8 @@ uint32_t getProgrammingButton()
 }
 
 /**
- * @brief Configures the system timer to call SysTick_Handler once every 1 msec.
- *
- */
-static void lib_setup()
-{
-    SysTick_Config(SystemCoreClock / 1000);
-    systemTime = 0;
-}
-
-/**
- * @brief Starts BCU with @ref DEFAULT_BL_KNX_ADDRESS (15.15.192) as a Jung 2138.10 device, version 0.1<br>
+ * @brief Starts BCU with @ref DEFAULT_BL_KNX_ADDRESS (15.15.192)
  *        Sets @ref PIN_RUN as output and in debug build also @ref PIN_INFO as output
- *
  */
 BcuBase* setup()
 {
@@ -100,8 +88,11 @@ BcuBase* setup()
     }
 #endif
 
+    auto programmingMode = startup();
+
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
     bcu.setProgPin(getProgrammingButton());
+    bcu.setProgrammingMode(programmingMode);
     runModeTimeout.start(1);
 
     // finally start the bcu
@@ -142,7 +133,7 @@ BcuBase* setup()
 }
 
 /**
- * @brief Handles bus.idle(), LED status and MCU's reset (if requested by KNX-telegram), called from run_updater(...)
+ * @brief Handles LED status
  *
  */
 void loop()
@@ -171,7 +162,14 @@ void loop()
 }
 
 /**
- * @brief Starts the application by coping application's stack top and vectortable to ram, remaps it and calls Reset vector of it
+ * The processing loop while no KNX-application is loaded
+ */
+void loop_noapp()
+{
+}
+
+/**
+ * @brief Starts the application by copying application's stack top and vectortable to ram, remaps it and calls Reset vector of it
  *
  * @param start     Start address of application
  */
@@ -206,49 +204,21 @@ static void jumpToApplication(uint8_t * start)
 #endif
 }
 
-
 /**
- * @brief The real "main()" of the bootloader. Calls libsetup() to initialize the Selfbus library
- *        and setup() to initialize itself. Handles loop() of the BCU and itself.
+ * @brief  Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.
+ *         If no "magic word" is present it checks for a valid application to start,
+ *         otherwise starts in bootloader mode
  *
- * @param programmingMode if true bootloader enables BCU programming mode active, otherwise not.
+ * @return whether BCU should start up in programming mode; might not return at all if application is started
  */
-static void run_updater(bool programmingMode)
-{
-    lib_setup();
-    setup();
-
-    if (programmingMode)
-    {
-        bcu.setProgrammingMode(programmingMode);
-    }
-
-    while (1)
-    {
-        bcu.loop();
-        loop();
-    }
-}
-
-/**
- * @brief Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.<br/>
- *        If no "magic word" is present it checks for a valid application to start,<br>
- *        otherwise starts in bootloader mode
- *
- * @return never returns
- */
-#ifndef IAP_EMULATION
-    int main()
-#else
-    int alt_main()
-#endif
+bool startup()
 {
     // Updater request from application by setting magicWord
   	unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
  	if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
         *magicWord = 0;	// avoid restarting BL after flashing
-        run_updater(true);
+        return true;
     }
     *magicWord = 0;		// wrong magicWord, delete it
 
@@ -256,7 +226,7 @@ static void run_updater(bool programmingMode)
     pinMode(getProgrammingButton(), INPUT | PULL_UP);
     if (!digitalRead(getProgrammingButton()))
     {
-        run_updater(true);
+        return true;
     }
 
     // Start main application at address
@@ -265,9 +235,9 @@ static void run_updater(bool programmingMode)
     {
         jumpToApplication(block->startAddress);
     }
+
     // Start updater in case of error
-    run_updater(false);
-    return (0);
+    return false;
 }
 
 /** @}*/
