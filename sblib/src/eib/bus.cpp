@@ -92,7 +92,7 @@ void Bus::begin()
         ttimer.begin();
         ttimer.start();
         ttimer.noInterrupts();
-        ttimer.reset();
+        ttimer.restart();
         // ttimer.prescaler(0);
         ttimer.prescaler(TIMER_PRESCALER);
         serial.print("Bus begin - Timer prescaler: ", (unsigned int)TIMER_PRESCALER, DEC, 6);
@@ -254,7 +254,7 @@ void Bus::initState()
     // any cap intr during start up time is ignored and will reset start up time
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
     timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
-    timer.reset();
+    timer.restart();
     timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
     timer.match(pwmChannel, 0xffff);
     state = INIT;
