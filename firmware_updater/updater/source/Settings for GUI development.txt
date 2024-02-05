@@ -1,0 +1,7 @@
+Intellij IDEA
+
+File -> Settings -> Editor -> GUI Designer -> Generate GUI into: Java source code
+File -> Settings -> Build, Execution, Deployment -> Build Tools -> Gradle -> Build and run using: Intellij IDEA
+File -> Settings -> Build, Execution, Deployment -> Build Tools -> Gradle -> Run tests using: Intellij IDEA
+
+Plugings -> install "Resource Bundle Editor" (start with highlight resources->Resource Bundle and press F4)

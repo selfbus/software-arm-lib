@@ -533,6 +533,14 @@
                 </constraints>
                 <properties/>
               </component>
+              <component id="2b19" class="javax.swing.JButton" binding="reloadGatewaysButton" default-binding="true">
+                <constraints>
+                  <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+                </constraints>
+                <properties>
+                  <text resource-bundle="GuiTranslation" key="reloadKnxIpGateways"/>
+                </properties>
+              </component>
             </children>
           </grid>
         </children>

@@ -89,6 +89,7 @@ public class GuiMain extends JFrame {
     private JLabel labelKnxSecureDevicePwd;
     private JLabel labelKnxSecureDevicePwdHint;
     private JScrollPane mainScrollPane;
+    private JButton reloadGatewaysButton;
 
 
     private CliOptions cliOptions;
@@ -249,6 +250,12 @@ public class GuiMain extends JFrame {
                 setGuiElementsVisibility();
             }
         });
+        reloadGatewaysButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                new Thread(() -> LoadKnxIpInterfacesAndFillComboBox()).start();
+            }
+        });
     }
 
     private void storeFlashFilePath(File flashFile) {
@@ -264,7 +271,7 @@ public class GuiMain extends JFrame {
 
     private void setCliOptions() throws KNXFormatException, ParseException {
         ArrayList<String> argsList = new ArrayList<>();
-        
+
         argsList.add(textBoxKnxGatewayIpAddr.getText());
 
         argsList.add("-f" + textFieldFileName.getText());
@@ -326,13 +333,7 @@ public class GuiMain extends JFrame {
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        new Thread() {
-            public void run() {
-                DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
-                        comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
-                                " (" + r.response().getControlEndpoint().getAddress().getHostAddress() + ")", r)));
-            }
-        }.start();
+        new Thread(this::LoadKnxIpInterfacesAndFillComboBox).start();
 
         ListAppender.addLog4j2TextPaneAppender(this.jLoggingPane);
 
@@ -341,6 +342,13 @@ public class GuiMain extends JFrame {
         fillMediumComboBox();
         fillTelegramPriorityComboBox();
         mainScrollPane.getVerticalScrollBar().setUnitIncrement(10);
+    }
+
+    private void LoadKnxIpInterfacesAndFillComboBox() {
+        comboBoxIpGateways.removeAllItems();
+        DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
+                comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
+                        " (" + r.response().getControlEndpoint().getAddress().getHostAddress() + ")", r)));
     }
 
     private void fillScenarios() {
@@ -428,7 +436,7 @@ public class GuiMain extends JFrame {
         REQUID("requestUid"),
         ADVSET("advancedSettings");
 
-        private String visOption;
+        private final String visOption;
 
         GuiObjsVisOpts(String VisOption) {
             this.visOption = VisOption;
@@ -513,10 +521,6 @@ public class GuiMain extends JFrame {
         ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");
 
         final GuiObjsVisOpts selectedScenario = (GuiObjsVisOpts) ((ComboItem) Objects.requireNonNull(comboBoxScenario.getSelectedItem())).getValue();
-
-        if (advancedSettingsCheckBox.isSelected()) {
-
-        }
 
         switch (selectedScenario) {
             case NEWDEV:
@@ -738,6 +742,9 @@ public class GuiMain extends JFrame {
         panel1.add(textFieldDeviceAddress, new GridConstraints(21, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
         panel1.add(comboBoxMedium, new GridConstraints(7, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         panel1.add(comboBoxScenario, new GridConstraints(10, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        reloadGatewaysButton = new JButton();
+        this.$$$loadButtonText$$$(reloadGatewaysButton, this.$$$getMessageFromBundle$$$("GuiTranslation", "reloadKnxIpGateways"));
+        panel1.add(reloadGatewaysButton, new GridConstraints(1, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
     }
 
     /**
