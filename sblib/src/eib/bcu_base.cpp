@@ -63,7 +63,7 @@ void BcuBase::loop()
 			userRam->status() ^= 0x81;  // toggle programming mode and checksum bit
 		}
 		pinMode(progPin, OUTPUT);
-		digitalWrite(progPin, (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) ^ progPinInv);
+		digitalWrite(progPin, programmingMode() ^ progPinInv);
 	}
 
     // Rest of this function is only relevant if currently able to send another telegram.
@@ -96,16 +96,12 @@ bool BcuBase::setProgrammingMode(bool newMode)
         return false;
     }
 
-    if (newMode)
+    if (newMode != programmingMode())
     {
-        userRam->status() |= 0x81;  // set programming mode and checksum bit
-    }
-    else
-    {
-        userRam->status() &= 0x81;  // clear programming mode and checksum bit
+        userRam->status() ^= 0x81;  // toggle programming mode and checksum bit
     }
     pinMode(progPin, OUTPUT);
-    digitalWrite(progPin, (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) ^ progPinInv);
+    digitalWrite(progPin, programmingMode() ^ progPinInv);
     return true;
 }
 
