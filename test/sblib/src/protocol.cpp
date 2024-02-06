@@ -433,10 +433,11 @@ void executeTest(BcuType testBcuType, Test_Case * tc)
 
     Telegram* telOriginal = tc->telegram;
     uint16_t totalStepCount = getTotalStepCount(tc);
-    Telegram telCopy[totalStepCount];
-    copyAllTelegrams(&telCopy[0], telOriginal, totalStepCount);
-    tc->telegram = &telCopy[0];
+    Telegram* telCopy = new Telegram[totalStepCount];
+    copyAllTelegrams(telCopy, telOriginal, totalStepCount);
+    tc->telegram = telCopy;
     executeTestOnBcu(bcuToTest, tc);
     tc->telegram = telOriginal;
+    delete [] telCopy;
     delete bcuToTest;
 }
