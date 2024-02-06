@@ -74,7 +74,7 @@ public:
      * Get the mask version.
      * Usually 0x0012 for BCU1, 0x0020 for BCU2.
      */
-    virtual uint16_t getMaskVersion() const = 0; ///\todo subclass BL doesn't need it
+    virtual uint16_t getMaskVersion() const = 0;
 
     virtual const char* getBcuType() const = 0;
 
@@ -231,7 +231,7 @@ protected:
      *
      * @return True on success, false on failure
      */
-    bool processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id);  ///\todo move to a new subclass BL doesnt need that
+    bool processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id);
 
     /**
      * Flushes all pending write operations to user memory (eeprom, memmapper) and sends a callback to the user

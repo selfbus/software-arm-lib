@@ -229,8 +229,7 @@ void Timer::setIRQPriority(uint32_t newPriority)
 
 //
 // The original timer handler is used for performance reasons.
-// Use attachInterrupt() to override this handler.
-// TODO there is nothing like attachInterrupt() in the sblib, copy&paste error?
+//
 extern "C" void SysTick_Handler()
 {
     ++systemTime;
