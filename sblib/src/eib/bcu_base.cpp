@@ -74,12 +74,18 @@ void BcuBase::loop()
 
     if (requestedRestartType != NO_RESTART)
     {
-        if (connectedTo() != 0)
+        // Tests require inspection of the sent telegram before calling softSystemReset().
+        // So instead of calling the method after disconnect() in the same loop iteration,
+        // let's defer that to the next iteration by moving it to an otherwise unneeded
+        // else block.
+        if (directConnection())
         {
-            // send disconnect
-            sendConControlTelegram(T_DISCONNECT_PDU, connectedTo(), 0);
+            disconnect();
         }
-        softSystemReset();
+        else
+        {
+            softSystemReset();
+        }
     }
 }
 

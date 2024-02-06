@@ -721,6 +721,11 @@ bool TLayer4::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t
     return (false); // we return nothing
 }
 
+void TLayer4::disconnect()
+{
+    actionA06DisconnectAndClose();
+}
+
 void TLayer4::actionA00Nothing()
 {
     dump2(serial.println("A00Nothing"));

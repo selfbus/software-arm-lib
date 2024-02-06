@@ -333,8 +333,9 @@ void executeTestOnBcu(BcuDefault* currentBcu, Test_Case * tc)
     currentBcu->begin(tc->manufacturer, tc->deviceType, tc->version);
     checkBcuInitialisation(currentBcu, tc);
 
-    _LPC_TMR16B1.IR  = 0;
-    currentBcu->bus->timerInterruptHandler(); // move the ISR out of INIT state
+    // move the ISR out of INIT state
+    _LPC_TMR16B1.IR = 4;
+    currentBcu->bus->timerInterruptHandler();
     REQUIRE(currentBcu->bus->state == Bus::IDLE);
 
     systemTime  = 0;
