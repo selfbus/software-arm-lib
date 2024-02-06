@@ -96,12 +96,6 @@ void telegramPreparation(BcuDefault* testBcu, Telegram* tel, uint16_t telCount)
 
 static void _handleBusSendingInterrupt(BcuDefault* currentBcu)
 {
-     //    (currentBcu->bus->state == Bus::RECV_WAIT_FOR_STARTBIT_OR_TELEND) ||
-     if (currentBcu->bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)
-     {
-         currentBcu->bus->state = Bus::SEND_START_BIT;
-     }
-
      if (currentBcu->bus->state == Bus::SEND_START_BIT)
      {
         _LPC_TMR16B1.TC += 10;
