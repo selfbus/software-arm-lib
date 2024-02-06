@@ -141,7 +141,7 @@ void BcuDefault::loop()
 
         }
         // To prevent overflows if no telegrams are sent for a long time
-        ///\todo better reload with systemTime - groupTelWaitMillis
+        ///\todo better reload with millis() - groupTelWaitMillis
         if (elapsed(groupTelSent) >= 2000)
         {
             groupTelSent += 1000;

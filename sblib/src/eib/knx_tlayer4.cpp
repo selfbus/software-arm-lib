@@ -120,7 +120,7 @@ void dumpState(TLayer4::TL4State dumpState)
 void dumpTicks()
 {
     dump2(
-        uint32_t ticks = systemTime - lastTick;
+        uint32_t ticks = millis() - lastTick;
         serial.print(telegramCount, DEC, 6);
         serial.print(LOG_SEP);
         serial.print("t:", (unsigned int)ticks, DEC, 5);
@@ -132,7 +132,7 @@ void dumpTicks()
         serial.print(LOG_SEP);
         serial.print(disconnectCount);
         serial.print(LOG_SEP);
-        lastTick = systemTime;
+        lastTick = millis();
     );
 }
 
@@ -741,7 +741,7 @@ void TLayer4::actionA01Connect(uint16_t address)
     connectedAddr = address;
     seqNoSend = 0;
     seqNoRcv = 0;
-    connectedTime = systemTime; // "start connection timeout timer"
+    connectedTime = millis(); // "start connection timeout timer"
     setTL4State(TLayer4::OPEN_IDLE);
     dump2(lastTick = connectedTime;); // for debug logging
 }
@@ -753,7 +753,7 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     seqNoRcv++;                 // increment sequence counter
     seqNoRcv &= 0x0F;           // handle overflow
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 
     byte * sendBuffer;
     volatile SendConnectedTelegramBufferState * sendBufferState;
@@ -793,14 +793,14 @@ void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
     dump2(serial.println("ERROR A03sendAckPduAgain "));
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     repeatedT_ACKcount++; // counting for statistics
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA04SendNAck(const uint8_t seqNo)
 {
     dump2(serial.println("ERROR actionA04SendNAck"));
     sendConControlTelegram(T_NACK_PDU, connectedAddr, seqNo);
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA05DisconnectUser()
@@ -860,8 +860,8 @@ void TLayer4::actionA07SendDirectTelegram()
     );
     sendPreparedConnectedTelegram();
     repCount = 0;
-    sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    sentTelegramTime = millis(); // "start the acknowledge timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA08IncrementSequenceNumber()
@@ -869,7 +869,7 @@ void TLayer4::actionA08IncrementSequenceNumber()
     dump2(serial.print("A08IncrementSequenceNumber "));
     seqNoSend++;
     seqNoSend &= 0x0F;
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
     sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
 
     if (sendConnectedTelegramBuffer2State != CONNECTED_TELEGRAM_FREE)
@@ -889,8 +889,8 @@ void TLayer4::actionA09RepeatMessage()
 
     sendPreparedConnectedTelegram();
     repCount++;
-    sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    sentTelegramTime = millis(); // "start the acknowledge timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA10Disconnect(uint16_t address)

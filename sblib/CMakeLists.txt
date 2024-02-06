@@ -43,7 +43,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         inc/sblib/i2c/ds3231.h
         inc/sblib/internal/functions.h
         inc/sblib/internal/iap.h
-        inc/sblib/internal/variables.h
         inc/sblib/lcd/font.h
         inc/sblib/lcd/font_5x7.h
         inc/sblib/lcd/graphical.h

@@ -9,8 +9,6 @@
  */
 
 #include <sblib/timer.h>
-
-#include <sblib/internal/variables.h>
 #include <sblib/interrupt.h>
 
 
@@ -18,7 +16,7 @@
 #define SYSTICK_INTERRUPT_ENABLED   ((SysTick->CTRL &  SysTick_CTRL_TICKINT_Msk) == SysTick_CTRL_TICKINT_Msk)
 
 // The number of milliseconds since processor start/reset
-volatile unsigned int systemTime;
+static volatile unsigned int systemTime = 0;
 
 // The timers
 static LPC_TMR_TypeDef* const timers[4] = { LPC_TMR16B0, LPC_TMR16B1, LPC_TMR32B0, LPC_TMR32B1 };
@@ -97,6 +95,23 @@ void delayMicroseconds(unsigned int usec)
     }
 }
 #endif
+
+#ifdef IAP_EMULATION
+void setMillis(unsigned int newSystemTime)
+{
+    systemTime = newSystemTime;
+}
+#endif
+
+unsigned int millis()
+{
+    return systemTime;
+}
+
+unsigned int elapsed(unsigned int ref)
+{
+    return millis() - ref;
+}
 
 //----- Class Timer -----------------------------------------------------------
 

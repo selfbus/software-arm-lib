@@ -55,6 +55,15 @@ void delay(unsigned int msec);
  */
 void delayMicroseconds(unsigned int usec);
 
+#ifdef IAP_EMULATION
+/**
+ * Set the number of milliseconds that elapsed since the last reset or processor start.
+ *
+ * @param newSystemTime The number of milliseconds.
+ */
+void setMillis(unsigned int newSystemTime);
+#endif
+
 /**
  * Get the number of milliseconds that elapsed since the last reset or processor start.
  * Please note that the system time overflows and restarts at zero after 49,7 days.
@@ -487,18 +496,6 @@ protected:
 // Inline functions
 //
 
-
-ALWAYS_INLINE unsigned int millis()
-{
-    extern volatile unsigned int systemTime;
-    return systemTime;
-}
-
-ALWAYS_INLINE unsigned int elapsed(unsigned int ref)
-{
-    extern volatile unsigned int systemTime;
-    return systemTime - ref;
-}
 
 ALWAYS_INLINE void Timer::prescaler(unsigned int factor)
 {

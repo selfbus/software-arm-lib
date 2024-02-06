@@ -10,7 +10,6 @@
 
 #include "protocol.h"
 #include <sblib/eib/knx_npdu.h>
-#include <sblib/internal/variables.h>
 #include <sblib/internal/iap.h>
 #include <sblib/eib/bus_const.h>
 #include <sblib/bits.h>
@@ -245,7 +244,7 @@ static void _handleTime(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, 
         strcat(msg, temp);
         FAIL(msg);
     }
-    systemTime += tel->length;
+    setMillis(millis() + tel->length);
 }
 
 static unsigned int _handleBreak (Test_Case * tc, Telegram * tel, unsigned int testStep)
@@ -338,13 +337,13 @@ void executeTestOnBcu(BcuDefault* currentBcu, Test_Case * tc)
     currentBcu->bus->timerInterruptHandler();
     REQUIRE(currentBcu->bus->state == Bus::IDLE);
 
-    systemTime  = 0;
+    setMillis(0);
     wfiSystemTimeInc = 1;
     setup();
     wfiSystemTimeInc = 0;
     if (tc->powerOnDelay)
     {
-        REQUIRE(tc->powerOnDelay == systemTime);
+        REQUIRE(tc->powerOnDelay == millis());
     }
 
     if (tc->setup) tc->setup(tc->telegram, totalStepCount);
