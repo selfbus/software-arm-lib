@@ -561,7 +561,7 @@ bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCo
     if (!checkApciForMagicWord(eraseCode, channelNumber))
     {
         ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
-        requestedRestartType = RESTART_BASIC;
+        restartTimeout.start(500);
         return (false);
     }
 
@@ -578,7 +578,7 @@ bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCo
     unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
     *magicWord = BOOTLOADER_MAGIC_WORD;
 #endif
-    requestedRestartType = RESTART_MASTER;
+    restartTimeout.start(500);
     return (true);
 }
 

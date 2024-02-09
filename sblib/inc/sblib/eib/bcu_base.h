@@ -14,6 +14,7 @@
 #include <sblib/eib/userRam.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/com_objects.h>
+#include <sblib/timeout.h>
 #include <sblib/timer.h>
 #include <sblib/debounce.h>
 #include <sblib/eib/knx_tlayer4.h>
@@ -130,13 +131,6 @@ protected:
     void discardReceivedTelegram();
     void send(unsigned char* telegram, unsigned short length);
 
-    enum BcuRestartType
-    {
-        NO_RESTART,
-        RESTART_BASIC,
-        RESTART_MASTER
-    };
-    BcuRestartType requestedRestartType;
-
+    Timeout restartTimeout;
 };
 #endif /*sblib_BcuBase_h*/

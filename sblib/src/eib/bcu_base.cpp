@@ -29,7 +29,7 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         addrTables(addrTables),
         comObjects(nullptr),
         progButtonDebouncer(),
-        requestedRestartType(NO_RESTART)
+        restartTimeout(Timeout())
 {
     timerBusObj = bus;
     setFatalErrorPin(progPin);
@@ -72,15 +72,19 @@ void BcuBase::loop()
         return;
     }
 
-    if (requestedRestartType != NO_RESTART)
+    if (restartTimeout.started())
     {
         // Tests require inspection of the sent telegram before calling softSystemReset().
         // So instead of calling the method after disconnect() in the same loop iteration,
         // let's defer that to the next iteration by moving it to an otherwise unneeded
-        // else block.
+        // else block, and ensure that the block is entered by restarting the timeout.
         if (directConnection())
         {
-            disconnect();
+            if (restartTimeout.expired())
+            {
+                disconnect();
+                restartTimeout.start(1);
+            }
         }
         else
         {
@@ -110,7 +114,7 @@ bool BcuBase::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t
     switch (apciCmd)
     {
         case APCI_BASIC_RESTART_PDU:
-            requestedRestartType = RESTART_BASIC;
+            restartTimeout.start(500);
             return (false);
         default:
             return (TLayer4::processApci(apciCmd, telegram, telLength, sendBuffer));
