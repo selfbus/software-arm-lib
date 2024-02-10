@@ -753,7 +753,9 @@ static bool updUpdateBootDescriptorBlock(uint8_t * data)
     else
     {
         d3(serial.print("it's different, Erase Page: "));
+        bcu.bus->pause();
         result = erasePageRange(bootDescriptorBlockPage(), bootDescriptorBlockPage());
+        bcu.bus->resume();
         if (result != UDP_IAP_SUCCESS)
         {
             setLastError(result);
