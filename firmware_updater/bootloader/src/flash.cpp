@@ -150,17 +150,6 @@ static UDP_State eraseSectorRange(unsigned int startSector, unsigned int endSect
     return (result);
 }
 
-
-/**
- * @brief Erases if allowed the requested page.
- * @param page  Page number to be erased
- * @return      UDP_IAP_SUCCESS if successful, otherwise @ref UDP_PAGE_NOT_ALLOWED_TO_ERASE or a @ref IAP_Status
- */
-UDP_State erasePage(unsigned int page)
-{
-    return (erasePageRange(page, page));
-}
-
 UDP_State eraseAddressRange(uint8_t * startAddress, const uint8_t * endAddress, const bool rangeCheck)
 {
     UDP_State result = UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE;
