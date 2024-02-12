@@ -88,7 +88,7 @@ bool BcuUpdate::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8
 
 void BcuUpdate::begin()
 {
-    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
+    userRam->status() |= BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
     userRam->runState() = 1;
     BcuBase::_begin();
 }

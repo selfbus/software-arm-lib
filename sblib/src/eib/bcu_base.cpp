@@ -61,7 +61,7 @@ void BcuBase::loop()
 		int oldValue = progButtonDebouncer.value();
 		if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
 		{
-			userRam->status() ^= 0x81;  // toggle programming mode and checksum bit
+			userRam->status() ^= BCU_STATUS_PARITY | BCU_STATUS_PROGRAMMING_MODE;  // toggle programming mode and parity bit
 		}
 		pinMode(progPin, OUTPUT);
 		digitalWrite(progPin, programmingMode() ^ progPinInv);
@@ -109,7 +109,7 @@ bool BcuBase::setProgrammingMode(bool newMode)
 
     if (newMode != programmingMode())
     {
-        userRam->status() ^= 0x81;  // toggle programming mode and checksum bit
+        userRam->status() ^= BCU_STATUS_PARITY | BCU_STATUS_PROGRAMMING_MODE;  // toggle programming mode and parity bit
     }
     pinMode(progPin, OUTPUT);
     digitalWrite(progPin, programmingMode() ^ progPinInv);
