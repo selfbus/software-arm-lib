@@ -131,6 +131,18 @@ protected:
     void discardReceivedTelegram();
     void send(unsigned char* telegram, unsigned short length);
 
-    Timeout restartTimeout;
+    enum class RestartType : uint8_t
+    {
+        None,
+        Basic,
+        Master,
+        MasterIntoBootloader
+    };
+
+    void scheduleRestart(RestartType type);
+
+private:
+    RestartType restartType;
+    Timeout restartDisconnectTimeout;
 };
 #endif /*sblib_BcuBase_h*/

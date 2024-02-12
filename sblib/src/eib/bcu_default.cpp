@@ -558,13 +558,6 @@ bool BcuDefault::processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int i
 
 bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber)
 {
-    if (!checkApciForMagicWord(eraseCode, channelNumber))
-    {
-        ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
-        restartTimeout.start(500);
-        return (false);
-    }
-
     // create the APCI_MASTER_RESET_RESPONSE_PDU
     sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
     setApciCommand(sendBuffer, APCI_MASTER_RESET_RESPONSE_PDU, 0);
@@ -573,12 +566,10 @@ bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCo
     sendBuffer[10] = 1; // 1 second
 
     // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
-    // set magicWord to start after reset in bootloader mode
-#ifndef IAP_EMULATION
-    unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
-    *magicWord = BOOTLOADER_MAGIC_WORD;
-#endif
-    restartTimeout.start(500);
+    ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+    auto restartIntoBootloader = checkApciForMagicWord(eraseCode, channelNumber);
+    scheduleRestart(restartIntoBootloader ? RestartType::MasterIntoBootloader : RestartType::Master);
+
     return (true);
 }
 

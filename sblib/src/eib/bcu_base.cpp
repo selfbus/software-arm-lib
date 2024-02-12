@@ -29,7 +29,8 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         addrTables(addrTables),
         comObjects(nullptr),
         progButtonDebouncer(),
-        restartTimeout(Timeout())
+        restartType(RestartType::None),
+        restartDisconnectTimeout(Timeout())
 {
     timerBusObj = bus;
     setFatalErrorPin(progPin);
@@ -72,18 +73,24 @@ void BcuBase::loop()
         return;
     }
 
-    if (restartTimeout.started())
+    if (restartType != RestartType::None)
     {
         // Tests require inspection of the sent telegram before calling softSystemReset().
         // So instead of calling the method after disconnect() in the same loop iteration,
         // let's defer that to the next iteration by moving it to an otherwise unneeded
-        // else block, and ensure that the block is entered by restarting the timeout.
+        // else block.
         if (directConnection())
         {
-            if (restartTimeout.expired())
+            // KNX spec v2.1 chapter 3/5/2 sections 3.7.1.1 p.63 and 3.7.3 p. 72 say the
+            // Management Server should send a T_DISCONNECT and the Management Client
+            // should send one as well. So wait a bit to receive one, and only send one
+            // out if the connection is not terminated by the client.
+            // Although the spec clearly says that clients should ignore T_DISCONNECT
+            // messages as well as errors, calimero warns about "negative confirmation"
+            // frames in this case. So be nice and try to avoid these warnings.
+            if (restartDisconnectTimeout.expired())
             {
                 disconnect();
-                restartTimeout.start(1);
             }
         }
         else
@@ -114,7 +121,7 @@ bool BcuBase::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t
     switch (apciCmd)
     {
         case APCI_BASIC_RESTART_PDU:
-            restartTimeout.start(500);
+            scheduleRestart(RestartType::Basic);
             return (false);
         default:
             return (TLayer4::processApci(apciCmd, telegram, telLength, sendBuffer));
@@ -159,9 +166,27 @@ void BcuBase::send(unsigned char* telegram, unsigned short length)
     bus->sendTelegram(telegram, length);
 }
 
+void BcuBase::scheduleRestart(RestartType type)
+{
+    restartType = type;
+    restartDisconnectTimeout.start(500);
+}
+
 void BcuBase::softSystemReset()
 {
     bus->end();
+
+    // Set magicWord to start in bootloader mode after reset.
+    // As this overwrites the start of the interrupt vector table, disable interrupts.
+    if (restartType == RestartType::MasterIntoBootloader)
+    {
+        noInterrupts();
+#ifndef IAP_EMULATION
+        unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+        *magicWord = BOOTLOADER_MAGIC_WORD;
+#endif
+    }
+
     NVIC_SystemReset();
 }
 
