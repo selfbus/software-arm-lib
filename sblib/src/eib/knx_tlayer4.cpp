@@ -606,17 +606,28 @@ void TLayer4::finishedSendingTelegram(bool successful)
 {
     sendTelegramBufferState = TELEGRAM_FREE;
 
-    if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+    auto tpci = sendTelegram[6] & 0xc3; //0b11000011 Transport control field (see KNX 3/3/4 p.6 TPDU)
+    auto isConnectionControlCommand = (tpci & T_CONNECTION_CTRL_COMMAND_Msk);  // A connection control command
+
+    if (isConnectionControlCommand)
     {
-        // For successfully sent connection control telegrams, continue with the next direct telegram.
-        // If there was an error, one of the connected parties will encounter a timeout and either close
-        // the connection or send the last telegram again. In both cases it does not make sense to respond
-        // with an outdated telegram, so throw it away instead.
-        sendConnectedTelegramBufferState = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
-    }
-    else if (sendConnectedTelegramBuffer2State == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
-    {
-        sendConnectedTelegramBuffer2State = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
+        if (!successful)
+        {
+            // Connection control telegrams are so high priority that we retry sending them right away.
+            sendPreparedTelegram();
+        }
+        else if (tpci == T_ACK_PDU)
+        {
+            // Successfully sent a T_ACK. Continue with the next direct telegram.
+            if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+            {
+                sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_WAIT_LOOP;
+            }
+            else if (sendConnectedTelegramBuffer2State == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+            {
+                sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_WAIT_LOOP;
+            }
+        }
     }
 }
 
