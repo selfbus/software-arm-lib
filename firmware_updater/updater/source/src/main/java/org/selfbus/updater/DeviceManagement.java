@@ -56,7 +56,7 @@ public final class DeviceManagement {
 
     public void restartProgrammingDevice()
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException {
-        logger.warn("restarting device {}", progDestination);
+        logger.info("Restarting device {}", progDestination);
         mc.restart(progDestination);
     }
 
