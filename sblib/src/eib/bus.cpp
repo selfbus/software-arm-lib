@@ -502,6 +502,16 @@ void Bus::handleTelegram(bool valid)
         }
     }
 
+    // After sending a telegram we're waiting to receive an LL_ACK. If that does not arrive and we receive
+    // anything else (e.g. another device sneaks in a full telegram), we need to repeat the telegram we sent
+    // and stop waiting for the LL_ACK. If we don't, then we'd erroneously interpret an LL_ACK after the
+    // foreign telegram as belonging to the telegram we sent.
+    if (wait_for_ack_from_remote)
+    {
+        repeatTelegram = true;
+        wait_for_ack_from_remote = false;
+    }
+
     DB_TELEGRAM(telrxerror = rx_error);
 
     tb_d( 901, state, tb_in);    tb_d( 902, sendRetries, tb_in);   tb_d( 903, sendBusyRetries, tb_in); tb_h( 904, sendAck, tb_in);
