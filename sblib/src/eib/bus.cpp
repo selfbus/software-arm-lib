@@ -255,7 +255,11 @@ void Bus::initState()
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
     timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
     timer.restart();
-    timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
+    // Going through INIT due to a collision means we need to retry as soon as possible. This will be via IDLE
+    // and WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, which in turn waits PRE_SEND_TIME before actually
+    // starting to send. Account for this here so we get a fair chance to send our telegram even when in
+    // high bus load scenarios.
+    timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1 - (sendCurTelegram != nullptr ? PRE_SEND_TIME : 0));
     timer.match(pwmChannel, 0xffff);
     state = INIT;
 }
@@ -574,7 +578,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 // real wait time would only be >=2us.
                 auto timerValue = timer.value();
                 auto elapsedMicroseconds = (timerValue >= captureValue) ? (timerValue - captureValue) : (matchValue + 1 - captureValue + timerValue);
-                if (elapsedMicroseconds > 3)
+                if (elapsedMicroseconds > ZERO_BIT_MIN_TIME)
                 {
                     break;
                 }
@@ -592,8 +596,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         if (!timer.flag(timeChannel))
         {
-            // cap event: bus not in idle state before we have a timeout, restart waiting time
-            timer.restart();
+            // cap event: bus not in idle state before we have a timeout, restart waiting time. Time must be mostly
+            // aligned to falling edge, and we waited ZERO_BIT_MIN_TIME already, plus had some processing time.
+            timer.value(ZERO_BIT_MIN_TIME + 2);
             break;
         }
         // timeout- we set bus to idle state, and start receiving right away if it's a cap event at the same time
@@ -682,8 +687,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tv=timer.value(); cv= timer.capture(captureChannel);
         if ( tv >= cv ) dt= tv - cv; // check for timer overflow since cap event
         else dt = (time + 1 - cv) + tv;
-        timer.restart();  // restart timer and pre-load with processing time of 2us
-        timer.value(dt+2);
+        timer.value(dt+2); // restart timer and pre-load with processing time of 2us
         timer.match(timeChannel, BYTE_TIME_INCL_STOP - 1);
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT); // next state interrupt at first low bit  - falling edge, no reset
         //timer.counterMode(DISABLE,  DISABLE); // disabled the timer reset by the falling edge of cap event
