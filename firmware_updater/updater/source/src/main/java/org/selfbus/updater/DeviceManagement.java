@@ -44,12 +44,11 @@ public final class DeviceManagement {
     private Destination progDestination;
     private KNXNetworkLink link;
 
-    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, int responseTimeoutSec, Priority priority)
+    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, Priority priority)
             throws KNXLinkClosedException {
         this.link = link;
         logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
-        this.mc.responseTimeout(Duration.ofSeconds(responseTimeoutSec));
         this.mc.setPriority(priority);
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
     }

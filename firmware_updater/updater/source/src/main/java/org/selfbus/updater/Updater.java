@@ -259,8 +259,6 @@ public class Updater implements Runnable {
     public static final IndividualAddress PHYS_ADDRESS_BOOTLOADER = new IndividualAddress(15, 15,192); //!< physical address the bootloader is using
     public static final IndividualAddress PHYS_ADDRESS_OWN = new IndividualAddress(0, 0,0); //!< physical address the Selfbus Updater is using
 
-    public static final int RESPONSE_TIMEOUT_SEC = 3; //!< Time in seconds the Updater shall wait for a KNX Response
-
     /*
      * (non-Javadoc)
      *
@@ -290,7 +288,7 @@ public class Updater implements Runnable {
             byte[] uid = cliOptions.uid();
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC, cliOptions.priority());
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
 
             dm.setTL4Timeout(cliOptions.tl4Timeout()); ///\todo delete after TL4 Style 3 implementation in sblib
 
