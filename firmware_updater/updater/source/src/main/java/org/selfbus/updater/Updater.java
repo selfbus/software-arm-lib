@@ -290,8 +290,6 @@ public class Updater implements Runnable {
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
 
-            dm.setTL4Timeout(cliOptions.tl4Timeout()); ///\todo delete after TL4 Style 3 implementation in sblib
-
             logger.info("KNX connection: {}\n", link);
 
             logger.info("Telegram priority: {}", cliOptions.priority());

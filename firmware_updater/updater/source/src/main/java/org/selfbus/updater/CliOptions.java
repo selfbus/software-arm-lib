@@ -77,7 +77,6 @@ public class CliOptions {
     private static final String OPT_LONG_UID = "uid";
 
     private static final String OPT_LONG_DELAY = "delay";
-    private static final String OPT_LONG_TIMEOUT = "timeout"; ///\todo delete after TL4 Style 3 implementation in sblib
 
     private static final String OPT_SHORT_NAT = "n";
     private static final String OPT_LONG_NAT = "nat";
@@ -145,7 +144,6 @@ public class CliOptions {
     private boolean full = false;
     private int delay = 0;
 
-    private boolean tl4Timeout = false; ///\todo delete after TL4 Style 3 implementation in sblib
     private boolean NO_FLASH = false;
     private Level logLevel = Level.DEBUG;
     private boolean eraseFullFlash = false;
@@ -176,7 +174,6 @@ public class CliOptions {
         Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
         Option eraseFlash = new Option(null, OPT_LONG_ERASEFLASH, false, "USE WITH CAUTION! Erases the complete flash memory including the physical KNX address and all settings of the device. Only the bootloader is not deleted.");
-        Option timeout = new Option(null, OPT_LONG_TIMEOUT, false, "Enable transport layer 4 connection-oriented 6000ms timeout. Can be helpful with connection problems.");
 
         Option dumpFlash = Option.builder(null).longOpt(OPT_LONG_DUMPFLASH)
                 .argName("start> <end")
@@ -332,7 +329,6 @@ public class CliOptions {
         cliOptions.addOptionGroup(grpHelper);
 
         cliOptions.addOption(delay);
-        cliOptions.addOption(timeout);
         cliOptions.addOption(logLevel);
         cliOptions.addOption(eraseFlash);
         cliOptions.addOption(dumpFlash);
@@ -471,11 +467,6 @@ public class CliOptions {
                 }
             }
             logger.debug("delay={}", delay);
-
-            if (cmdLine.hasOption(OPT_LONG_TIMEOUT)) {
-                tl4Timeout = true;
-            }
-            logger.debug("tl4Timeout={}", tl4Timeout);
 
             if (cmdLine.hasOption(OPT_SHORT_UID)) {
                uid =  uidToByteArray(cmdLine.getOptionValue(OPT_SHORT_UID));
@@ -665,8 +656,6 @@ public class CliOptions {
     public int delay() {
         return delay;
     }
-
-    public boolean tl4Timeout() { return tl4Timeout; }
 
     public boolean NO_FLASH() {
         return NO_FLASH;
