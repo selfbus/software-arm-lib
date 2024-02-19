@@ -892,12 +892,10 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 time = PRE_SEND_TIME;
             // KNX spec 2.1 chapter 3/2/2 section 2.3.4 p. 37: Guarantee of access fairness
             // Add some random delay of up to 3 bit times if it is not the last try.
-            if (sendRetriesMax > 0 && sendBusyRetriesMax > 0 && // Repetitions allowed and
-                (!repeatTelegram ||                             // either it's the first transmission, or
-                    (sendRetries + 1 < sendRetriesMax && sendBusyRetries + 1 < sendBusyRetriesMax && // not the last repetition
-                    collisions < COLLISION_RETRY_MAX)
-                )
-               )
+            auto canRepeat = sendRetriesMax > 0 && sendBusyRetriesMax > 0;
+            auto isLastRepeatChance = repeatTelegram && (sendRetries + 1 >= sendRetriesMax || sendBusyRetries + 1 >= sendBusyRetriesMax);
+            auto isLastCollisionChance = collisions == COLLISION_RETRY_MAX;
+            if (canRepeat && !isLastRepeatChance && !isLastCollisionChance)
             {
                 time += (millis() * RANDOMIZE_FACTOR) % RANDOMIZE_MODULUS;
             }
