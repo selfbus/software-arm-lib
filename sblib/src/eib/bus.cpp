@@ -920,7 +920,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         tb_d( state+600, time, tb_in);
         // set timer for TX process: init PWM pulse generation, interrupt at pulse end and cap event (pulse start)
         timer.match(pwmChannel, time); // waiting time till start of first bit- falling edge 104us + n*104us ( n=0 or3)
-        timer.match(timeChannel, time + BIT_PULSE_TIME - 1); // end of bit pulse 35us later
+        timer.match(timeChannel, time + (BIT_PULSE_TIME - 1)); // end of bit pulse 35us later
         timer.matchMode(timeChannel, RESET | INTERRUPT); //reset timer after bit pulse end
         nextByteIndex = 0;
         tx_error = TX_OK;
@@ -976,7 +976,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             {
                 tb_d( state+300, ttimer.value(), tb_in);
                 timer.match(pwmChannel, timer.value() + 1);
-                timer.match(timeChannel, captureTime + BIT_PULSE_TIME - 1);
+                timer.match(timeChannel, captureTime + (BIT_PULSE_TIME - 1));
             }
 
             tb_t( state+400, ttimer.value(), tb_in);
@@ -1119,7 +1119,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 // the next falling edge, captureTime when we received it. Unfortunately, pwmChannel can
                 // be 0xffff in case there are no 0 bits left to send. Thus, use (timeChannel - BIT_PULSE_TIME)
                 // instead. BIT_OFFSET_MAX is to account for slight timing differences and integer arithmetic.
-                auto collisionBitCount = (timer.match(timeChannel) - captureTime - BIT_PULSE_TIME + BIT_OFFSET_MAX) / BIT_TIME;
+                auto collisionBitCount = (timer.match(timeChannel) - captureTime + (BIT_OFFSET_MAX - BIT_PULSE_TIME)) / BIT_TIME;
                 bitMask >>= collisionBitCount + 1;
 
                 // Pretend that we also received a 0 bit last time, such that there is no need to set any
