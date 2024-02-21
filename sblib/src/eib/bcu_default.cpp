@@ -558,17 +558,43 @@ bool BcuDefault::processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int i
 
 bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber)
 {
+    RestartPDUErrorcode errorCode;
+    RestartType restartType;
+
+    // special version of APCI_MASTER_RESET_PDU used by Selfbus Bootloader
+    if (checkApciForMagicWord(eraseCode, channelNumber))
+    {
+        errorCode = T_RESTART_NO_ERROR;
+        restartType = RestartType::MasterIntoBootloader;
+    }
+    else if (eraseCode == 0 || eraseCode > T_MASTERRESET_FACTORY_WO_IA)
+    {
+        errorCode = T_RESTART_UNSUPPORTED_ERASE_CODE;
+        restartType = RestartType::None;
+    }
+    else
+    {
+        ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
+        errorCode = (eraseCode == T_MASTERRESET_CONFIRMED_RESTART) ? T_RESTART_NO_ERROR : T_RESTART_UNSUPPORTED_ERASE_CODE;
+        restartType = RestartType::Master;
+    }
+
+    // See KNX spec 2.1 chapter 3/5/2 section 3.7.1.2.2 page 65:
+    // "If the Management Server confirms the Master Reset negatively (Error Code != 00h), then it shall set the
+    // Process Time to 0000h in the A_Restart_Response-PDU."
+    auto seconds = (errorCode == T_RESTART_NO_ERROR) ? 1 : 0; // 1 second or error
+
     // create the APCI_MASTER_RESET_RESPONSE_PDU
     sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
     setApciCommand(sendBuffer, APCI_MASTER_RESET_RESPONSE_PDU, 0);
-    sendBuffer[8] = T_RESTART_NO_ERROR;
+    sendBuffer[8] = errorCode;
     sendBuffer[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
-    sendBuffer[10] = 1; // 1 second
+    sendBuffer[10] = seconds;
 
-    // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
-    ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
-    auto restartIntoBootloader = checkApciForMagicWord(eraseCode, channelNumber);
-    scheduleRestart(restartIntoBootloader ? RestartType::MasterIntoBootloader : RestartType::Master);
+    if (restartType != RestartType::None)
+    {
+        scheduleRestart(restartType);
+    }
 
     return (true);
 }
