@@ -30,7 +30,7 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         comObjects(nullptr),
         progButtonDebouncer(),
         restartType(RestartType::None),
-        restartDisconnectTimeout(Timeout())
+        restartTimeout(Timeout())
 {
     timerBusObj = bus;
     setFatalErrorPin(progPin);
@@ -79,21 +79,18 @@ void BcuBase::loop()
         // So instead of calling the method after disconnect() in the same loop iteration,
         // let's defer that to the next iteration by moving it to an otherwise unneeded
         // else block.
+        // KNX spec v2.1 chapter 3/5/2 sections 3.7.1.1 p.63 and 3.7.3 p. 72 say the
+        // Management Server should send a T_DISCONNECT and the Management Client must send
+        // one as well. So send one out immediately, and stay around for a bit to receive
+        // one from the client and ACK it.
+        // Although the spec clearly says that clients should ignore T_DISCONNECT messages
+        // as well as errors, calimero warns about "negative confirmation" frames if we
+        // don't ACK it. So be nice and try to avoid these warnings.
         if (directConnection())
         {
-            // KNX spec v2.1 chapter 3/5/2 sections 3.7.1.1 p.63 and 3.7.3 p. 72 say the
-            // Management Server should send a T_DISCONNECT and the Management Client
-            // should send one as well. So wait a bit to receive one, and only send one
-            // out if the connection is not terminated by the client.
-            // Although the spec clearly says that clients should ignore T_DISCONNECT
-            // messages as well as errors, calimero warns about "negative confirmation"
-            // frames in this case. So be nice and try to avoid these warnings.
-            if (restartDisconnectTimeout.expired())
-            {
-                disconnect();
-            }
+            disconnect();
         }
-        else
+        else if (restartTimeout.expired())
         {
             softSystemReset();
         }
@@ -169,7 +166,7 @@ void BcuBase::send(unsigned char* telegram, unsigned short length)
 void BcuBase::scheduleRestart(RestartType type)
 {
     restartType = type;
-    restartDisconnectTimeout.start(500);
+    restartTimeout.start(250);
 }
 
 void BcuBase::softSystemReset()

@@ -143,6 +143,6 @@ protected:
 
 private:
     RestartType restartType;
-    Timeout restartDisconnectTimeout;
+    Timeout restartTimeout;
 };
 #endif /*sblib_BcuBase_h*/
