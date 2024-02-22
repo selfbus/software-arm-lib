@@ -13,7 +13,7 @@
         </encoder>
     </appender>
 
-    <appender name="list" class="org.selfbus.updater.gui.ListAppender">
+    <appender name="list" class="org.selfbus.updater.gui.TextAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>

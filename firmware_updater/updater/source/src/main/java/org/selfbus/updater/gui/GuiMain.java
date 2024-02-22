@@ -21,8 +21,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.FontUIResource;
 import javax.swing.text.StyleContext;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -105,20 +104,10 @@ public class GuiMain extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
                 JFileChooser fc = new JFileChooser();
-                String propFile = null;
+                String filePath = textFieldFileName.getText();
 
-                if (new File("settings.xml").exists()) {
-                    try {
-                        userProperties.loadFromXML(new FileInputStream("settings.xml"));
-
-                    } catch (IOException ex) {
-                        throw new RuntimeException(ex);
-                    }
-                    propFile = userProperties.getProperty("hexFilePath");
-                }
-
-                if (propFile != null && !propFile.isEmpty()) {
-                    fc.setCurrentDirectory(new File(propFile).getParentFile());
+                if (filePath != null && !filePath.isEmpty()) {
+                    fc.setCurrentDirectory(new File(filePath).getParentFile());
                 }
                 fc.setFileFilter(new FileNameExtensionFilter("HEX", "hex"));
                 int result = fc.showOpenDialog(panelMain);
@@ -126,28 +115,8 @@ public class GuiMain extends JFrame {
                 if (result == JFileChooser.APPROVE_OPTION) {
                     if (fc.getSelectedFile().exists()) {
                         textFieldFileName.setText(fc.getSelectedFile().toString());
-                        storeFlashFilePath(fc.getSelectedFile());
                     }
                 }
-            }
-        });
-
-        // if there was a manual change of file path
-        textFieldFileName.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                userProperties.setProperty("hexFilePath", textFieldFileName.getText());
-                storeFlashFilePath(new File(textFieldFileName.getText()));
-            }
-        });
-
-        comboBoxIpGateways.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if ((CalimeroSearchComboItem) comboBoxIpGateways.getSelectedItem() == null) return;
-                InetSocketAddress addr = ((CalimeroSearchComboItem) comboBoxIpGateways.getSelectedItem()).value.remoteEndpoint();
-                textBoxKnxGatewayIpAddr.setText(addr.getAddress().getHostAddress());
-                textFieldPort.setText(String.valueOf(addr.getPort()));
             }
         });
 
@@ -191,7 +160,6 @@ public class GuiMain extends JFrame {
                 } else {
                     updaterThread.interrupt(); //.stop() is deprecated
 
-
                     buttonStartStopFlash.setText(bundle.getString("startFlash"));
                 }
             }
@@ -201,37 +169,36 @@ public class GuiMain extends JFrame {
             @Override
             public void actionPerformed(ActionEvent e) {
 
-                updaterThread = new Thread() {
-                    public void run() {
-                        try {
-                            if (textFieldFileName.getText().isEmpty()) {
-                                textFieldFileName.setText("dummy.hex");
-                            }
-                            setCliOptions();
-                            if (Objects.equals(textFieldFileName.getText(), "dummy.hex")) {
-                                textFieldFileName.setText("");
-                            }
-                        } catch (KNXFormatException | ParseException ex) {
-                            throw new RuntimeException(ex);
+                updaterThread = new Thread(() -> {
+                    try {
+                        // für den bestehenden Updater wird zwingend ein Dateiname benötigt
+                        if (textFieldFileName.getText().isEmpty()) {
+                            textFieldFileName.setText("dummy.hex");
                         }
-
-                        try {
-                            final Updater d = new Updater(cliOptions);
-
-                            String uid = d.requestUid();
-
-                            SwingUtilities.invokeLater(() -> {
-                                guiMainInstance.textFieldUid.setText(uid);
-                            });
-
-                        } catch (final Throwable t) {
-                            logger.error("parsing options ", t);
-                        } finally {
-                            logger.info("\n\n");
-                            logger.debug("main exit");
+                        setCliOptions();
+                        if (Objects.equals(textFieldFileName.getText(), "dummy.hex")) {
+                            textFieldFileName.setText("");
                         }
+                    } catch (KNXFormatException | ParseException ex) {
+                        throw new RuntimeException(ex);
                     }
-                };
+
+                    try {
+                        final Updater upd = new Updater(cliOptions);
+
+                        String uid = upd.requestUid();
+
+                        SwingUtilities.invokeLater(() -> {
+                            guiMainInstance.textFieldUid.setText(uid);
+                        });
+
+                    } catch (final Throwable t) {
+                        logger.error("parsing options ", t);
+                    } finally {
+                        logger.info("\n\n");
+                        logger.debug("main exit");
+                    }
+                });
                 updaterThread.start();
             }
         });
@@ -239,7 +206,6 @@ public class GuiMain extends JFrame {
         comboBoxScenario.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //setGuiElementsVisibility();
                 setGuiElementsVisibility();
             }
         });
@@ -256,13 +222,95 @@ public class GuiMain extends JFrame {
                 new Thread(() -> LoadKnxIpInterfacesAndFillComboBox()).start();
             }
         });
+
+        comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
     }
 
-    private void storeFlashFilePath(File flashFile) {
-        if (flashFile.exists()) {
-            userProperties.setProperty("hexFilePath", flashFile.toString());
+    // externe Definition des ActionListeners, weil dieser vor der Füllung der ComboBox gelöscht und anschließend
+    // wieder eingefügt werden muss
+    public ActionListener comboBoxIpGatewaysActionListener = new ActionListener() {
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            if (comboBoxIpGateways.getSelectedItem() == null) return;
+            if (((CalimeroSearchComboItem) comboBoxIpGateways.getSelectedItem()).value == null) return;
+            InetSocketAddress addr = ((CalimeroSearchComboItem) comboBoxIpGateways.getSelectedItem()).value.remoteEndpoint();
+            textBoxKnxGatewayIpAddr.setText(addr.getAddress().getHostAddress());
+            textFieldPort.setText(String.valueOf(addr.getPort()));
+        }
+    };
+
+    private void saveAllParameters() {
+        userProperties.setProperty("AdvancedSettings", advancedSettingsCheckBox.isSelected() ? "true" : "false");
+        userProperties.setProperty("GatewayIpAddr", textBoxKnxGatewayIpAddr.getText());
+        userProperties.setProperty("GatewayPort", textFieldPort.getText());
+        userProperties.setProperty("UseNat", natCheckBox.isSelected() ? "true" : "false");
+        userProperties.setProperty("TpUart", textFieldTpuart.getText());
+        userProperties.setProperty("Serial", textFieldSerial.getText());
+        userProperties.setProperty("Medium", Objects.requireNonNull(comboBoxMedium.getSelectedItem()).toString());
+        userProperties.setProperty("Scenario", String.valueOf(((ComboItem) Objects.requireNonNull(comboBoxScenario.getSelectedItem())).getValue()));
+        userProperties.setProperty("FlashFilePath", textFieldFileName.getText());
+        userProperties.setProperty("Uid", textFieldUid.getText());
+        userProperties.setProperty("FullFlash", CheckBoxFullFlash.isSelected() ? "true" : "false");
+        userProperties.setProperty("EraseCompleteFlash", eraseCompleteFlashCheckBox.isSelected() ? "true" : "false");
+        userProperties.setProperty("NoFlash", noFlashCheckBox.isSelected() ? "true" : "false");
+        userProperties.setProperty("BootloaderDeviceAddress", textFieldBootloaderDeviceAddress.getText());
+        userProperties.setProperty("DeviceAddress", textFieldDeviceAddress.getText());
+        userProperties.setProperty("OwnAddress", textFieldOwnAddress.getText());
+        userProperties.setProperty("DelayMs", textFieldDelay.getText());
+        userProperties.setProperty("Timeout", textFieldTimeout.getText());
+        userProperties.setProperty("TelegramPriority", Objects.requireNonNull(comboBoxKnxTelegramPriority.getSelectedItem()).toString());
+        userProperties.setProperty("SecureUser", textFieldKnxSecureUser.getText());
+        userProperties.setProperty("SecureUserPassword", textFieldKnxSecureUserPwd.getText());
+        userProperties.setProperty("SecureDevicePassword", textFieldKnxSecureDevicePwd.getText());
+        userProperties.setProperty("WindowSizeHeight", String.valueOf(this.getSize().height));
+        userProperties.setProperty("WindowSizeWidth", String.valueOf(this.getSize().width));
+
+        try {
+            userProperties.storeToXML(new FileOutputStream("settings.xml"), "");
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void loadAllParameters() {
+
+        if (new File("settings.xml").exists()) {
             try {
-                userProperties.storeToXML(new FileOutputStream("settings.xml"), "");
+                userProperties.loadFromXML(new FileInputStream("settings.xml"));
+
+                advancedSettingsCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("AdvancedSettings")));
+                textBoxKnxGatewayIpAddr.setText(userProperties.getProperty("GatewayIpAddr"));
+                textFieldPort.setText(userProperties.getProperty("GatewayPort"));
+                natCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("UseNat")));
+                textFieldTpuart.setText(userProperties.getProperty("TpUart"));
+                textFieldSerial.setText(userProperties.getProperty("Serial"));
+                comboBoxMedium.setSelectedItem(userProperties.getProperty("Medium"));
+                textFieldFileName.setText(userProperties.getProperty("FlashFilePath"));
+                textFieldUid.setText(userProperties.getProperty("Uid"));
+                CheckBoxFullFlash.setSelected(Boolean.parseBoolean(userProperties.getProperty("FullFlash")));
+                eraseCompleteFlashCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("EraseCompleteFlash")));
+                noFlashCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("NoFlash")));
+                textFieldBootloaderDeviceAddress.setText(userProperties.getProperty("BootloaderDeviceAddress"));
+                textFieldDeviceAddress.setText(userProperties.getProperty("DeviceAddress"));
+                textFieldOwnAddress.setText(userProperties.getProperty("OwnAddress"));
+                textFieldDelay.setText(userProperties.getProperty("DelayMs"));
+                textFieldTimeout.setText(userProperties.getProperty("Timeout"));
+                comboBoxKnxTelegramPriority.setSelectedItem(userProperties.getProperty("TelegramPriority"));
+                textFieldKnxSecureUser.setText(userProperties.getProperty("SecureUser"));
+                textFieldKnxSecureUserPwd.setText(userProperties.getProperty("SecureUserPassword"));
+                textFieldKnxSecureDevicePwd.setText(userProperties.getProperty("SecureDevicePassword"));
+
+                this.setSize(Integer.parseInt(userProperties.getProperty("WindowSizeWidth")), Integer.parseInt(userProperties.getProperty("WindowSizeHeight")));
+
+                for (int i = 0; i < comboBoxScenario.getItemCount(); i++) {
+                    if (Objects.equals(String.valueOf(comboBoxScenario.getItemAt(i).value), userProperties.getProperty("Scenario"))) {
+                        comboBoxScenario.setSelectedItem(comboBoxScenario.getItemAt(i));
+                        break;
+                    }
+                }
+
+                setGuiElementsVisibility();
+
             } catch (IOException ex) {
                 throw new RuntimeException(ex);
             }
@@ -317,7 +365,6 @@ public class GuiMain extends JFrame {
         }
     }
 
-
     public static void startSwingGui() {
         SwingUtilities.invokeLater(() -> {
             guiMainInstance = new GuiMain();
@@ -328,27 +375,47 @@ public class GuiMain extends JFrame {
     public void startUpdaterGui() {
         this.setContentPane(this.panelMain);
         this.setTitle("Selfbus Updater");
-        //t.setBounds(600,200,200,200);
         this.setSize(1000, 800);
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         new Thread(this::LoadKnxIpInterfacesAndFillComboBox).start();
 
-        ListAppender.addLog4j2TextPaneAppender(this.jLoggingPane);
+        TextAppender.addLog4j2TextPaneAppender(this.jLoggingPane);
 
         InitGuiElementsVisibility();
         fillScenarios();
         fillMediumComboBox();
         fillTelegramPriorityComboBox();
+
+        loadAllParameters();
+
         mainScrollPane.getVerticalScrollBar().setUnitIncrement(10);
+
+        this.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                saveAllParameters();
+            }
+        });
     }
 
     private void LoadKnxIpInterfacesAndFillComboBox() {
+
+        // ActionListener löschen und nach dem Füllen der ComboBox wieder hinzufügen
+        // damit das Füllen kein Event auslöst
+        comboBoxIpGateways.removeActionListener(comboBoxIpGatewaysActionListener);
+
         comboBoxIpGateways.removeAllItems();
+
+        ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");
+        comboBoxIpGateways.addItem(new CalimeroSearchComboItem(bundle.getString("selectInterface"), null));
+
         DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
                 comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
                         " (" + r.response().getControlEndpoint().getAddress().getHostAddress() + ")", r)));
+
+        comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
     }
 
     private void fillScenarios() {
@@ -515,7 +582,6 @@ public class GuiMain extends JFrame {
         GuiObjectsMap.put(textFieldKnxSecureDevicePwd, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(labelKnxSecureDevicePwdHint, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
     }
-
 
     private void setGuiElementsVisibility() {
         ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");

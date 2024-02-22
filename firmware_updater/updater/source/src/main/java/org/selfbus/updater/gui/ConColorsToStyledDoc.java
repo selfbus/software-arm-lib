@@ -6,11 +6,15 @@ import java.util.Objects;
 
 public class ConColorsToStyledDoc {
 
-    private static StyleContext sc = new StyleContext();
-    private static Style stringStyle = sc.getStyle(StyleContext.DEFAULT_STYLE);
+    private static final StyleContext sc = new StyleContext();
+    private static final Style stringStyle = sc.getStyle(StyleContext.DEFAULT_STYLE);
 
-    public static StyledDocument Convert(String docWithConColors, StyledDocument originDocument) throws BadLocationException {
-
+    /*
+     * hier werden die Steuerzeichen für die Farben der Windows Konsole in Java Parameter gewandelt
+     * z.B. wird ein String "\033[0;31m dieser Text wird rot sein,\033[44m jetzt auf blauem Hintergrund" übergeben
+     * Dieser String wird entsprechend der Steuerbefehle in ein StyledDocument gefüllt
+     */
+    public static void Convert(String docWithConColors, StyledDocument originDocument) throws BadLocationException {
 
         if(docWithConColors.contains("\033")) {
             String colorCode ="";
@@ -53,7 +57,6 @@ public class ConColorsToStyledDoc {
             // ohne ConColors im Datenstring
             originDocument.insertString(originDocument.getLength(), docWithConColors, null);
         }
-        return originDocument;
     }
 
     private static Style convertConColorToStyle(String colorCode){
@@ -96,33 +99,18 @@ public class ConColorsToStyledDoc {
     }
 
     private static Color ConColorToColor(int colorNumber){
-        Color retColor = null;
+        Color retColor = switch (colorNumber) {
+            case 0 -> Color.black;
+            case 1 -> Color.red;
+            case 2 -> Color.green;
+            case 3 -> Color.orange;
+            case 4 -> Color.blue;
+            case 5 -> Color.pink;
+            case 6 -> Color.cyan;
+            case 7 -> Color.white;
+            default -> null;
+        };
 
-        switch(colorNumber) {
-            case 0:
-                retColor = Color.black;
-                break;
-            case 1:
-                retColor = Color.red;
-                break;
-            case 2:
-                retColor = Color.green;
-                break;
-            case 3:
-                retColor = Color.orange;
-                break;
-            case 4:
-                retColor = Color.blue;
-                break;
-            case 5:
-                retColor = Color.pink;
-                break;
-            case 6:
-                retColor = Color.cyan;
-                break;
-            case 7:
-                retColor = Color.white;
-        }
         return retColor;
     }
 }
