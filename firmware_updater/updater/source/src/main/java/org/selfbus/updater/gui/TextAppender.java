@@ -38,6 +38,9 @@ public class TextAppender extends AppenderBase<ILoggingEvent> {
                         {
                                 StyledDocument document = (StyledDocument) textPane.getDocument();
                                 ConColorsToStyledDoc.Convert(finalMessage, document);
+
+                                // immer die letzte Zeile zeigen
+                                textPane.setCaretPosition(textPane.getDocument().getLength());
                         }
                     } catch (Throwable throwable)
                     {
