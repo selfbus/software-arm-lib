@@ -149,21 +149,29 @@ void Bus::resume()
         ? (timerValue - captureValue)
         : ((0xfffe + 1 - captureValue) + timerValue);
 
-    // With enough time passed since the last falling edge, immediately resume in IDLE,
-    // otherwise wait the remaining time in INIT.
-    if (timeSinceLastFallingEdge >= WAIT_50BIT_FOR_IDLE)
-    {
-        noInterrupts();
-        idleState();
-        interrupts();
-    }
-    else
+    // Either continue in INIT or WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, depending
+    // on time passed since the last falling edge.
+    noInterrupts();
+    if (timeSinceLastFallingEdge < WAIT_40BIT)
     {
         timer.value(timeSinceLastFallingEdge);
         timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-        timer.matchMode(timeChannel, INTERRUPT | RESET);
-        timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1);
+        timer.matchMode(timeChannel, INTERRUPT);
+        timer.match(timeChannel, WAIT_40BIT);
     }
+    else
+    {
+        // Basically, startSendingImmediately() does what we want, we just might need to
+        // wait a bit longer before starting to send.
+        startSendingImmediately();
+
+        if (timeSinceLastFallingEdge < WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME)
+        {
+            auto remainingWaitTime = WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME - timeSinceLastFallingEdge;
+            timer.match(timeChannel, remainingWaitTime);
+        }
+    }
+    interrupts();
 }
 
 bool Bus::canPause(bool waitForTelegramSent)
@@ -253,13 +261,9 @@ void Bus::initState()
 {
     // any cap intr during start up time is ignored and will reset start up time
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-    timer.matchMode(timeChannel, INTERRUPT | RESET); // at timeout we have a bus idle state
+    timer.matchMode(timeChannel, INTERRUPT); // at timeout we can start to receive, but need to wait 10BT more before starting to send
     timer.restart();
-    // Going through INIT due to a collision means we need to retry as soon as possible. This will be via IDLE
-    // and WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, which in turn waits PRE_SEND_TIME before actually
-    // starting to send. Account for this here so we get a fair chance to send our telegram even when in
-    // high bus load scenarios.
-    timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - 1 - (sendCurTelegram != nullptr ? PRE_SEND_TIME : 0));
+    timer.match(timeChannel, WAIT_40BIT);
     timer.match(pwmChannel, 0xffff);
     state = INIT;
 }
@@ -611,9 +615,16 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             timer.value(ZERO_BIT_MIN_TIME + 2);
             break;
         }
-        // timeout- we set bus to idle state, and start receiving right away if it's a cap event at the same time
-        idleState();
-        goto STATE_SWITCH;
+
+        // Timeout. Enhance the timer to 9 bit times more in state WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, so
+        // we can start receiving right away (even if it's a cap event at the same time), but wait some more time
+        // before starting to send.
+        timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME);
+        timer.matchMode(timeChannel, INTERRUPT | RESET);
+        state = WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
+        if (timer.flag(captureChannel))
+            goto STATE_SWITCH;
+        break;
 
     // The bus is idle for at least 50BT. Usually we come here when we finished a TX/RX on the Bus and waited 50BT for next event without receiving a start bit on the Bus
     // or at least one pending Telegram in the queue.

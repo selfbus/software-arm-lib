@@ -329,6 +329,8 @@ void executeTestOnBcu(BcuDefault* currentBcu, Test_Case * tc)
     // move the ISR out of INIT state
     _LPC_TMR16B1.IR = 4;
     currentBcu->bus->timerInterruptHandler();
+    _LPC_TMR16B1.IR = 4;
+    currentBcu->bus->timerInterruptHandler();
     REQUIRE(currentBcu->bus->state == Bus::IDLE);
 
     setMillis(0);

@@ -128,6 +128,7 @@ enum TxErrorCode
 #define ACK_WAIT_TIME_MIN   (BIT_TIMES(15) - 5 - 100)
 #define ACK_WAIT_TIME_MAX   (BIT_TIMES(15) +30 + 100)
 
+#define WAIT_40BIT          BIT_TIMES(40) //!< Minimum time to wait for start of frame (see KNX spec 2.1 chapter 3/2/2 section 2.3.1 p. 35): BIT_TIME * 40
 #define WAIT_50BIT_FOR_IDLE BIT_TIMES(50) //!< Time to wait before bus is in idle state: BIT_TIME * 50
 #define SEND_WAIT_TIME      BIT_TIMES(50) //!< Time to wait before starting to send: BIT_TIME * 50
 #define RANDOMIZE_FACTOR    131           //!< Factor for calculation of randomized additional time before starting to send

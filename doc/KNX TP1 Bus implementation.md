@@ -49,8 +49,10 @@ For interfacing to higher layers there are data buffer for sending and receiving
 - If 0.0.0, set to default 15.15.255 if not compiled as router
 - initialize the timer
 - initialize tx and rx port
-- wait for 50 bit times
-- enter the IDLE state.
+- wait for 40 bit times
+- enter the `WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE` state
+- wait for 10 bit times more
+- enter the `IDLE` state.
 
 ### The `timer16_x` is used as follows:
 - Capture register `CR0` is used for receiving
@@ -155,7 +157,7 @@ flowchart TB
         SEND_WAIT_FOR_RX_ACK
     end
 
-    INIT --50 bit inactivity--> IDLE
+    INIT --40 bit inactivity--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
     IDLE --sendTelegram--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
     IDLE --Falling edge captured--> INIT_RX_FOR_RECEIVING_NEW_TEL
     INIT_RX_FOR_RECEIVING_NEW_TEL ---> RECV_WAIT_FOR_STARTBIT_OR_TELEND
