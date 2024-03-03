@@ -948,7 +948,9 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             auto captureTime = timer.capture(captureChannel);
             auto pwmTime = timer.match(pwmChannel);
 
-            // If it's too early, we can either ignore it or switch to RX.
+            // If it's too early, we can either ignore it or switch to RX. Obviously, ignoring
+            // actually means to lose a telegram (which would need to be repeated by the sender
+            // if addressed to us), so always switching to RX makes more sense in practice.
             if (captureTime < (pwmTime - STARTBIT_OFFSET_MIN))
             {
                 if (sendAck || nextByteIndex)
@@ -956,19 +958,27 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                     // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: No bus free detection
                     // for p_class ack_char and inner_Frame_char, but collision avoidance.
                     // This means we stop our transmission and let the other device continue.
+
+                    // It's a collision nevertheless (another device bumped into our transmission).
                     collisions++;
-                    initState();
-                    break;
+
+                    // Note: If nextByteIndex > 0, we could interpret the incoming bytes as
+                    // continuation of the telegram we started to send, or as an independent
+                    // telegram where the other device started to send early. There is no right
+                    // or wrong here, so just use one approach.
                 }
                 else
                 {
                     // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: Do bus free detection
-                    // for p_class start_of_Frame. This means we switch to RX.
-                    tb_d( state+300, ttimer.value(), tb_in);
-                    timer.match(pwmChannel, 0xffff);
-                    state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;
-                    goto STATE_SWITCH;
+                    // for p_class start_of_Frame. This means another device started sending
+                    // before us. No special handling necessary.
                 }
+
+                // Switch to RX.
+                tb_d( state+300, ttimer.value(), tb_in);
+                timer.match(pwmChannel, 0xffff);
+                state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;
+                goto STATE_SWITCH;
             }
 
             // If it's at most 30us earlier than the falling edge we were about to send, sync to it.
@@ -1058,7 +1068,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             {
                 // Falling edge captured between a rising edge (reference time 0) and when a falling edge would be ok
                 // (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
-                // Collision avoidance says we must stop sending.
+                // Collision avoidance says we must stop sending. Timing of the falling edge is so far off that
+                // it does not make sense to try reception, therefore re-sync to bus via INIT.
                 collisions++;
                 initState();
                 break;
