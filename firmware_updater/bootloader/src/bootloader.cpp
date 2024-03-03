@@ -21,6 +21,7 @@
  -----------------------------------------------------------------------------*/
 
 #include <sblib/main.h>
+#include <sblib/interrupt.h>
 #include <sblib/digital_pin.h>
 #include <sblib/eib/apci.h>
 #include <sblib/hardware_descriptor.h>
@@ -40,6 +41,8 @@
 #define RUN_MODE_BLINK_IDLE (1000)     //!< while idle/disconnected, programming and run led blinking time in milliseconds
 #define BL_RESERVED_RAM_START (0x10000000) //!< RAM start address for bootloader
 #define BL_DEFAULT_VECTOR_TABLE_SIZE (192 / sizeof(uint32_t)) //!< vectortable size to copy prior application start
+
+#define APP_START_DELAY_MS (250)          //!< Time in milliseconds the programming led will light before the app is started
 
 // KNX/EIB specific settings
 #define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
@@ -169,12 +172,29 @@ void loop_noapp()
 }
 
 /**
+ * Restores MCU and register changes made by the bootloader (e.g. sysTick).
+ */
+static void finalize()
+{
+    Timeout ledTimeout; // don't use delay(), it needs nearly 100% more flash
+    pinMode(getProgrammingButton(), OUTPUT);
+    digitalWrite(getProgrammingButton(), false);
+    ledTimeout.start(APP_START_DELAY_MS);
+    while (!ledTimeout.expired())
+    {
+        waitForInterrupt();
+    }
+    SysTick->CTRL = 0; // disable sysTick, otherwise other apps may fail to start (e.g. bootloaderupdater)
+}
+
+/**
  * @brief Starts the application by copying application's stack top and vectortable to ram, remaps it and calls Reset vector of it
  *
  * @param start     Start address of application
  */
 static void jumpToApplication(uint8_t * start)
 {
+    finalize(); // restore changes made and turn the programming led on
 #ifndef IAP_EMULATION
     unsigned int StackTop = *(unsigned int *) (start);
     unsigned int ResetVector = *(unsigned int *) (start + 4);
@@ -214,13 +234,13 @@ static void jumpToApplication(uint8_t * start)
 bool startup()
 {
     // Updater request from application by setting magicWord
-  	unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
- 	if (*magicWord == BOOTLOADER_MAGIC_WORD)
+    unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+    if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
-        *magicWord = 0;	// avoid restarting BL after flashing
+        *magicWord = 0; // avoid restarting BL after flashing
         return true;
     }
-    *magicWord = 0;		// wrong magicWord, delete it
+    *magicWord = 0; // wrong magicWord, delete it
 
     // Enter Updater when programming button was pressed at power up
     pinMode(getProgrammingButton(), INPUT | PULL_UP);

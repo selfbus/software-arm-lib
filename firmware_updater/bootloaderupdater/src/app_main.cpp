@@ -19,9 +19,9 @@ extern const uint8_t incbin_bl_end[];
 
 #define BOOTLOADER_FLASH_STARTADDRESS ((uint8_t *) 0x0) //!< Flash start address of the bootloader
 constexpr uint8_t BOOTLOADERUPDATER_MAJOR_VERSION = 1;  //!< BootloaderUpdater major version @note change also in @ref APP_VERSION
-constexpr uint8_t BOOTLOADERUPDATER_MINOR_VERSION = 11; //!< BootloaderUpdater minor Version @note change also in @ref APP_VERSION
+constexpr uint8_t BOOTLOADERUPDATER_MINOR_VERSION = 12; //!< BootloaderUpdater minor Version @note change also in @ref APP_VERSION
 
-APP_VERSION("SBblu   ", "1", "11");
+APP_VERSION("SBblu   ", "1", "12");
 
 void setup()
 {
