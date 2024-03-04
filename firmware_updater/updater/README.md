@@ -1,4 +1,4 @@
-# Selfbus-Updater 1.11
+# Selfbus-Updater 1.12
 
 ## Requirements
 
@@ -58,8 +58,6 @@ Selfbus KNX-Firmware update tool options:
  -v,--version                               show tool/library version
     --delay <ms>                            delay telegrams during data transmission to reduce bus
                                             load, valid 0-500ms, default 0
-    --timeout                               Enable transport layer 4 connection-oriented 6s timeout.
-                                            Can be helpful with connection problems.
  -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default DEBUG)
     --ERASEFLASH                            USE WITH CAUTION! Erases the complete flash memory
                                             including the physical KNX address and all settings of

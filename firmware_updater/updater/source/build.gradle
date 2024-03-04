@@ -4,7 +4,7 @@ plugins {
 }
 
 group 'org.selfbus'
-version '1.11' ///\todo also change in ../README.md and ToolInfo.java (String version)
+version '1.12' ///\todo also change in ../README.md and ToolInfo.java (String version)
 
 sourceCompatibility = 11
 
