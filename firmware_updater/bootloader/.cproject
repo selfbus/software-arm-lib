@@ -4,7 +4,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.debug.2082284562.1664299275">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.2082284562.1664299275" moduleId="org.eclipse.cdt.core.settings" name="Debug (LPC11XX)">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.12"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -151,7 +151,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074" moduleId="org.eclipse.cdt.core.settings" name="Release (LPC11xx)">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.12"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -279,7 +279,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057" moduleId="org.eclipse.cdt.core.settings" name="Release APROG (LPC11xx)">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.12"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
@@ -408,7 +408,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378" moduleId="org.eclipse.cdt.core.settings" name="Debug low level (LPC11XX)">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.12"/>
 				</macros>
 				<externalSettings/>
 				<extensions>

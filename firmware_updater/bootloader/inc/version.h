@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 
+// Don't forget to change build-variable sw_version in .cproject file
 constexpr uint8_t BOOTLOADER_MAJOR_VERSION = 1;  //!< Bootloader major version @note change also in BootloaderUpdater's app_main.cpp
 constexpr uint8_t BOOTLOADER_MINOR_VERSION = 12; //!< Bootloader minor version @note change also in BootloaderUpdater's app_main.cpp
 

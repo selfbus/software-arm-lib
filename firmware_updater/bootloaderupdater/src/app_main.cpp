@@ -18,6 +18,8 @@ extern const __attribute__((aligned(16))) uint8_t incbin_bl_start[];
 extern const uint8_t incbin_bl_end[];
 
 #define BOOTLOADER_FLASH_STARTADDRESS ((uint8_t *) 0x0) //!< Flash start address of the bootloader
+
+// Don't forget to change build-variable sw_version in .cproject file
 constexpr uint8_t BOOTLOADERUPDATER_MAJOR_VERSION = 1;  //!< BootloaderUpdater major version @note change also in @ref APP_VERSION
 constexpr uint8_t BOOTLOADERUPDATER_MINOR_VERSION = 12; //!< BootloaderUpdater minor Version @note change also in @ref APP_VERSION
 
