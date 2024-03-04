@@ -214,7 +214,6 @@ private:
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
     TimerMatch pwmChannel;       //!< The timer channel for PWM for sending
     TimerMatch timeChannel;      //!< The timer channel for timeouts
-    volatile int sendAck;        //!< Send an acknowledge or not-acknowledge byte if != 0
 
 private:
     /** The states of the telegram sending/receiving state machine */
@@ -236,29 +235,30 @@ private:
         SEND_WAIT_FOR_RX_ACK            //!< after sending we wait for the ack in the ack receive window, cap event: rx start, timeout: repeat tel
     };
 
-    volatile State state;            //!< The state of the lib's telegram sending/receiving
-    volatile int sendRetries;        //!< The number of repeats when sending a telegram
-    volatile int sendRetriesMax;     //!< The maximum number of repeats when sending a telegram. Default: 3
-    volatile int sendBusyRetries;    //!< The number of busy repeats when sending a telegram
-    volatile int sendBusyRetriesMax; //!< The maximum number of busy repeats when sending a telegram. Default: 3
-    int nextByteIndex;               //!< The number of the next byte in the telegram
+    State state;                   //!< The state of the lib's telegram sending/receiving
+    int sendRetries;               //!< The number of repeats when sending a telegram
+    int sendRetriesMax;            //!< The maximum number of repeats when sending a telegram. Default: 3
+    int sendBusyRetries;           //!< The number of busy repeats when sending a telegram
+    int sendBusyRetriesMax;        //!< The maximum number of busy repeats when sending a telegram. Default: 3
+    int sendAck;                   //!< Send an acknowledge or not-acknowledge byte if != 0
+    int nextByteIndex;             //!< The number of the next byte in the telegram
 
-    int currentByte;                //!< The current byte that is received/sent, including the parity bit
-    int sendTelegramLen;            //!< The size of the to be sent telegram in bytes (including the checksum).
-    byte *sendCurTelegram;          //!< The telegram that is currently being sent.
+    int currentByte;               //!< The current byte that is received/sent, including the parity bit
+    int sendTelegramLen;           //!< The size of the to be sent telegram in bytes (including the checksum).
+    byte *sendCurTelegram;         //!< The telegram that is currently being sent.
     byte *rx_telegram = new byte[bcu->maxTelegramSize()](); //!< Telegram buffer for the L1/L2 receiving process
 
     int bitMask;
-    int bitTime;                 //!< The bit-time within a byte when receiving
-    int parity;                  //!< Parity bit of the current byte
-    int valid;                   //!< 1 if parity is valid for all bits of the telegram
-    int checksum;                //!< Checksum of the telegram: 0 if valid at end of telegram
-    volatile unsigned short rx_error;    //!< hold the rx error flags of the rx process of the state machine
-    volatile unsigned short tx_error;    //!< hold the tx error flags of the tx process of the state machine
+    int bitTime;                   //!< The bit-time within a byte when receiving
+    int parity;                    //!< Parity bit of the current byte
+    int valid;                     //!< 1 if parity is valid for all bits of the telegram
+    int checksum;                  //!< Checksum of the telegram: 0 if valid at end of telegram
+    unsigned short rx_error;       //!< hold the rx error flags of the rx process of the state machine
+    unsigned short tx_error;       //!< hold the tx error flags of the tx process of the state machine
     bool wait_for_ack_from_remote; //!< sending process is requesting an ack from remote side
-    bool busy_wait_from_remote; //!< remote side is busy, re-send telegram after 150bit time wait
-    bool repeatTelegram;        //!< need to repeat last  telegram sent
-    uint8_t collisions;         //!< Number of collisions when sending @ref sendCurTelegram
+    bool busy_wait_from_remote;    //!< remote side is busy, re-send telegram after 150bit time wait
+    bool repeatTelegram;           //!< need to repeat last  telegram sent
+    uint8_t collisions;            //!< Number of collisions when sending @ref sendCurTelegram
 };
 
 

@@ -552,8 +552,8 @@ void Bus::finishSendingTelegram()
  */
 __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 {
-    volatile bool timeout;
-    volatile int time;
+    bool timeout;
+    int time;
     unsigned int dt, tv, cv;
     auto isCaptureEvent = timer.flag(captureChannel);
 
