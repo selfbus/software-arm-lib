@@ -34,7 +34,6 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
 {
     timerBusObj = bus;
     setFatalErrorPin(progPin);
-    setKNX_TX_Pin(bus->txPin);
 }
 
 void BcuBase::_begin()

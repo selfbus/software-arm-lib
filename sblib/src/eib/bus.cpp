@@ -36,6 +36,7 @@ Bus::Bus(BcuBase* bcuInstance, Timer& aTimer, int aRxPin, int aTxPin, TimerCaptu
     state = Bus::INIT;
     sendRetriesMax = NACK_RETRY_DEFAULT;
     sendBusyRetriesMax = BUSY_RETRY_DEFAULT;
+    setKNX_TX_Pin(txPin);
 }
 
 /**
