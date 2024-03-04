@@ -266,6 +266,7 @@ void Bus::initState()
     timer.match(timeChannel, WAIT_40BIT);
     timer.match(pwmChannel, 0xffff);
     state = INIT;
+    sendAck = 0;
 }
 
 void Bus::idleState()
@@ -279,13 +280,6 @@ void Bus::idleState()
     timer.match(pwmChannel, 0xffff);
     //timer.counterMode(DISABLE,  captureChannel | FALLING_EDGE); //todo enabled the  timer reset by the falling edge of cap event
     state = Bus::IDLE;
-    sendAck = 0;
-
-    // After resume, we can end up in IDLE state even if there is a telegram to send. Send it out now.
-    if (sendCurTelegram)
-    {
-        startSendingImmediately();
-    }
 }
 
 void Bus::startSendingImmediately()
