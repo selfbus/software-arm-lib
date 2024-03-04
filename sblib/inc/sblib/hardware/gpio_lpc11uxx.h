@@ -18,6 +18,8 @@
 #define PIN_INFO    PIO1_25
 #define PIN_RUN     PIO1_16
 
+#define PIN_PROG_INVERTED  (true)
+
 #define PIN_PWM     PIO1_15
 #define PIN_APRG    PIO0_6
 #define PIN_IO1     PIO1_21

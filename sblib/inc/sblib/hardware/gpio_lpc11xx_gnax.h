@@ -18,6 +18,8 @@
 #define PIN_INFO    PIO1_0
 #define PIN_RUN     PIO2_10
 
+#define PIN_PROG_INVERTED  (false)
+
 #define PIN_PWM     () ///\todo define remaining gpio
 #define PIN_APRG    ()
 #define PIN_IO1     ()

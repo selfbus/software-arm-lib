@@ -18,6 +18,8 @@
 #define PIN_INFO    PIO3_3
 #define PIN_RUN     PIN_INFO // we have only one led, so it's the same as PIN_INFO
 
+#define PIN_PROG_INVERTED  (true)
+
 #define PIN_PWM     () ///\todo define
 #define PIN_APRG    PIN_PROG // we have only one programming button, so it's the same as PIN_PROG
 #define PIN_IO1     PIO3_4
