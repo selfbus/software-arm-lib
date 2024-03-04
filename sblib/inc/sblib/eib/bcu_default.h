@@ -34,30 +34,6 @@ public:
     ~BcuDefault() = default;
 
     /**
-     * Set RxPin of board, must be called before begin method
-     * @param rxPin pin definition
-     */
-    void setRxPin(int rxPin);
-    
-    /**
-     * Set TxPin of board, must be called before begin method
-     * @param txPin pin definition
-     */
-    void setTxPin(int txPin);
-    
-    /**
-     * Set timer class, must be called before begin method
-     * @param timer
-     */
-    void setTimer(Timer& timer);
-
-    /**
-     * Set capture channel of processor, must be called before begin method
-     * @param capture channel definition of processor
-     */
-    void setCaptureChannel(TimerCapture captureChannel);
-
-    /**
      * End using the EIB bus coupling unit.
      */
     void end();

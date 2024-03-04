@@ -201,23 +201,6 @@ void BcuDefault::setGroupTelRateLimit(unsigned int limit)
      groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
 }
 
-void BcuDefault::setRxPin(int rxPin) {
-    bus->rxPin=rxPin;
-}
-
-void BcuDefault::setTxPin(int txPin) {
-    bus->txPin=txPin;
-    setKNX_TX_Pin(bus->txPin);
-}
-
-void BcuDefault::setTimer(Timer& timer) {
-    bus->timer=timer;
-}
-
-void BcuDefault::setCaptureChannel(TimerCapture captureChannel) {
-    bus->captureChannel=captureChannel;
-}
-
 /**
  * todo check for RX status and inform upper layer if needed
  */
