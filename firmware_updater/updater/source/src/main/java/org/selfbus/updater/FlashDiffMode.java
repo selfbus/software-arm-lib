@@ -25,10 +25,10 @@ import static org.selfbus.updater.Mcu.MAX_PAYLOAD;
 public final class FlashDiffMode {
     private final static Logger logger = LoggerFactory.getLogger(FlashDiffMode.class.getName());
     // hexCacheDir will be used as a cache directory for the cached *.hex files used by the differential update mode
-    // windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\[version]
-    // linux  : /home/[user-home]]/.cache/Selfbus-Updater/[version]
+    // windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\
+    // linux  : /home/[user-home]]/.cache/Selfbus-Updater/
     private static final String hexCacheDirectory = AppDirsFactory.getInstance().getUserCacheDir(
-            ToolInfo.getTool(), ToolInfo.getVersion(), ToolInfo.getAuthor());
+            ToolInfo.getTool(), "", ToolInfo.getAuthor());
     private final static String IMAGE_IDENTIFIER = "image";
     private final static String FILE_NAME_SEP = "-";
     private final static String FILE_EXTENSION = ".bin";
