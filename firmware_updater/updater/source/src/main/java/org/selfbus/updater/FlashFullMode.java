@@ -38,7 +38,11 @@ public class FlashFullMode {
         byte[] buffer = new byte[Mcu.FLASH_PAGE_SIZE]; // buffer to hold one flash page
         long progAddress = newFirmware.startAddress();
 
-        logger.info("\nStart sending application data ({} bytes) with telegram delay of {}ms", totalLength, dataSendDelay);
+        String logMessage = String.format("\nStart sending application data (%d bytes)", totalLength);
+        if (dataSendDelay > 0) {
+            logMessage += String.format(" with telegram delay of %dms", dataSendDelay);
+        }
+        logger.info(logMessage);
 
         int nRead;
         while ((nRead = fis.read(buffer)) != -1) { // Read up to size of buffer, default 1 Page of 256Bytes from file
