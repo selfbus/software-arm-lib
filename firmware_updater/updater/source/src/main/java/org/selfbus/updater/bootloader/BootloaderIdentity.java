@@ -14,6 +14,30 @@ public class BootloaderIdentity {
     private final long features;
     private final long applicationFirstAddress;
 
+    private String hexVersionToString(long versionMajor, long versionMinor) {
+        byte high = (byte) (versionMinor >> 4);
+        byte low = (byte) (versionMinor & 0x0f);
+
+        String highPart;
+        String lowPart;
+
+        if (high < 10) {
+            highPart = String.format("%d", high);
+        }
+        else {
+            highPart = "x";
+        }
+
+        if (low < 10) {
+            lowPart = String.format("%d", low);
+        }
+        else {
+            lowPart = "y";
+        }
+
+        return String.format("%d.%s%s", versionMajor, highPart, lowPart);
+    }
+
     public BootloaderIdentity(long versionMajor, long versionMinor, long versionSBLibMajor, long versionSBLibMinor, long features, long applicationFirstAddress) {
         this.versionSBLibMajor = versionSBLibMajor;
         this.versionSBLibMinor = versionSBLibMinor;
@@ -71,6 +95,6 @@ public class BootloaderIdentity {
     }
 
     public String getVersionSBLib() {
-        return String.format("%d.%02d", getVersionSBLibMajor(), getVersionSBLibMinor());
+        return hexVersionToString(getVersionSBLibMajor(), getVersionSBLibMinor());
     }
 }
