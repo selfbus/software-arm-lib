@@ -34,7 +34,7 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         TLayer4(maxTelegramSize()),
         bus(new Bus(this, timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0)),
         progPin(PIN_PROG),
-        progPinInv(PIN_PROG_INVERTED),
+        progPinInv(true),
         userRam(userRam),
         addrTables(addrTables),
         comObjects(nullptr),
