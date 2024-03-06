@@ -30,13 +30,13 @@ Bus::Bus(BcuBase* bcuInstance, Timer& aTimer, int aRxPin, int aTxPin, TimerCaptu
 ,txPin(aTxPin)
 ,captureChannel(aCaptureChannel)
 ,pwmChannel(aPwmChannel)
-
 {
     timeChannel = (TimerMatch) ((pwmChannel + 2) & 3);  // +2 to be compatible to old code during refactoring
     state = Bus::INIT;
     sendRetriesMax = NACK_RETRY_DEFAULT;
     sendBusyRetriesMax = BUSY_RETRY_DEFAULT;
     setKNX_TX_Pin(txPin);
+    telegram = new byte[bcu->maxTelegramSize()]();
 }
 
 /**

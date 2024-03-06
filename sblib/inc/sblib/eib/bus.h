@@ -27,9 +27,6 @@
  */
 class Bus
 {
-private:
-    BcuBase* bcu;
-
 public:
     /**
      * Create a bus access object.
@@ -141,7 +138,7 @@ public:
      * The received telegram.
      * The higher layer process should not change the telegram data in the buffer!
      */
-    byte* telegram = new byte[bcu->maxTelegramSize()]();
+    byte* telegram;
 
     /**
       * The total length of the received telegram in telegram[].
@@ -209,6 +206,7 @@ private:
     void handleTelegram(bool valid);
 
 private:
+    BcuBase* bcu;
     Timer& timer;                //!< The timer
     int rxPin, txPin;            //!< The pins for bus receiving and sending
     TimerCapture captureChannel; //!< The timer channel that captures the timer value on the bus-in pin
