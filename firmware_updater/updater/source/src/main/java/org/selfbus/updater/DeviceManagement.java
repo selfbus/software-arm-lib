@@ -19,6 +19,7 @@ import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 import java.time.Duration;
 import java.util.Arrays;
 
+import static org.selfbus.updater.Mcu.MAX_FLASH_ERASE_TIMEOUT;
 import static org.selfbus.updater.upd.UPDProtocol.COMMAND_POSITION;
 import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 
@@ -208,7 +209,18 @@ public final class DeviceManagement {
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
         logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
+        Duration oldResponseTimeout = mc.responseTimeout();
+        Duration newResponseTimeout = MAX_FLASH_ERASE_TIMEOUT.multipliedBy(2);
+        if (oldResponseTimeout.compareTo(newResponseTimeout) < 0) {
+            mc.responseTimeout(newResponseTimeout); // temporarily increase responseTimeout
+            logger.trace("mc.ResponseTimeout temporarily increased to {}", mc.responseTimeout());
+        }
+
         byte[] result = sendWithRetry(UPDCommand.ERASE_ADDRESS_RANGE, telegram, MAX_UPD_COMMAND_RETRY).data();
+
+        mc.responseTimeout(oldResponseTimeout); // restore responseTimeout
+        logger.trace("mc.ResponseTimeout restored to {}", mc.responseTimeout());
+
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Erasing firmware address range failed.");
