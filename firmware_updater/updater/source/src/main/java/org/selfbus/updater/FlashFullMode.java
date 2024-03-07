@@ -49,8 +49,6 @@ public class FlashFullMode {
             byte[] txBuffer = new byte[nRead];
             System.arraycopy(buffer, 0, txBuffer, 0, nRead);
 
-            logger.info("Sending {} bytes: {}%", txBuffer.length, String.format("%3.1f", (float) 100 * (resultTotal.written() + txBuffer.length) / totalLength));
-
             // send data to the bootloader
             long flashTimeStart = System.currentTimeMillis(); // time this run started
             resultSendData = dm.doFlash(txBuffer, -1, dataSendDelay);
@@ -65,8 +63,10 @@ public class FlashFullMode {
             } else {
                 col = ConColors.BRIGHT_RED;
             }
-            System.out.println(String.format("%s(%.2f B/s)%s", col, bytesPerSecond, ConColors.RESET));
-
+            String percentageDone = String.format("%3.1f", (float) 100 * (resultTotal.written()) / totalLength);
+            String progressInfo = String.format("%s %s%% (%.2f B/s)%s", col, percentageDone, bytesPerSecond, ConColors.RESET);
+            logger.trace(progressInfo);
+            System.out.print(progressInfo);
 
             // flash the previously sent data
             int crc32 = Utils.crc32Value(txBuffer);
@@ -74,9 +74,11 @@ public class FlashFullMode {
             Utils.shortToStream(progPars, 0, (short)txBuffer.length);
             Utils.longToStream(progPars, 2, progAddress);
             Utils.longToStream(progPars, 6, crc32);
+
+            String programFlashInfo = String.format("@0x%04X crc32 0x%08X", progAddress, crc32);
+            logger.trace("Program device at flash {} ({} bytes)", programFlashInfo, txBuffer.length);
+            System.out.print(" "+ programFlashInfo);
             System.out.println();
-            logger.info("Program device at flash address 0x{} with {} bytes and CRC32 0x{}",
-                    String.format("%04X", progAddress), String.format("%3d", txBuffer.length), String.format("%08X", crc32));
 
             resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, -1);
             if (UPDProtocol.checkResult(resultProgramData.data()) != UDPResult.IAP_SUCCESS.id) {
