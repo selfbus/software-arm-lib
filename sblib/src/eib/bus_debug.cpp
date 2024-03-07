@@ -221,11 +221,11 @@ void dumpShortAcknowledgeFrameTiming(int delta)
     delta -= BIT_TIMES(15);
     if (delta < -5)
     {
-        serial.print(" afe ", delta); // acknowledge frame early
+        serial.print(" afe ", delta + 5); // acknowledge frame early
     }
-    else if(delta > 30)
+    else if (delta > 30)
     {
-        serial.print(" afl +", delta - 5); // acknowledge frame late
+        serial.print(" afl +", delta - 30); // acknowledge frame late
     }
     else
     {
