@@ -63,8 +63,8 @@ public class FlashFullMode {
             } else {
                 col = ConColors.BRIGHT_RED;
             }
-            String percentageDone = String.format("%3.1f", (float) 100 * (resultTotal.written()) / totalLength);
-            String progressInfo = String.format("%s %s%% (%.2f B/s)%s", col, percentageDone, bytesPerSecond, ConColors.RESET);
+            String percentageDone = String.format("%5.1f", (float) 100 * (resultTotal.written()) / totalLength);
+            String progressInfo = String.format("%s %s%% %6.2f B/s%s", col, percentageDone, bytesPerSecond, ConColors.RESET);
             logger.trace(progressInfo);
             System.out.print(progressInfo);
 
