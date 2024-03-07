@@ -4,6 +4,7 @@ import com.google.common.primitives.Bytes;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
+import org.selfbus.updater.bootloader.BootloaderUpdater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.IndividualAddress;
@@ -385,9 +386,10 @@ public class Updater implements Runnable {
             imageCache.writeToBinFile(cacheFileName);
 
             // Handle App Version Pointer
+            String fileVersion = "";
             if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
-                String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Get app version pointers content
+                fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Get app version pointers content
                 logger.info("  File App Version String is : {}{}{} manually specified at address 0x{}",
                         ConColors.BRIGHT_RED, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
             }
@@ -400,7 +402,7 @@ public class Updater implements Runnable {
                             ConColors.BRIGHT_RED, CliOptions.OPT_LONG_APP_VERSION_PTR, ConColors.RESET);
                 }
                 else {
-                    String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Convert app version pointers content to string
+                    fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Convert app version pointers content to string
                     logger.info("  File App Version String is : {}{}{} found at address 0x{}",
                             ConColors.BRIGHT_GREEN, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
                 }
@@ -467,6 +469,11 @@ public class Updater implements Runnable {
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
             dm.restartProgrammingDevice();
 
+            if (fileVersion.contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
+                logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BG_GREEN,
+                        String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS/1000.0f), ConColors.RESET);
+                Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
+            }
         } catch (final KNXException | UpdaterException | RuntimeException e) {
             thrown = e;
         } catch (final InterruptedException e) {
