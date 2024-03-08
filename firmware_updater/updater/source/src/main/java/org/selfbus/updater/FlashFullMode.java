@@ -61,7 +61,7 @@ public class FlashFullMode {
             if (bytesPerSecond >= 50.0) {
                 col = ConColors.BRIGHT_GREEN;
             } else {
-                col = ConColors.BRIGHT_RED;
+                col = ConColors.BRIGHT_YELLOW;
             }
             String percentageDone = String.format("%5.1f", (float) 100 * (resultTotal.written()) / totalLength);
             String progressInfo = String.format("%s %s%% %s%6.2f B/s%s", ConColors.BRIGHT_GREEN, percentageDone, col, bytesPerSecond, ConColors.RESET);
