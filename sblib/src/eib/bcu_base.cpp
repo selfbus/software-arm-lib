@@ -24,7 +24,6 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         TLayer4(maxTelegramSize()),
         bus(new Bus(this, timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0)),
         progPin(PIN_PROG),
-        progPinInv(true),
         userRam(userRam),
         addrTables(addrTables),
         comObjects(nullptr),
@@ -63,7 +62,7 @@ void BcuBase::loop()
 			userRam->status() ^= BCU_STATUS_PARITY | BCU_STATUS_PROGRAMMING_MODE;  // toggle programming mode and parity bit
 		}
 		pinMode(progPin, OUTPUT);
-		digitalWrite(progPin, programmingMode() ^ progPinInv);
+		digitalWrite(progPin, !programmingMode());
 	}
 
     // Rest of this function is only relevant if currently able to send another telegram.
@@ -108,7 +107,7 @@ bool BcuBase::setProgrammingMode(bool newMode)
         userRam->status() ^= BCU_STATUS_PARITY | BCU_STATUS_PROGRAMMING_MODE;  // toggle programming mode and parity bit
     }
     pinMode(progPin, OUTPUT);
-    digitalWrite(progPin, programmingMode() ^ progPinInv);
+    digitalWrite(progPin, !programmingMode());
     return true;
 }
 
@@ -190,8 +189,3 @@ void BcuBase::setProgPin(int prgPin) {
     progPin=prgPin;
     setFatalErrorPin(progPin);
 }
-
-void BcuBase::setProgPinInverted(int prgPinInv) {
-    progPinInv=prgPinInv;
-}
-

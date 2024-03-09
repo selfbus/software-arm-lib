@@ -39,12 +39,6 @@ public:
     void setProgPin(int prgPin);
 
     /**
-     * Set ProgPin output inverted, must be called before begin method
-     * @param progPin output inverted
-     */
-    void setProgPinInverted(int prgPinInv);
-
-    /**
      * End using the EIB bus coupling unit.
      */
     void end();
@@ -79,12 +73,6 @@ public:
      * to 0, the programming LED + button are not handled by the library.
      */
     int progPin;
-
-    /**
-     * Programming LED output inverted: If set to 1 the programming LED output is
-     * being inverted
-     */
-    int progPinInv;
 
     /**
       * @brief Performs a system reset by calling @ref NVIC_SystemReset
