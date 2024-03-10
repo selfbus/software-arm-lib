@@ -556,7 +556,7 @@
 		<cconfiguration id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816">
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816" moduleId="org.eclipse.cdt.core.settings" name="Release GNAX (LPC11xx)">
 				<macros>
-					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.11"/>
+					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.12"/>
 				</macros>
 				<externalSettings/>
 				<extensions>
