@@ -186,6 +186,11 @@ private:
      */
     void finishSendingTelegram();
 
+    /*
+     * Track collision in sending process correctly.
+     */
+    void encounteredCollision();
+
     /**
      * @fn void prepareTelegram(unsigned char*, unsigned short)const
      * @brief Prepare the telegram for sending. Set the sender address to our own

@@ -543,6 +543,19 @@ void Bus::finishSendingTelegram()
     prepareForSending();
 }
 
+/*
+ * Track collision in sending process correctly.
+ */
+void Bus::encounteredCollision()
+{
+    // We do not care about collisions in acknowledge frames as these frames will not be repeated.
+    // Thus, track the number of collisions only in normal frames.
+    if (!sendAck)
+    {
+        collisions++;
+        tx_error |= TX_COLLISION_ERROR;
+    }
+}
 
 /*
  * State Machine - driven by interrupts of timer and capture input
@@ -959,28 +972,27 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             // if addressed to us), so always switching to RX makes more sense in practice.
             if (captureTime < (pwmTime - STARTBIT_OFFSET_MIN))
             {
-                if (sendAck || nextByteIndex)
+                // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: Handling of p_class
+                //
+                //     * ack_char (sendAck != 0): No bus free detection, but collision avoidance,
+                //       i.e. do not defer sending, but step back. ack_char will not be repeated.
+                //
+                //     * inner_Frame_char (nextByteIndex != 0): Same, but it this case it counts
+                //       as a collision, and the frame will be repeated.
+                //
+                //     * start_of_Frame (else): Do bus free detection. This means another device
+                //       started sending before us. Defer sending, no special handling necessary.
+
+                if (nextByteIndex)
                 {
-                    // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: No bus free detection
-                    // for p_class ack_char and inner_Frame_char, but collision avoidance.
-                    // This means we stop our transmission and let the other device continue.
-
-                    // It's a collision nevertheless (another device bumped into our transmission).
-                    collisions++;
-
-                    // Note: If nextByteIndex > 0, we could interpret the incoming bytes as
-                    // continuation of the telegram we started to send, or as an independent
-                    // telegram where the other device started to send early. There is no right
-                    // or wrong here, so just use one approach.
-                }
-                else
-                {
-                    // KNX spec 2.1 chapter 3/2/2 section 1.4.1 p. 24: Do bus free detection
-                    // for p_class start_of_Frame. This means another device started sending
-                    // before us. No special handling necessary.
+                    // Note: We could interpret the incoming bytes as continuation of the
+                    // telegram we started to send, or as an independent telegram where the other
+                    // device started to send early. There is no right or wrong here, so just use
+                    // one approach.
+                    encounteredCollision();
                 }
 
-                // Switch to RX.
+                // Stop transmission and let the other device continue (switch to RX).
                 tb_d( state+300, ttimer.value(), tb_in);
                 timer.match(pwmChannel, 0xffff);
                 state = Bus::INIT_RX_FOR_RECEIVING_NEW_TEL;
@@ -1076,7 +1088,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 // (up to 7us early and 33us late per KNX spec 2.1 chapter 3/2/2 section 1.2.2.8 figure 22 p.19).
                 // Collision avoidance says we must stop sending. Timing of the falling edge is so far off that
                 // it does not make sense to try reception, therefore re-sync to bus via INIT.
-                collisions++;
+                encounteredCollision();
                 initState();
                 break;
             }
@@ -1092,8 +1104,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
                 tb_t( state+300, ttimer.value(), tb_in);
 
                 // A collision. Stop sending and switch to receiving the current transmission.
-                collisions++;
-                tx_error |= TX_COLLISION_ERROR;
+                encounteredCollision();
                 rx_error = RX_OK;
                 checksum = 0xff;
                 valid = 1;
