@@ -264,12 +264,12 @@
                   <text resource-bundle="GuiTranslation" key="uidHint"/>
                 </properties>
               </component>
-              <component id="f6036" class="javax.swing.JCheckBox" binding="CheckBoxFullFlash">
+              <component id="f6036" class="javax.swing.JCheckBox" binding="CheckBoxDiffFlash">
                 <constraints>
                   <grid row="15" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="fullFlash"/>
+                  <text resource-bundle="GuiTranslation" key="diffFlash"/>
                 </properties>
               </component>
               <component id="31ad8" class="javax.swing.JLabel" binding="labelFullFlashHint">
@@ -277,7 +277,7 @@
                   <grid row="15" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="fullFlashHint"/>
+                  <text resource-bundle="GuiTranslation" key="diffFlashHint"/>
                 </properties>
               </component>
               <component id="209c6" class="javax.swing.JCheckBox" binding="eraseCompleteFlashCheckBox" default-binding="true">

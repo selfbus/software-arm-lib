@@ -38,7 +38,7 @@ public class GuiMain extends JFrame {
     private JPanel panelMain;
     private JComboBox<CalimeroSearchComboItem> comboBoxIpGateways;
     private JLabel labelIpGateway;
-    private JCheckBox CheckBoxFullFlash;
+    private JCheckBox CheckBoxDiffFlash;
     private JTextField textFieldUid;
     private JLabel labelUid;
     private JButton buttonStartStopFlash;
@@ -250,7 +250,7 @@ public class GuiMain extends JFrame {
         userProperties.setProperty("Scenario", String.valueOf(((ComboItem) Objects.requireNonNull(comboBoxScenario.getSelectedItem())).getValue()));
         userProperties.setProperty("FlashFilePath", textFieldFileName.getText());
         userProperties.setProperty("Uid", textFieldUid.getText());
-        userProperties.setProperty("FullFlash", CheckBoxFullFlash.isSelected() ? "true" : "false");
+        userProperties.setProperty("DiffFlash", CheckBoxDiffFlash.isSelected() ? "true" : "false");
         userProperties.setProperty("EraseCompleteFlash", eraseCompleteFlashCheckBox.isSelected() ? "true" : "false");
         userProperties.setProperty("NoFlash", noFlashCheckBox.isSelected() ? "true" : "false");
         userProperties.setProperty("BootloaderDeviceAddress", textFieldBootloaderDeviceAddress.getText());
@@ -287,7 +287,7 @@ public class GuiMain extends JFrame {
                 comboBoxMedium.setSelectedItem(userProperties.getProperty("Medium"));
                 textFieldFileName.setText(userProperties.getProperty("FlashFilePath"));
                 textFieldUid.setText(userProperties.getProperty("Uid"));
-                CheckBoxFullFlash.setSelected(Boolean.parseBoolean(userProperties.getProperty("FullFlash")));
+                CheckBoxDiffFlash.setSelected(Boolean.parseBoolean(userProperties.getProperty("DiffFlash")));
                 eraseCompleteFlashCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("EraseCompleteFlash")));
                 noFlashCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("NoFlash")));
                 textFieldBootloaderDeviceAddress.setText(userProperties.getProperty("BootloaderDeviceAddress"));
@@ -339,7 +339,7 @@ public class GuiMain extends JFrame {
             argsList.add("-D" + textFieldBootloaderDeviceAddress.getText());
         if (textFieldOwnAddress.isVisible() && !Objects.equals(textFieldOwnAddress.getText(), ""))
             argsList.add("-o" + textFieldOwnAddress.getText());
-        if (CheckBoxFullFlash.isVisible() && CheckBoxFullFlash.isSelected())
+        if ((CheckBoxDiffFlash.isVisible() && !CheckBoxDiffFlash.isSelected()) || !CheckBoxDiffFlash.isVisible())
             argsList.add("-f1");
         if (natCheckBox.isVisible() && natCheckBox.isSelected())
             argsList.add("-n");
@@ -401,7 +401,7 @@ public class GuiMain extends JFrame {
     }
 
     private void LoadKnxIpInterfacesAndFillComboBox() {
-
+        reloadGatewaysButton.setEnabled(false);
         // ActionListener löschen und nach dem Füllen der ComboBox wieder hinzufügen
         // damit das Füllen kein Event auslöst
         comboBoxIpGateways.removeActionListener(comboBoxIpGatewaysActionListener);
@@ -413,9 +413,10 @@ public class GuiMain extends JFrame {
 
         DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
                 comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
-                        " (" + r.response().getControlEndpoint().getAddress().getHostAddress() + ")", r)));
+                        " (" + r.response().getControlEndpoint().endpoint().getAddress().getHostAddress() + ")", r)));
 
         comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
+        reloadGatewaysButton.setEnabled(true);
     }
 
     private void fillScenarios() {
@@ -554,8 +555,8 @@ public class GuiMain extends JFrame {
         GuiObjectsMap.put(labelTimeout, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(textFieldTimeout, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
 
-        GuiObjectsMap.put(CheckBoxFullFlash, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV));
-        GuiObjectsMap.put(labelFullFlashHint, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV));
+        GuiObjectsMap.put(CheckBoxDiffFlash, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
+        GuiObjectsMap.put(labelFullFlashHint, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
 
         GuiObjectsMap.put(natCheckBox, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
 
@@ -720,11 +721,11 @@ public class GuiMain extends JFrame {
         labelUidHint = new JLabel();
         this.$$$loadLabelText$$$(labelUidHint, this.$$$getMessageFromBundle$$$("GuiTranslation", "uidHint"));
         panel1.add(labelUidHint, new GridConstraints(14, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        CheckBoxFullFlash = new JCheckBox();
-        this.$$$loadButtonText$$$(CheckBoxFullFlash, this.$$$getMessageFromBundle$$$("GuiTranslation", "fullFlash"));
-        panel1.add(CheckBoxFullFlash, new GridConstraints(15, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        CheckBoxDiffFlash = new JCheckBox();
+        this.$$$loadButtonText$$$(CheckBoxDiffFlash, this.$$$getMessageFromBundle$$$("GuiTranslation", "diffFlash"));
+        panel1.add(CheckBoxDiffFlash, new GridConstraints(15, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         labelFullFlashHint = new JLabel();
-        this.$$$loadLabelText$$$(labelFullFlashHint, this.$$$getMessageFromBundle$$$("GuiTranslation", "fullFlashHint"));
+        this.$$$loadLabelText$$$(labelFullFlashHint, this.$$$getMessageFromBundle$$$("GuiTranslation", "diffFlashHint"));
         panel1.add(labelFullFlashHint, new GridConstraints(15, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         eraseCompleteFlashCheckBox = new JCheckBox();
         this.$$$loadButtonText$$$(eraseCompleteFlashCheckBox, this.$$$getMessageFromBundle$$$("GuiTranslation", "eraseFlash"));
