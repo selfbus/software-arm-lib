@@ -56,7 +56,10 @@ bool startup();
 
 uint32_t getProgrammingButton()
 {
-#ifdef ALTERNATIVE_PROGRAMMING_BUTTON
+#ifdef GNAX_IO16FM_PROGRAMMING_BUTTON
+	return (PIO2_11);
+
+#elif defined ALTERNATIVE_PROGRAMMING_BUTTON
     return (PIO2_8);
 #else
     return (hwPinProgButton());

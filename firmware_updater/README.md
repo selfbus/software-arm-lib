@@ -23,7 +23,7 @@ When using the debug version of the bootloader:
 |:------|:-------|:---------|:-------------|---------|
 |Flash  |MFlash64|Flash     |0x7000        |0x9000   |
 |RAM    |RamLoc8 |RAM       |0x10000100    |0x1f00   |
-These memory settings can also be set automatically by this *[linker-script](https://github.com/selfbus/software-arm-lib/tree/master/examples/example-linkerscripts/memory.ldt)*.
+These memory settings can also be set automatically by this [linker-script](https://github.com/selfbus/software-arm-lib/tree/main/examples/example-linkerscripts/memory.ldt).
 
 ## Build:
 All build configurations link against the *release version* of the sblib.
@@ -56,4 +56,4 @@ Bei Verwendung der Debug Version des Bootloaders:
 |Flash  |MFlash64|Flash     |0x7000        |0x9000   |
 |RAM    |RamLoc8 |RAM       |0x10000100    |0x1f00   |
 
-Diese Speichereinstellung können auch automatisch durch dieses *[Linkerscript](https://github.com/selfbus/software-arm-lib/tree/master/examples/example-linkerscripts/memory.ldt)* gesetzt werden.
+Diese Speichereinstellung können auch automatisch durch dieses [Linkerscript](https://github.com/selfbus/software-arm-lib/tree/main/examples/example-linkerscripts/memory.ldt) gesetzt werden.
