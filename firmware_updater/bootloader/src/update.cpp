@@ -484,15 +484,16 @@ static bool updProgram(uint8_t * data)
         return (true);
     }
 
-    // Select smallest possible sector size
-    if (flash_count > 4*FLASH_PAGE_SIZE)
-        flash_count = 16*FLASH_PAGE_SIZE;
+    // See IAP limitations in UM10398 26.7.2 p. 442
+    // Number of bytes to be written. Should be 256 | 512 | 1024 | 4096
+    if (flash_count > 4*FLASH_PAGE_SIZE)   // Select smallest possible sector size
+        flash_count = 16*FLASH_PAGE_SIZE;  // 4096 bytes
     else if (flash_count > 2*FLASH_PAGE_SIZE)
-        flash_count = 4*FLASH_PAGE_SIZE;
+        flash_count = 4*FLASH_PAGE_SIZE;   // 1024 bytes
     else if (flash_count > FLASH_PAGE_SIZE)
-        flash_count = 2*FLASH_PAGE_SIZE;
+        flash_count = 2*FLASH_PAGE_SIZE;   // 512 bytes
     else
-        flash_count = FLASH_PAGE_SIZE;
+        flash_count = FLASH_PAGE_SIZE;     // 256 bytes
 
     d3(serial.print("writing ", flash_count));
     d3(serial.print(" bytes @ 0x", address));
