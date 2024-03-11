@@ -611,10 +611,15 @@ void TLayer4::finishedSendingTelegram(bool successful)
 
     if (isConnectionControlCommand)
     {
-        if (!successful)
+        if (!successful && conCtrlRepCount < TL4_MAX_REPETITION_COUNT)
         {
             // Connection control telegrams are so high priority that we retry sending them right away.
+            conCtrlRepCount++;
             sendPreparedTelegram();
+        }
+        else
+        {
+            conCtrlRepCount = 0;
         }
     }
 }
