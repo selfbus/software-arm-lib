@@ -14,11 +14,11 @@ import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.calimero.IndividualAddress;
-import io.calimero.KNXFormatException;
-import io.calimero.Priority;
-import io.calimero.knxnetip.KNXnetIPConnection;
-import io.calimero.link.medium.TPSettings;
+import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.Priority;
+import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.link.medium.TPSettings;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;

@@ -61,10 +61,10 @@ gradle.projectsEvaluated{
 
 dependencies {
     // calimero knx bus access library
-    implementation 'io.calimero:calimero-core:3.0-SNAPSHOT'
+    implementation 'com.github.calimero:calimero-core:2.5.1'
 
     // calimero serial tx/rx lib for ft1.2 and tpuart support
-    implementation 'io.calimero:calimero-rxtx:3.0-SNAPSHOT'
+    implementation 'com.github.calimero:calimero-rxtx:2.5.1'
 
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.2.1'

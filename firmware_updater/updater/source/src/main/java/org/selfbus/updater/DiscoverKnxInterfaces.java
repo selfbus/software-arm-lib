@@ -1,7 +1,7 @@
 package org.selfbus.updater;
 
-import io.calimero.knxnetip.Discoverer;
-import io.calimero.knxnetip.servicetype.SearchResponse;
+import tuwien.auto.calimero.knxnetip.Discoverer;
+import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 
 import java.time.Duration;
 import java.util.List;

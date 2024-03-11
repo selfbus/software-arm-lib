@@ -4,7 +4,7 @@ package org.selfbus.updater;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.calimero.Settings;
+import tuwien.auto.calimero.Settings;
 
 /**
  * Provides information about the application

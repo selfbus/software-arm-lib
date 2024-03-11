@@ -2,15 +2,15 @@ package org.selfbus.updater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.calimero.DataUnitBuilder;
-import io.calimero.IndividualAddress;
-import io.calimero.KNXInvalidResponseException;
-import io.calimero.KNXTimeoutException;
-import io.calimero.link.KNXLinkClosedException;
-import io.calimero.link.KNXNetworkLink;
-import io.calimero.mgmt.Destination;
-import io.calimero.mgmt.KNXDisconnectException;
-import io.calimero.mgmt.ManagementClientImpl;
+import tuwien.auto.calimero.DataUnitBuilder;
+import tuwien.auto.calimero.IndividualAddress;
+import tuwien.auto.calimero.KNXInvalidResponseException;
+import tuwien.auto.calimero.KNXTimeoutException;
+import tuwien.auto.calimero.link.KNXLinkClosedException;
+import tuwien.auto.calimero.link.KNXNetworkLink;
+import tuwien.auto.calimero.mgmt.Destination;
+import tuwien.auto.calimero.mgmt.KNXDisconnectException;
+import tuwien.auto.calimero.mgmt.ManagementClientImpl;
 
 import java.util.List;
 import java.util.Optional;

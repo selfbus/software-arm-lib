@@ -3,10 +3,10 @@ package org.selfbus.updater.gui;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
-import io.calimero.KNXFormatException;
-import io.calimero.KNXIllegalArgumentException;
-import io.calimero.knxnetip.Discoverer;
-import io.calimero.knxnetip.servicetype.SearchResponse;
+import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.knxnetip.Discoverer;
+import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.CliOptions;
@@ -412,8 +412,8 @@ public class GuiMain extends JFrame {
         comboBoxIpGateways.addItem(new CalimeroSearchComboItem(bundle.getString("selectInterface"), null));
 
         DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
-                comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
-                        " (" + r.response().getControlEndpoint().endpoint().getAddress().getHostAddress() + ")", r)));
+                comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.getResponse().getDevice().getName() +
+                        " (" + r.getResponse().getControlEndpoint().getAddress().getHostAddress() + ")", r)));
 
         comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
         reloadGatewaysButton.setEnabled(true);

@@ -1,17 +1,17 @@
 package org.selfbus.updater;
 
 import com.google.common.primitives.Bytes;
-import io.calimero.*;
-import io.calimero.link.*;
+import tuwien.auto.calimero.*;
+import tuwien.auto.calimero.link.*;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.calimero.knxnetip.SecureConnection;
-import io.calimero.link.medium.KNXMediumSettings;
-import io.calimero.link.medium.RFSettings;
-import io.calimero.link.medium.TPSettings;
+import tuwien.auto.calimero.knxnetip.SecureConnection;
+import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.link.medium.RFSettings;
+import tuwien.auto.calimero.link.medium.TPSettings;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
