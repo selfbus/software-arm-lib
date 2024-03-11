@@ -314,17 +314,10 @@ private:
         TELEGRAM_ACQUIRED,
         TELEGRAM_SENDING
     };
-    enum SendConnectedTelegramBufferState
-    {
-        CONNECTED_TELEGRAM_FREE,
-        CONNECTED_TELEGRAM_WAIT_T_ACK_SENT,
-        CONNECTED_TELEGRAM_WAIT_LOOP,
-        CONNECTED_TELEGRAM_SENDING
-    };
 
     volatile SendTelegramBufferState sendTelegramBufferState;
-    volatile SendConnectedTelegramBufferState sendConnectedTelegramBufferState;
-    volatile SendConnectedTelegramBufferState sendConnectedTelegramBuffer2State;
+    volatile SendTelegramBufferState sendConnectedTelegramBufferState;
+    volatile SendTelegramBufferState sendConnectedTelegramBuffer2State;
 };
 
 inline bool TLayer4::directConnection()
