@@ -360,7 +360,7 @@ public class Updater implements Runnable {
 
             if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
                 logger.warn("{}Dumping flash content range 0x{}-0x{} to bootloader's serial port.{}",
-                        ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()),  ConColors.RESET);
+                        ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()), ConColors.RESET);
                 dm.dumpFlashRange(cliOptions.dumpFlashStartAddress(), cliOptions.dumpFlashEndAddress());
                 return;
             }
@@ -389,7 +389,7 @@ public class Updater implements Runnable {
             String fileVersion = "";
             if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
-                fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Get app version pointers content
+                fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH); // Get app version pointers content
                 logger.info("  File App Version String is : {}{}{} manually specified at address 0x{}",
                         ConColors.BRIGHT_RED, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
             }
@@ -397,12 +397,12 @@ public class Updater implements Runnable {
                 // Search for AppVersion pointer in flash file if not set manually, Search magic bytes in image file
                 appVersionAddress = Bytes.indexOf(newFirmware.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
                 if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {
-                    appVersionAddress = 0;		// missing, or not valid set to 0
+                    appVersionAddress = 0; // missing, or not valid set to 0
                     logger.warn("  {}Could not find the App Version string, setting to 0. Please specify manually with {}{}",
                             ConColors.BRIGHT_RED, CliOptions.OPT_LONG_APP_VERSION_PTR, ConColors.RESET);
                 }
                 else {
-                    fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Convert app version pointers content to string
+                    fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH); // Convert app version pointers content to string
                     logger.info("  File App Version String is : {}{}{} found at address 0x{}",
                             ConColors.BRIGHT_GREEN, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
                 }
@@ -419,7 +419,7 @@ public class Updater implements Runnable {
             }
             else {
                 logger.info("  {}Info: There are {} bytes of unused flash between bootloader and firmware.{}",
-                            ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
+                        ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
             }
 
             // Request current main firmware boot descriptor from device
@@ -452,12 +452,12 @@ public class Updater implements Runnable {
                 printStatisticData(flashTimeStart, resultTotal);
             }
             else {
-                logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH , ConColors.RED, ConColors.RESET);
+                logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH, ConColors.RED, ConColors.RESET);
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
                     newFirmware.endAddress(),
-                    (int)newFirmware.crc32(),
+                    (int) newFirmware.crc32(),
                     newFirmware.startAddress() + appVersionAddress);
             logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
@@ -471,7 +471,7 @@ public class Updater implements Runnable {
 
             if (fileVersion.contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
                 logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BG_GREEN,
-                        String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS/1000.0f), ConColors.RESET);
+                        String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f), ConColors.RESET);
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
             }
         } catch (final KNXException | UpdaterException | RuntimeException e) {
@@ -491,7 +491,4 @@ public class Updater implements Runnable {
             onCompletion(thrown, canceled);
         }
     }
-
-    
-
 }
