@@ -168,12 +168,13 @@ IAP_Status iapProgram(uint8_t * rom, const uint8_t * ram, unsigned int size)
     // Use '__attribute__ ((aligned (FLASH_PAGE_ALIGNMENT)))' to force correct alignment even with compiler optimization -Ox
 
     IAP_Parameter p;
-    unsigned int sector = iapSectorOfAddress(rom);
+    uint32_t startSector = iapSectorOfAddress(rom);
+    uint32_t endSector = iapSectorOfAddress(rom + size);
 
     // in order to access flash we need to disable all interrupts
     noInterrupts();
     // first we need to unlock the sector
-    p.stat = _prepareSectorRange(sector, sector, false);
+    p.stat = _prepareSectorRange(startSector, endSector, false);
 
     if (p.stat != IAP_SUCCESS)
     {
