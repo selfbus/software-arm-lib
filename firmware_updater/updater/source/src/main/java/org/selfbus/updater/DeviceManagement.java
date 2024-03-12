@@ -32,8 +32,15 @@ public final class DeviceManagement {
 
     private static final int MAX_UPD_COMMAND_RETRY = 3; //!< default maximum retries a UPD command is sent to the client
 
-    @SuppressWarnings("unused")
-    private DeviceManagement (){}
+    private UDPProtocolVersion protocolVersion;
+
+    private int blockSize;
+    private int maxPayload;
+    private int updSendDataOffset;
+
+    private DeviceManagement () {
+        setProtocolVersion(UDPProtocolVersion.UDP_V1);
+    }
 
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
     private SBManagementClientImpl mc; //!< calimero device management client
@@ -42,6 +49,7 @@ public final class DeviceManagement {
 
     public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, Priority priority)
             throws KNXLinkClosedException {
+        this();
         this.link = link;
         logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
@@ -396,5 +404,25 @@ public final class DeviceManagement {
         } catch (KNXException | InterruptedException e ) {
             throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()));
         }
+    }
+
+    public UDPProtocolVersion getProtocolVersion() {
+        return protocolVersion;
+    }
+    public void setProtocolVersion(UDPProtocolVersion protocolVersion) {
+        this.protocolVersion = protocolVersion;
+        this.maxPayload = Mcu.MAX_PAYLOAD;
+        if (this.protocolVersion == UDPProtocolVersion.UDP_V1) {
+            this.blockSize = Mcu.UPD_PROGRAM_SIZE;
+            this.updSendDataOffset = 0;
+        }
+        else {
+            this.blockSize = Mcu.FLASH_PAGE_SIZE;
+            this.updSendDataOffset = 1;
+        }
+    }
+
+    public int getBlockSize() {
+        return blockSize;
     }
 }
