@@ -339,7 +339,7 @@ public final class DeviceManagement {
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
-            throws UpdaterException, InterruptedException {
+            throws UpdaterException {
         ResponseResult result = new ResponseResult();
         while (true) {
             try {
