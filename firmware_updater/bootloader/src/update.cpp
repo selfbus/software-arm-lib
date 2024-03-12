@@ -818,11 +818,6 @@ static bool updSendDataToDecompress(uint8_t * data, uint32_t nCount)
     dline("-->not implemented")
     setLastError(UDP_NOT_IMPLEMENTED);
 #else
-    if ((ramLocation + nCount) > (sizeof(ramBuffer)/sizeof(ramBuffer[0]))) // Check if this can be removed. Overflow protection should be in decompressor class instead!
-    {
-        setLastError(UDP_RAM_BUFFER_OVERFLOW);
-        return (true);
-    }
     dline("-->decompressor");
     for (unsigned int i = 0; i < nCount; i++)
     {
