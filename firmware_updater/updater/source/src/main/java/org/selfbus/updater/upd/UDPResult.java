@@ -1,10 +1,7 @@
 package org.selfbus.updater.upd;
 
-import org.selfbus.updater.Utils;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Implementation of the UPD/UDP protocol result commands
