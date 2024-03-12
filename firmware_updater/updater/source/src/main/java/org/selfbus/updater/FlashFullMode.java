@@ -33,10 +33,20 @@ public class FlashFullMode {
         ByteArrayInputStream fis = new ByteArrayInputStream(newFirmware.getBinData());
 
         if (eraseFirmwareRange) {
-            dm.eraseAddressRange(newFirmware.startAddress(), totalLength); // erase affected flash range
+            long endAddress = newFirmware.startAddress() + totalLength - 1;
+            if ((endAddress % dm.getBlockSize()) != 0) {
+                endAddress = ((endAddress / dm.getBlockSize()) + 1) * dm.getBlockSize();
+                logger.info(String.format("Erasing firmware address range: 0x%04X-0x%04X %s(%d byte aligned)%s...",
+                        newFirmware.startAddress(), endAddress, ConColors.BRIGHT_YELLOW, dm.getBlockSize(), ConColors.RESET));
+            }
+            else {
+                logger.info(String.format("Erasing firmware address range: 0x%04X-0x%04X...", newFirmware.startAddress(),
+                        endAddress));
+            }
+            dm.eraseAddressRange(newFirmware.startAddress(), endAddress);
         }
 
-        byte[] buffer = new byte[Mcu.FLASH_PAGE_SIZE]; // buffer to hold one flash page
+        byte[] buffer = new byte[dm.getBlockSize()];
         long progAddress = newFirmware.startAddress();
 
         String logMessage = String.format("\nStart sending application data (%d bytes)", totalLength);

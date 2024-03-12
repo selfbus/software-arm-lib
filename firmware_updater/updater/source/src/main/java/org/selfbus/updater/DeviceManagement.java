@@ -210,13 +210,11 @@ public final class DeviceManagement {
         }
     }
 
-    public void eraseAddressRange(long startAddress, long totalLength)
+    public void eraseAddressRange(long startAddress, long endAddress)
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
-        long endAddress = startAddress + totalLength - 1;
         byte[] telegram = new byte[8];
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
-        logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
         Duration oldResponseTimeout = mc.responseTimeout();
         Duration newResponseTimeout = MAX_FLASH_ERASE_TIMEOUT.multipliedBy(2);
         if (oldResponseTimeout.compareTo(newResponseTimeout) < 0) {
