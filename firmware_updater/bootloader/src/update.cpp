@@ -62,8 +62,8 @@ static uint8_t * retTelegram = nullptr;                  //!< pointer to return 
 
 // Try to avoid direct access to these global variables.
 // It's better to use their get, set and reset functions
-static unsigned int deviceLocked = DEVICE_LOCKED;   //!< current device locking state @note Better use GetDeviceUnlocked() & setDeviceLockState()
 static unsigned int ramLocation = 0;                //!< current location of the ramBuffer processed
+static uint32_t deviceLocked = DEVICE_LOCKED;   //!< current device locking state @note Better use GetDeviceUnlocked() & setDeviceLockState()
 static uint16_t totalBytesReceived = 0;         //!< number of bytes received by @ref UPD_SEND_DATA since reset()
 static uint16_t totalBytesFlashed = 0;          //!< number of bytes flashed by @ref UPD_PROGRAM since reset()
 
