@@ -507,6 +507,7 @@ static bool updProgram(uint8_t * data)
 
     bytesFlashed += flash_count;
     bcu.bus->pause();
+    // Getting an UDP_IAP_COMPARE_ERROR here is an indicator of flash sectors/pages not being erased before programming
     UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
     bcu.bus->resume();
     setLastError(error);

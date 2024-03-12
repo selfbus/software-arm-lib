@@ -32,7 +32,7 @@ public enum UDPResult {
     /** Flash (IAP) Command to prepare sector for write operation was not executed */
     IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION((byte)0x76, "Flash (IAP) Command to prepare sector for write operation was not executed.", true),
     /** Flash (IAP) Source and destination data is not same */
-    IAP_COMPARE_ERROR((byte)0x75, "Flash (IAP) Source and destination data is not same.", true),
+    IAP_COMPARE_ERROR((byte)0x75, "Flash (IAP) Source and destination data is not same. Make sure that the affected flash sectors/pages are erased prior flashing.", true),
     /** Flash (IAP) Flash programming hardware interface is busy */
     IAP_BUSY((byte)0x74, "Flash (IAP) Flash programming hardware interface is busy.", true),
 

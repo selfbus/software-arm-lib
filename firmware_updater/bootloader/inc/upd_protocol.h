@@ -161,7 +161,7 @@ enum UDP_State : uint8_t
     UDP_IAP_INVALID_SECTOR = 0x78,                          //!< IAP Sector number is invalid.
     UDP_IAP_SECTOR_NOT_BLANK = 0x77,                        //!< IAP Sector is not blank.
     UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION = 0x76, //!< IAP Command to prepare sector for write operation was not executed.
-    UDP_IAP_COMPARE_ERROR = 0x75,                           //!< IAP Source and destination data is not same.
+    UDP_IAP_COMPARE_ERROR = 0x75, //!< IAP Source and destination data is not same. Check that the affected flash sectors/pages are erased prior flashing.
     UDP_IAP_BUSY = 0x74,                                    //!< IAP Flash programming hardware interface is busy.
     UDP_IAP_UNKNOWN = 0x73,                                 //!< IAP unknown @ref IAP_Status.
 
