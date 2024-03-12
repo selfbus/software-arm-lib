@@ -181,7 +181,7 @@ enum UDP_State : uint8_t
     UDP_PAGE_NOT_ALLOWED_TO_ERASE = 0x52,    //!< page not allowed to erase
     UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE = 0x51, //!< address range not allowed to erase
     UDP_BYTECOUNT_RECEIVED_TOO_LOW = 0x50,   //!< Number of bytes received with @ref UPD_SEND_DATA is lower than number of bytes to program with @ref UPD_PROGRAM
-    UDP_BYTECOUNT_RECEIVED_TOO_HIGH = 0x4f,  //!< Number of bytes received with @ref UPD_SEND_DATA is higher than number of bytes to program with @ref UPD_PROGRAM
+    UDP_BYTECOUNT_RECEIVED_TOO_HIGH = 0x4f,  //!< Number of bytes received with @ref UPD_SEND_DATA is greater than number of bytes to program with @ref UPD_PROGRAM
 
     UDP_NOT_IMPLEMENTED = 0x02,              //!< this command is not yet implemented
     UDP_INVALID = 0x01                       //!< Unknown error
