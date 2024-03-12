@@ -445,7 +445,7 @@ static bool updSendData(uint8_t * data, uint32_t nCount)
     setLastError(UDP_IAP_SUCCESS);
     for(unsigned int i=0; i<nCount; i++)
     {
-        d2(data[i+1],HEX,2);
+        d2(data[i+1], HEX, 2);
         d1(" ");
     }
     d3(serial.print("at: ", ramLocation, DEC, 3));
