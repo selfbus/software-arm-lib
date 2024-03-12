@@ -13,6 +13,10 @@ public final class Mcu {
     public static final int MAX_ASDU_LENGTH = 14;
     /** Selfbus ARM controller flash page size */
     public static final int FLASH_PAGE_SIZE = 256;
+    /** Size in byte of the RAM buffer */
+    public static final int RAM_BUFFER_SIZE = 1268;
+    /** Size in bytes to flash with UPD_PROGRAM */
+    public static final int UPD_PROGRAM_SIZE = 1024;
     /** Vector table end of the mcu */
     public static final int VECTOR_TABLE_END = 0xC0;
     /** Length of bootloader identity string */
