@@ -22,7 +22,8 @@ public class FlashFullMode {
     /**
      * Normal update routine, sending complete image
      */
-    public static ResponseResult doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay, boolean eraseFirmwareRange, boolean logStatistics)
+    public static ResponseResult doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay,
+                                             boolean eraseFirmwareRange, boolean logStatistics)
             throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
             InterruptedException, UpdaterException, KNXRemoteException {
         ResponseResult resultSendData, resultProgramData;

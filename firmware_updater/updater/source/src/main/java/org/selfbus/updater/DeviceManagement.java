@@ -263,7 +263,6 @@ public final class DeviceManagement {
         ResponseResult result = new ResponseResult();
         while (nIndex < data.length)
         {
-
             byte[] txBuffer;
             if ((data.length - nIndex) >= Mcu.MAX_PAYLOAD){
                 txBuffer = new byte[Mcu.MAX_PAYLOAD + 1];
