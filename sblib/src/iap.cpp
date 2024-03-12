@@ -169,7 +169,7 @@ IAP_Status iapProgram(uint8_t * rom, const uint8_t * ram, unsigned int size)
 
     IAP_Parameter p;
     uint32_t startSector = iapSectorOfAddress(rom);
-    uint32_t endSector = iapSectorOfAddress(rom + size);
+    uint32_t endSector = iapSectorOfAddress(rom + size - 1);
 
     // in order to access flash we need to disable all interrupts
     noInterrupts();
