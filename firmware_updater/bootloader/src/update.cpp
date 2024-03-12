@@ -51,7 +51,13 @@
 #define DEVICE_LOCKED   ((unsigned int ) 0x5AA55AA5)     //!< magic number for device is locked and can't be flashed
 #define DEVICE_UNLOCKED ((unsigned int ) ~DEVICE_LOCKED) //!< magic number for device is unlocked and flashing is allowed
 
-static uint8_t __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[RAM_BUFFER_SIZE]; //!< RAM buffer used for flash operations
+/**
+ * Size in bytes of the RAM buffer.
+ * @details 1265 bytes chosen to fit @ref UPD_SEND_DATA of 5 extended frames<br>
+ *          Maximum extended frame length is 254 bytes - 1 byte for the @ref UPD_Command totaling in 1265 bytes
+ */
+constexpr uint16_t bufferSize = 1265;
+static uint8_t __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[bufferSize]; //!< RAM buffer used for flash operations
 static uint8_t * retTelegram = nullptr;                  //!< pointer to return buffer, as a field for easier access and smaller code size
 
 // Try to avoid direct access to these global variables.

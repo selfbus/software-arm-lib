@@ -24,8 +24,6 @@
 
 #include "boot_descriptor_block.h"
 
-#define RAM_BUFFER_SIZE FLASH_PAGE_SIZE    //!< Size in byte for the ram buffer
-
 /**
  * Handles KNX @ref APCI_USERMSG_MANUFACTURER_0 which encapsulates our UPD/UDP protocol
  *
