@@ -3,6 +3,7 @@ package org.selfbus.updater;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
@@ -262,15 +263,17 @@ public final class DeviceManagement {
         while (nIndex < data.length)
         {
             byte[] txBuffer;
-            if ((data.length - nIndex) >= Mcu.MAX_PAYLOAD){
-                txBuffer = new byte[Mcu.MAX_PAYLOAD + 1];
+            if ((data.length + updSendDataOffset - nIndex) >= maxPayload) {
+                txBuffer = new byte[maxPayload];
             }
             else {
-                txBuffer = new byte[data.length - nIndex + 1];
+                txBuffer = new byte[data.length + updSendDataOffset- nIndex];
             }
-            // First byte contains start address of following data
-            txBuffer[0] = (byte)nIndex;
-            System.arraycopy(data, nIndex, txBuffer, 1, txBuffer.length - 1);
+
+            if (protocolVersion == UDPProtocolVersion.UDP_V0) {
+                txBuffer[0] = (byte) nIndex; // First byte contains mcu's ramBuffer start position to copy to
+            }
+            System.arraycopy(data, nIndex, txBuffer, updSendDataOffset, txBuffer.length - updSendDataOffset);
 
             ResponseResult tmp = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
             result.addCounters(tmp);
@@ -285,11 +288,11 @@ public final class DeviceManagement {
                 throw new UpdaterException("doFlash failed.");
             }
 
+            nIndex += txBuffer.length - updSendDataOffset;
+
             if (delay > 0) {
                 Thread.sleep(delay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
             }
-
-            nIndex += txBuffer.length - 1;
         }
         result.addWritten(nIndex);
         return result;

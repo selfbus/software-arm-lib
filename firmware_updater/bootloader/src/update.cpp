@@ -62,8 +62,8 @@ static uint8_t * retTelegram = nullptr;                  //!< pointer to return 
 
 // Try to avoid direct access to these global variables.
 // It's better to use their get, set and reset functions
-static unsigned int ramLocation = 0;                //!< current location of the ramBuffer processed
 static uint32_t deviceLocked = DEVICE_LOCKED;   //!< current device locking state @note Better use GetDeviceUnlocked() & setDeviceLockState()
+static uint16_t ramBufferPositon = 0;           //!< current number of bytes cached in @ref ramBuffer
 static uint16_t totalBytesReceived = 0;         //!< number of bytes received by @ref UPD_SEND_DATA since reset()
 static uint16_t totalBytesFlashed = 0;          //!< number of bytes flashed by @ref UPD_PROGRAM since reset()
 
@@ -230,6 +230,26 @@ static void setDeviceLockState(unsigned int newDeviceLockState)
     );
 }
 
+uint16_t getRAMBufferPosition()
+{
+    return ramBufferPositon;
+}
+
+void setRAMBufferPosition(uint16_t newRAMBufferPosition)
+{
+    ramBufferPositon = newRAMBufferPosition;
+}
+
+size_t getRAMBufferSize()
+{
+    return sizeof(ramBuffer)/sizeof(ramBuffer[0]);
+}
+
+void resetRAMBuffer()
+{
+    setRAMBufferPosition(0);
+}
+
 /**
  * Returns the state of the programming button
  *
@@ -264,7 +284,7 @@ static void setLastError(UDP_State errorToSet)
 
 void resetUPDProtocol(void)
 {
-    ramLocation = 0;
+    resetRAMBuffer();
     totalBytesReceived = 0;
     totalBytesFlashed = 0;
     dump2(serial.println("resetUPDProtocol"));
@@ -422,7 +442,7 @@ static bool updEraseFullFlash()
 /**
  * Handles the @ref UPD_SEND_DATA command and copies the received bytes from data to @ref ramBuffer
  *
- * @param data    data[0] must contain the ramBuffer location and data[1...] the bytes to copy to the ramBuffer
+ * @param data    The bytes to copy into @ref ramBuffer
  * @param nCount  Number of bytes to copy
  * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise @ref UDP_RAM_BUFFER_OVERFLOW or a @ref UDP_State
  * @return        always true
@@ -430,17 +450,15 @@ static bool updEraseFullFlash()
  */
 static bool updSendData(uint8_t * data, uint32_t nCount)
 {
-    ramLocation = data[0]; // Current Byte position as message number with 12 Bytes payload each
-    nCount --;             // 1 Bytes abziehen, da diese für die Nachrichtennummer verwendet wird
-
-    if ((ramLocation + nCount) > sizeof(ramBuffer)/sizeof(ramBuffer[0])) // enough space left?
+    if ((getRAMBufferPosition() + nCount) > getRAMBufferSize()) // enough space left?
     {
         setLastError(UDP_RAM_BUFFER_OVERFLOW);
         dline("ramBuffer Full");
         return (true);
     }
 
-    memcpy(&ramBuffer[ramLocation], data + 1, nCount); //ab dem 1. Byte sind die Daten verfügbar
+    memcpy(&ramBuffer[getRAMBufferPosition()], data, nCount);
+    setRAMBufferPosition(getRAMBufferPosition() + nCount);
     totalBytesReceived += nCount;
     setLastError(UDP_IAP_SUCCESS);
     for(unsigned int i=0; i<nCount; i++)
@@ -448,7 +466,7 @@ static bool updSendData(uint8_t * data, uint32_t nCount)
         d2(data[i+1], HEX, 2);
         d1(" ");
     }
-    d3(serial.print("at: ", ramLocation, DEC, 3));
+    d3(serial.print("at: ", getRAMBufferPosition(), DEC, 4));
     d3(serial.println(" #", (unsigned int) nCount, DEC, 2));
     return (true);
 }
@@ -475,9 +493,23 @@ static bool updProgram(uint8_t * data)
         return (true);
     }
 
-    if (flash_count > (sizeof(ramBuffer)/sizeof(ramBuffer[0])))
+    if (flash_count > getRAMBufferSize())
     {
         setLastError(UDP_RAM_BUFFER_OVERFLOW);
+        return (true);
+    }
+
+    if (getRAMBufferPosition() > flash_count)
+    {
+        setLastError(UDP_BYTECOUNT_RECEIVED_TOO_HIGH);
+        resetRAMBuffer();
+        return (true);
+    }
+
+    if (getRAMBufferPosition() < flash_count)
+    {
+        setLastError(UDP_BYTECOUNT_RECEIVED_TOO_LOW);
+        resetRAMBuffer();
         return (true);
     }
 
@@ -500,6 +532,12 @@ static bool updProgram(uint8_t * data)
     else
         flash_count = FLASH_PAGE_SIZE;     // 256 bytes
 
+    if (flash_count > getRAMBufferSize())
+    {
+        setLastError(UDP_RAM_BUFFER_OVERFLOW); // Selfbus Updater has a too big Mcu.UPD_PROGRAM_SIZE set. (see Mcu.java)
+        return (true);
+    }
+
     d3(serial.print("writing ", flash_count));
     d3(serial.print(" bytes @ 0x", address));
     d3(serial.println(" crc 0x", (uintptr_t)crcRamBuffer, HEX, 8));
@@ -508,6 +546,7 @@ static bool updProgram(uint8_t * data)
     bcu.bus->pause();
     // Getting an UDP_IAP_COMPARE_ERROR here is an indicator of flash sectors/pages not being erased before programming
     UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
+    resetRAMBuffer();
     bcu.bus->resume();
     setLastError(error);
     return (true);

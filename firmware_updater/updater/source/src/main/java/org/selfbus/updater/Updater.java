@@ -5,6 +5,7 @@ import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderUpdater;
+import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.IndividualAddress;
@@ -432,6 +433,13 @@ public class Updater implements Runnable {
                 else {
                     logger.error("{}  BootDescriptor is not valid -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
                 }
+            }
+
+            if ((bootLoaderIdentity.getVersionMajor()) <= 1 && (bootLoaderIdentity.getVersionMinor() < 20)) {
+                dm.setProtocolVersion(UDPProtocolVersion.UDP_V0);
+            }
+            else {
+                dm.setProtocolVersion(UDPProtocolVersion.UDP_V1);
             }
 
             if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!

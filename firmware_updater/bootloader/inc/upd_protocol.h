@@ -14,7 +14,7 @@
  *      .
 
  *    -@ref UPD_SEND_DATA
- *      - 9-   the actual data which will be copied into a RAM buffer for later use.
+ *      - 9-21  The data which will be copied into a RAM buffer for later use.
  *              The address of the RAM buffer will be automatically incremented.
  *              After a @ref UPD_PROGRAM or @ref UPD_UPDATE_BOOT_DESC the RAM buffer address will be reseted.
  *      .
@@ -119,7 +119,7 @@ const struct UPD_Command {
 } updCommands[] =
 {
     {UPD_INVALID, 0, 0},     // needs to be always at index 0 because it's used as a invalid return value of code2UPDCommand, see @ref idxInvalidUPDCommand
-    {UPD_SEND_DATA, 2, 254}, // at least byte index and one byte, max. 254 for extended frames support
+    {UPD_SEND_DATA, 1, 254}, // at least one byte, max. 254 for extended frames support
     {UPD_PROGRAM, 10, 10},
     {UPD_UPDATE_BOOT_DESC, 8, 8},
     {UPD_SEND_DATA_TO_DECOMPRESS, 1, 254}, // max. 254 for extended frames support

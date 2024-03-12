@@ -21,10 +21,10 @@ extern const uint8_t incbin_bl_end[];
 
 // Don't forget to change build-variable sw_version in .cproject file
 constexpr uint8_t BOOTLOADERUPDATER_MAJOR_VERSION = 1;  //!< BootloaderUpdater major version @note change also in @ref APP_VERSION
-constexpr uint8_t BOOTLOADERUPDATER_MINOR_VERSION = 12; //!< BootloaderUpdater minor Version @note change also in @ref APP_VERSION
+constexpr uint8_t BOOTLOADERUPDATER_MINOR_VERSION = 20; //!< BootloaderUpdater minor Version @note change also in @ref APP_VERSION
 
 // changes of app version string must also be done in BootloaderUpdater.java of the Selfbus-Updater
-APP_VERSION("SBblu   ", "1", "12");
+APP_VERSION("SBblu   ", "1", "20");
 
 void setup()
 {

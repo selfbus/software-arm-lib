@@ -103,7 +103,7 @@ public final class FlashDiffMode {
             // process compressed page
             //TODO check why 5 bytes are added to size in FlashDiff.java / generateDiff(...)
             logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size() - 5));
-            byte[] buf = new byte[MAX_PAYLOAD + 1];
+            byte[] buf = new byte[MAX_PAYLOAD];
             int i = 0;
             while (i < outputDiffStream.size()) {
                 // fill data for one telegram
