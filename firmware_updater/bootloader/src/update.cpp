@@ -64,8 +64,8 @@ static uint8_t * retTelegram = nullptr;                  //!< pointer to return 
 // It's better to use their get, set and reset functions
 static unsigned int deviceLocked = DEVICE_LOCKED;   //!< current device locking state @note Better use GetDeviceUnlocked() & setDeviceLockState()
 static unsigned int ramLocation = 0;                //!< current location of the ramBuffer processed
-static unsigned int bytesReceived = 0;              //!< number of bytes received by UPD_SEND_DATA since last reset()
-static unsigned int bytesFlashed = 0;               //!< number of bytes flashed by UPD_PROGRAM since last reset()
+static uint16_t totalBytesReceived = 0;         //!< number of bytes received by @ref UPD_SEND_DATA since reset()
+static uint16_t totalBytesFlashed = 0;          //!< number of bytes flashed by @ref UPD_PROGRAM since reset()
 
 extern BcuUpdate bcu;
 
@@ -265,8 +265,8 @@ static void setLastError(UDP_State errorToSet)
 void resetUPDProtocol(void)
 {
     ramLocation = 0;
-    bytesReceived = 0;
-    bytesFlashed = 0;
+    totalBytesReceived = 0;
+    totalBytesFlashed = 0;
     dump2(serial.println("resetUPDProtocol"));
 }
 
@@ -440,9 +440,8 @@ static bool updSendData(uint8_t * data, uint32_t nCount)
         return (true);
     }
 
-    bytesReceived += nCount;
-
     memcpy(&ramBuffer[ramLocation], data + 1, nCount); //ab dem 1. Byte sind die Daten verfügbar
+    totalBytesReceived += nCount;
     setLastError(UDP_IAP_SUCCESS);
     for(unsigned int i=0; i<nCount; i++)
     {
@@ -505,7 +504,7 @@ static bool updProgram(uint8_t * data)
     d3(serial.print(" bytes @ 0x", address));
     d3(serial.println(" crc 0x", (uintptr_t)crcRamBuffer, HEX, 8));
 
-    bytesFlashed += flash_count;
+    totalBytesFlashed += flash_count;
     bcu.bus->pause();
     // Getting an UDP_IAP_COMPARE_ERROR here is an indicator of flash sectors/pages not being erased before programming
     UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
@@ -721,11 +720,11 @@ static bool updUpdateBootDescriptorBlock(uint8_t * data)
         return (true);
     }
     d3(
-        bytesReceived -= count; // subtract bytes received for boot descriptor
+        totalBytesReceived -= count; // subtract bytes received for boot descriptor
         serial.println();
-        serial.println("Bytes Rx    ", bytesReceived);
-        serial.println("Bytes Flash ", bytesFlashed); //
-        serial.println("Diff        ", (int)bytesFlashed - (int)bytesReceived); // difference here is normal, because flashing is always in multiple of FLASH_PAGE_SIZE
+        serial.println("Bytes Rx    ", totalBytesReceived);
+        serial.println("Bytes Flash ", totalBytesFlashed); //
+        serial.println("Diff        ", (int)totalBytesFlashed - (int)totalBytesReceived); // difference here is normal, because flashing is always in multiple of FLASH_PAGE_SIZE
         serial.println();
         serial.println("FW start@ 0x", streamToUIn32(ramBuffer), HEX, 4);    // Firmware start address
         serial.println("FW end  @ 0x", streamToUIn32(ramBuffer+4), HEX, 4);  // Firmware end address
