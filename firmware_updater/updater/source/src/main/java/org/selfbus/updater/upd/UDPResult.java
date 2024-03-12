@@ -70,6 +70,12 @@ public enum UDPResult {
     /** Address range not allowed to erase */
     UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE((byte)0x51, "Address range not allowed to erase", true),
 
+    /** Number of bytes received with @ref UPD_SEND_DATA is lower than number of bytes to program with @ref UPD_PROGRAM */
+    BYTECOUNT_RECEIVED_TOO_LOW((byte)0x50, "Number of bytes received is lower than number of bytes to program", true),
+
+    /** Number of bytes received with @ref UPD_SEND_DATA is higher than number of bytes to program with @ref UPD_PROGRAM */
+    BYTECOUNT_RECEIVED_TOO_HIGH((byte)0x4f, "Number of bytes received is higher than number of bytes to program", true),
+
     /** Command not implemented */
     NOT_IMPLEMENTED((byte)0x02, "Command not implemented", true),
     /** Unknown error */
