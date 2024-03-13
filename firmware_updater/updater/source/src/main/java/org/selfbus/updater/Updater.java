@@ -486,7 +486,7 @@ public class Updater implements Runnable {
                     newFirmware.endAddress(),
                     (int) newFirmware.crc32(),
                     newFirmware.startAddress() + appVersionAddress);
-            logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
+            logger.info("\n{}Preparing boot descriptor with{} {}", ConColors.BG_RED, ConColors.RESET, newBootDescriptor);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
             String deviceInfo = cliOptions.progDevice().toString();
             if (cliOptions.device() != null) {
