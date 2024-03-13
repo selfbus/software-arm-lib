@@ -328,7 +328,6 @@ public class Updater implements Runnable {
                 throw new UpdaterException("Selfbus update failed.");
             }
 
-            int appVersionAddress = cliOptions.appVersionPtr();
             byte[] uid = cliOptions.uid();
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
@@ -384,6 +383,7 @@ public class Updater implements Runnable {
             imageCache.writeToBinFile(cacheFileName);
 
             // Handle App Version Pointer
+            int appVersionAddress = cliOptions.appVersionPtr();
             String fileVersion = "";
             if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
