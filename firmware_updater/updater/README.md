@@ -22,9 +22,8 @@ windows: gradlew.bat fatJar
 java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
        <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|ALARM|HIGH|LOW>]
        [--user <id>] [--user-pwd <password>] [--device-pwd <password>] [-u <uid>] [-f1] [-H
-       <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-a <address>] [-h | -v]
-       [--delay <ms>] [--timeout] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>]
-       [-f0] [--statistic]
+       <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-h | -v]  [--delay <ms>] [-l
+       <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0] [--statistic]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
@@ -55,8 +54,6 @@ Selfbus KNX-Firmware update tool options:
  -t1,--tunneling                            use KNXnet/IP tunneling v1 (UDP) 
  -n,--nat                                   enable Network Address Translation (NAT)
  -r,--routing                               use KNXnet/IP routing (not implemented)
- -a,--appVersionPtr <address>               pointer address to APP_VERSION string in new firmware
-                                            file
  -h,--help                                  show this help message
  -v,--version                               show tool/library version
     --delay <ms>                            delay telegrams during data transmission to reduce bus

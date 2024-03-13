@@ -69,8 +69,6 @@ public class CliOptions {
     private static final String OPT_SHORT_OWN_ADDRESS = "o";
     private static final String OPT_LONG_OWN_ADDRESS = "own";
 
-    private static final String OPT_SHORT_APP_VERSION_PTR = "a";
-    public static final String OPT_LONG_APP_VERSION_PTR = "appVersionPtr";
     private static final String OPT_SHORT_UID = "u";
     private static final String OPT_LONG_UID = "uid";
 
@@ -143,7 +141,6 @@ public class CliOptions {
     private IndividualAddress progDevice;
     private IndividualAddress ownAddress;
     private IndividualAddress device = null;
-    private int appVersionPtr = 0;
     private byte[] uid;
     private boolean full = false;
     private int delay = 0;
@@ -247,12 +244,6 @@ public class CliOptions {
                 .required(false)
                 .type(IndividualAddress.class)
                 .desc(String.format("own physical KNX address (default %s)", this.ownAddress.toString())).build();
-        Option appVersionPtr = Option.builder(OPT_SHORT_APP_VERSION_PTR).longOpt(OPT_LONG_APP_VERSION_PTR)
-                .argName("address")
-                .hasArg()
-                .required(false)
-                .type(String.class)
-                .desc("pointer address to APP_VERSION string in new firmware file").build();
         Option uid = Option.builder(OPT_SHORT_UID).longOpt(OPT_LONG_UID)
                 .argName("uid")
                 .hasArg()
@@ -328,7 +319,6 @@ public class CliOptions {
         cliOptions.addOption(tunnelingV1);
         cliOptions.addOption(nat);
         cliOptions.addOption(routing);
-        cliOptions.addOption(appVersionPtr);
 
         // help or version, not both
         OptionGroup grpHelper = new OptionGroup();
@@ -486,12 +476,6 @@ public class CliOptions {
                uid =  uidToByteArray(cmdLine.getOptionValue(OPT_SHORT_UID));
             }
             logger.debug("uid={}", Utils.byteArrayToHex(uid));
-
-            if (cmdLine.hasOption(OPT_SHORT_APP_VERSION_PTR)) {
-                appVersionPtr = Integer.decode(cmdLine.getOptionValue(OPT_SHORT_APP_VERSION_PTR));
-
-            }
-            logger.debug("appVersionPtr={}", appVersionPtr);
 
             if (cmdLine.hasOption(OPT_SHORT_DEVICE)) {
                 device = new IndividualAddress(cmdLine.getOptionValue(OPT_SHORT_DEVICE));
@@ -672,10 +656,6 @@ public class CliOptions {
 
     public IndividualAddress ownAddress() {
         return ownAddress;
-    }
-
-    public int appVersionPtr() {
-        return appVersionPtr;
     }
 
     public byte[] uid() {

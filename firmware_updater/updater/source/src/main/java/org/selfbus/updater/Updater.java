@@ -335,6 +335,11 @@ public class Updater implements Runnable {
                 // Load Firmware hex file
                 logger.info("Loading file '{}'...", hexFileName);
                 newFirmware = BinImage.readFromHex(hexFileName);
+                // Check for APP_VERSION string in new firmware
+                if (newFirmware.getAppVersion().isEmpty()) {
+                    logger.warn("  {}Missing APP_VERSION string in new firmware!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                    throw new UpdaterException("Missing APP_VERSION string in firmware!");
+                }
             }
             else {
                 System.out.println();
@@ -409,29 +414,7 @@ public class Updater implements Runnable {
             BinImage imageCache = BinImage.copyFromArray(newFirmware.getBinData(), newFirmware.startAddress());
             imageCache.writeToBinFile(cacheFileName);
 
-            // Handle App Version Pointer
-            int appVersionAddress = cliOptions.appVersionPtr();
-            String fileVersion = "";
-            if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {  // manually provided and not in vector or outside file length
-                // Use manual set AppVersion address
-                fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH); // Get app version pointers content
-                logger.info("  File App Version String   : {}{}{} manually specified at address 0x{}",
-                        ConColors.BRIGHT_RED, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
-            }
-            else {
-                // Search for AppVersion pointer in flash file if not set manually, Search magic bytes in image file
-                appVersionAddress = Bytes.indexOf(newFirmware.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
-                if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {
-                    appVersionAddress = 0; // missing, or not valid set to 0
-                    logger.warn("  {}Could not find the App Version string, setting to 0. Please specify manually with {}{}",
-                            ConColors.BRIGHT_RED, CliOptions.OPT_LONG_APP_VERSION_PTR, ConColors.RESET);
-                }
-                else {
-                    fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH); // Convert app version pointers content to string
-                    logger.info("  File App Version String   : {}{}{} found at address 0x{}",
-                            ConColors.BRIGHT_GREEN, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
-                }
-            }
+            logger.info("  File APP_VERSION   : {}{}{}", ConColors.BRIGHT_GREEN, newFirmware.getAppVersion(), ConColors.RESET);
 
             // Check if FW image has correct offset for MCUs bootloader size
             if (newFirmware.startAddress() < bootLoaderIdentity.getApplicationFirstAddress()) {
@@ -487,7 +470,7 @@ public class Updater implements Runnable {
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
                     newFirmware.endAddress(),
                     (int) newFirmware.crc32(),
-                    newFirmware.startAddress() + appVersionAddress);
+                    newFirmware.startAddress() + newFirmware.getAppVersionAddress());
             logger.info("\n{}Preparing boot descriptor with{} {}", ConColors.BG_RED, ConColors.RESET, newBootDescriptor);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
             String deviceInfo = cliOptions.progDevice().toString();
@@ -498,7 +481,7 @@ public class Updater implements Runnable {
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
             dm.restartProgrammingDevice();
 
-            if (fileVersion.contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
+            if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
                 logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BG_GREEN,
                         String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f), ConColors.RESET);
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
