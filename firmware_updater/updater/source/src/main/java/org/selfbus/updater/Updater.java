@@ -371,6 +371,10 @@ public class Updater implements Runnable {
             }
 
             BootloaderIdentity bootLoaderIdentity = dm.requestBootloaderIdentity();
+
+            // Request current main firmware boot descriptor from device
+            BootDescriptor bootDescriptor = dm.requestBootDescriptor();
+
             logger.info("Requesting App Version String...");
             String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
@@ -437,9 +441,6 @@ public class Updater implements Runnable {
                 logger.info("  {}Info: There are {} bytes of unused flash between bootloader and firmware.{}",
                         ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
             }
-
-            // Request current main firmware boot descriptor from device
-            BootDescriptor bootDescriptor = dm.requestBootDescriptor();
 
             boolean diffMode = false;
             if (!(cliOptions.full())) {
