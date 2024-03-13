@@ -377,13 +377,13 @@ public class Updater implements Runnable {
             // Request current main firmware boot descriptor from device
             BootDescriptor bootDescriptor = dm.requestBootDescriptor();
             if (newFirmware != null) {
-                logger.info("  New Firmware:            {}", newFirmware);
+                logger.info("  New firmware:            {}", newFirmware);
             }
 
-            logger.info("Requesting App Version String...");
+            logger.info("Requesting APP_VERSION...");
             String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
-                logger.info("  Current App Version String: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
+                logger.info("  Current APP_VERSION: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
             }
             else {
                 logger.info("{}  failed!{}", ConColors.BRIGHT_RED, ConColors.RESET);

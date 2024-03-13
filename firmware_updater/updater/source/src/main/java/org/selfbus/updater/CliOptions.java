@@ -34,10 +34,8 @@ import java.util.Locale;
  *         - declare a short and a long option
  *           private static final String OPT_SHORT_XXX = "X";
  *           private static final String OPT_LONG_XXX = "XXXXX";
- *
  *         - in constructor @ref CliOptions(.) create an instance of class Option
  *           and add it with cliOptions.addOption(yourOptionInstance)
- *
  *         - check with cmdLine.hasOption(OPT_SHORT_XXX) in method parse(.) is it set or not
  */
 public class CliOptions {
