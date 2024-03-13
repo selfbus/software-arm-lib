@@ -386,6 +386,7 @@ public class Updater implements Runnable {
                     dm.restartProgrammingDevice();
                 }
                 // to get here `uid == null` must be true, so it's fine to exit with no-error
+                link.close();
                 System.exit(0);
             }
 
