@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -108,8 +109,6 @@ public class CliOptions {
 
     private static final int PRINT_WIDTH = 100;
     private final static List<String> VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
-    private final static List<String> VALID_PRIORITIES = Arrays.asList("SYSTEM", "HIGH", "ALARM", "LOW");
-
 
     private final Options cliOptions = new Options();
     // define parser
@@ -282,7 +281,7 @@ public class CliOptions {
                 .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) quotation marks(\") in password may not work").build();
 
         Option knxPriority = Option.builder(null).longOpt(OPT_LONG_PRIORITY)
-                .argName("SYSTEM|ALARM|HIGH|LOW")
+                .argName("SYSTEM|URGENT|NORMAL|LOW")
                 .hasArg()
                 .required(false)
                 .type(String.class)
@@ -373,12 +372,11 @@ public class CliOptions {
             logger.debug("logLevel={}", root.getLevel().toString());
 
             if (cmdLine.hasOption(OPT_LONG_PRIORITY)) {
-                String cliPriority = cmdLine.getOptionValue(OPT_LONG_PRIORITY).toUpperCase();
-                if (VALID_PRIORITIES.contains(cliPriority)) {
-                    priority = Priority.valueOf(cliPriority);
+                try {
+                    priority = Priority.get(cmdLine.getOptionValue(OPT_LONG_PRIORITY));
                 }
-                else {
-                    logger.warn("{}invalid {} {}, using {}{}", ConColors.RED, OPT_LONG_LOGLEVEL, cliPriority, priority, ConColors.RESET);
+                catch (KNXIllegalArgumentException e) {
+                    logger.warn("{}invalid {} {}, using {}{}", ConColors.RED, OPT_LONG_PRIORITY, cmdLine.getOptionValue(OPT_LONG_PRIORITY), priority, ConColors.RESET);
                 }
             }
             logger.debug("priority={}", priority.toString());

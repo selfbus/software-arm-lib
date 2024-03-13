@@ -20,7 +20,7 @@ windows: gradlew.bat fatJar
 ## Usage
 ```
 java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
-       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|ALARM|HIGH|LOW>]
+       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|URGENT|NORMAL|LOW>]
        [--user <id>] [--user-pwd <password>] [--device-pwd <password>] [-u <uid>] [-f1] [-H
        <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-h | -v]  [--delay <ms>] [-l
        <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0] [--statistic]
@@ -36,7 +36,7 @@ Selfbus KNX-Firmware update tool options:
  -D,--progDevice <x.x.x>                    KNX device address in bootloader mode (default
                                             15.15.192)
  -o,--own <x.x.x>                           own physical KNX address (default 0.0.0)
-    --priority <SYSTEM|ALARM|HIGH|LOW>      KNX telegram priority (default LOW)
+    --priority <SYSTEM|URGENT|NORMAL|LOW>   KNX telegram priority (default LOW)
     --user <id>                             KNX IP Secure tunneling user identifier (1..127)
                                             (default 1)
     --user-pwd <password>                   KNX IP Secure tunneling user password (Commissioning
