@@ -371,10 +371,10 @@ public class Updater implements Runnable {
             }
 
             BootloaderIdentity bootLoaderIdentity = dm.requestBootloaderIdentity();
-            logger.info("\nRequesting App Version String...");
+            logger.info("Requesting App Version String...");
             String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
-                logger.info("  Current App Version String is: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
+                logger.info("  Current App Version String: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
             }
             else {
                 logger.info("{}  failed!{}", ConColors.BRIGHT_RED, ConColors.RESET);
@@ -405,7 +405,7 @@ public class Updater implements Runnable {
             if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {  // manually provided and not in vector or outside file length
                 // Use manual set AppVersion address
                 fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH); // Get app version pointers content
-                logger.info("  File App Version String is : {}{}{} manually specified at address 0x{}",
+                logger.info("  File App Version String   : {}{}{} manually specified at address 0x{}",
                         ConColors.BRIGHT_RED, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
             }
             else {
@@ -418,7 +418,7 @@ public class Updater implements Runnable {
                 }
                 else {
                     fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH); // Convert app version pointers content to string
-                    logger.info("  File App Version String is : {}{}{} found at address 0x{}",
+                    logger.info("  File App Version String   : {}{}{} found at address 0x{}",
                             ConColors.BRIGHT_GREEN, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
                 }
             }

@@ -1,5 +1,6 @@
 package org.selfbus.updater.bootloader;
 
+import org.selfbus.updater.ConColors;
 import org.selfbus.updater.UpdaterException;
 import org.selfbus.updater.Utils;
 
@@ -75,9 +76,16 @@ public class BootDescriptor {
     }
 
     public String toString() {
+        String color;
+        if (valid) {
+            color = ConColors.BRIGHT_GREEN;
+        }
+        else {
+            color = ConColors.RED;
+        }
         String res;
-        res = String.format("valid: %b, start: 0x%04X, end: 0x%04X, size: 0x%04X, crc32: 0x%04X",
-                            valid, startAddress, endAddress, length(), crc32);
+        res = String.format("valid: %s%b%s, start: 0x%04X, end: 0x%04X, size: 0x%04X, crc32: 0x%04X",
+                color, valid, ConColors.RESET,  startAddress, endAddress, length(), crc32);
         if (appVersionAddress != INVALID_APP_VERSION_ADDRESS)
         {
             res += String.format(", APP_VERSION pointer: 0x%04X", appVersionAddress);

@@ -95,7 +95,7 @@ public final class DeviceManagement {
             logger.info("\nRestarting device {} into bootloader mode using {}", device, link);
             restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             mcDevice.detach();
-            logger.info("Device {} reported {}{} seconds{} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
+            logger.info("Device {} reported {}{} second(s){} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
             waitRestartTime(restartProcessTime);
             System.out.println();
             return true;
@@ -176,7 +176,7 @@ public final class DeviceManagement {
 
     public BootDescriptor requestBootDescriptor()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nRequesting Boot Descriptor...");
+        logger.info("Requesting Boot Descriptor...");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], MAX_UPD_COMMAND_RETRY).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
