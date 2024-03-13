@@ -80,14 +80,13 @@ public class Updater implements Runnable {
     public Updater(final String[] args) throws ParseException, KNXFormatException {
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
-        logger.info(ConColors.BRIGHT_BOLD_GREEN + "\n" +
-                "\n" +
+        logger.info(ConColors.BRIGHT_BOLD_GREEN +
                 "     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
                 "    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
                 "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Dr. Stefan Haller, Oliver Stefan et al.                       " + ToolInfo.getToolAndVersion() + " \n\n" +
+                "  by Dr. Stefan Haller, Oliver Stefan et al.                       " + ToolInfo.getToolAndVersion() +
                 ConColors.RESET);
         try {
             // read in user-supplied command line options
@@ -335,8 +334,7 @@ public class Updater implements Runnable {
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
 
-            logger.info("KNX connection: {}\n", link);
-
+            logger.info("KNX connection: {}", link);
             logger.info("Telegram priority: {}", cliOptions.priority());
 
             //for option --device restart the device in bootloader mode

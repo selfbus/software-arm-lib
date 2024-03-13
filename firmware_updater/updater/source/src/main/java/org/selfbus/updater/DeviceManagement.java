@@ -98,7 +98,6 @@ public final class DeviceManagement {
             logger.info("Device {} reported {}{} seconds{} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
             waitRestartTime(restartProcessTime);
             System.out.println();
-            logger.info("Device {} should now have started into bootloader mode.", device);
             return true;
         } catch (final KNXException | InterruptedException e) {
             logger.info("{}Restart state of device {} unknown. {}{}", ConColors.BRIGHT_RED, device, e.getMessage(), ConColors.RESET);
