@@ -455,10 +455,6 @@ public class CliOptions {
             }
             logger.debug("fileName={}", fileName);
 
-            if (fileName.length() <= 0) {
-                throw new ParseException("No fileName specified.");
-            }
-
             if (cmdLine.hasOption(OPT_SHORT_LOCALHOST)) {
                 localhost = Utils.parseHost(cmdLine.getOptionValue(OPT_SHORT_LOCALHOST));
             }

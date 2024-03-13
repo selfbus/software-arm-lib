@@ -322,13 +322,26 @@ public class Updater implements Runnable {
                 return;
             }
 
-            // check if the firmware file to be programmed really exists
-            if (!Utils.fileExists(cliOptions.fileName())) {
-                logger.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
-                throw new UpdaterException("Selfbus update failed.");
+            byte[] uid = cliOptions.uid();
+            final String hexFileName = cliOptions.fileName();
+            BinImage newFirmware = null;
+
+            // if --uid is set, we need a valid firmware file
+            if (uid != null) {
+                // check if the firmware file exists
+                if (!Utils.fileExists(hexFileName)) {
+                    logger.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
+                    throw new UpdaterException("Selfbus update failed.");
+                }
             }
 
-            byte[] uid = cliOptions.uid();
+            if (!hexFileName.isEmpty()) {
+                // Load Firmware hex file
+                logger.info("Loading file '{}'...", hexFileName);
+                newFirmware = BinImage.readFromHex(hexFileName);
+                logger.info("Firmware: {}", newFirmware);
+            }
+
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
@@ -350,11 +363,6 @@ public class Updater implements Runnable {
 
             dm.unlockDeviceWithUID(uid);
 
-            if (cliOptions.eraseFullFlash()) {
-                logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                dm.eraseFlash();
-            }
-
             if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
                 logger.warn("{}Dumping flash content range 0x{}-0x{} to bootloader's serial port.{}",
                         ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()), ConColors.RESET);
@@ -372,10 +380,19 @@ public class Updater implements Runnable {
                 logger.info("{}  failed!{}", ConColors.BRIGHT_RED, ConColors.RESET);
             }
 
-            // Load Firmware hex file
-            logger.info("Loading file '{}'...", cliOptions.fileName());
-            BinImage newFirmware = BinImage.readFromHex(cliOptions.fileName());
-            logger.info("  Hex file parsed: {}", newFirmware);
+            //  From here on we need a valid firmware
+            if (newFirmware == null) {
+                if (cliOptions.device() != null) {
+                    dm.restartProgrammingDevice();
+                }
+                // to get here `uid == null` must be true, so it's fine to exit with no-error
+                System.exit(0);
+            }
+
+            if (cliOptions.eraseFullFlash()) {
+                logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                dm.eraseFlash();
+            }
 
             // store new firmware bin file in cache directory
             String cacheFileName = FlashDiffMode.createCacheFileName(newFirmware.startAddress(), newFirmware.length(), newFirmware.crc32());
