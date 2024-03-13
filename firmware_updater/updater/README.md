@@ -2,7 +2,7 @@
 
 ## Requirements
 
-* JDK 11+
+* JDK 17+
 * gradle >=7.4
 * Selfbus device with flashed [bootloader](../../bootloader) version 1.00 or higher
 
@@ -69,6 +69,10 @@ Selfbus KNX-Firmware update tool options:
     --statistic                             show more statistic data
 ```
 ## Common use cases:
+Read UID of the device (requires active programming mode to unlock the device):
+```
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
+```
 Recommended for new firmware versions if UID is unknown (requires active programming mode to unlock the device):
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -nat
@@ -82,7 +86,7 @@ Manual specification of parameters if the App-Version pointer is not found/integ
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
 ```
 ## Used IDE's:
-IntelliJ IDEA Community 2022.3.1 (Build -> Build Artifacts)<br>
+IntelliJ IDEA Community 2023.3.4 (Build -> Build Artifacts)<br>
 eclipse project is currently not maintained
 ## gradle:
 update [gradle wrapper](gradle/wrapper) to the newest version:
