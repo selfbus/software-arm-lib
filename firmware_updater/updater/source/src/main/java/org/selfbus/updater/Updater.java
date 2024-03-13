@@ -335,7 +335,6 @@ public class Updater implements Runnable {
                 // Load Firmware hex file
                 logger.info("Loading file '{}'...", hexFileName);
                 newFirmware = BinImage.readFromHex(hexFileName);
-                logger.info("Firmware: {}", newFirmware);
             }
             else {
                 System.out.println();
@@ -377,6 +376,7 @@ public class Updater implements Runnable {
 
             // Request current main firmware boot descriptor from device
             BootDescriptor bootDescriptor = dm.requestBootDescriptor();
+            logger.info("  New Firmware:            {}", newFirmware);
 
             logger.info("Requesting App Version String...");
             String appVersion = dm.requestAppVersionString();

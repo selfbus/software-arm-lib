@@ -76,16 +76,16 @@ public class BootDescriptor {
     }
 
     public String toString() {
-        String color;
+        String validState;
         if (valid) {
-            color = ConColors.BRIGHT_GREEN;
+            validState = String.format("%svalid%s", ConColors.BRIGHT_GREEN, ConColors.RESET);
         }
         else {
-            color = ConColors.RED;
+            validState = String.format("%sinvalid%s", ConColors.RED, ConColors.RESET);
         }
         String res;
-        res = String.format("valid: %s%b%s, start: 0x%04X, end: 0x%04X, size: 0x%04X, crc32: 0x%04X",
-                color, valid, ConColors.RESET,  startAddress, endAddress, length(), crc32);
+        res = String.format("%s, 0x%04X-0x%04X, %d bytes, crc32 0x%04X",
+                validState, startAddress, endAddress, length(), crc32);
         if (appVersionAddress != INVALID_APP_VERSION_ADDRESS)
         {
             res += String.format(", APP_VERSION pointer: 0x%04X", appVersionAddress);
