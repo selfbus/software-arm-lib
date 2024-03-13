@@ -737,4 +737,6 @@ public class CliOptions {
     }
 
     public boolean logStatistics() {return logStatistics;}
+
+    public String getOptionLongFileName() { return OPT_LONG_FILENAME;}
 }

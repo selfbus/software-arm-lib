@@ -326,20 +326,23 @@ public class Updater implements Runnable {
             final String hexFileName = cliOptions.fileName();
             BinImage newFirmware = null;
 
-            // if --uid is set, we need a valid firmware file
-            if (uid != null) {
+            if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
                     logger.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
                     throw new UpdaterException("Selfbus update failed.");
                 }
-            }
-
-            if (!hexFileName.isEmpty()) {
                 // Load Firmware hex file
                 logger.info("Loading file '{}'...", hexFileName);
                 newFirmware = BinImage.readFromHex(hexFileName);
                 logger.info("Firmware: {}", newFirmware);
+            }
+            else {
+                System.out.println();
+                logger.info("{}{}No firmware file (*.hex) specified! Specify with --{}{}", ConColors.BLACK, ConColors.BG_RED,
+                        cliOptions.getOptionLongFileName(), ConColors.RESET);
+                logger.info("{}Reading only device information{}", ConColors.BRIGHT_YELLOW, ConColors.RESET);
+                System.out.println();
             }
 
             link = createLink(cliOptions.ownAddress()); // default 15.15.193
