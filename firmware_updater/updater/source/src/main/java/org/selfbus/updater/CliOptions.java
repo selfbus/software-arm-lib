@@ -490,7 +490,7 @@ public class CliOptions {
                     blockSize = newBlockSize;
                 }
                 else {
-                    logger.warn("{}--{} {} is not supported => Set --{} to default {} bytes{}", ConColors.YELLOW, OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, blockSize, ConColors.RESET);
+                    logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ConColors.YELLOW, OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, blockSize, ConColors.RESET);
                 }
             }
             logger.debug("{}={}", OPT_LONG_BLOCKSIZE, delay);
