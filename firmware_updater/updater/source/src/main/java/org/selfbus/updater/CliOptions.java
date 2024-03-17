@@ -712,7 +712,11 @@ public class CliOptions {
         return priority;
     }
 
-    public boolean logStatistics() {return logStatistics;}
+    public boolean logStatistics() {
+        return logStatistics;
+    }
 
-    public String getOptionLongFileName() { return OPT_LONG_FILENAME;}
+    public String getOptionLongFileName() {
+        return OPT_LONG_FILENAME;
+    }
 }
