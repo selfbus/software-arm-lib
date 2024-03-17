@@ -30,7 +30,7 @@ Selfbus KNX-Firmware update tool options:
  -m,--medium <tp1|rf>                       KNX medium [tp1|rf] (default tp1)
  -s,--serial <COM-port>                     use FT1.2 serial communication
  -t,--tpuart <COM-port>                     use TPUART serial communication (experimental, needs
-                                            serialcom or rxtx library in java.library.path
+                                            serialcom or rxtx library in java.library.path)
  -d,--device <x.x.x>                        KNX device address in normal operating mode (default
                                             none)
  -D,--progDevice <x.x.x>                    KNX device address in bootloader mode (default
@@ -40,10 +40,11 @@ Selfbus KNX-Firmware update tool options:
     --user <id>                             KNX IP Secure tunneling user identifier (1..127)
                                             (default 1)
     --user-pwd <password>                   KNX IP Secure tunneling user password (Commissioning
-                                            password/Inbetriebnahmepasswort), " in password may not
-                                            work
+                                            password/Inbetriebnahmepasswort), quotation marks (") in
+                                            password may not work
     --device-pwd <password>                 KNX IP Secure device authentication code (Authentication
-                                            Code/Authentifizierungscode) " in password may not work
+                                            Code/Authentifizierungscode) quotation marks(") in
+                                            password may not work
  -u,--uid <uid>                             send UID to unlock (default: request UID to unlock).
                                             Only the first 12 bytes of UID are used
  -f1,--full                                 force full upload mode (disables differential mode)
@@ -51,9 +52,10 @@ Selfbus KNX-Firmware update tool options:
  -P,--localport <localport>                 local UDP port (default system assigned)
  -p,--port <port>                           UDP port on <KNX Interface> (default 3671)
  -t2,--tunnelingv2                          use KNXnet/IP tunneling v2 (TCP) (experimental)
- -t1,--tunneling                            use KNXnet/IP tunneling v1 (UDP) 
- -n,--nat                                   enable Network Address Translation (NAT)
- -r,--routing                               use KNXnet/IP routing (not implemented)
+ -t1,--tunneling                            use KNXnet/IP tunneling v1 (UDP)
+ -n,--nat                                   enable Network Address Translation (NAT) (only available
+                                            with tunneling v1)
+ -r,--routing                               use KNXnet/IP routing/multicast (experimental)
  -h,--help                                  show this help message
  -v,--version                               show tool/library version
     --delay <ms>                            delay telegrams during data transmission to reduce bus
