@@ -107,6 +107,10 @@ public class CliOptions {
 
     private static final String OPT_LONG_LOGSTATISTIC = "statistic";
 
+    private static final String OPT_SHORT_BLOCKSIZE = "bs";
+    private static final String OPT_LONG_BLOCKSIZE = "blocksize";
+    private final static List<Integer> VALID_BLOCKSIZES = Arrays.asList(256, 512, 1024);
+
     private static final int PRINT_WIDTH = 100;
     private final static List<String> VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
 
@@ -153,6 +157,7 @@ public class CliOptions {
     private Priority priority = Priority.LOW;
 
     private boolean logStatistics = false;
+    private int blockSize = Mcu.UPD_PROGRAM_SIZE;
 
     private boolean help = false;
     private boolean version = false;
@@ -287,6 +292,14 @@ public class CliOptions {
                 .type(String.class)
                 .desc(String.format("KNX telegram priority (default %s)", this.priority.toString().toUpperCase())).build();
 
+        Option blockSize = Option.builder(OPT_SHORT_BLOCKSIZE).longOpt(OPT_LONG_BLOCKSIZE)
+                .argName("256|512|1024")
+                .valueSeparator(' ')
+                .numberOfArgs(1)
+                .required(false)
+                .type(Number.class)
+                .desc(String.format("Block size to program (default %d bytes)", this.blockSize)).build();
+
         Option logStatistic = new Option(null, OPT_LONG_LOGSTATISTIC, false, "show more statistic data");
 
         // options will be shown in order as they are added to cliOptions
@@ -304,6 +317,7 @@ public class CliOptions {
         cliOptions.addOption(optProgDevice);
         cliOptions.addOption(ownPhysicalAddress);
         cliOptions.addOption(knxPriority);
+        cliOptions.addOption(blockSize);
 
         cliOptions.addOption(userId);
         cliOptions.addOption(userPasswd);
@@ -469,6 +483,17 @@ public class CliOptions {
                 }
             }
             logger.debug("delay={}", delay);
+
+            if (cmdLine.hasOption(OPT_SHORT_BLOCKSIZE)) {
+                int newBlockSize = ((Number)cmdLine.getParsedOptionValue(OPT_LONG_BLOCKSIZE)).intValue();
+                if (VALID_BLOCKSIZES.contains(newBlockSize)) {
+                    blockSize = newBlockSize;
+                }
+                else {
+                    logger.warn("{}--{} {} is not supported => Set --{} to default {} bytes{}", ConColors.YELLOW, OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, blockSize, ConColors.RESET);
+                }
+            }
+            logger.debug("{}={}", OPT_LONG_BLOCKSIZE, delay);
 
             if (cmdLine.hasOption(OPT_SHORT_UID)) {
                uid =  uidToByteArray(cmdLine.getOptionValue(OPT_SHORT_UID));
@@ -718,5 +743,9 @@ public class CliOptions {
 
     public String getOptionLongFileName() {
         return OPT_LONG_FILENAME;
+    }
+
+    public int getBlockSize() {
+        return blockSize;
     }
 }

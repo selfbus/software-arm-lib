@@ -314,6 +314,11 @@ public class Updater implements Runnable {
                 dm.setProtocolVersion(UDPProtocolVersion.UDP_V1);
             }
 
+            if (!dm.setBlockSize(cliOptions.getBlockSize())) {
+                logger.info("{}Connected bootloader doesn't support block size {}. Using {} bytes.{}", ConColors.YELLOW,
+                        cliOptions.getBlockSize(), dm.getBlockSize(), ConColors.RESET);
+            }
+
             if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!
                 // Start to flash the new firmware
                 long flashTimeStart = System.currentTimeMillis(); // time flash process started

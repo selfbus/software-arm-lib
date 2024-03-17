@@ -408,6 +408,7 @@ public final class DeviceManagement {
     public UDPProtocolVersion getProtocolVersion() {
         return protocolVersion;
     }
+
     public void setProtocolVersion(UDPProtocolVersion protocolVersion) {
         this.protocolVersion = protocolVersion;
         this.maxPayload = Mcu.MAX_PAYLOAD;
@@ -423,5 +424,13 @@ public final class DeviceManagement {
 
     public int getBlockSize() {
         return blockSize;
+    }
+
+    public boolean setBlockSize(int blockSize) {
+        if (this.protocolVersion == UDPProtocolVersion.UDP_V0) {
+            return false;
+        }
+        this.blockSize = blockSize;
+        return true;
     }
 }
