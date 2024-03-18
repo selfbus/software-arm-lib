@@ -99,14 +99,13 @@ public class FlashFullMode {
             Utils.longToStream(progPars, 2, progAddress);
             Utils.longToStream(progPars, 6, crc32);
 
-            String programFlashInfo = String.format("0x%04X-0x%04X crc32 0x%08X", progAddress,
-                    progAddress + txBuffer.length - 1, crc32);
+            String programFlashInfo = String.format("0x%04X-0x%04X", progAddress, progAddress + txBuffer.length - 1);
             if (txBuffer.length != dm.getBlockSize())
             {
                 programFlashInfo = String.format("%s (%d bytes)", programFlashInfo, txBuffer.length);
             }
 
-            logger.trace("Program device {}", programFlashInfo);
+            logger.trace("Program device {} {}", programFlashInfo, String.format("crc32 0x%08X", crc32));
             System.out.print(" "+ programFlashInfo);
             System.out.println();
 
