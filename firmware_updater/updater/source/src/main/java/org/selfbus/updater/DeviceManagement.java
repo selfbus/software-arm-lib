@@ -433,4 +433,8 @@ public final class DeviceManagement {
         this.blockSize = blockSize;
         return true;
     }
+
+    public int getMaxPayload() {
+        return maxPayload;
+    }
 }

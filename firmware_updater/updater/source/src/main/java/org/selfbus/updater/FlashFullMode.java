@@ -1,6 +1,5 @@
 package org.selfbus.updater;
 
-import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
@@ -87,7 +86,9 @@ public class FlashFullMode {
             String percentageDone = String.format("%5.1f", (float) 100 * (resultTotal.written()) / totalLength);
             String progressInfo = String.format("%s %s%% %s%6.2f B/s%s", ConColors.BRIGHT_GREEN, percentageDone, col, bytesPerSecond, ConColors.RESET);
             logger.trace(progressInfo);
-            if (dm.getProtocolVersion() != UDPProtocolVersion.UDP_V0) {
+            // Check if printed Utils.PROGRESS_MARKER and progressInfo would exceed console width
+            int progressMarkerLength = dm.getBlockSize()/(dm.getMaxPayload() * Utils.PROGRESS_MARKER.length());
+            if ((progressMarkerLength + progressInfo.length()) > Utils.CONSOLE_WIDTH) {
                 System.out.println();
             }
             System.out.print(progressInfo);
