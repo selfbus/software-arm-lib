@@ -114,7 +114,8 @@ public class FlashFullMode {
 
             long result = UPDProtocol.checkResult(resultProgramData.data());
             if ((result == BYTECOUNT_RECEIVED_TOO_LOW.id) || (result == BYTECOUNT_RECEIVED_TOO_HIGH.id)) {
-                    repeat = true;
+                repeat = true;
+                resultTotal.setWritten(resultTotal.written() - txBuffer.length); // do not count failed transfer
             }
             else if (result == IAP_SUCCESS.id) {
                 progAddress += txBuffer.length;
