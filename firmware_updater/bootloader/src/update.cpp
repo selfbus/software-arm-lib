@@ -251,27 +251,6 @@ void resetRAMBuffer()
 }
 
 /**
- * Returns the state of the programming button
- *
- * @return true if programming mode is active, otherwise false
- */
-static bool getProgButtonState()
-{
-    bool state = (((BcuUpdate &) bcu).programmingMode());
-    d3(
-        if (state)
-        {
-            serial.print("-->progButton pressed");
-        }
-        else
-        {
-            serial.print("-->progButton NOT pressed");
-        }
-    );
-    return (state);
-}
-
-/**
  * Sets lastError and prepares the @ref UPD_SEND_LAST_ERROR response telegram
  *
  * @param errorToSet The error to set
@@ -688,20 +667,12 @@ static bool updRequestData()
  * Handles the @ref UPD_REQUEST_UID command. Copies @ref UID_LENGTH_USED bytes
  *        to the return telegram.
  *
- * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, if device is locked @ref UDP_DEVICE_LOCKED
- *                otherwise a @ref IAP_Status
+ * @post          calls setLastErrror with UDP_IAP_SUCCESS if successful, otherwise a @ref IAP_Status
  * @return        always true
  * @note          device must be unlocked
  */
 static bool updRequestUID()
 {
-    if (getProgButtonState() != true)
-    {
-        setLastError(UDP_DEVICE_LOCKED);
-        return (true);
-    }
-
-    // the operator has physical access to the device -> we unlock it
     byte uid[4 * 4];
     UDP_State result = iapResult2UDPState(iapReadUID(uid));
     if (result != UDP_IAP_SUCCESS)
