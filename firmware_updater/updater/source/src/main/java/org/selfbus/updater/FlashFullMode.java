@@ -36,7 +36,7 @@ public class FlashFullMode {
             dm.eraseAddressRange(newFirmware.startAddress(), totalLength); // erase affected flash range
         }
 
-        byte[] buffer = new byte[Mcu.FLASH_PAGE_SIZE]; // buffer to hold one flash page
+        byte[] buffer = new byte[dm.getBlockSize()];
         long progAddress = newFirmware.startAddress();
 
         String logMessage = String.format("\nStart sending application data (%d bytes)", totalLength);
