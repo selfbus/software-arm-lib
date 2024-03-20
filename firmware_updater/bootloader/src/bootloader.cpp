@@ -132,6 +132,24 @@ BcuBase* setup()
     serial.println("=================================================== by sh");
 #endif
 
+    ///\todo remove on release
+    /*
+    testUpdProgram(0xA000, 8192);
+    testUpdProgram(0xA000, 4097);
+    testUpdProgram(0xA000, 4096);
+    testUpdProgram(0xA000, 4095);
+    testUpdProgram(0xA000, 1025);
+    testUpdProgram(0xA000, 1024);
+    testUpdProgram(0xA000, 1023);
+    testUpdProgram(0xA000, 513);
+    testUpdProgram(0xA000, 512);
+    testUpdProgram(0xA000, 511);
+    testUpdProgram(0xA000, 257);
+    testUpdProgram(0xA000, 256);
+    testUpdProgram(0xA000, 255);
+    testUpdProgram(0xA000, 1);
+    testUpdProgram(0xA000, 0);
+    */
     return &bcu;
 }
 

@@ -48,5 +48,7 @@ void resetUPDProtocol(void);
 bool handleDeprecatedApciMemoryWrite(uint8_t * sendBuffer);
 
 
+///\todo remove on release
+// void testUpdProgram(uint32_t address, uint16_t count);
 #endif /* UPDATE_H_ */
 /** @}*/

@@ -461,7 +461,7 @@ static bool updSendData(uint8_t * data, uint32_t nCount)
  */
 static bool updProgram(uint8_t * data)
 {
-    uint16_t flash_count = streamToUShort16(data);
+    int32_t flash_count = streamToUShort16(data);
     uint8_t * address = streamToPtr(data + 2);
     uint32_t crc32toCompare = streamToUIn32(data + 2 + 4);
 
@@ -472,7 +472,7 @@ static bool updProgram(uint8_t * data)
         return (true);
     }
 
-    if (flash_count > getRAMBufferSize())
+    if (flash_count > static_cast<int32_t>(getRAMBufferSize())) // Selfbus Updater has a too big Mcu.UPD_PROGRAM_SIZE set. (see Mcu.java)
     {
         setLastError(UDP_RAM_BUFFER_OVERFLOW);
         return (true);
@@ -500,31 +500,53 @@ static bool updProgram(uint8_t * data)
         return (true);
     }
 
-    // See IAP limitations in UM10398 26.7.2 p. 442
-    // Number of bytes to be written. Should be 256 | 512 | 1024 | 4096
-    if (flash_count > 4*FLASH_PAGE_SIZE)   // Select smallest possible sector size
-        flash_count = 16*FLASH_PAGE_SIZE;  // 4096 bytes
-    else if (flash_count > 2*FLASH_PAGE_SIZE)
-        flash_count = 4*FLASH_PAGE_SIZE;   // 1024 bytes
-    else if (flash_count > FLASH_PAGE_SIZE)
-        flash_count = 2*FLASH_PAGE_SIZE;   // 512 bytes
-    else
-        flash_count = FLASH_PAGE_SIZE;     // 256 bytes
-
-    if (flash_count > getRAMBufferSize())
-    {
-        setLastError(UDP_RAM_BUFFER_OVERFLOW); // Selfbus Updater has a too big Mcu.UPD_PROGRAM_SIZE set. (see Mcu.java)
-        return (true);
-    }
-
-    d3(serial.print("writing ", flash_count));
+    d3(serial.print("to write ", (int)flash_count));
     d3(serial.print(" bytes @ 0x", address));
     d3(serial.println(" crc 0x", (uintptr_t)crcRamBuffer, HEX, 8));
 
     totalBytesFlashed += flash_count;
+    UDP_State error = UDP_IAP_SUCCESS;
+    uint32_t bufferPosition = 0;
     bcu.bus->pause();
-    // Getting an UDP_IAP_COMPARE_ERROR here is an indicator of flash sectors/pages not being erased before programming
-    UDP_State error = executeProgramFlash(address, ramBuffer, flash_count);
+    // loop until error or all bytes flashed
+    while ((error == UDP_IAP_SUCCESS) && (flash_count > 0))
+    {
+        for (uint8_t i = 0; i < IapBlockSizesCount; i++) // test all block sizes
+        {
+            if (IapBlockSize[i] > getRAMBufferSize())
+            {
+                continue;
+            }
+
+            while (flash_count >= IapBlockSize[i]) // flash as long as we have enough bytes for current blockSize
+            {
+                // Getting an UDP_IAP_COMPARE_ERROR here is an indicator of flash sectors/pages
+                // not being erased before programming
+                error = executeProgramFlash(address, &ramBuffer[bufferPosition], IapBlockSize[i]);
+                if (error != UDP_IAP_SUCCESS)
+                {
+                    break; // exit inner while on error
+                }
+                d3(serial.print("wrote ", IapBlockSize[i]));
+                d3(serial.println(" bytes @ 0x", address));
+                flash_count -= IapBlockSize[i];
+                address += IapBlockSize[i];
+                bufferPosition += IapBlockSize[i];
+            }
+
+            if ((error != UDP_IAP_SUCCESS) || (flash_count <= 0))
+            {
+                break; // exit for on error or all bytes flashed
+            }
+        }
+
+        if ((error == UDP_IAP_SUCCESS) && (flash_count > 0) && (flash_count <= FLASH_PAGE_SIZE))
+        {
+            // This is the final flashpage to program
+            error = executeProgramFlash(address, &ramBuffer[bufferPosition], FLASH_PAGE_SIZE);
+            break; // exit topmost while
+        }
+    }
     resetRAMBuffer();
     bcu.bus->resume();
     setLastError(error);
@@ -1016,5 +1038,17 @@ bool handleApciUsermsgManufacturer(uint8_t * sendBuffer, uint8_t * data, uint32_
     return result;
 }
 
+///\todo remove on release
+void testUpdProgram(uint32_t address, uint16_t count)
+{
+    //int32_t flash_count = streamToUShort16(data);
+    //uint8_t * address = streamToPtr(data + 2);
+    //uint32_t crc32toCompare = streamToUIn32(data + 2 + 4);
+    uint8_t data[10];
+    uShort16ToStream(&data[0], count);
+    uInt32ToStream(&data[2], address);
+    uInt32ToStream(&data[6], 0);
+    updProgram(data);
+}
 
 /** @}*/
