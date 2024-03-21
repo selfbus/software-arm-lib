@@ -39,7 +39,7 @@ public class FlashFullMode {
         byte[] buffer = new byte[dm.getBlockSize()];
         long progAddress = newFirmware.startAddress();
 
-        String logMessage = String.format("\nStart sending application data (%d bytes)", totalLength);
+        String logMessage = String.format("Start sending application data (%d bytes)", totalLength);
         if (dataSendDelay > 0) {
             logMessage += String.format(" with telegram delay of %dms", dataSendDelay);
         }

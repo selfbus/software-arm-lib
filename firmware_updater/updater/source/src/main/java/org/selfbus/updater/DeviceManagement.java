@@ -92,7 +92,7 @@ public final class DeviceManagement {
         dest = mcDevice.createDestination(device, true, false, false);
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try {
-            logger.info("\nRestarting device {} into bootloader mode using {}", device, link);
+            logger.info("Restarting device {} into bootloader mode using {}", device, link);
             restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             mcDevice.detach();
             logger.info("Device {} reported {}{} second(s){} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
@@ -202,7 +202,7 @@ public final class DeviceManagement {
 
     public void unlockDeviceWithUID(byte[] uid)
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nUnlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
+        logger.info("Unlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
         byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, MAX_UPD_COMMAND_RETRY).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
