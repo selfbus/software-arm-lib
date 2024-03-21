@@ -2,7 +2,7 @@
 <?fileVersion 4.0.0?><cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage">
 	<storageModule moduleId="org.eclipse.cdt.core.settings">
 		<cconfiguration id="com.crt.advproject.config.exe.debug.2082284562.1664299275">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.2082284562.1664299275" moduleId="org.eclipse.cdt.core.settings" name="Debug (LPC11XX)">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.2082284562.1664299275" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<macros>
 					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.20"/>
 				</macros>
@@ -18,7 +18,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="links against sblib Release version" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.debug.2082284562.1664299275" name="Debug (LPC11XX)" parent="com.crt.advproject.config.exe.debug" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${ProjName}.bin&quot;">
+				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="links against sblib Release version" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.debug.2082284562.1664299275" name="Debug" parent="com.crt.advproject.config.exe.debug" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${ProjName}.bin&quot;">
 					<folderInfo id="com.crt.advproject.config.exe.debug.2082284562.1664299275." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.exe.debug.1652755700" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.exe.debug">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.debug.151859285" name="ARM-based MCU (Debug)" superClass="com.crt.advproject.platform.exe.debug"/>
@@ -150,7 +150,7 @@
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 		<cconfiguration id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074" moduleId="org.eclipse.cdt.core.settings" name="Release (LPC11xx)">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074" moduleId="org.eclipse.cdt.core.settings" name="Release">
 				<macros>
 					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.20"/>
 				</macros>
@@ -166,7 +166,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Release Build" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074" name="Release (LPC11xx)" parent="com.crt.advproject.config.exe.release" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${ProjName}.bin&quot;">
+				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Release Build" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074" name="Release" parent="com.crt.advproject.config.exe.release" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${ProjName}.bin&quot;">
 					<folderInfo id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.exe.release.1495139249" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.exe.release">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.release.948116737" name="ARM-based MCU (Release)" superClass="com.crt.advproject.platform.exe.release"/>
@@ -258,6 +258,7 @@
 								<option id="com.crt.advproject.link.cpp.lto.optmization.level.928258448" name="Link-time optimization level" superClass="com.crt.advproject.link.cpp.lto.optmization.level" useByScannerDiscovery="false" value="link.cpp.optimization.level.size" valueType="enumerated"/>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="true" id="gnu.cpp.link.option.userobjs.1067038579" name="Other objects" superClass="gnu.cpp.link.option.userobjs" useByScannerDiscovery="false" valueType="userObjs"/>
 								<option id="gnu.cpp.link.option.strip.1329028828" name="Omit all symbol information (-s)" superClass="gnu.cpp.link.option.strip" useByScannerDiscovery="false" value="false" valueType="boolean"/>
+								<option id="com.crt.advproject.link.cpp.multicore.master.1116451439" name="Multicore master" superClass="com.crt.advproject.link.cpp.multicore.master"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.1705258067" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -278,7 +279,7 @@
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 		<cconfiguration id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057" moduleId="org.eclipse.cdt.core.settings" name="Release APROG (LPC11xx)">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057" moduleId="org.eclipse.cdt.core.settings" name="Release APROG">
 				<macros>
 					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.20"/>
 				</macros>
@@ -294,7 +295,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Release Build with alternativate progbutton" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057" name="Release APROG (LPC11xx)" parent="com.crt.advproject.config.exe.release" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}.bin&quot;">
+				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Release Build with alternativate progbutton" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057" name="Release APROG" parent="com.crt.advproject.config.exe.release" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}.bin&quot;">
 					<folderInfo id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.exe.release.781189417" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.exe.release">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.release.1779125756" name="ARM-based MCU (Release)" superClass="com.crt.advproject.platform.exe.release"/>
@@ -407,7 +408,7 @@
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 		<cconfiguration id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378" moduleId="org.eclipse.cdt.core.settings" name="Debug low level (LPC11XX)">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378" moduleId="org.eclipse.cdt.core.settings" name="Debug low level">
 				<macros>
 					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.20"/>
 				</macros>
@@ -423,7 +424,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Use this for sblib Bus debugging, links against sblib Debug version" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378" name="Debug low level (LPC11XX)" parent="com.crt.advproject.config.exe.debug" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}.bin&quot;">
+				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Use this for sblib Bus debugging, links against sblib Debug version" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378" name="Debug low level" parent="com.crt.advproject.config.exe.debug" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}.bin&quot;">
 					<folderInfo id="com.crt.advproject.config.exe.debug.2082284562.1664299275.1313034378." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.exe.debug.906532890" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.exe.debug">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.debug.104276022" name="ARM-based MCU (Debug)" superClass="com.crt.advproject.platform.exe.debug"/>
@@ -554,7 +555,7 @@
 			<storageModule moduleId="org.eclipse.cdt.core.externalSettings"/>
 		</cconfiguration>
 		<cconfiguration id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816">
-			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816" moduleId="org.eclipse.cdt.core.settings" name="Release GNAX (LPC11xx)">
+			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816" moduleId="org.eclipse.cdt.core.settings" name="Release GNAX">
 				<macros>
 					<stringMacro name="sw_version" type="VALUE_TEXT" value="1.20"/>
 				</macros>
@@ -570,7 +571,7 @@
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
-				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Release Build with GNAX (IO16FM) programming button" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816" name="Release GNAX (LPC11xx)" parent="com.crt.advproject.config.exe.release" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}.bin&quot;">
+				<configuration artifactExtension="axf" artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe" cleanCommand="rm -rf" description="Release Build with GNAX (IO16FM) programming button" errorParsers="org.eclipse.cdt.core.CWDLocator;org.eclipse.cdt.core.GmakeErrorParser;org.eclipse.cdt.core.GCCErrorParser;org.eclipse.cdt.core.GLDErrorParser;org.eclipse.cdt.core.GASErrorParser" id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816" name="Release GNAX" parent="com.crt.advproject.config.exe.release" postannouncebuildStep="Performing post-build steps" postbuildStep="&quot;${ProjDirPath}/../../script/build-script/post-build-steps.sh&quot; &quot;${CWD}&quot; &quot;${TargetChip}&quot; &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}&quot; &quot;${ConfigName}&quot; &quot;${sw_version}&quot; &quot;${hexDir}&quot; ; arm-none-eabi-objcopy -v -O binary &quot;${BuildArtifactFileName}&quot; &quot;${BuildArtifactFileBaseName}.bin&quot;">
 					<folderInfo id="com.crt.advproject.config.exe.release.2048246081.1074517531.1756130074.1038568057.399290816." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.exe.release.2036673138" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.exe.release">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.exe.release.708486102" name="ARM-based MCU (Release)" superClass="com.crt.advproject.platform.exe.release"/>
@@ -716,19 +717,19 @@
 &lt;/TargetConfig&gt;</projectStorage>
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Release APROG (LPC11xx)">
+		<configuration configurationName="Release APROG">
 			<resource resourceType="PROJECT" workspacePath="/bootloader"/>
 		</configuration>
-		<configuration configurationName="Debug low level (LPC11XX)">
+		<configuration configurationName="Debug low level">
 			<resource resourceType="PROJECT" workspacePath="/bootloader"/>
 		</configuration>
-		<configuration configurationName="Release (LPC11xx)">
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/bootloader"/>
 		</configuration>
-		<configuration configurationName="Release GNAX (LPC11xx)">
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/bootloader"/>
 		</configuration>
-		<configuration configurationName="Debug (LPC11XX)">
+		<configuration configurationName="Release GNAX">
 			<resource resourceType="PROJECT" workspacePath="/bootloader"/>
 		</configuration>
 	</storageModule>
