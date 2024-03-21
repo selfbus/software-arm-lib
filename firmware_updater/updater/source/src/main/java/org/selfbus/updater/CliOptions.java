@@ -108,7 +108,7 @@ public class CliOptions {
     private static final String OPT_LONG_LOGSTATISTIC = "statistic";
 
     private static final String OPT_SHORT_BLOCKSIZE = "bs";
-    private static final String OPT_LONG_BLOCKSIZE = "blocksize";
+    public static final String OPT_LONG_BLOCKSIZE = "blocksize";
     private final static List<Integer> VALID_BLOCKSIZES = Arrays.asList(256, 512, 1024);
 
     private static final int PRINT_WIDTH = 100;

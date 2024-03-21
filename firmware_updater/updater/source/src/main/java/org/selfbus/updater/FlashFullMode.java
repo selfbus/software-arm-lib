@@ -107,6 +107,10 @@ public class FlashFullMode {
                 repeat = true;
                 resultTotal.setWritten(resultTotal.written() - txBuffer.length); // do not count failed transfer
             }
+            else if (result == IAP_COMPARE_ERROR.id) {
+                throw new UpdaterException(String.format("ProgramData update failed. %sTry again with option '--%s 256'%s",
+                        ConColors.RED, CliOptions.OPT_LONG_BLOCKSIZE, ConColors.RESET));
+            }
             else if (result == IAP_SUCCESS.id) {
                 progAddress += txBuffer.length;
                 if (logStatistics) {
