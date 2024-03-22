@@ -39,6 +39,7 @@
 #define PIN_IO13    PIO1_4
 #define PIN_IO14    PIO0_2
 #define PIN_IO15    PIO2_7
+#define PIN_IO16    PIO2_8
 
 #define PIN_SSEL0   PIO2_4 // actually this is port 1, see below
 #define PIN_SCK0    PIO3_2 // actually this is port 1, see below
