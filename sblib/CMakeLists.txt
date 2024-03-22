@@ -154,7 +154,6 @@ set(SRC inc/sblib/eib/addr_tables.h
         src/eib/propertiesBCU2.cpp
         src/eib/propertiesMASK0701.cpp
         src/eib/propertiesSYSTEMB.cpp
-        src/eib/property_dump.cpp
         src/eib/property_types.cpp
         src/eib/systemb.cpp
         src/eib/userEeprom.cpp
