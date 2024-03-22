@@ -210,51 +210,12 @@
 &lt;/TargetConfig&gt;</projectStorage>
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Debug_BCU2">
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/sblib"/>
 		</configuration>
-		<configuration configurationName="Debug_BCU1">
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/sblib"/>
 		</configuration>
-		<configuration configurationName="Debug_BCU2_IO16_UP">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112_IO16_UP">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112_11Uxx">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BCU1_IO16_UP">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BCU1_11UXX">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112_75">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BIM112">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BIM112_75">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BCU2">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BCU1">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BCU1_11UXX">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_SYSTEM_B"/>
-		<configuration configurationName="Debug"/>
-		<configuration configurationName="Release"/>
 	</storageModule>
 	<storageModule moduleId="com.crt.advproject"/>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
