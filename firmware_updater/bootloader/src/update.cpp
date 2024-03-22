@@ -1038,17 +1038,4 @@ bool handleApciUsermsgManufacturer(uint8_t * sendBuffer, uint8_t * data, uint32_
     return result;
 }
 
-///\todo remove on release
-void testUpdProgram(uint32_t address, uint16_t count)
-{
-    //int32_t flash_count = streamToUShort16(data);
-    //uint8_t * address = streamToPtr(data + 2);
-    //uint32_t crc32toCompare = streamToUIn32(data + 2 + 4);
-    uint8_t data[10];
-    uShort16ToStream(&data[0], count);
-    uInt32ToStream(&data[2], address);
-    uInt32ToStream(&data[6], 0);
-    updProgram(data);
-}
-
 /** @}*/
