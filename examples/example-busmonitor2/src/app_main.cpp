@@ -9,8 +9,6 @@
  *          Serial pins for a 4TE Controller: Tx-pin PIO3.0, Rx-pin is PIO3.1<br/>
  *          Serial pins for a TS_ARM Controller: Tx-pin PIO2.8, Rx-pin is PIO2.7<br/>
  *
- *          links against Debug BCU1 version of the sblib library
- *
  * @warn    #define BUSMONITOR and #define DUMP_TELEGRAMS must be "enabled" in @ref sblib/inc/libconfig.h
  *
  * @{
