@@ -3,6 +3,7 @@ package org.selfbus.updater;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
@@ -30,10 +31,17 @@ public final class DeviceManagement {
     private static final int RESTART_ERASE_CODE = 7; //!< EraseCode for the APCI_MASTER_RESET_PDU (valid from 1..7)
     private static final int RESTART_CHANNEL = 255;  //!< Channelnumber for the APCI_MASTER_RESET_PDU
 
-    public static final int MAX_UPD_COMMAND_RETRY = 3; //!< default maximum retries a UPD command is sent to the client
+    private static final int MAX_UPD_COMMAND_RETRY = 3; //!< default maximum retries a UPD command is sent to the client
 
-    @SuppressWarnings("unused")
-    private DeviceManagement (){}
+    private UDPProtocolVersion protocolVersion;
+
+    private int blockSize;
+    private int maxPayload;
+    private int updSendDataOffset;
+
+    private DeviceManagement () {
+        setProtocolVersion(UDPProtocolVersion.UDP_V1);
+    }
 
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
     private SBManagementClientImpl mc; //!< calimero device management client
@@ -42,6 +50,7 @@ public final class DeviceManagement {
 
     public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, Priority priority)
             throws KNXLinkClosedException {
+        this();
         this.link = link;
         logger.debug("Creating SBManagementClientImpl");
         this.mc = new SBManagementClientImpl(this.link);
@@ -83,13 +92,12 @@ public final class DeviceManagement {
         dest = mcDevice.createDestination(device, true, false, false);
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try {
-            logger.info("\nRestarting device {} into bootloader mode using {}", device, link);
+            logger.info("Restarting device {} into bootloader mode using {}", device, link);
             restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             mcDevice.detach();
-            logger.info("Device {} reported {}{} seconds{} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
+            logger.info("Device {} reported {}{} second(s){} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
             waitRestartTime(restartProcessTime);
             System.out.println();
-            logger.info("Device {} should now have started into bootloader mode.", device);
             return true;
         } catch (final KNXException | InterruptedException e) {
             logger.info("{}Restart state of device {} unknown. {}{}", ConColors.BRIGHT_RED, device, e.getMessage(), ConColors.RESET);
@@ -168,7 +176,7 @@ public final class DeviceManagement {
 
     public BootDescriptor requestBootDescriptor()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nRequesting Boot Descriptor...");
+        logger.info("Requesting Boot Descriptor...");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], MAX_UPD_COMMAND_RETRY).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
@@ -194,7 +202,7 @@ public final class DeviceManagement {
 
     public void unlockDeviceWithUID(byte[] uid)
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nUnlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
+        logger.info("Unlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
         byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, MAX_UPD_COMMAND_RETRY).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
@@ -255,17 +263,18 @@ public final class DeviceManagement {
         ResponseResult result = new ResponseResult();
         while (nIndex < data.length)
         {
-
             byte[] txBuffer;
-            if ((data.length - nIndex) >= Mcu.MAX_PAYLOAD){
-                txBuffer = new byte[Mcu.MAX_PAYLOAD + 1];
+            if ((data.length + updSendDataOffset - nIndex) >= maxPayload) {
+                txBuffer = new byte[maxPayload];
             }
             else {
-                txBuffer = new byte[data.length - nIndex + 1];
+                txBuffer = new byte[data.length + updSendDataOffset- nIndex];
             }
-            // First byte contains start address of following data
-            txBuffer[0] = (byte)nIndex;
-            System.arraycopy(data, nIndex, txBuffer, 1, txBuffer.length - 1);
+
+            if (protocolVersion == UDPProtocolVersion.UDP_V0) {
+                txBuffer[0] = (byte) nIndex; // First byte contains mcu's ramBuffer start position to copy to
+            }
+            System.arraycopy(data, nIndex, txBuffer, updSendDataOffset, txBuffer.length - updSendDataOffset);
 
             ResponseResult tmp = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
             result.addCounters(tmp);
@@ -280,11 +289,11 @@ public final class DeviceManagement {
                 throw new UpdaterException("doFlash failed.");
             }
 
+            nIndex += txBuffer.length - updSendDataOffset;
+
             if (delay > 0) {
                 Thread.sleep(delay); //Reduce bus load during data upload, without 2:04, 50ms 2:33, 60ms 2:41, 70ms 2:54, 80ms 3:04
             }
-
-            nIndex += txBuffer.length - 1;
         }
         result.addWritten(nIndex);
         return result;
@@ -339,7 +348,7 @@ public final class DeviceManagement {
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
-            throws UpdaterException, InterruptedException {
+            throws UpdaterException {
         ResponseResult result = new ResponseResult();
         while (true) {
             try {
@@ -396,5 +405,38 @@ public final class DeviceManagement {
         } catch (KNXException | InterruptedException e ) {
             throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()));
         }
+    }
+
+    public UDPProtocolVersion getProtocolVersion() {
+        return protocolVersion;
+    }
+
+    public void setProtocolVersion(UDPProtocolVersion protocolVersion) {
+        this.protocolVersion = protocolVersion;
+        this.maxPayload = Mcu.MAX_PAYLOAD;
+        if (this.protocolVersion == UDPProtocolVersion.UDP_V1) {
+            this.blockSize = Mcu.UPD_PROGRAM_SIZE;
+            this.updSendDataOffset = 0;
+        }
+        else {
+            this.blockSize = Mcu.FLASH_PAGE_SIZE;
+            this.updSendDataOffset = 1;
+        }
+    }
+
+    public int getBlockSize() {
+        return blockSize;
+    }
+
+    public boolean setBlockSize(int blockSize) {
+        if (this.protocolVersion == UDPProtocolVersion.UDP_V0) {
+            return false;
+        }
+        this.blockSize = blockSize;
+        return true;
+    }
+
+    public int getMaxPayload() {
+        return maxPayload;
     }
 }

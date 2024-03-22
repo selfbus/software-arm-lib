@@ -26,7 +26,7 @@
 
 // Don't forget to change build-variable sw_version in .cproject file
 constexpr uint8_t BOOTLOADER_MAJOR_VERSION = 1;  //!< Bootloader major version @note change also in BootloaderUpdater's app_main.cpp
-constexpr uint8_t BOOTLOADER_MINOR_VERSION = 12; //!< Bootloader minor version @note change also in BootloaderUpdater's app_main.cpp
+constexpr uint8_t BOOTLOADER_MINOR_VERSION = 20; //!< Bootloader minor version @note change also in BootloaderUpdater's app_main.cpp
 
 constexpr uint8_t UPDATER_MIN_MAJOR_VERSION = 1; //!< minimum required major version of the Selfbus Updater we are talking to
 constexpr uint8_t UPDATER_MIN_MINOR_VERSION = 0; //!< minimum required minor version of the Selfbus Updater we are talking to

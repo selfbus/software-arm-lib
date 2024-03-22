@@ -1,5 +1,6 @@
 package org.selfbus.updater;
 
+import com.google.common.primitives.Bytes;
 import cz.jaybee.intelhex.Parser;
 import cz.jaybee.intelhex.Region;
 import cz.jaybee.intelhex.listeners.BinWriter;
@@ -22,13 +23,6 @@ public class BinImage {
     private final long startAddress;
     private final long endAddress;
     private long crc32;
-
-    public BinImage(BinImage source) {
-        this.binData = Arrays.copyOf(source.binData, source.binData.length);
-        this.startAddress = source.startAddress;
-        this.endAddress = source.endAddress;
-        this.crc32 = source.crc32;
-    }
 
     public BinImage(BinImage source, int newLength) {
         ///\todo sanity checks for newLength and addresses
@@ -149,8 +143,20 @@ public class BinImage {
     }
 
     public final String toString() {
-        return String.format("start 0x%04X, end 0x%04X, length %d, crc32 0x%04X",
+        return String.format("0x%04X-0x%04X, %d bytes, crc32 0x%04X",
                 startAddress, endAddress, binData.length, crc32());
     }
 
+    public int getAppVersionAddress() {
+        return Bytes.indexOf(this.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
+    }
+
+    public String getAppVersion() {
+        int appVersionAddress = getAppVersionAddress();
+        if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= (this.length() - Mcu.BL_ID_STRING_LENGTH)) {
+            return "";
+        }
+        // Convert app version pointers content to string
+        return new String(this.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);
+    }
 }

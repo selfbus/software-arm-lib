@@ -223,22 +223,6 @@ UDP_State eraseAddressRange(uint8_t * startAddress, const uint8_t * endAddress, 
     return (result);
 }
 
-#ifdef DEBUG
-unsigned int testEraseAddressRange() ///\todo remove on release
-{
-    /*
-    eraseAddressRange(0x1A00, 0x6FFF);
-    eraseAddressRange(0x6B00, 0x6FFF);
-    eraseAddressRange(0x7100, 0x8FFF);
-    eraseAddressRange(0x7F00, 0xFFFF);
-    eraseAddressRange(0x7F00, 0x7FFF);
-    eraseAddressRange(0x7E00, 0x9AFF);
-    eraseAddressRange(0x7F00, 0x9EFF);
-    */
-    return (UDP_IAP_SUCCESS);
-}
-#endif
-
 UDP_State eraseFullFlash()
 {
     unsigned int page = iapPageOfAddress(bootLoaderLastAddress());

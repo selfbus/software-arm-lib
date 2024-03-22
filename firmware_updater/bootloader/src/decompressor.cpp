@@ -126,6 +126,8 @@ UDP_State Decompressor::pageCompletedDoFlash()
 
 void Decompressor::putByte(uint8_t data)
 {
+    ///\todo Implement buffer overflow protection for cmdBuffer, scratchpad, oldPages
+
 	//System.out.println("Decompressor processing new byte " + (data & 0xff) + ", state=" + state);
 	//UART_printf("@ b=%02X s=%02X i=%d", data, state, bytesToFlash);
 	switch (state)

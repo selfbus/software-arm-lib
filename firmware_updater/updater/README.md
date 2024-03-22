@@ -2,7 +2,7 @@
 
 ## Requirements
 
-* JDK 11+
+* JDK 17+
 * gradle >=7.4
 * Selfbus device with flashed [bootloader](../../bootloader) version 1.00 or higher
 
@@ -20,31 +20,33 @@ windows: gradlew.bat fatJar
 ## Usage
 ```
 java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
-       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|ALARM|HIGH|LOW>]
-       [--user <id>] [--user-pwd <password>] [--device-pwd <password>] [-u <uid>] [-f1] [-H
-       <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-a <address>] [-h | -v]
-       [--delay <ms>] [--timeout] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>]
-       [-f0] [--statistic]
+       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|URGENT|NORMAL|LOW>]
+       [-bs <256|512|1024>] [--user <id>] [--user-pwd <password>] [--device-pwd <password>] [-u
+       <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-h | -v]
+       [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
+       [--statistic]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
  -m,--medium <tp1|rf>                       KNX medium [tp1|rf] (default tp1)
  -s,--serial <COM-port>                     use FT1.2 serial communication
  -t,--tpuart <COM-port>                     use TPUART serial communication (experimental, needs
-                                            serialcom or rxtx library in java.library.path
+                                            serialcom or rxtx library in java.library.path)
  -d,--device <x.x.x>                        KNX device address in normal operating mode (default
                                             none)
  -D,--progDevice <x.x.x>                    KNX device address in bootloader mode (default
                                             15.15.192)
  -o,--own <x.x.x>                           own physical KNX address (default 0.0.0)
-    --priority <SYSTEM|ALARM|HIGH|LOW>      KNX telegram priority (default LOW)
+    --priority <SYSTEM|URGENT|NORMAL|LOW>   KNX telegram priority (default LOW)
+ -bs,--blocksize <256|512|1024>             Block size to program (default 1024 bytes)
     --user <id>                             KNX IP Secure tunneling user identifier (1..127)
                                             (default 1)
     --user-pwd <password>                   KNX IP Secure tunneling user password (Commissioning
-                                            password/Inbetriebnahmepasswort), " in password may not
-                                            work
+                                            password/Inbetriebnahmepasswort), quotation marks (") in
+                                            password may not work
     --device-pwd <password>                 KNX IP Secure device authentication code (Authentication
-                                            Code/Authentifizierungscode) " in password may not work
+                                            Code/Authentifizierungscode) quotation marks(") in
+                                            password may not work
  -u,--uid <uid>                             send UID to unlock (default: request UID to unlock).
                                             Only the first 12 bytes of UID are used
  -f1,--full                                 force full upload mode (disables differential mode)
@@ -52,11 +54,10 @@ Selfbus KNX-Firmware update tool options:
  -P,--localport <localport>                 local UDP port (default system assigned)
  -p,--port <port>                           UDP port on <KNX Interface> (default 3671)
  -t2,--tunnelingv2                          use KNXnet/IP tunneling v2 (TCP) (experimental)
- -t1,--tunneling                            use KNXnet/IP tunneling v1 (UDP) 
- -n,--nat                                   enable Network Address Translation (NAT)
- -r,--routing                               use KNXnet/IP routing (not implemented)
- -a,--appVersionPtr <address>               pointer address to APP_VERSION string in new firmware
-                                            file
+ -t1,--tunneling                            use KNXnet/IP tunneling v1 (UDP)
+ -n,--nat                                   enable Network Address Translation (NAT) (only available
+                                            with tunneling v1)
+ -r,--routing                               use KNXnet/IP routing/multicast (experimental)
  -h,--help                                  show this help message
  -v,--version                               show tool/library version
     --delay <ms>                            delay telegrams during data transmission to reduce bus
@@ -72,6 +73,10 @@ Selfbus KNX-Firmware update tool options:
     --statistic                             show more statistic data
 ```
 ## Common use cases:
+Read UID of the device (requires active programming mode to unlock the device):
+```
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
+```
 Recommended for new firmware versions if UID is unknown (requires active programming mode to unlock the device):
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -nat
@@ -85,7 +90,7 @@ Manual specification of parameters if the App-Version pointer is not found/integ
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
 ```
 ## Used IDE's:
-IntelliJ IDEA Community 2022.3.1 (Build -> Build Artifacts)<br>
+IntelliJ IDEA Community 2023.3.4 (Build -> Build Artifacts)<br>
 eclipse project is currently not maintained
 ## gradle:
 update [gradle wrapper](gradle/wrapper) to the newest version:

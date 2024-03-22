@@ -52,7 +52,7 @@ BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communica
 Timeout runModeTimeout; //!< running mode LED blinking timeout
 bool blinky = false;
 
-bool startup();
+void startup();
 
 uint32_t getProgrammingButton()
 {
@@ -93,11 +93,9 @@ BcuBase* setup()
     }
 #endif
 
-    auto programmingMode = startup();
-
+    startup();
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
     bcu.setProgPin(getProgrammingButton());
-    bcu.setProgrammingMode(programmingMode);
     runModeTimeout.start(1);
 
     // finally start the bcu
@@ -230,17 +228,15 @@ static void jumpToApplication(uint8_t * start)
  * @brief  Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.
  *         If no "magic word" is present it checks for a valid application to start,
  *         otherwise starts in bootloader mode
- *
- * @return whether BCU should start up in programming mode; might not return at all if application is started
  */
-bool startup()
+void startup()
 {
     // Updater request from application by setting magicWord
     unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
     if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
         *magicWord = 0; // avoid restarting BL after flashing
-        return true;
+        return;
     }
     *magicWord = 0; // wrong magicWord, delete it
 
@@ -248,7 +244,7 @@ bool startup()
     pinMode(getProgrammingButton(), INPUT | PULL_UP);
     if (!digitalRead(getProgrammingButton()))
     {
-        return true;
+        return;
     }
 
     // Start main application at address
@@ -257,9 +253,7 @@ bool startup()
     {
         jumpToApplication(block->startAddress);
     }
-
     // Start updater in case of error
-    return false;
 }
 
 /** @}*/
