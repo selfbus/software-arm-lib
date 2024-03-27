@@ -21,10 +21,10 @@ BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* com
         BcuBase(userRam, addrTables),
         userEeprom(userEeprom),
         memMapper(nullptr),
-		usrCallback(nullptr),
-		sendGrpTelEnabled(false),
-		groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
-		groupTelSent(millis())
+        usrCallback(nullptr),
+        sendGrpTelEnabled(false),
+        groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
+        groupTelSent(millis())
 {
     this->comObjects = comObjects;
 }
@@ -117,8 +117,8 @@ void BcuDefault::setOwnAddress(uint16_t addr)
 
 void BcuDefault::loop()
 {
-	if (!enabled)
-		return;
+    if (!enabled)
+        return;
 
     BcuBase::loop(); // check processTelegram and programming button state
 

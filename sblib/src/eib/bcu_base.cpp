@@ -48,22 +48,22 @@ void BcuBase::loop()
     TLayer4::loop();
 
     if (bus->telegramReceived() && !bus->sendingTelegram() && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
-	{
+    {
         processTelegram(bus->telegram, (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
-	}
+    }
 
-	if (progPin)
-	{
-		// Detect the falling edge of pressing the prog button
-		pinMode(progPin, INPUT|PULL_UP);
-		int oldValue = progButtonDebouncer.value();
-		if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
-		{
-			userRam->status() ^= BCU_STATUS_PARITY | BCU_STATUS_PROGRAMMING_MODE;  // toggle programming mode and parity bit
-		}
-		pinMode(progPin, OUTPUT);
-		digitalWrite(progPin, !programmingMode());
-	}
+    if (progPin)
+    {
+        // Detect the falling edge of pressing the prog button
+        pinMode(progPin, INPUT|PULL_UP);
+        int oldValue = progButtonDebouncer.value();
+        if (!progButtonDebouncer.debounce(digitalRead(progPin), 50) && oldValue)
+        {
+            userRam->status() ^= BCU_STATUS_PARITY | BCU_STATUS_PROGRAMMING_MODE;  // toggle programming mode and parity bit
+        }
+        pinMode(progPin, OUTPUT);
+        digitalWrite(progPin, !programmingMode());
+    }
 
     // Rest of this function is only relevant if currently able to send another telegram.
     if (bus->sendingTelegram())

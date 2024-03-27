@@ -28,9 +28,9 @@
 class BCU1 : public BcuDefault
 {
 public:
-	BCU1();
-	BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables);
-	~BCU1() = default;
+    BCU1();
+    BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables);
+    ~BCU1() = default;
 
     /**
      * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type, program version
@@ -39,7 +39,7 @@ public:
      * @param deviceType - the device type (16 bit)
      * @param version - the version of the application program (8 bit)
      */
-	virtual void begin(int manufacturer, int deviceType, int version) override;
+    virtual void begin(int manufacturer, int deviceType, int version) override;
 
     bool applicationRunning() const;
 
@@ -47,13 +47,13 @@ public:
     const char* getBcuType() const override { return "BCU1"; }
     uint16_t getMaskVersion() const override { return  0x12; }
 
-	UserRamBCU1* userRam;
+    UserRamBCU1* userRam;
 
-	UserEepromBCU1* userEeprom;
+    UserEepromBCU1* userEeprom;
 
-	ComObjectsBCU1* comObjects;
+    ComObjectsBCU1* comObjects;
 
-	AddrTablesBCU1* addrTables;
+    AddrTablesBCU1* addrTables;
 
 protected:
 };

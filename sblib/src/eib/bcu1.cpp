@@ -24,7 +24,7 @@ BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* com
 inline void BCU1::begin(int manufacturer, int deviceType, int version)
 {
     BcuDefault::begin(manufacturer, deviceType, version);
-	BcuDefault::_begin();
+    BcuDefault::_begin();
 }
 
 bool BCU1::applicationRunning() const

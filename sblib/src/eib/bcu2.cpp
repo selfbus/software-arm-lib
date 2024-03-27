@@ -88,18 +88,18 @@ bool BCU2::applicationRunning() const
 
     return ((userRam->runState() == 1) &&
             (userEeprom->loadState()[OT_ADDR_TABLE] == LS_LOADED) &&  // address table object
-			(userEeprom->loadState()[OT_ASSOC_TABLE] == LS_LOADED) && // association table object
-			(userEeprom->loadState()[OT_APPLICATION] == LS_LOADED));  // application object. All three in state "Loaded"
+            (userEeprom->loadState()[OT_ASSOC_TABLE] == LS_LOADED) && // association table object
+            (userEeprom->loadState()[OT_APPLICATION] == LS_LOADED));  // application object. All three in state "Loaded"
 }
 
 BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
 {}
 
 BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties) :
-		BcuDefault(userRam, userEeprom, comObjects, addrTables),
-		userRam(userRam),
-		userEeprom(userEeprom),
-		properties(properties)
+        BcuDefault(userRam, userEeprom, comObjects, addrTables),
+        userRam(userRam),
+        userEeprom(userEeprom),
+        properties(properties)
 {}
 
 bool BCU2::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer)
