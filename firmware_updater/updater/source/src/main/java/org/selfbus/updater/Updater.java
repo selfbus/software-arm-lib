@@ -1,7 +1,6 @@
 package org.selfbus.updater;
 
 import tuwien.auto.calimero.*;
-import tuwien.auto.calimero.link.*;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
@@ -68,11 +67,11 @@ public class Updater implements Runnable {
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
         logger.info(ConColors.BRIGHT_BOLD_GREEN +
-                "     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
-                "    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
-                "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
-                "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
-                "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
+                "   _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
+                "  / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
+                "  \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
+                " ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
+                "/____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
                 "by Dr. Stefan Haller, Oliver Stefan et al.                       " + ToolInfo.getToolAndVersion() +
                 ConColors.RESET);
         try {
@@ -92,6 +91,8 @@ public class Updater implements Runnable {
         this.cliOptions = cliOptions;
         logger.info(ConColors.BRIGHT_BOLD_GREEN + ToolInfo.getToolAndVersion() + " \n" +
                 ConColors.RESET);
+        this.sbKNXLink = new SBKNXLink();
+        this.sbKNXLink.setCliOptions(cliOptions);
     }
 
     public static void main(final String[] args) {
@@ -205,9 +206,9 @@ public class Updater implements Runnable {
             if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
-                logger.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
-                throw new UpdaterException("Selfbus update failed.");
-            }
+                    logger.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
+                    throw new UpdaterException("Selfbus update failed.");
+                }
                 // Load Firmware hex file
                 logger.info("Loading file '{}'...", hexFileName);
                 newFirmware = BinImage.readFromHex(hexFileName);
@@ -248,7 +249,7 @@ public class Updater implements Runnable {
 
             if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
                 logger.warn("{}Dumping flash content range 0x{}-0x{} to bootloader's serial port.{}",
-                        ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()),  ConColors.RESET);
+                        ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()), ConColors.RESET);
                 dm.dumpFlashRange(cliOptions.dumpFlashStartAddress(), cliOptions.dumpFlashEndAddress());
                 return;
             }
@@ -303,7 +304,7 @@ public class Updater implements Runnable {
             }
             else {
                 logger.info("  {}Info: There are {} bytes of unused flash between bootloader and firmware.{}",
-                            ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
+                        ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
             }
 
             boolean diffMode = false;
@@ -345,12 +346,12 @@ public class Updater implements Runnable {
                 printStatisticData(flashTimeStart, resultTotal);
             }
             else {
-                logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH , ConColors.RED, ConColors.RESET);
+                logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH, ConColors.RED, ConColors.RESET);
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
                     newFirmware.endAddress(),
-                    (int)newFirmware.crc32(),
+                    (int) newFirmware.crc32(),
                     newFirmware.startAddress() + newFirmware.getAppVersionAddress());
             logger.info("\nPreparing boot descriptor with {}", newBootDescriptor);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
@@ -386,21 +387,11 @@ public class Updater implements Runnable {
     }
 
     public String requestUid(){
-        Exception thrown = null;
-        boolean canceled = false;
-        KNXNetworkLink link = null;
+        KNXNetworkLink link;
         try {
-            int appVersionAddress = cliOptions.appVersionPtr();
-            byte[] uid = cliOptions.uid();
-            link = createLink(cliOptions.ownAddress()); // default 15.15.193
-
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC, cliOptions.priority());
-
-            dm.setTL4Timeout(cliOptions.tl4Timeout()); ///\todo delete after TL4 Style 3 implementation in sblib
-
-            logger.info("KNX connection: {}\n", link);
-
-            logger.info("Telegram priority: {}", cliOptions.priority());
+            link = this.sbKNXLink.openLink();
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
+            logger.info("KNX connection: {}", link);
 
             //for option --device restart the device in bootloader mode
             if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
@@ -410,8 +401,12 @@ public class Updater implements Runnable {
 
             dm.checkDeviceInProgrammingMode(cliOptions.progDevice());
 
-            uid = dm.requestUIDFromDevice();
+            byte[] uid = dm.requestUIDFromDevice();
 
+            if (cliOptions.device() != null) {
+                dm.restartProgrammingDevice();
+            }
+            link.close();
             return Utils.byteArrayToHex(uid);
 
         } catch (InterruptedException | UpdaterException | KNXException e) {
