@@ -11,7 +11,7 @@
 #ifndef TIMEOUT_H_
 #define TIMEOUT_H_
 
-#include "sblib/internal/variables.h"
+#include "sblib/timer.h"
 
 #define MS2TICKS(m) (m)
 
@@ -47,7 +47,7 @@ public:
 			stop();
 		else
 		{
-			timeout = systemTime + ms;
+			timeout = millis() + ms;
 			if(timeout == Timeout::STOPPED) timeout++;
 		}
 	};
@@ -60,7 +60,7 @@ public:
 	{
 		if (timeout != Timeout::STOPPED)
 		{
-			if(((int)(systemTime - timeout)) >= 0)
+			if(((int)(millis() - timeout)) >= 0)
 			{
 				stop();
 				return true;
@@ -112,7 +112,7 @@ public:
 	{
 		if (timeout != Timeout::STOPPED)
 		{
-			if(((int)(systemTime - timeout)) > 0)
+			if(((int)(millis() - timeout)) > 0)
 			{
 				if (period)
 				{

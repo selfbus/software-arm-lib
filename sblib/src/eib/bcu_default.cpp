@@ -8,17 +8,8 @@
  *  published by the Free Software Foundation.
  */
 
-#include <sblib/io_pin_names.h>
 #include <sblib/eib/knx_lpdu.h>
-#include <sblib/eib/knx_npdu.h>
 #include <sblib/eib/bcu_default.h>
-#include <sblib/eib/addr_tables.h>
-#include <sblib/internal/variables.h>
-#include <sblib/internal/iap.h>
-#include <sblib/eib/userEeprom.h>
-#include <sblib/eib/userRam.h>
-#include <sblib/eib/apci.h>
-#include <sblib/utils.h>
 #include <string.h>
 #include <sblib/eib/bus.h>
 
@@ -30,10 +21,10 @@ BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* com
         BcuBase(userRam, addrTables),
         userEeprom(userEeprom),
         memMapper(nullptr),
-		usrCallback(nullptr),
-		sendGrpTelEnabled(false),
-		groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
-		groupTelSent(millis())
+        usrCallback(nullptr),
+        sendGrpTelEnabled(false),
+        groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
+        groupTelSent(millis())
 {
     this->comObjects = comObjects;
 }
@@ -126,8 +117,8 @@ void BcuDefault::setOwnAddress(uint16_t addr)
 
 void BcuDefault::loop()
 {
-	if (!enabled)
-		return;
+    if (!enabled)
+        return;
 
     BcuBase::loop(); // check processTelegram and programming button state
 
@@ -150,27 +141,23 @@ void BcuDefault::loop()
 
         }
         // To prevent overflows if no telegrams are sent for a long time
-        ///\todo better reload with systemTime - groupTelWaitMillis
+        ///\todo better reload with millis() - groupTelWaitMillis
         if (elapsed(groupTelSent) >= 2000)
         {
             groupTelSent += 1000;
         }
     }
 
-    if (userEeprom->isModified() && bus->idle() && bus->telegramLen == 0 && !directConnection())
+    if (userEeprom->isModified() && !directConnection() && userEeprom->writeDelayElapsed())
     {
-        if (userEeprom->writeDelayElapsed())
-        {
-            flushUserMemory(UsrCallbackType::flash, true);
-        }
+        flushUserMemory(UsrCallbackType::flash);
     }
 }
 
 void BcuDefault::end()
 {
-    flushUserMemory(UsrCallbackType::bcu_end, true);
-    bus->end();
-    enabled = false;
+    flushUserMemory(UsrCallbackType::bcu_end);
+    BcuBase::end();
 }
 
 byte* BcuDefault::userMemoryPtr(unsigned int addr)
@@ -214,23 +201,6 @@ void BcuDefault::setGroupTelRateLimit(unsigned int limit)
      groupTelWaitMillis = DEFAULT_GROUP_TEL_WAIT_MILLIS ;
 }
 
-void BcuDefault::setRxPin(int rxPin) {
-    bus->rxPin=rxPin;
-}
-
-void BcuDefault::setTxPin(int txPin) {
-    bus->txPin=txPin;
-    setKNX_TX_Pin(bus->txPin);
-}
-
-void BcuDefault::setTimer(Timer& timer) {
-    bus->timer=timer;
-}
-
-void BcuDefault::setCaptureChannel(TimerCapture captureChannel) {
-    bus->captureChannel=captureChannel;
-}
-
 /**
  * todo check for RX status and inform upper layer if needed
  */
@@ -239,7 +209,6 @@ bool BcuDefault::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t group
     DB_COM_OBJ(
         serial.println();
         serial.print("BCU grp addr: 0x", (unsigned int)groupAddress, HEX, 4);
-        serial.println(" error state:  0x",(unsigned int)bus->receivedTelegramState(), HEX, 4);
     );
 
     comObjects->processGroupTelegram(groupAddress, apciCmd & APCI_GROUP_MASK, telegram);
@@ -572,49 +541,59 @@ bool BcuDefault::processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int i
 
 bool BcuDefault::processApciMasterResetPDU(uint8_t * sendBuffer, uint8_t eraseCode, uint8_t channelNumber)
 {
-    if (!checkApciForMagicWord(eraseCode, channelNumber))
+    RestartPDUErrorcode errorCode;
+    RestartType restartType;
+
+    // special version of APCI_MASTER_RESET_PDU used by Selfbus Bootloader
+    if (checkApciForMagicWord(eraseCode, channelNumber))
+    {
+        errorCode = T_RESTART_NO_ERROR;
+        restartType = RestartType::MasterIntoBootloader;
+    }
+    else if (eraseCode == 0 || eraseCode > T_MASTERRESET_FACTORY_WO_IA)
+    {
+        errorCode = T_RESTART_UNSUPPORTED_ERASE_CODE;
+        restartType = RestartType::None;
+    }
+    else
     {
         ///\todo implement proper handling of APCI_MASTER_RESET_PDU for all other Erase Codes
-        requestedRestartType = RESTART_BASIC;
-        return (false);
+        errorCode = (eraseCode == T_MASTERRESET_CONFIRMED_RESTART) ? T_RESTART_NO_ERROR : T_RESTART_UNSUPPORTED_ERASE_CODE;
+        restartType = RestartType::Master;
     }
+
+    // See KNX spec 2.1 chapter 3/5/2 section 3.7.1.2.2 page 65:
+    // "If the Management Server confirms the Master Reset negatively (Error Code != 00h), then it shall set the
+    // Process Time to 0000h in the A_Restart_Response-PDU."
+    auto seconds = (errorCode == T_RESTART_NO_ERROR) ? 1 : 0; // 1 second or error
 
     // create the APCI_MASTER_RESET_RESPONSE_PDU
     sendBuffer[5] = 0x60 + 4;  // routing count in high nibble + response length in low nibble
     setApciCommand(sendBuffer, APCI_MASTER_RESET_RESPONSE_PDU, 0);
-    sendBuffer[8] = T_RESTART_NO_ERROR;
+    sendBuffer[8] = errorCode;
     sendBuffer[9] = 0; // restart process time 2 byte unsigned integer value expressed in seconds, DPT_TimePeriodSec / DPT7.005
-    sendBuffer[10] = 1; // 1 second
+    sendBuffer[10] = seconds;
 
-    // special version of APCI_MASTER_RESET_PDU used by Selfbus bootloader
-    // set magicWord to start after reset in bootloader mode
-#ifndef IAP_EMULATION
-    unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
-    *magicWord = BOOTLOADER_MAGIC_WORD;
-#endif
-    requestedRestartType = RESTART_MASTER;
+    if (restartType != RestartType::None)
+    {
+        scheduleRestart(restartType);
+    }
+
     return (true);
 }
 
 void BcuDefault::softSystemReset()
 {
-    bool waitIdle = true;
-#ifdef IAP_EMULATION
-    waitIdle = false; ///\todo workaround for lib test cases running later into a infinitive loop at ' while (!bus->idle())'
-#endif
-    flushUserMemory(UsrCallbackType::reset, waitIdle);
+    flushUserMemory(UsrCallbackType::reset);
     BcuBase::softSystemReset();
 }
 
-bool BcuDefault::flushUserMemory(UsrCallbackType reason, bool waitIdle)
+bool BcuDefault::flushUserMemory(UsrCallbackType reason)
 {
-    if (waitIdle)
-    {
-        while (!bus->idle()) // wait for an idle bus
-        {
-            ;
-        }
-    }
+///\todo workaround for lib test cases running into an infinitive loop
+#ifndef IAP_EMULATION
+    bus->pause();
+#endif
 
     if (usrCallback)
     {
@@ -627,6 +606,8 @@ bool BcuDefault::flushUserMemory(UsrCallbackType reason, bool waitIdle)
     {
         memMapper->doFlash();
     }
+
+    bus->resume();
     return (true);
 }
 

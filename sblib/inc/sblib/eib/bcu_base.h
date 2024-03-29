@@ -14,6 +14,7 @@
 #include <sblib/eib/userRam.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/com_objects.h>
+#include <sblib/timeout.h>
 #include <sblib/timer.h>
 #include <sblib/debounce.h>
 #include <sblib/eib/knx_tlayer4.h>
@@ -36,12 +37,6 @@ public:
      * @param progPin Pin definition
      */
     void setProgPin(int prgPin);
-
-    /**
-     * Set ProgPin output inverted, must be called before begin method
-     * @param progPin output inverted
-     */
-    void setProgPinInverted(int prgPinInv);
 
     /**
      * End using the EIB bus coupling unit.
@@ -78,12 +73,6 @@ public:
      * to 0, the programming LED + button are not handled by the library.
      */
     int progPin;
-
-    /**
-     * Programming LED output inverted: If set to 1 the programming LED output is
-     * being inverted
-     */
-    int progPinInv;
 
     /**
       * @brief Performs a system reset by calling @ref NVIC_SystemReset
@@ -130,13 +119,18 @@ protected:
     void discardReceivedTelegram();
     void send(unsigned char* telegram, unsigned short length);
 
-    enum BcuRestartType
+    enum class RestartType : uint8_t
     {
-        NO_RESTART,
-        RESTART_BASIC,
-        RESTART_MASTER
+        None,
+        Basic,
+        Master,
+        MasterIntoBootloader
     };
-    BcuRestartType requestedRestartType;
 
+    void scheduleRestart(RestartType type);
+
+private:
+    RestartType restartType;
+    Timeout restartTimeout;
 };
 #endif /*sblib_BcuBase_h*/

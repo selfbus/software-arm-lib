@@ -213,11 +213,11 @@ float BH1750::readLightLevel() {
 
   if (BH1750_MODE == UNCONFIGURED) {
     LOG("[BH1750] Device is not configured!");
-    return -2.0;
+    return -2.0f;
   }
 
   // Measurement result will be stored here
-  float level = -1.0;
+  float level = -1.0f;
 
   // Read two bytes from the sensor, which are low and high parts of the sensor
   // value
@@ -227,7 +227,7 @@ float BH1750::readLightLevel() {
   }
   lastReadTimestamp = millis();
 
-  if (level != -1.0) {
+  if (level != -1.0f) {
 // Print raw value if debug enabled
 #ifdef BH1750_DEBUG
     LOG("[BH1750] Raw value: %d", pretty(level));

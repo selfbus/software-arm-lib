@@ -60,10 +60,12 @@ bool i2c_initialized = false;
  /* Configuration of standard I2C Pins on LPC1115 */
 static void Init_I2C_PinMux(void)
 {
-	  LPC_IOCON->PIO0_4 &= ~0x3F;   /*  I2C I/O config */
-	  LPC_IOCON->PIO0_4 |= 0x01;    /* I2C SCL */
-	  LPC_IOCON->PIO0_5 &= ~0x3F;
-	  LPC_IOCON->PIO0_5 |= 0x01;    /* I2C SDA */
+	LPC_IOCON->PIO0_4 = (LPC_IOCON->PIO0_4
+	                  & ~0x3F)    /*  I2C I/O config */
+	                  | 0x01;    /* I2C SCL */
+	LPC_IOCON->PIO0_5 = (LPC_IOCON->PIO0_5
+	                  & ~0x3F)
+	                  | 0x01;    /* I2C SDA */
 }
 
 /* State machine handler for I2C0 and I2C1 */

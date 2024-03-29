@@ -28,13 +28,8 @@
  */
 
 #if !defined(SERIAL_TX_PIN) || !defined(SERIAL_RX_PIN)
-#   if defined (__LPC11XX__)
-#       define SERIAL_TX_PIN PIO1_7     //!> default serial Tx-Pin PIO1.7 (LPC11xx)
-#       define SERIAL_RX_PIN PIO1_6     //!> default serial Tx-Pin PIO1.6 (LPC11xx)
-#   elif defined (__LPC11UXX__)
-#       define SERIAL_TX_PIN PIO0_19    //!> default serial Tx-Pin PIO0.19 (LPC11Uxx)
-#       define SERIAL_RX_PIN PIO0_18    //!> default serial Tx-Pin PIO0.18 (LPC11Uxx)
-#   endif
+#   define SERIAL_TX_PIN PIO1_7     //!> default serial Tx-Pin PIO1.7 (LPC11xx)
+#   define SERIAL_RX_PIN PIO1_6     //!> default serial Tx-Pin PIO1.6 (LPC11xx)
 #endif
 
 class Serial;

@@ -1,26 +1,20 @@
 package org.selfbus.updater;
 
-import com.google.common.primitives.Bytes;
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.link.*;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
+import org.selfbus.updater.bootloader.BootloaderUpdater;
+import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.knxnetip.SecureConnection;
-import tuwien.auto.calimero.link.medium.KNXMediumSettings;
-import tuwien.auto.calimero.link.medium.RFSettings;
-import tuwien.auto.calimero.link.medium.TPSettings;
+import tuwien.auto.calimero.link.KNXNetworkLink;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.util.Collections;
 
 import static org.selfbus.updater.Utils.shortenPath;
-import static org.selfbus.updater.Utils.tcpConnection;
 
 import org.selfbus.updater.gui.GuiMain;
 
@@ -53,6 +47,7 @@ import org.selfbus.updater.gui.GuiMain;
 public class Updater implements Runnable {
     private final static Logger logger = LoggerFactory.getLogger(Updater.class.getName());
     private final CliOptions cliOptions;
+    private final SBKNXLink sbKNXLink;
 
     /**
      * Creates a new Updater instance using the supplied options.
@@ -72,19 +67,20 @@ public class Updater implements Runnable {
     public Updater(final String[] args) throws ParseException, KNXFormatException {
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
-        logger.info(ConColors.BRIGHT_BOLD_GREEN + "\n" +
-                "\n" +
+        logger.info(ConColors.BRIGHT_BOLD_GREEN +
                 "     _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
                 "    / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
                 "    \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 "   ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "  /____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "  by Dr. Stefan Haller, Oliver Stefan et al.                       " + ToolInfo.getToolAndVersion() + " \n\n" +
+                "by Dr. Stefan Haller, Oliver Stefan et al.                       " + ToolInfo.getToolAndVersion() +
                 ConColors.RESET);
         try {
             // read in user-supplied command line options
             this.cliOptions = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) ,
                     "Selfbus KNX-Firmware update tool options", "", PHYS_ADDRESS_BOOTLOADER, PHYS_ADDRESS_OWN);
+            this.sbKNXLink = new SBKNXLink();
+            this.sbKNXLink.setCliOptions(cliOptions);
         } catch (final KNXIllegalArgumentException | KNXFormatException | ParseException e) {
             throw e;
         } catch (final RuntimeException e) {
@@ -131,83 +127,6 @@ public class Updater implements Runnable {
         if (thrown != null) {
             logger.error("Operation did not finish.", thrown);
         }
-    }
-
-    /**
-     * Creates the KNX network link to access the network specified in
-     * <code>options</code>.
-     * <p>
-     *
-     * @return the KNX network link
-     * @throws KNXException
-     *             on problems on link creation
-     * @throws InterruptedException
-     *             on interrupted thread
-     */
-    private KNXNetworkLink createLink(IndividualAddress ownAddress) throws KNXException,
-            InterruptedException, UpdaterException {
-        final KNXMediumSettings medium = getMedium(cliOptions.medium(), ownAddress);
-        logger.debug("Creating KNX network link {}...", medium);
-        if (cliOptions.ft12().length() > 0) {
-            // create FT1.2 network link
-            return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
-        } else if (cliOptions.tpuart().length() > 0) {
-            // create TPUART network link
-            KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.tpuart(), medium, Collections.emptyList());
-            linkTpuart.addAddress(cliOptions.ownAddress()); //\todo check if this is rly needed
-            return linkTpuart;
-        }
-
-        // create local and remote socket address for network link
-        InetSocketAddress local;
-        local = createLocalSocket(cliOptions.localhost(), cliOptions.localport());
-        if (local == null) {
-            local = new InetSocketAddress(0);
-        }
-
-        final InetSocketAddress remote = new InetSocketAddress(cliOptions.knxInterface(), cliOptions.port());
-        if (cliOptions.routing()) {
-            //KNXNetworkLinkIP.ROUTING
-            //return KNXNetworkLinkIP.newRoutingLink(local, remote,	cliOptions.nat(), medium);
-            logger.error("{}Routing not implemented.{}", ConColors.RED, ConColors.RESET);
-            throw new UpdaterException("Routing not implemented.");
-            //return KNXNetworkLinkIP.newRoutingLink(local, remote, medium);
-        }
-        else {
-            if ((cliOptions.devicePassword().length() == 0) && (cliOptions.userPassword().length() == 0)) {
-                // default UDP unsecure tunneling connection
-                return KNXNetworkLinkIP.newTunnelingLink(local, remote, cliOptions.nat(), medium);
-            }
-            else {
-                // KNX IP Secure TCP tunneling connection
-                byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.devicePassword().toCharArray());
-                byte[] userKey = SecureConnection.hashUserPassword(cliOptions.userPassword().toCharArray());
-                final var session = tcpConnection(local, remote).newSecureSession(cliOptions.userId(), userKey, deviceAuthCode);
-                return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
-            }
-        }
-    }
-    static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port)
-    {
-        final int p = port != null ? port.intValue() : 0;
-        return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(p);
-    }
-
-    private static KNXMediumSettings getMedium(final String id, IndividualAddress ownAddress) {
-        if (id.equals("tp1")) {
-            return new TPSettings(ownAddress);
-        }
-        else if (id.equals("rf")) {
-            return new RFSettings(null);
-        }
-        //else if (id.equals("tp0"))
-        //	return TPSettings.TP0;
-        //else if (id.equals("p110"))
-        //	return new PLSettings(false);
-        //else if (id.equals("p132"))
-        //	return new PLSettings(true);
-        else
-            throw new KNXIllegalArgumentException("unknown medium");
     }
 
     private static final class ShutdownHandler extends Thread {
@@ -260,8 +179,6 @@ public class Updater implements Runnable {
     public static final IndividualAddress PHYS_ADDRESS_BOOTLOADER = new IndividualAddress(15, 15,192); //!< physical address the bootloader is using
     public static final IndividualAddress PHYS_ADDRESS_OWN = new IndividualAddress(0, 0,0); //!< physical address the Selfbus Updater is using
 
-    public static final int RESPONSE_TIMEOUT_SEC = 3; //!< Time in seconds the Updater shall wait for a KNX Response
-
     /*
      * (non-Javadoc)
      *
@@ -281,22 +198,38 @@ public class Updater implements Runnable {
                 return;
             }
 
-            // check if the firmware file to be programmed really exists
-            if (!Utils.fileExists(cliOptions.fileName())) {
+            byte[] uid = cliOptions.uid();
+            final String hexFileName = cliOptions.fileName();
+            BinImage newFirmware = null;
+
+            if (!hexFileName.isEmpty()) {
+                // check if the firmware file exists
+                if (!Utils.fileExists(hexFileName)) {
                 logger.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
                 throw new UpdaterException("Selfbus update failed.");
             }
+                // Load Firmware hex file
+                logger.info("Loading file '{}'...", hexFileName);
+                newFirmware = BinImage.readFromHex(hexFileName);
+                // Check for APP_VERSION string in new firmware
+                if (newFirmware.getAppVersion().isEmpty()) {
+                    logger.warn("  {}Missing APP_VERSION string in new firmware!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                    throw new UpdaterException("Missing APP_VERSION string in firmware!");
+                }
+            }
+            else {
+                System.out.println();
+                logger.info("{}{}No firmware file (*.hex) specified! Specify with --{}{}", ConColors.BLACK, ConColors.BG_RED,
+                        cliOptions.getOptionLongFileName(), ConColors.RESET);
+                logger.info("{}Reading only device information{}", ConColors.BRIGHT_YELLOW, ConColors.RESET);
+                System.out.println();
+            }
 
-            int appVersionAddress = cliOptions.appVersionPtr();
-            byte[] uid = cliOptions.uid();
-            link = createLink(cliOptions.ownAddress()); // default 15.15.193
+            link = sbKNXLink.openLink();
 
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), RESPONSE_TIMEOUT_SEC, cliOptions.priority());
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
 
-            dm.setTL4Timeout(cliOptions.tl4Timeout()); ///\todo delete after TL4 Style 3 implementation in sblib
-
-            logger.info("KNX connection: {}\n", link);
-
+            logger.info("KNX connection: {}", link);
             logger.info("Telegram priority: {}", cliOptions.priority());
 
             //for option --device restart the device in bootloader mode
@@ -313,11 +246,6 @@ public class Updater implements Runnable {
 
             dm.unlockDeviceWithUID(uid);
 
-            if (cliOptions.eraseFullFlash()) {
-                logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                dm.eraseFlash();
-            }
-
             if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
                 logger.warn("{}Dumping flash content range 0x{}-0x{} to bootloader's serial port.{}",
                         ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()),  ConColors.RESET);
@@ -326,46 +254,43 @@ public class Updater implements Runnable {
             }
 
             BootloaderIdentity bootLoaderIdentity = dm.requestBootloaderIdentity();
-            logger.info("\nRequesting App Version String...");
+
+            // Request current main firmware boot descriptor from device
+            BootDescriptor bootDescriptor = dm.requestBootDescriptor();
+            if (newFirmware != null) {
+                logger.info("  New firmware:            {}", newFirmware);
+            }
+
+            logger.info("Requesting APP_VERSION...");
             String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
-                logger.info("  Current App Version String is: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
+                logger.info("  Current APP_VERSION: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
             }
             else {
                 logger.info("{}  failed!{}", ConColors.BRIGHT_RED, ConColors.RESET);
             }
 
-            // Load Firmware hex file
-            logger.info("Loading file '{}'...", cliOptions.fileName());
-            BinImage newFirmware = BinImage.readFromHex(cliOptions.fileName());
-            logger.info("  Hex file parsed: {}", newFirmware);
+            //  From here on we need a valid firmware
+            if (newFirmware == null) {
+                if (cliOptions.device() != null) {
+                    dm.restartProgrammingDevice();
+                }
+                // to get here `uid == null` must be true, so it's fine to exit with no-error
+                link.close();
+                System.exit(0);
+            }
+
+            if (cliOptions.eraseFullFlash()) {
+                logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                dm.eraseFlash();
+            }
 
             // store new firmware bin file in cache directory
             String cacheFileName = FlashDiffMode.createCacheFileName(newFirmware.startAddress(), newFirmware.length(), newFirmware.crc32());
             BinImage imageCache = BinImage.copyFromArray(newFirmware.getBinData(), newFirmware.startAddress());
             imageCache.writeToBinFile(cacheFileName);
 
-            // Handle App Version Pointer
-            if (appVersionAddress > Mcu.VECTOR_TABLE_END && appVersionAddress < (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {  // manually provided and not in vector or outside file length
-                // Use manual set AppVersion address
-                String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Get app version pointers content
-                logger.info("  File App Version String is : {}{}{} manually specified at address 0x{}",
-                        ConColors.BRIGHT_RED, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
-            }
-            else {
-                // Search for AppVersion pointer in flash file if not set manually, Search magic bytes in image file
-                appVersionAddress = Bytes.indexOf(newFirmware.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
-                if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= (newFirmware.length() - Mcu.BL_ID_STRING_LENGTH)) {
-                    appVersionAddress = 0;		// missing, or not valid set to 0
-                    logger.warn("  {}Could not find the App Version string, setting to 0. Please specify manually with {}{}",
-                            ConColors.BRIGHT_RED, CliOptions.OPT_LONG_APP_VERSION_PTR, ConColors.RESET);
-                }
-                else {
-                    String fileVersion = new String(newFirmware.getBinData(), appVersionAddress, Mcu.BL_ID_STRING_LENGTH);	// Convert app version pointers content to string
-                    logger.info("  File App Version String is : {}{}{} found at address 0x{}",
-                            ConColors.BRIGHT_GREEN, fileVersion, ConColors.RESET, Integer.toHexString(appVersionAddress));
-                }
-            }
+            logger.info("  File APP_VERSION   : {}{}{}", ConColors.BRIGHT_GREEN, newFirmware.getAppVersion(), ConColors.RESET);
 
             // Check if FW image has correct offset for MCUs bootloader size
             if (newFirmware.startAddress() < bootLoaderIdentity.getApplicationFirstAddress()) {
@@ -381,9 +306,6 @@ public class Updater implements Runnable {
                             ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
             }
 
-            // Request current main firmware boot descriptor from device
-            BootDescriptor bootDescriptor = dm.requestBootDescriptor();
-
             boolean diffMode = false;
             if (!(cliOptions.full())) {
                 if (bootDescriptor.valid()) {
@@ -394,11 +316,23 @@ public class Updater implements Runnable {
                 }
             }
 
+            if ((bootLoaderIdentity.getVersionMajor()) <= 1 && (bootLoaderIdentity.getVersionMinor() < 20)) {
+                dm.setProtocolVersion(UDPProtocolVersion.UDP_V0);
+            }
+            else {
+                dm.setProtocolVersion(UDPProtocolVersion.UDP_V1);
+            }
+
+            if (!dm.setBlockSize(cliOptions.getBlockSize())) {
+                logger.info("{}Connected bootloader doesn't support block size {}. Using {} bytes.{}", ConColors.YELLOW,
+                        cliOptions.getBlockSize(), dm.getBlockSize(), ConColors.RESET);
+            }
+
             if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!
                 // Start to flash the new firmware
                 long flashTimeStart = System.currentTimeMillis(); // time flash process started
                 ResponseResult resultTotal;
-                logger.info("\n{}{}Starting to send new firmware now:{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
+                logger.info("{}{}Starting to send new firmware now:{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
                 if (diffMode && FlashDiffMode.isInitialized()) {
                     logger.error("{}Differential mode is EXPERIMENTAL -> Use with caution.{}", ConColors.BRIGHT_RED, ConColors.RESET);
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
@@ -417,8 +351,8 @@ public class Updater implements Runnable {
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
                     newFirmware.endAddress(),
                     (int)newFirmware.crc32(),
-                    newFirmware.startAddress() + appVersionAddress);
-            logger.info("\n{}Preparing boot descriptor with {}{}", ConColors.BG_RED, newBootDescriptor, ConColors.RESET);
+                    newFirmware.startAddress() + newFirmware.getAppVersionAddress());
+            logger.info("\nPreparing boot descriptor with {}", newBootDescriptor);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
             String deviceInfo = cliOptions.progDevice().toString();
             if (cliOptions.device() != null) {
@@ -428,6 +362,11 @@ public class Updater implements Runnable {
             logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
             dm.restartProgrammingDevice();
 
+            if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
+                logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BG_GREEN,
+                        String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f), ConColors.RESET);
+                Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
+            }
         } catch (final KNXException | UpdaterException | RuntimeException e) {
             thrown = e;
         } catch (final InterruptedException e) {

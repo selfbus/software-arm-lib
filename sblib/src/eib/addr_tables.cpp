@@ -14,29 +14,6 @@
 #include <sblib/bits.h>
 #include <sblib/eib/userEeprom.h>
 
-int AddrTables::objectOfAddr(int addr)
-{
-    int addrIndex = indexOfAddr(addr);
-
-    byte* tab = assocTable();
-    int num = 0;
-    if (tab)
-        num = *tab++;
-
-    for (int i = 0; i < num; ++i, tab += 2)
-    {
-        if (tab[0] == addrIndex)
-            return tab[1];
-    }
-
-    return -1;
-}
-
-int AddrTables::addrForSendObject(int objno)
-{
-    return 0;
-}
-
 uint16_t AddrTables::addrCount()
 {
     byte* ptrAddrTable = addrTable();

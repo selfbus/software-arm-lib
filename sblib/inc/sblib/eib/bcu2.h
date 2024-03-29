@@ -29,9 +29,9 @@
 class BCU2 : public BcuDefault
 {
 public:
-	BCU2();
-	BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties);
-	~BCU2() = default;
+    BCU2();
+    BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties);
+    ~BCU2() = default;
 
     /**
      * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
@@ -53,7 +53,7 @@ public:
      *                                         in case HHHH != WWWW ,
      *                                         use bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION, 0xHHHH) to set the correct read-only ComObjectTable address (HHHH)
      */
-	virtual void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress);
+    virtual void begin(int manufacturer, int deviceType, int version, word readOnlyCommObjectTableAddress);
 
     /**
      * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type,
@@ -97,7 +97,7 @@ public:
     /** The size of the user RAM in bytes. */
     const int userRamSize = 0x100;
     /** How many bytes have to be allocated at the end of the RAM
-    	for shadowed values
+        for shadowed values
     */
     const int userRamShadowSize = 0;
 
@@ -115,11 +115,11 @@ public:
      */
     virtual void setHardwareType(const byte* hardwareType, uint8_t size);
 
-	UserRamBCU2* userRam;
+    UserRamBCU2* userRam;
 
-	UserEepromBCU2* userEeprom;
+    UserEepromBCU2* userEeprom;
 
-	PropertiesBCU2* properties;
+    PropertiesBCU2* properties;
 
 protected:
     /**

@@ -14,7 +14,7 @@
  * The version of the library. An integer value.
  * Can be displayed in ETS under deviceinfo->order number last two bytes.
  */
-#define SBLIB_VERSION 0x0202
+#define SBLIB_VERSION 0x0210
 
 /**
  * Macro for the name and version of the application using the library.

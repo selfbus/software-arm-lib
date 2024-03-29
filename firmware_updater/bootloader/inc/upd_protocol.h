@@ -14,7 +14,7 @@
  *      .
 
  *    -@ref UPD_SEND_DATA
- *      - 9-   the actual data which will be copied into a RAM buffer for later use.
+ *      - 9-21  The data which will be copied into a RAM buffer for later use.
  *              The address of the RAM buffer will be automatically incremented.
  *              After a @ref UPD_PROGRAM or @ref UPD_UPDATE_BOOT_DESC the RAM buffer address will be reseted.
  *      .
@@ -119,7 +119,7 @@ const struct UPD_Command {
 } updCommands[] =
 {
     {UPD_INVALID, 0, 0},     // needs to be always at index 0 because it's used as a invalid return value of code2UPDCommand, see @ref idxInvalidUPDCommand
-    {UPD_SEND_DATA, 2, 254}, // at least byte index and one byte, max. 254 for extended frames support
+    {UPD_SEND_DATA, 1, 254}, // at least one byte, max. 254 for extended frames support
     {UPD_PROGRAM, 10, 10},
     {UPD_UPDATE_BOOT_DESC, 8, 8},
     {UPD_SEND_DATA_TO_DECOMPRESS, 1, 254}, // max. 254 for extended frames support
@@ -161,7 +161,7 @@ enum UDP_State : uint8_t
     UDP_IAP_INVALID_SECTOR = 0x78,                          //!< IAP Sector number is invalid.
     UDP_IAP_SECTOR_NOT_BLANK = 0x77,                        //!< IAP Sector is not blank.
     UDP_IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION = 0x76, //!< IAP Command to prepare sector for write operation was not executed.
-    UDP_IAP_COMPARE_ERROR = 0x75,                           //!< IAP Source and destination data is not same.
+    UDP_IAP_COMPARE_ERROR = 0x75, //!< IAP Source and destination data is not same. Check that the affected flash sectors/pages are erased prior flashing.
     UDP_IAP_BUSY = 0x74,                                    //!< IAP Flash programming hardware interface is busy.
     UDP_IAP_UNKNOWN = 0x73,                                 //!< IAP unknown @ref IAP_Status.
 
@@ -180,6 +180,8 @@ enum UDP_State : uint8_t
     UDP_FLASH_ERROR = 0x53,                  //!< page program (flash) failed
     UDP_PAGE_NOT_ALLOWED_TO_ERASE = 0x52,    //!< page not allowed to erase
     UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE = 0x51, //!< address range not allowed to erase
+    UDP_BYTECOUNT_RECEIVED_TOO_LOW = 0x50,   //!< Number of bytes received with @ref UPD_SEND_DATA is lower than number of bytes to program with @ref UPD_PROGRAM
+    UDP_BYTECOUNT_RECEIVED_TOO_HIGH = 0x4f,  //!< Number of bytes received with @ref UPD_SEND_DATA is greater than number of bytes to program with @ref UPD_PROGRAM
 
     UDP_NOT_IMPLEMENTED = 0x02,              //!< this command is not yet implemented
     UDP_INVALID = 0x01                       //!< Unknown error

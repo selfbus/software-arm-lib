@@ -49,8 +49,10 @@ For interfacing to higher layers there are data buffer for sending and receiving
 - If 0.0.0, set to default 15.15.255 if not compiled as router
 - initialize the timer
 - initialize tx and rx port
-- wait for 50 bit times
-- enter the IDLE state.
+- wait for 40 bit times
+- enter the `WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE` state
+- wait for 10 bit times more
+- enter the `IDLE` state.
 
 ### The `timer16_x` is used as follows:
 - Capture register `CR0` is used for receiving
@@ -85,7 +87,7 @@ at 15µs +30µs+margin of 100µs.
 ### Telegram/byte/bit sending principle:
  The sending is started from higher layers by a call to `sendTelegram` with a pointer to the telegram-buffer and the telegram-length.
  We add our physical address, checksum, set the match interrupt, timeout in 1µs and set `WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE` state,
- initialize some parameters (`sendTries=0`...) for the telegram. In `WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE we check for ACK` to be sent
+ initialize some parameters (`sendTries=0`...) for the telegram. In `WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE` we check for ACK to be sent
  or a necessary repetition of the telegram and set the pre-send waiting time accordingly. A cap event is indicating the reception of the
  start bit from us or any other device. We check the receive window (for an ACK this is optional with a longer window) if the trigger is not
  from our startbit falling edge. If not we continue with the rx process in `RECV_WAIT_FOR_STARTBIT_OR_TELEND`, else
@@ -149,14 +151,13 @@ flowchart TB
         SEND_START_BIT
         SEND_BIT_0
         SEND_BITS_OF_BYTE
-        SEND_WAIT_FOR_HIGH_BIT_END
         SEND_END_OF_BYTE
         SEND_END_OF_TX
         SEND_WAIT_FOR_RX_ACK_WINDOW
         SEND_WAIT_FOR_RX_ACK
     end
 
-    INIT --50 bit inactivity--> IDLE
+    INIT --40 bit inactivity--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
     IDLE --sendTelegram--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
     IDLE --Falling edge captured--> INIT_RX_FOR_RECEIVING_NEW_TEL
     INIT_RX_FOR_RECEIVING_NEW_TEL ---> RECV_WAIT_FOR_STARTBIT_OR_TELEND
@@ -171,15 +172,15 @@ flowchart TB
     WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Falling edge captured--> INIT_RX_FOR_RECEIVING_NEW_TEL
     WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Nothing to send--> IDLE
     WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Something to send--> SEND_START_BIT
-    SEND_START_BIT --Collision--> INIT_RX_FOR_RECEIVING_NEW_TEL
+    SEND_START_BIT --Collision on ACK or inner frame char--> INIT
+    SEND_START_BIT --Collision on first frame char--> INIT_RX_FOR_RECEIVING_NEW_TEL
     SEND_START_BIT --> SEND_BIT_0
     SEND_BIT_0 --> SEND_BITS_OF_BYTE
-    SEND_BITS_OF_BYTE --1-bits to send--> SEND_WAIT_FOR_HIGH_BIT_END
+    SEND_BITS_OF_BYTE --More bits to send--> SEND_BITS_OF_BYTE
     SEND_BITS_OF_BYTE --Stop bit reached--> SEND_END_OF_BYTE
-    SEND_WAIT_FOR_HIGH_BIT_END --Collision--> RECV_BITS_OF_BYTE
-    SEND_WAIT_FOR_HIGH_BIT_END --More bits to send--> SEND_BITS_OF_BYTE
-    SEND_WAIT_FOR_HIGH_BIT_END --Stop bit reached--> SEND_END_OF_BYTE
-    SEND_END_OF_BYTE --More bytes to send--> SEND_BIT_0
+    SEND_BITS_OF_BYTE --Collision when edge allowed--> RECV_BITS_OF_BYTE
+    SEND_BITS_OF_BYTE --Collision when edge not allowed--> INIT
+    SEND_END_OF_BYTE --More bytes to send--> SEND_START_BIT
     SEND_END_OF_BYTE --Done--> SEND_END_OF_TX
     SEND_END_OF_TX --Sent an ACK--> WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE
     SEND_END_OF_TX --Sent a frame--> SEND_WAIT_FOR_RX_ACK_WINDOW

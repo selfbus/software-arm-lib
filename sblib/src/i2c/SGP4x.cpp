@@ -167,12 +167,10 @@ SGP4xResult SGP4xClass::measureRawSignal(float relativeHumidity, float temperatu
         //      25 degree celsius     => bytes 0x66 0x66 0x93
         cmdBuffer[2] = highByte(relativeHumidityTicks);
         cmdBuffer[3] = lowByte(relativeHumidityTicks);
-        relativeHumidityTicks = reverseByteOrder(relativeHumidityTicks); //we need this, otherwise crc8 is not correct
-        cmdBuffer[4] = crc8((uint8_t*)&relativeHumidityTicks, sizeof(relativeHumidityTicks));
+        cmdBuffer[4] = crc8(&cmdBuffer[2], 2);
         cmdBuffer[5] = highByte(temperatureTicks);
         cmdBuffer[6] = lowByte(temperatureTicks);
-        temperatureTicks = reverseByteOrder(temperatureTicks); //we need this, otherwise crc8 is not correct
-        cmdBuffer[7] = crc8((uint8_t*)&temperatureTicks, sizeof(temperatureTicks));
+        cmdBuffer[7] = crc8(&cmdBuffer[5], 2);
     }
 
     // max. duration for processing sgp41_measure_raw_signals is 50ms

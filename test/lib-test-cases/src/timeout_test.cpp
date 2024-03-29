@@ -36,7 +36,7 @@ static void _check_expired_yes(void * refState, unsigned int param)
 static void _check_time_wrap(void * refState, unsigned int param)
 {
 	_check_expired_no(refState, param);
-	REQUIRE(systemTime < 10);
+	REQUIRE(millis() < 10);
 }
 
 static Telegram testCaseTelegrams[] =

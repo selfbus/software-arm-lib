@@ -9,14 +9,6 @@
  */
 
 #include <sblib/eib/systemb.h>
-#include <sblib/eib/apci.h>
-#include <sblib/eib/com_objects.h>
-#include <string.h>
-#include <sblib/internal/variables.h>
-#include <sblib/mem_mapper.h>
-#include <sblib/internal/iap.h>
-#include <sblib/eib/propertiesSYSTEMB.h>
-#include <sblib/eib/bus.h>
 
 SYSTEMB::SYSTEMB() : SYSTEMB(new UserRamSYSTEMB(), new UserEepromSYSTEMB(), new ComObjectsSYSTEMB(this), new AddrTablesSYSTEMB(this), new PropertiesSYSTEMB(this))
 {}

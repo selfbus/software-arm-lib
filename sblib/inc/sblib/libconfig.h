@@ -54,9 +54,6 @@
 
 //#define ROUTER /// \todo create a new class derived from BcuDefault to build a ROUTER
 
-/** @def NO_OOP_MACROS disable the compatibility macros for old applications (used in sblib/eib.h) */
-//#define NO_OOP_MACROS
-
 
 
 

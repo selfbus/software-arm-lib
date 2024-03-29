@@ -363,7 +363,6 @@ void ComObjects::sendGroupReadTelegram(int objno, int addr)
     setApciCommand(sendBuffer, APCI_GROUP_VALUE_READ_PDU, 0);
     bcu->sendPreparedTelegram();
     transmitting_object_no = objno; //save transmitting object for status check
-    bcu->bus->setBusRXStateValid(false);
 }
 
 void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
@@ -393,7 +392,6 @@ void ComObjects::sendGroupWriteTelegram(int objno, int addr, bool isResponse)
 
     bcu->sendPreparedTelegram();
     transmitting_object_no = objno; //save transmitting object for status check
-    bcu->bus->setBusTXStateValid(false);
 }
 
 bool ComObjects::sendNextGroupTelegram()

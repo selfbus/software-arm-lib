@@ -10,8 +10,8 @@
 
 #include "protocol.h"
 #include <sblib/eib/knx_npdu.h>
-#include <sblib/internal/variables.h>
 #include <sblib/internal/iap.h>
+#include <sblib/eib/bus_const.h>
 #include <sblib/bits.h>
 
 extern unsigned int wfiSystemTimeInc;
@@ -96,12 +96,6 @@ void telegramPreparation(BcuDefault* testBcu, Telegram* tel, uint16_t telCount)
 
 static void _handleBusSendingInterrupt(BcuDefault* currentBcu)
 {
-     //    (currentBcu->bus->state == Bus::RECV_WAIT_FOR_STARTBIT_OR_TELEND) ||
-     if (currentBcu->bus->state == Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE)
-     {
-         currentBcu->bus->state = Bus::SEND_START_BIT;
-     }
-
      if (currentBcu->bus->state == Bus::SEND_START_BIT)
      {
         _LPC_TMR16B1.TC += 10;
@@ -244,7 +238,7 @@ static void _handleTime(BcuDefault* currentBcu, Test_Case * tc, Telegram * tel, 
         strcat(msg, temp);
         FAIL(msg);
     }
-    systemTime += tel->length;
+    setMillis(millis() + tel->length);
 }
 
 static unsigned int _handleBreak (Test_Case * tc, Telegram * tel, unsigned int testStep)
@@ -332,17 +326,20 @@ void executeTestOnBcu(BcuDefault* currentBcu, Test_Case * tc)
     currentBcu->begin(tc->manufacturer, tc->deviceType, tc->version);
     checkBcuInitialisation(currentBcu, tc);
 
-    _LPC_TMR16B1.IR  = 0;
-    currentBcu->bus->timerInterruptHandler(); // move the ISR out of INIT state
+    // move the ISR out of INIT state
+    _LPC_TMR16B1.IR = 4;
+    currentBcu->bus->timerInterruptHandler();
+    _LPC_TMR16B1.IR = 4;
+    currentBcu->bus->timerInterruptHandler();
     REQUIRE(currentBcu->bus->state == Bus::IDLE);
 
-    systemTime  = 0;
+    setMillis(0);
     wfiSystemTimeInc = 1;
     setup();
     wfiSystemTimeInc = 0;
     if (tc->powerOnDelay)
     {
-        REQUIRE(tc->powerOnDelay == systemTime);
+        REQUIRE(tc->powerOnDelay == millis());
     }
 
     if (tc->setup) tc->setup(tc->telegram, totalStepCount);
@@ -431,10 +428,11 @@ void executeTest(BcuType testBcuType, Test_Case * tc)
 
     Telegram* telOriginal = tc->telegram;
     uint16_t totalStepCount = getTotalStepCount(tc);
-    Telegram telCopy[totalStepCount];
-    copyAllTelegrams(&telCopy[0], telOriginal, totalStepCount);
-    tc->telegram = &telCopy[0];
+    Telegram* telCopy = new Telegram[totalStepCount];
+    copyAllTelegrams(telCopy, telOriginal, totalStepCount);
+    tc->telegram = telCopy;
     executeTestOnBcu(bcuToTest, tc);
     tc->telegram = telOriginal;
+    delete [] telCopy;
     delete bcuToTest;
 }

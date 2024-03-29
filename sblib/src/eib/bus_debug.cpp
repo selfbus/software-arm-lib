@@ -20,10 +20,19 @@
  ---------------------------------------------------------------------------*/
 
 #include <sblib/eib/bus_debug.h>
+#include <sblib/eib/bus_const.h>
+#include <sblib/eib/knx_lpdu.h>
 
 #if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined (DUMP_TELEGRAMS)
     Timer& ttimer = timer32_0;
 #endif
+
+#define dumpKNXAddress(addr) \
+         {\
+             serial.print(PHY_ADDR_AREA(addr)); \
+             serial.print(".", PHY_ADDR_LINE(addr)); \
+             serial.print(".", PHY_ADDR_DEVICE(addr)); \
+         }
 
 #ifdef DUMP_TELEGRAMS
     volatile unsigned char telBuffer[32];
@@ -35,7 +44,7 @@
     volatile unsigned int tx_telrxerror = 0;
 
     volatile unsigned int telRXtime = 0;
-    volatile bool telcollision;
+    volatile uint8_t telcollisions;
     volatile unsigned int telrxerror = 0;
     volatile unsigned int telRXStartTime = 0;
     volatile unsigned int telTXStartTime = 0;
@@ -166,8 +175,8 @@ void dumpTelegrams()
 
 void dumpTXTelegram()
 {
-    serial.print("TX : (S", telTXStartTime, DEC, 6);
-    serial.print(" E", telTXEndTime, DEC, 6);
+    serial.print("TX : (S", telTXStartTime, DEC, 10);
+    serial.print(" E", telTXEndTime, DEC, 10);
 
     if (telLastRXEndTime)
     {
@@ -207,29 +216,83 @@ void dumpTXTelegram()
     telTXStartTime = 0;
 }
 
+void dumpShortAcknowledgeFrameTiming(int delta)
+{
+    delta -= BIT_TIMES(15);
+    if (delta < -5)
+    {
+        serial.print(" afe ", delta + 5); // acknowledge frame early
+    }
+    else if (delta > 30)
+    {
+        serial.print(" afl +", delta - 30); // acknowledge frame late
+    }
+    else
+    {
+        // everything is fine
+    }
+}
+
+void dumpFrameTiming(int delta)
+{
+    delta -= BIT_TIMES(50);
+    if (delta < 0)
+    {
+        serial.print(" fre"); // frame early
+        serial.print(" ", delta);
+        if (telLength >= 3)
+        {
+            uint16_t senderAddr = makeWord(telBuffer[1], telBuffer[2]);
+            serial.print(" (");
+            serial.print(PHY_ADDR_AREA(senderAddr));
+            serial.print(".", PHY_ADDR_LINE(senderAddr));
+            serial.print(".", PHY_ADDR_DEVICE(senderAddr));
+            serial.print(")");
+        }
+    }
+    else
+    {
+        // everything is fine
+    }
+}
+
 void dumpRXTelegram()
 {
-    serial.print("RX : (S", telRXStartTime, DEC, 6 );
-    serial.print(" E", telRXEndTime, DEC, 6);
+    // Cache telRXStartTime, because the next telegram might start before we're done logging the last one.
+    // Does not apply to end times, because if these get overwritten before we log them, then all logged
+    // telegram content is wrong as well.
+    auto startTime = telRXStartTime;
+
+    serial.print("RX : (S", startTime, DEC, 10);
+    serial.print(" E", telRXEndTime, DEC, 10);
     /*
     serial.print(") ");
     serial.print(", LRXE:", telLastRXEndTime, DEC, 9);
     serial.print(", LTXE:", telLastTXEndTime, DEC,9);
     serial.print(") ");
     */
+    int timeDelta;
     if (telLastTXEndTime)
     {
         // print time in between last tx-tel and current rx-tel
-        serial.print(" dt TX-RX:", (telRXStartTime - telLastTXEndTime), DEC, 8);
+        timeDelta = startTime - telLastTXEndTime;
+        serial.print(" dt TX-RX:");
         telLastTXEndTime = 0;
     }
     else if(telLastRXEndTime)
     {
         // print time in between last rx-tel and current rx-tel
-        serial.print(" dt RX-RX:", (telRXStartTime - telLastRXEndTime), DEC, 8);
+        timeDelta = startTime - telLastRXEndTime;
+        serial.print(" dt RX-RX:");
         //serial.println(") ");
         //telLastRXEndTime = 0;
     }
+    else
+    {
+        serial.print(" dt ---RX:");
+        timeDelta = 0;
+    }
+    serial.print(timeDelta, DEC, 8);
 
     if (telrxerror != 0)
     {
@@ -241,9 +304,10 @@ void dumpRXTelegram()
     }
     serial.print(") ");
 
-    if (telcollision)
+    if (telcollisions)
     {
-        serial.print("collision ");
+        serial.print("collision ", telcollisions, DEC, 1);
+        serial.print(" ");
     }
 
     if (telRXNotProcessed)
@@ -259,20 +323,28 @@ void dumpRXTelegram()
             if (i) serial.print(" ");
             serial.print(telBuffer[i], HEX, 2);
         }
+        dumpFrameTiming(timeDelta);
     }
     else if (telLength == 1)
     {
-        // maybe a LL_ACK, LL_NACK or LL_BUSY, try to decode it
+        // maybe an short acknowledge frame, try to decode it
         switch (telBuffer[0])
         {
-        case 0xcc :
+        case SB_BUS_ACK :
             serial.print("LL_ACK");
+            dumpShortAcknowledgeFrameTiming(timeDelta);
             break;
-        case 0x0c :
+        case SB_BUS_NACK :
             serial.print("LL_NACK");
+            dumpShortAcknowledgeFrameTiming(timeDelta);
             break;
-        case 0xc0 :
+        case SB_BUS_BUSY :
             serial.print("LL_BUSY");
+            dumpShortAcknowledgeFrameTiming(timeDelta);
+            break;
+        case SB_BUS_NACK_BUSY :
+            serial.print("LL_NACK_BUSY");
+            dumpShortAcknowledgeFrameTiming(timeDelta);
             break;
         default:
             serial.print(telBuffer[0], HEX, 2);

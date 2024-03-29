@@ -21,6 +21,7 @@
  -----------------------------------------------------------------------------*/
 
 #include <sblib/main.h>
+#include <sblib/interrupt.h>
 #include <sblib/digital_pin.h>
 #include <sblib/eib/apci.h>
 #include <sblib/hardware_descriptor.h>
@@ -41,20 +42,23 @@
 #define BL_RESERVED_RAM_START (0x10000000) //!< RAM start address for bootloader
 #define BL_DEFAULT_VECTOR_TABLE_SIZE (192 / sizeof(uint32_t)) //!< vectortable size to copy prior application start
 
+#define APP_START_DELAY_MS (250)          //!< Time in milliseconds the programming led will light before the app is started
+
 // KNX/EIB specific settings
 #define DEFAULT_BL_KNX_ADDRESS (((15 << 12) | (15 << 8) | 192)) //!< 15.15.192 default updater KNX-address
-#define MANUFACTURER 0x04 //!< Manufacturer ID -> Jung
-#define DEVICETYPE 0x2060 //!< Device Type -> 2138.10
-#define APPVERSION 0x01   //!< Application Version -> 0.1
 
 BcuUpdate bcu = BcuUpdate(); //!< @ref BcuUpdate instance used for bus communication of the bootloader
 
 Timeout runModeTimeout; //!< running mode LED blinking timeout
 bool blinky = false;
 
+void startup();
+
 uint32_t getProgrammingButton()
 {
-#ifdef ALTERNATIVE_PROGRAMMING_BUTTON
+#ifdef GNAX_IO16FM_PROGRAMMING_BUTTON
+    return (PIO2_11);
+#elif defined ALTERNATIVE_PROGRAMMING_BUTTON
     return (PIO2_8);
 #else
     return (hwPinProgButton());
@@ -62,19 +66,8 @@ uint32_t getProgrammingButton()
 }
 
 /**
- * @brief Configures the system timer to call SysTick_Handler once every 1 msec.
- *
- */
-static void lib_setup()
-{
-    SysTick_Config(SystemCoreClock / 1000);
-    systemTime = 0;
-}
-
-/**
- * @brief Starts BCU with @ref DEFAULT_BL_KNX_ADDRESS (15.15.192) as a Jung 2138.10 device, version 0.1<br>
+ * @brief Starts BCU with @ref DEFAULT_BL_KNX_ADDRESS (15.15.192)
  *        Sets @ref PIN_RUN as output and in debug build also @ref PIN_INFO as output
- *
  */
 BcuBase* setup()
 {
@@ -100,6 +93,7 @@ BcuBase* setup()
     }
 #endif
 
+    startup();
     bcu.setOwnAddress(DEFAULT_BL_KNX_ADDRESS);
     bcu.setProgPin(getProgrammingButton());
     runModeTimeout.start(1);
@@ -142,7 +136,7 @@ BcuBase* setup()
 }
 
 /**
- * @brief Handles bus.idle(), LED status and MCU's reset (if requested by KNX-telegram), called from run_updater(...)
+ * @brief Handles LED status
  *
  */
 void loop()
@@ -171,12 +165,36 @@ void loop()
 }
 
 /**
- * @brief Starts the application by coping application's stack top and vectortable to ram, remaps it and calls Reset vector of it
+ * The processing loop while no KNX-application is loaded
+ */
+void loop_noapp()
+{
+}
+
+/**
+ * Restores MCU and register changes made by the bootloader (e.g. sysTick).
+ */
+static void finalize()
+{
+    Timeout ledTimeout; // don't use delay(), it needs nearly 100% more flash
+    pinMode(getProgrammingButton(), OUTPUT);
+    digitalWrite(getProgrammingButton(), false);
+    ledTimeout.start(APP_START_DELAY_MS);
+    while (!ledTimeout.expired())
+    {
+        waitForInterrupt();
+    }
+    SysTick->CTRL = 0; // disable sysTick, otherwise other apps may fail to start (e.g. bootloaderupdater)
+}
+
+/**
+ * @brief Starts the application by copying application's stack top and vectortable to ram, remaps it and calls Reset vector of it
  *
  * @param start     Start address of application
  */
 static void jumpToApplication(uint8_t * start)
 {
+    finalize(); // restore changes made and turn the programming led on
 #ifndef IAP_EMULATION
     unsigned int StackTop = *(unsigned int *) (start);
     unsigned int ResetVector = *(unsigned int *) (start + 4);
@@ -206,57 +224,27 @@ static void jumpToApplication(uint8_t * start)
 #endif
 }
 
-
 /**
- * @brief The real "main()" of the bootloader. Calls libsetup() to initialize the Selfbus library
- *        and setup() to initialize itself. Handles loop() of the BCU and itself.
- *
- * @param programmingMode if true bootloader enables BCU programming mode active, otherwise not.
+ * @brief  Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.
+ *         If no "magic word" is present it checks for a valid application to start,
+ *         otherwise starts in bootloader mode
  */
-static void run_updater(bool programmingMode)
-{
-    lib_setup();
-    setup();
-
-    if (programmingMode)
-    {
-        bcu.setProgrammingMode(programmingMode);
-    }
-
-    while (1)
-    {
-        bcu.loop();
-        loop();
-    }
-}
-
-/**
- * @brief Checks if "magic word" @ref BOOTLOADER_MAGIC_ADDRESS for bootloader mode is present and starts in bootloader mode.<br/>
- *        If no "magic word" is present it checks for a valid application to start,<br>
- *        otherwise starts in bootloader mode
- *
- * @return never returns
- */
-#ifndef IAP_EMULATION
-    int main()
-#else
-    int alt_main()
-#endif
+void startup()
 {
     // Updater request from application by setting magicWord
-  	unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
- 	if (*magicWord == BOOTLOADER_MAGIC_WORD)
+    unsigned int * magicWord = BOOTLOADER_MAGIC_ADDRESS;
+    if (*magicWord == BOOTLOADER_MAGIC_WORD)
     {
-        *magicWord = 0;	// avoid restarting BL after flashing
-        run_updater(true);
+        *magicWord = 0; // avoid restarting BL after flashing
+        return;
     }
-    *magicWord = 0;		// wrong magicWord, delete it
+    *magicWord = 0; // wrong magicWord, delete it
 
     // Enter Updater when programming button was pressed at power up
     pinMode(getProgrammingButton(), INPUT | PULL_UP);
     if (!digitalRead(getProgrammingButton()))
     {
-        run_updater(true);
+        return;
     }
 
     // Start main application at address
@@ -266,8 +254,6 @@ static void run_updater(bool programmingMode)
         jumpToApplication(block->startAddress);
     }
     // Start updater in case of error
-    run_updater(false);
-    return (0);
 }
 
 /** @}*/

@@ -1,5 +1,5 @@
 /*
- *  eib.h - Include the EIB / BCU related header files.
+ *  eibSYSTEMB.h - Include the SYSTEMB related header files.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *

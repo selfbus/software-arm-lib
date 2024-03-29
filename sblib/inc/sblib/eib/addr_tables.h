@@ -29,14 +29,6 @@ public:
 	virtual int indexOfAddr(int addr) = 0;
 
 	/**
-	 * Get the communication object of a group address.
-	 *
-	 * @param addr - the address to find.
-	 * @return The number of the communication object, or -1 if not found.
-	 */
-	int objectOfAddr(int addr);
-
-	/**
 	 * Get the address table. The address table contains the configured group addresses
 	 * and our own physical address.
 	 *
@@ -64,8 +56,6 @@ public:
      * @return Total number of address entries including own address
      */
     virtual uint16_t addrCount();
-
-	int addrForSendObject(int objno);
 };
 
 #endif /*sblib_addr_tables_h*/

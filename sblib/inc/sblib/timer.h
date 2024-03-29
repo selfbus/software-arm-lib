@@ -55,6 +55,15 @@ void delay(unsigned int msec);
  */
 void delayMicroseconds(unsigned int usec);
 
+#ifdef IAP_EMULATION
+/**
+ * Set the number of milliseconds that elapsed since the last reset or processor start.
+ *
+ * @param newSystemTime The number of milliseconds.
+ */
+void setMillis(unsigned int newSystemTime);
+#endif
+
 /**
  * Get the number of milliseconds that elapsed since the last reset or processor start.
  * Please note that the system time overflows and restarts at zero after 49,7 days.
@@ -488,18 +497,6 @@ protected:
 //
 
 
-ALWAYS_INLINE unsigned int millis()
-{
-    extern volatile unsigned int systemTime;
-    return systemTime;
-}
-
-ALWAYS_INLINE unsigned int elapsed(unsigned int ref)
-{
-    extern volatile unsigned int systemTime;
-    return systemTime - ref;
-}
-
 ALWAYS_INLINE void Timer::prescaler(unsigned int factor)
 {
     timer->PR = factor;
@@ -626,8 +623,9 @@ ALWAYS_INLINE void Timer::pwmDisable(int channel)
 ALWAYS_INLINE void Timer::matchModePinConfig(int channel, int mode)
 {
     int offset = channel << 1;
-    timer->EMR &= ~(0x30 << offset);
-    timer->EMR |= (mode & 0x30) << offset;
+    timer->EMR = (timer->EMR
+               & ~(0x30 << offset))
+               | ((mode & 0x30) << offset);
 }
 
 ALWAYS_INLINE bool Timer::is32bitTimer(void)

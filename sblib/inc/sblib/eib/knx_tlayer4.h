@@ -116,6 +116,7 @@ public:
      *                   or not (not even after repeating it a few times).
      */
     void finishedSendingTelegram(bool successful);
+
 protected:
     /**
      * Special initialization for the transport layer.
@@ -133,6 +134,29 @@ protected:
     virtual bool processBroadCastTelegram(ApciCommand apciCmd, unsigned char *telegram, uint8_t telLength) = 0;
 
     /**
+     * Processes a APCI telegram
+     *
+     * @param apciCmd       @ref ApciCommand of the telegram
+     * @param telegram      The APCI-telegram
+     * @param telLength     Telegram length
+     * @param sendBuffer    Pointer to the buffer for a potential response telegram
+     * @return Always false
+     */
+    virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
+
+    /**
+     * Disconnect from connected client.
+     */
+    void disconnect();
+
+    bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
+
+
+    virtual void discardReceivedTelegram() = 0;
+    virtual void send(unsigned char* telegram, unsigned short length) = 0;
+
+private:
+    /**
      * Reset TL4 connection by setting
      * @ref sendConnectedTelegramBufferState and @ref sendConnectedTelegramBuffer2State to
      * @ref CONNECTED_TELEGRAM_FREE
@@ -148,24 +172,6 @@ protected:
      */
     void sendConControlTelegram(TPDU cmd, uint16_t address, int8_t senderSeqNo);
 
-    /**
-     * Processes a APCI telegram
-     *
-     * @param apciCmd       @ref ApciCommand of the telegram
-     * @param telegram      The APCI-telegram
-     * @param telLength     Telegram length
-     * @param sendBuffer    Pointer to the buffer for a potential response telegram
-     * @return Always false
-     */
-    virtual bool processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t telLength, uint8_t * sendBuffer);
-
-    bool enabled = false; //!< The BCU is enabled. Set by bcu.begin().
-
-
-    virtual void discardReceivedTelegram() = 0;
-    virtual void send(unsigned char* telegram, unsigned short length) = 0;
-
-private:
     /**
      * Internal processing of the received telegram from bus.telegram. Called by processTelegram
      */
@@ -285,6 +291,7 @@ private:
     int8_t seqNoSend = -1;                      //!< Sequence number for the next telegram we send
     int8_t seqNoRcv = -1;                       //!< Sequence number of the last telegram received from connected partner
     int8_t repCount = 0;                        //!< Telegram repetition count
+    int8_t conCtrlRepCount = 0;                 //!< Connection control telegram repetition count
     uint32_t connectedTime = 0;                 //!< System time of the last connection oriented telegram
     uint32_t sentTelegramTime = 0;              //!< System time of the last sent telegram
 
@@ -308,17 +315,10 @@ private:
         TELEGRAM_ACQUIRED,
         TELEGRAM_SENDING
     };
-    enum SendConnectedTelegramBufferState
-    {
-        CONNECTED_TELEGRAM_FREE,
-        CONNECTED_TELEGRAM_WAIT_T_ACK_SENT,
-        CONNECTED_TELEGRAM_WAIT_LOOP,
-        CONNECTED_TELEGRAM_SENDING
-    };
 
     volatile SendTelegramBufferState sendTelegramBufferState;
-    volatile SendConnectedTelegramBufferState sendConnectedTelegramBufferState;
-    volatile SendConnectedTelegramBufferState sendConnectedTelegramBuffer2State;
+    volatile SendTelegramBufferState sendConnectedTelegramBufferState;
+    volatile SendTelegramBufferState sendConnectedTelegramBuffer2State;
 };
 
 inline bool TLayer4::directConnection()

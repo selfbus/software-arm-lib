@@ -153,8 +153,7 @@ void loop(void)
     checkPeriodic();
 
     // Sleep up to 1 millisecond if there is nothing to do
-    if (bcu.bus->idle())
-        waitForInterrupt();
+    waitForInterrupt();
 }
 
 /**
@@ -162,9 +161,6 @@ void loop(void)
  */
 void loop_noapp(void)
 {
-    // Sleep up to 1 millisecond if there is nothing to do
-    if (bcu.bus->idle())
-        waitForInterrupt();
 }
 
 /** @}*/
