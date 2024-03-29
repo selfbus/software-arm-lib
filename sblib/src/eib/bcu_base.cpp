@@ -47,7 +47,18 @@ void BcuBase::loop()
     bus->loop();
     TLayer4::loop();
 
-    if (bus->telegramReceived() && !bus->sendingTelegram() && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+    // We want to process a received telegram only if there is nothing to send because:
+    //
+    //     1) Processing the telegram can cause a response telegram, e.g. a T_ACK in
+    //        connection-oriented Transport Layer messages, and we need to have an empty
+    //        buffer to be able to store and send such responses.
+    //
+    //     2) When debugging, it's crucial to only stop in safe states, i.e. only when
+    //        there is nothing to send, not even an acknowledge frame. Otherwise, the
+    //        Bus timer is configured to pull the bus low (send a 0 bit) for some time
+    //        and the MCU continues timer operation, even when a breakpoint is active.
+    //
+    if (bus->telegramReceived() && !bus->sendingFrame() && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
     {
         processTelegram(bus->telegram, (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
     }
@@ -66,7 +77,7 @@ void BcuBase::loop()
     }
 
     // Rest of this function is only relevant if currently able to send another telegram.
-    if (bus->sendingTelegram())
+    if (bus->sendingFrame())
     {
         return;
     }

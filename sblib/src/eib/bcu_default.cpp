@@ -123,7 +123,7 @@ void BcuDefault::loop()
     BcuBase::loop(); // check processTelegram and programming button state
 
     // Rest of this function is only relevant if currently able to send another telegram.
-    if (bus->sendingTelegram())
+    if (bus->sendingFrame())
     {
         return;
     }

@@ -101,11 +101,11 @@ public:
     void timerInterruptHandler();
 
     /**
-     * Test if there is a telegram being sent.
+     * Test if there is a frame being sent (data frame or acknowledge frame).
      *
-     * @return True if there is a telegram to be sent, false if not.
+     * @return True if there is a frame to be sent, false if not.
      */
-    bool sendingTelegram() const;
+    bool sendingFrame() const;
 
     /**
      * Test if there is a received telegram in bus.telegram[].
@@ -289,9 +289,9 @@ inline void Bus::maxSendBusyRetries(int retries)
     sendBusyRetriesMax = retries;
 }
 
-inline bool Bus::sendingTelegram() const
+inline bool Bus::sendingFrame() const
 {
-    return sendCurTelegram != nullptr;
+    return sendCurTelegram != nullptr || sendAck != 0;
 }
 
 inline bool Bus::telegramReceived() const

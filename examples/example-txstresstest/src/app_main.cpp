@@ -96,7 +96,7 @@ BcuBase* setup()
  */
 void loop(void)
 {
-    if (!bcu.bus->sendingTelegram() && ((TEST_DELAY_MS <= 0) || (sendTimeout.expired())))
+    if (!bcu.bus->sendingFrame() && ((TEST_DELAY_MS <= 0) || (sendTimeout.expired())))
     {
         sendTestTelegram();
     }

@@ -190,7 +190,7 @@ bool Bus::canPause(bool waitForTelegramSent)
     //   cannot pause as we must retry within a certain time frame.
     // * have not sent the telegram yet, it depends on @ref waitForTelegramSent whether the user
     //   wants us to pause or not.
-    if (sendingTelegram())
+    if (sendCurTelegram != nullptr)
     {
         if (repeatTelegram)
             return false;
@@ -219,7 +219,7 @@ void Bus::prepareTelegram(unsigned char* telegram, unsigned short length) const
  *
  * Is called from within the BCU-loop method. Is blocking if there is no space
  * in the Telegram buffer (as we have only one buffer at BCU level, the check for buffer free is
- * in the BCU-loop on bus.sendingTelegram())
+ * in the BCU-loop on bus.sendingFrame())
  *
  * Send a telegram. The checksum byte will be added at the end of telegram[].
  * Ensure that there is at least one byte space at the end of telegram[].
