@@ -31,6 +31,8 @@ import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.List;
 
+import static java.awt.Font.PLAIN;
+
 @SuppressWarnings("serial")
 public class GuiMain extends JFrame {
     private JButton buttonLoadFile;
@@ -376,6 +378,7 @@ public class GuiMain extends JFrame {
         this.setContentPane(this.panelMain);
         this.setTitle(ToolInfo.getFullInfo());
         this.setSize(1000, 800);
+        this.jLoggingPane.setFont(new Font("Courier New", PLAIN, 12));
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -823,7 +826,7 @@ public class GuiMain extends JFrame {
         if (fontName == null) {
             resultName = currentFont.getName();
         } else {
-            Font testFont = new Font(fontName, Font.PLAIN, 10);
+            Font testFont = new Font(fontName, PLAIN, 10);
             if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
                 resultName = fontName;
             } else {
