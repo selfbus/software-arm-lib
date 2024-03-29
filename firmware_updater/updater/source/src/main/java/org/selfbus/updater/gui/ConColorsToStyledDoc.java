@@ -16,46 +16,43 @@ public class ConColorsToStyledDoc {
      */
     public static void Convert(String docWithConColors, StyledDocument originDocument) throws BadLocationException {
 
-        if(docWithConColors.contains("\033")) {
-            String colorCode ="";
-
-            int startPart = 0;
-
-            int startIndex = docWithConColors.indexOf("\033");
-
-            String[] splitDoc = docWithConColors.split("\033");
-
-            // wenn der String vor der der ersten ConColor Zeichen hat, werden diese ohne Formatierung angehängt
-            if(startIndex != 0){
-                startPart = 1;
-                originDocument.insertString(originDocument.getLength(), splitDoc[0], null);
-            }
-
-            for (int docPartCnt = startPart; docPartCnt < splitDoc.length; docPartCnt++) {
-                String docPart = splitDoc[docPartCnt];
-                if(!docPart.isEmpty()) {
-                    for (int i = 2; i < 7; i++) {
-                        String endChar = docPart.substring(i, i + 1);
-                        if (endChar.equals("m")) {
-                            colorCode = docPart.substring(1, i);
-                            break;
-                        }
-                    }
-                    String cleanedString = docPart.replace("[" + colorCode + "m", "");
-
-                    Style partStyle = convertConColorToStyle(colorCode);
-
-                    int oldDocLength = originDocument.getLength();
-
-                    originDocument.insertString(originDocument.getLength(), cleanedString, null);
-
-                    originDocument.setCharacterAttributes(oldDocLength, cleanedString.length(), partStyle,false);
-                }
-            }
-        }
-        else{
+        if(!docWithConColors.contains("\033")) {
             // ohne ConColors im Datenstring
             originDocument.insertString(originDocument.getLength(), docWithConColors, null);
+            return;
+        }
+
+        String colorCode ="";
+        int startPart = 0;
+        int startIndex = docWithConColors.indexOf("\033");
+        String[] splitDoc = docWithConColors.split("\033");
+
+        // wenn der String vor dem ersten ConColor Zeichen hat, werden diese ohne Formatierung angehängt
+        if(startIndex != 0){
+            startPart = 1;
+            originDocument.insertString(originDocument.getLength(), splitDoc[0], null);
+        }
+
+        for (int docPartCnt = startPart; docPartCnt < splitDoc.length; docPartCnt++) {
+            String docPart = splitDoc[docPartCnt];
+            if(!docPart.isEmpty()) {
+                for (int i = 2; i < 7; i++) {
+                    String endChar = docPart.substring(i, i + 1);
+                    if (endChar.equals("m")) {
+                        colorCode = docPart.substring(1, i);
+                        break;
+                    }
+                }
+                String cleanedString = docPart.replace("[" + colorCode + "m", "");
+
+                Style partStyle = convertConColorToStyle(colorCode);
+
+                int oldDocLength = originDocument.getLength();
+
+                originDocument.insertString(originDocument.getLength(), cleanedString, null);
+
+                originDocument.setCharacterAttributes(oldDocLength, cleanedString.length(), partStyle,false);
+            }
         }
     }
 
