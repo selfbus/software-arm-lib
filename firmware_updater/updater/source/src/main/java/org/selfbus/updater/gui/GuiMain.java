@@ -374,7 +374,7 @@ public class GuiMain extends JFrame {
 
     public void startUpdaterGui() {
         this.setContentPane(this.panelMain);
-        this.setTitle("Selfbus Updater");
+        this.setTitle(ToolInfo.getFullInfo());
         this.setSize(1000, 800);
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
