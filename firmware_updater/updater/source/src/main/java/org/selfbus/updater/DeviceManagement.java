@@ -345,7 +345,7 @@ public final class DeviceManagement {
             else {
                 colored = ConColors.BRIGHT_YELLOW;
             }
-            logger.info("  {}{}{}", colored, blStatistic, ConColors.RESET);
+            logger.info("  Bootloader: {}{}{}", colored, blStatistic, ConColors.RESET);
         }
         else {
             logger.warn("  {}{}{}", ConColors.RED,

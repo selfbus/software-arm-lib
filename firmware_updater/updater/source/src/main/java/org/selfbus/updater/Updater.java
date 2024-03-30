@@ -1,5 +1,6 @@
 package org.selfbus.updater;
 
+import org.selfbus.updater.bootloader.BootloaderStatistic;
 import tuwien.auto.calimero.*;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
@@ -157,20 +158,8 @@ public class Updater implements Runnable {
         } else {
             col = ConColors.BRIGHT_RED;
         }
-        ///\todo find a better way to build the infoMsg, check possible logback functions
         String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
                 result.written(), flashTimeDuration, col, bytesPerSecond, ConColors.RESET);
-
-        if (result.dropCount() > 0) {
-            infoMsg += String.format(" %sDisconnects: %d%s", ConColors.BRIGHT_RED, result.dropCount(), ConColors.RESET);
-        } else {
-            infoMsg += String.format(" %sDisconnect: %d%s", ConColors.BRIGHT_GREEN, result.dropCount(), ConColors.RESET);
-        }
-        if (result.timeoutCount() > 0) {
-            infoMsg += String.format(" %sTimeouts: %d%s", ConColors.BRIGHT_RED, result.timeoutCount(), ConColors.RESET);
-        } else {
-            infoMsg += String.format(" %sTimeout: %d%s", ConColors.BRIGHT_GREEN, result.timeoutCount(), ConColors.RESET);
-        }
         logger.info("{}", infoMsg);
     }
 
@@ -341,8 +330,24 @@ public class Updater implements Runnable {
                 else {
                     resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash(), cliOptions.logStatistics());
                 }
-                logger.info("\nRequesting Bootloader statistic...");
+                logger.info("Requesting Bootloader statistic...");
                 dm.requestBootLoaderStatistic();
+
+                String updaterStatisticMsg = "  Updater:   ";
+                String colored;
+                if (resultTotal.dropCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
+                    colored = ConColors.BRIGHT_RED;
+                } else {
+                    colored = ConColors.BRIGHT_GREEN;
+                }
+                updaterStatisticMsg += String.format(" %s#Disconnect: %d%s", colored, resultTotal.dropCount(), ConColors.RESET);
+                if (resultTotal.timeoutCount() > BootloaderStatistic.THRESHOLD_REPEATED) {
+                    colored = ConColors.BRIGHT_RED;
+                } else {
+                    colored = ConColors.BRIGHT_GREEN;
+                }
+                updaterStatisticMsg += String.format(" %s#repeated T_ACK: %d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
+                logger.info("{}", updaterStatisticMsg);
                 printStatisticData(flashTimeStart, resultTotal);
             }
             else {
