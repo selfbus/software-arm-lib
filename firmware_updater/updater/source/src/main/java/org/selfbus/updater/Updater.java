@@ -338,13 +338,13 @@ public class Updater implements Runnable {
                 } else {
                     colored = ConColors.BRIGHT_GREEN;
                 }
-                updaterStatisticMsg += String.format(" %s#Disconnect: %d%s", colored, resultTotal.dropCount(), ConColors.RESET);
+                updaterStatisticMsg += String.format(" %s#Disconnect: %2d%s", colored, resultTotal.dropCount(), ConColors.RESET);
                 if (resultTotal.timeoutCount() > BootloaderStatistic.THRESHOLD_REPEATED) {
                     colored = ConColors.BRIGHT_RED;
                 } else {
                     colored = ConColors.BRIGHT_GREEN;
                 }
-                updaterStatisticMsg += String.format(" %s#Timeout       : %d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
+                updaterStatisticMsg += String.format(" %s#Timeout       : %2d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
                 logger.info("{}", updaterStatisticMsg);
                 printStatisticData(flashTimeStart, resultTotal);
             }
