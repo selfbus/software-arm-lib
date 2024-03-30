@@ -316,7 +316,7 @@ public final class DeviceManagement {
         Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
         Utils.longToStream(programBootDescriptor, 4, crc32Value);
         System.out.println();
-        logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
+        logger.info("Updating boot descriptor with crc32 0x{}, length {}",
                 Integer.toHexString(crc32Value), streamBootDescriptor.length);
         ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
         if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS.id) {
