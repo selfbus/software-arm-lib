@@ -9,7 +9,7 @@ import org.selfbus.updater.Utils;
  *  see software-arm-lib/Bus-Updater/inc/boot_descriptor_block.h for more information
  */
 public class BootDescriptor {
-    private static final long INVALID_APP_VERSION_ADDRESS = 0xFFFFFFFFL;
+    private static final long INVALID_ADDRESS = 0xFFFFFFFFL;
     private long  startAddress;
     private long  endAddress;
     private int  crc32;
@@ -32,7 +32,7 @@ public class BootDescriptor {
         this.crc32 = crc32;
         this.appVersionAddress = appVersionAddress;
 
-        valid = (this.startAddress != INVALID_APP_VERSION_ADDRESS) && (startAddress < endAddress);
+        valid = (this.startAddress != INVALID_ADDRESS) && (startAddress < endAddress);
     }
 
 
@@ -49,7 +49,7 @@ public class BootDescriptor {
                      ((parse[9] & 0xFF) << 8) +
                      ((parse[10] & 0xFF) << 16) +
                      ((parse[11] & 0xFF) << 24);
-        return new BootDescriptor(startAddr, endAddr, crc32, INVALID_APP_VERSION_ADDRESS);
+        return new BootDescriptor(startAddr, endAddr, crc32, INVALID_ADDRESS);
     }
 
     public long startAddress() {
@@ -83,11 +83,11 @@ public class BootDescriptor {
         }
         else {
             res = String.format("%sinvalid%s, 0x%04X-0x%04X, %05d byte(s), crc32 0x%04X",
-                    ConColors.RED, ConColors.RESET, INVALID_APP_VERSION_ADDRESS & 0x0000FFFF,
-                    INVALID_APP_VERSION_ADDRESS & 0x0000FFFF, length(), crc32);
+                    ConColors.RED, ConColors.RESET, INVALID_ADDRESS & 0x0000FFFF,
+                    INVALID_ADDRESS & 0x0000FFFF, length(), crc32);
         }
 
-        if (appVersionAddress != INVALID_APP_VERSION_ADDRESS)
+        if (appVersionAddress != INVALID_ADDRESS)
         {
             res += String.format(", APP_VERSION pointer: 0x%04X", appVersionAddress);
         }
