@@ -9,7 +9,7 @@ import org.selfbus.updater.Utils;
  *  see software-arm-lib/Bus-Updater/inc/boot_descriptor_block.h for more information
  */
 public class BootDescriptor {
-    private static final long INVALID_APP_VERSION_ADDRESS = 0xFFFFFFFF;
+    private static final long INVALID_APP_VERSION_ADDRESS = 0xFFFFFFFFL;
     private long  startAddress;
     private long  endAddress;
     private int  crc32;
@@ -32,7 +32,7 @@ public class BootDescriptor {
         this.crc32 = crc32;
         this.appVersionAddress = appVersionAddress;
 
-        valid = (this.startAddress != 0xFFFFFFFFL) && (startAddress < endAddress);
+        valid = (this.startAddress != INVALID_APP_VERSION_ADDRESS) && (startAddress < endAddress);
     }
 
 
