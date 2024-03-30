@@ -82,8 +82,8 @@ public class ConColorsToStyledDoc {
             // Regular Background or Reset
             if(colorCode.equals("0")){
                 // Reset
-                StyleConstants.setForeground(stringStyle, Color.black);
-                StyleConstants.setBackground(stringStyle, Color.white);
+                StyleConstants.setForeground(stringStyle, Color.white);
+                StyleConstants.setBackground(stringStyle, Color.black);
                 StyleConstants.setBold(stringStyle,false);
             }
             else{

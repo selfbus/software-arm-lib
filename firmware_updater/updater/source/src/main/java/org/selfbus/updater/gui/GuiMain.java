@@ -379,6 +379,8 @@ public class GuiMain extends JFrame {
         this.setTitle(ToolInfo.getToolAndVersion());
         this.setSize(1000, 800);
         this.jLoggingPane.setFont(new Font("Courier New", PLAIN, 12));
+        this.jLoggingPane.setBackground(Color.black);
+        this.jLoggingPane.setForeground(Color.white);
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
