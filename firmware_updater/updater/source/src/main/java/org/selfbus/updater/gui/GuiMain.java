@@ -376,7 +376,7 @@ public class GuiMain extends JFrame {
 
     public void startUpdaterGui() {
         this.setContentPane(this.panelMain);
-        this.setTitle(ToolInfo.getFullInfo());
+        this.setTitle(ToolInfo.getToolAndVersion());
         this.setSize(1000, 800);
         this.jLoggingPane.setFont(new Font("Courier New", PLAIN, 12));
         this.setVisible(true);

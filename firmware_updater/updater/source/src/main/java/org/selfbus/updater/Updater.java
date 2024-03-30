@@ -90,7 +90,6 @@ public class Updater implements Runnable {
 
     public Updater(CliOptions cliOptions){
         this.cliOptions = cliOptions;
-        logger.info(ConColors.BRIGHT_BOLD_GREEN + ToolInfo.getToolAndVersion() + ConColors.RESET);
         this.sbKNXLink = new SBKNXLink();
         this.sbKNXLink.setCliOptions(cliOptions);
     }
