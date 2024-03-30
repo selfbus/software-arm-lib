@@ -143,7 +143,7 @@ public class BinImage {
     }
 
     public final String toString() {
-        return String.format("0x%04X-0x%04X, %d bytes, crc32 0x%04X",
+        return String.format("0x%04X-0x%04X, %05d byte(s), crc32 0x%04X",
                 startAddress, endAddress, binData.length, crc32());
     }
 

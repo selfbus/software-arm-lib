@@ -75,13 +75,11 @@ public class FlashFullMode {
             }
             String percentageDone = String.format("%5.1f", (float) 100 * (resultTotal.written()) / totalLength);
             String progressInfo = String.format("%s %s%% %s%6.2f B/s%s", ConColors.BRIGHT_GREEN, percentageDone, col, bytesPerSecond, ConColors.RESET);
-            logger.trace(progressInfo);
             // Check if printed Utils.PROGRESS_MARKER and progressInfo would exceed console width
             int progressMarkerLength = dm.getBlockSize()/(dm.getMaxPayload() * Utils.PROGRESS_MARKER.length());
             if ((progressMarkerLength + progressInfo.length()) > Utils.CONSOLE_WIDTH) {
                 System.out.println();
             }
-            System.out.print(progressInfo);
 
             // flash the previously sent data
             int crc32 = Utils.crc32Value(txBuffer);
@@ -90,15 +88,13 @@ public class FlashFullMode {
             Utils.longToStream(progPars, 2, progAddress);
             Utils.longToStream(progPars, 6, crc32);
 
-            String programFlashInfo = String.format("0x%04X-0x%04X", progAddress, progAddress + txBuffer.length - 1);
+            String programFlashInfo = String.format("%s 0x%04X-0x%04X", progressInfo, progAddress, progAddress + txBuffer.length - 1);
             if (txBuffer.length != dm.getBlockSize())
             {
                 programFlashInfo = String.format("%s (%d bytes)", programFlashInfo, txBuffer.length);
             }
-
-            logger.trace("Program device {} {}", programFlashInfo, String.format("crc32 0x%08X", crc32));
-            System.out.print(" "+ programFlashInfo);
-            System.out.println();
+            logger.info(programFlashInfo);
+            logger.trace("with crc32 {}", String.format("crc32 0x%08X", crc32));
 
             resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, -1);
 

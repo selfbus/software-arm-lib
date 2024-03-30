@@ -137,7 +137,7 @@ public final class DeviceManagement {
 
     public BootloaderIdentity requestBootloaderIdentity()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nRequesting Bootloader Identity...");
+        logger.info("Requesting Bootloader Identity...");
 
         byte[] telegram = new byte[2];
         telegram[0] = (byte) ToolInfo.versionMajor();
@@ -316,8 +316,8 @@ public final class DeviceManagement {
         Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
         Utils.longToStream(programBootDescriptor, 4, crc32Value);
         System.out.println();
-        logger.info("Updating boot descriptor with CRC32 0x{}, length {}",
-                Integer.toHexString(crc32Value), streamBootDescriptor.length);
+        logger.info(String.format("Updating boot descriptor with crc32 0x%04X, length %d",
+                crc32Value, streamBootDescriptor.length));
         ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
         if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
@@ -337,7 +337,15 @@ public final class DeviceManagement {
         if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)
         {
             BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-            logger.info("  {}{}{}", ConColors.BRIGHT_YELLOW, blStatistic, ConColors.RESET);
+            String colored;
+            if ((blStatistic.getDisconnectCount() < BootloaderStatistic.THRESHOLD_DISCONNECT) &&
+                (blStatistic.getRepeatedT_ACKcount() < BootloaderStatistic.THRESHOLD_REPEATED)) {
+                colored = ConColors.BRIGHT_GREEN;
+            }
+            else {
+                colored = ConColors.BRIGHT_YELLOW;
+            }
+            logger.info("  Bootloader: {}{}{}", colored, blStatistic, ConColors.RESET);
         }
         else {
             logger.warn("  {}{}{}", ConColors.RED,

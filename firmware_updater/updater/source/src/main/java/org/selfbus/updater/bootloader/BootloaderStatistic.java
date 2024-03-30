@@ -3,6 +3,8 @@ package org.selfbus.updater.bootloader;
 import org.selfbus.updater.Utils;
 
 public class BootloaderStatistic {
+    public static final int THRESHOLD_DISCONNECT = 1;
+    public static final int THRESHOLD_REPEATED = 1;
     private final int disconnectCount;
     private final int repeatedT_ACKcount;
 
@@ -19,7 +21,7 @@ public class BootloaderStatistic {
     }
 
     public String toString() {
-        return String.format("#Disconnect: %d #repeated T_ACK: %d",
+        return String.format("#Disconnect: %2d #repeated T_ACK: %2d",
                               getDisconnectCount(), getRepeatedT_ACKcount());
     }
 

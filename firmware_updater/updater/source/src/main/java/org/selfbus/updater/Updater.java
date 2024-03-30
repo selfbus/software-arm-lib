@@ -1,5 +1,7 @@
 package org.selfbus.updater;
 
+import org.selfbus.updater.bootloader.BootloaderStatistic;
+import tuwien.auto.calimero.*;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
@@ -7,17 +9,14 @@ import org.selfbus.updater.bootloader.BootloaderUpdater;
 import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.IndividualAddress;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.Settings;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import static org.selfbus.updater.Utils.shortenPath;
+
+import org.selfbus.updater.gui.GuiMain;
 
 /**
  * A Tool for updating firmware of a Selfbus device in a KNX network.
@@ -89,17 +88,27 @@ public class Updater implements Runnable {
         }
     }
 
+    public Updater(CliOptions cliOptions){
+        this.cliOptions = cliOptions;
+        this.sbKNXLink = new SBKNXLink();
+        this.sbKNXLink.setCliOptions(cliOptions);
+    }
+
     public static void main(final String[] args) {
-        try {
-            final Updater d = new Updater(args);
-            final ShutdownHandler sh = new ShutdownHandler().register();
-            d.run();
-            sh.unregister();
-        } catch (final Throwable t) {
-            logger.error("parsing options ", t);
-        } finally {
-            logger.info("\n\n");
-            logger.debug("main exit");
+        if(args.length == 0) {
+            GuiMain.startSwingGui();
+        }else {
+            try {
+                final Updater d = new Updater(args);
+                final ShutdownHandler sh = new ShutdownHandler().register();
+                d.run();
+                sh.unregister();
+            } catch (final Throwable t) {
+                logger.error("parsing options ", t);
+            } finally {
+                logger.info("\n\n");
+                logger.debug("main exit");
+            }
         }
     }
 
@@ -147,20 +156,8 @@ public class Updater implements Runnable {
         } else {
             col = ConColors.BRIGHT_RED;
         }
-        ///\todo find a better way to build the infoMsg, check possible logback functions
         String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
                 result.written(), flashTimeDuration, col, bytesPerSecond, ConColors.RESET);
-
-        if (result.dropCount() > 0) {
-            infoMsg += String.format(" %sDisconnects: %d%s", ConColors.BRIGHT_RED, result.dropCount(), ConColors.RESET);
-        } else {
-            infoMsg += String.format(" %sDisconnect: %d%s", ConColors.BRIGHT_GREEN, result.dropCount(), ConColors.RESET);
-        }
-        if (result.timeoutCount() > 0) {
-            infoMsg += String.format(" %sTimeouts: %d%s", ConColors.BRIGHT_RED, result.timeoutCount(), ConColors.RESET);
-        } else {
-            infoMsg += String.format(" %sTimeout: %d%s", ConColors.BRIGHT_GREEN, result.timeoutCount(), ConColors.RESET);
-        }
         logger.info("{}", infoMsg);
     }
 
@@ -249,7 +246,7 @@ public class Updater implements Runnable {
             // Request current main firmware boot descriptor from device
             BootDescriptor bootDescriptor = dm.requestBootDescriptor();
             if (newFirmware != null) {
-                logger.info("  New firmware:            {}", newFirmware);
+                logger.info("  New firmware:              {}", newFirmware);
             }
 
             logger.info("Requesting APP_VERSION...");
@@ -331,8 +328,24 @@ public class Updater implements Runnable {
                 else {
                     resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash(), cliOptions.logStatistics());
                 }
-                logger.info("\nRequesting Bootloader statistic...");
+                logger.info("Requesting Bootloader statistic...");
                 dm.requestBootLoaderStatistic();
+
+                String updaterStatisticMsg = "  Updater:   ";
+                String colored;
+                if (resultTotal.dropCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
+                    colored = ConColors.BRIGHT_YELLOW;
+                } else {
+                    colored = ConColors.BRIGHT_GREEN;
+                }
+                updaterStatisticMsg += String.format(" %s#Disconnect: %2d%s", colored, resultTotal.dropCount(), ConColors.RESET);
+                if (resultTotal.timeoutCount() > BootloaderStatistic.THRESHOLD_REPEATED) {
+                    colored = ConColors.BRIGHT_YELLOW;
+                } else {
+                    colored = ConColors.BRIGHT_GREEN;
+                }
+                updaterStatisticMsg += String.format(" %s#Timeout       : %2d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
+                logger.info("{}", updaterStatisticMsg);
                 printStatisticData(flashTimeStart, resultTotal);
             }
             else {
@@ -343,18 +356,18 @@ public class Updater implements Runnable {
                     newFirmware.endAddress(),
                     (int) newFirmware.crc32(),
                     newFirmware.startAddress() + newFirmware.getAppVersionAddress());
-            logger.info("\nPreparing boot descriptor with {}", newBootDescriptor);
+            logger.info("Preparing boot descriptor with {}", newBootDescriptor);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
             String deviceInfo = cliOptions.progDevice().toString();
             if (cliOptions.device() != null) {
                 deviceInfo = cliOptions.device().toString();
             }
-            logger.info("\nFinished programming {}device {} with {}{}\n", ConColors.BRIGHT_YELLOW, deviceInfo, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
-            logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
+            logger.info("Finished programming {}device {} with {}{}", ConColors.BRIGHT_YELLOW, deviceInfo, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
+            logger.info("{}{}Firmware Update done, Restarting device now...{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
             dm.restartProgrammingDevice();
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
-                logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BG_GREEN,
+                logger.info("{}{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BLACK, ConColors.BG_GREEN,
                         String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f), ConColors.RESET);
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
             }
@@ -373,6 +386,34 @@ public class Updater implements Runnable {
             if (link != null)
                 link.close();
             onCompletion(thrown, canceled);
+        }
+    }
+
+    public String requestUid(){
+        KNXNetworkLink link;
+        try {
+            link = this.sbKNXLink.openLink();
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
+            logger.info("KNX connection: {}", link);
+
+            //for option --device restart the device in bootloader mode
+            if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
+                dm.checkDeviceInProgrammingMode(null); // check that before no device is in programming mode
+                dm.restartDeviceToBootloader(link, cliOptions.device());
+            }
+
+            dm.checkDeviceInProgrammingMode(cliOptions.progDevice());
+
+            byte[] uid = dm.requestUIDFromDevice();
+
+            if (cliOptions.device() != null) {
+                dm.restartProgrammingDevice();
+            }
+            link.close();
+            return Utils.byteArrayToHex(uid);
+
+        } catch (InterruptedException | UpdaterException | KNXException e) {
+            throw new RuntimeException(e);
         }
     }
 }

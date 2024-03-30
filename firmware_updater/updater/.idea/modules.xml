@@ -2,6 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SB_updater.iml" filepath="$PROJECT_DIR$/.idea/modules/SB_updater.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SB_updater.main.iml" filepath="$PROJECT_DIR$/.idea/modules/SB_updater.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/SB_updater.test.iml" filepath="$PROJECT_DIR$/.idea/modules/SB_updater.test.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/Selfbus_Updater.iml" filepath="$PROJECT_DIR$/.idea/Selfbus_Updater.iml" />
     </modules>
   </component>

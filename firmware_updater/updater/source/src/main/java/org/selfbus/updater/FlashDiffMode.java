@@ -125,7 +125,7 @@ public final class FlashDiffMode {
             byte[] progPars = new byte[4];
             Utils.longToStream(progPars, 0, (int) crc32);
             System.out.println();
-            logger.info("Program device next page diff, CRC32 0x{}", String.format("%08X", crc32));
+            logger.info("Program device next page diff, crc32 0x{}", String.format("%08X", crc32));
             result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, -1));
             if (UPDProtocol.checkResult(result.get().data()) != UDPResult.IAP_SUCCESS.id) {
                 dm.restartProgrammingDevice();
