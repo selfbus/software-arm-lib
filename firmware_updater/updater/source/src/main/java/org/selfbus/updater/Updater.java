@@ -360,11 +360,11 @@ public class Updater implements Runnable {
                 deviceInfo = cliOptions.device().toString();
             }
             logger.info("\nFinished programming {}device {} with {}{}\n", ConColors.BRIGHT_YELLOW, deviceInfo, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
-            logger.info("{}Firmware Update done, Restarting device now...{}", ConColors.BG_GREEN, ConColors.RESET);
+            logger.info("{}{}Firmware Update done, Restarting device now...{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
             dm.restartProgrammingDevice();
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
-                logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BG_GREEN,
+                logger.info("{}{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BLACK, ConColors.BG_GREEN,
                         String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f), ConColors.RESET);
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
             }
