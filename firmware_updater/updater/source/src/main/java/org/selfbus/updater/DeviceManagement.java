@@ -137,7 +137,7 @@ public final class DeviceManagement {
 
     public BootloaderIdentity requestBootloaderIdentity()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nRequesting Bootloader Identity...");
+        logger.info("Requesting Bootloader Identity...");
 
         byte[] telegram = new byte[2];
         telegram[0] = (byte) ToolInfo.versionMajor();
