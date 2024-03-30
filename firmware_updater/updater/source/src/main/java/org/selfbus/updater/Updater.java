@@ -334,13 +334,13 @@ public class Updater implements Runnable {
                 String updaterStatisticMsg = "  Updater:   ";
                 String colored;
                 if (resultTotal.dropCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
-                    colored = ConColors.BRIGHT_RED;
+                    colored = ConColors.BRIGHT_YELLOW;
                 } else {
                     colored = ConColors.BRIGHT_GREEN;
                 }
                 updaterStatisticMsg += String.format(" %s#Disconnect: %2d%s", colored, resultTotal.dropCount(), ConColors.RESET);
                 if (resultTotal.timeoutCount() > BootloaderStatistic.THRESHOLD_REPEATED) {
-                    colored = ConColors.BRIGHT_RED;
+                    colored = ConColors.BRIGHT_YELLOW;
                 } else {
                     colored = ConColors.BRIGHT_GREEN;
                 }
