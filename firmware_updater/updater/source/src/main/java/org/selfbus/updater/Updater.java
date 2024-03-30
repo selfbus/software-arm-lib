@@ -344,7 +344,7 @@ public class Updater implements Runnable {
                 } else {
                     colored = ConColors.BRIGHT_GREEN;
                 }
-                updaterStatisticMsg += String.format(" %s#repeated T_ACK: %d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
+                updaterStatisticMsg += String.format(" %s#Timeout       : %d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
                 logger.info("{}", updaterStatisticMsg);
                 printStatisticData(flashTimeStart, resultTotal);
             }
