@@ -73,7 +73,7 @@ Selfbus KNX-Firmware update tool options:
     --statistic                             show more statistic data
 ```
 ## Common use cases:
-Read UID of the device (requires active programming mode to unlock the device):
+Read UID of the device:
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
 ```
