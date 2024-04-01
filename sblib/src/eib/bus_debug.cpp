@@ -236,7 +236,8 @@ void dumpShortAcknowledgeFrameTiming(int delta)
 void dumpFrameTiming(int delta)
 {
     auto prio = priority(const_cast<unsigned char *>(telBuffer));
-    if (prio == PRIORITY_SYSTEM || prio == PRIORITY_ALARM)
+    auto isRepetition = isRepeated(const_cast<unsigned char *>(telBuffer));
+    if (prio == PRIORITY_SYSTEM || prio == PRIORITY_ALARM || isRepetition)
         delta -= BIT_TIMES(50);
     else
         delta -= BIT_TIMES(53);
