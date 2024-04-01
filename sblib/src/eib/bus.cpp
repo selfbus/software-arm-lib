@@ -673,7 +673,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             // correct the timer start value by the process time (about 13us) we had since the capture event
             tv=timer.value(); cv= timer.capture(captureChannel);
             if ( tv > cv ) dt= tv - cv; // check for timer overflow since cap event
-            else dt = (0xffff-cv) +tv;
+            else dt = (timer.match(timeChannel) + 1 - cv) + tv;
 
             telRXStartTime= ttimer.value()- dt;
         );
