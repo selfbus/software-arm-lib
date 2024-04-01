@@ -171,8 +171,10 @@ private:
 
     /**
      * Switch to @ref Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE state to trigger sending
+     *
+     * @param usec - The number of microseconds to wait before starting to send.
      */
-    void startSendingImmediately();
+    void startSendingAfter(uint16_t usec);
 
     /**
      * Initializes all class variables to prepare for the next transmission.

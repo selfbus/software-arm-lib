@@ -162,10 +162,6 @@ void Bus::resume()
     }
     else
     {
-        // Basically, startSendingImmediately() does what we want, we just might need to
-        // wait a bit longer before starting to send.
-        startSendingImmediately();
-
         // At the time of the last falling edge, a device sent a 0 bit.
         //
         // In the worst case, this was a 0xFE checksum byte of a telegram that was not acknowledged.
@@ -182,12 +178,15 @@ void Bus::resume()
         // already after 42 bit times, and the KNX spec v2.1 chapter 3/2/2 section 2.3.1 figure 40
         // (p.35) requires a minimum start_of_frame of 40 bit times, so we're within in spec.
 
-        const int minimumTimeSinceLastFallingEdge = BIT_TIMES(2) + WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME;
-        if (timeSinceLastFallingEdge < minimumTimeSinceLastFallingEdge)
-        {
-            auto remainingWaitTime = minimumTimeSinceLastFallingEdge - timeSinceLastFallingEdge;
-            timer.match(timeChannel, remainingWaitTime);
-        }
+        const int minimumWaitTimeAfterLastFallingEdge = BIT_TIMES(2) + WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME;
+
+        uint16_t remainingWaitTime;
+        if (timeSinceLastFallingEdge < minimumWaitTimeAfterLastFallingEdge)
+            remainingWaitTime = minimumWaitTimeAfterLastFallingEdge - timeSinceLastFallingEdge;
+        else
+            remainingWaitTime = 1;
+
+        startSendingAfter(remainingWaitTime);
     }
     interrupts();
 }
@@ -270,7 +269,7 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
     noInterrupts();
     if (state == IDLE)
     {
-        startSendingImmediately();
+        startSendingAfter(1);
     }
     interrupts();
 }
@@ -300,12 +299,12 @@ void Bus::idleState()
     state = Bus::IDLE;
 }
 
-void Bus::startSendingImmediately()
+void Bus::startSendingAfter(uint16_t usec)
 {
     state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
-    timer.match(timeChannel, 1);
+    timer.reset();
+    timer.match(timeChannel, usec);
     timer.matchMode(timeChannel, INTERRUPT | RESET);
-    timer.value(0);
 }
 
 void Bus::prepareForSending()
