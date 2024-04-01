@@ -235,7 +235,12 @@ void dumpShortAcknowledgeFrameTiming(int delta)
 
 void dumpFrameTiming(int delta)
 {
-    delta -= BIT_TIMES(50);
+    auto prio = priority(const_cast<unsigned char *>(telBuffer));
+    if (prio == PRIORITY_SYSTEM || prio == PRIORITY_ALARM)
+        delta -= BIT_TIMES(50);
+    else
+        delta -= BIT_TIMES(53);
+
     if (delta < 0)
     {
         serial.print(" fre"); // frame early
@@ -244,9 +249,7 @@ void dumpFrameTiming(int delta)
         {
             uint16_t senderAddr = makeWord(telBuffer[1], telBuffer[2]);
             serial.print(" (");
-            serial.print(PHY_ADDR_AREA(senderAddr));
-            serial.print(".", PHY_ADDR_LINE(senderAddr));
-            serial.print(".", PHY_ADDR_DEVICE(senderAddr));
+            dumpKNXAddress(senderAddr);
             serial.print(")");
         }
     }
