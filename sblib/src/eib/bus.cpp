@@ -166,9 +166,26 @@ void Bus::resume()
         // wait a bit longer before starting to send.
         startSendingImmediately();
 
-        if (timeSinceLastFallingEdge < WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME)
+        // At the time of the last falling edge, a device sent a 0 bit.
+        //
+        // In the worst case, this was a 0xFE checksum byte of a telegram that was not acknowledged.
+        // Then, the minimum time to wait would be the time of the 0 bit, seven 1 bits, parity bit,
+        // stop bit, plus 50 bits idle time, i.e. a whopping 60 bit times.
+        //
+        // In the common case, though, the last frame was an acknowledge frame, and those all have
+        // parityBit=0, i.e. the last falling edge was the parity bit of the acknowledge frame.
+        // Then, it's sufficient to wait for parity bit, stop bit, and 50 bits idle time,
+        // i.e. 52 bit times.
+        //
+        // If we go with waiting only for 52 bit times to optimize for the common case, but we are
+        // actually in the worst case, that is still fine with the KNX spec: We'd have start_of_frame
+        // already after 42 bit times, and the KNX spec v2.1 chapter 3/2/2 section 2.3.1 figure 40
+        // (p.35) requires a minimum start_of_frame of 40 bit times, so we're within in spec.
+
+        const int minimumTimeSinceLastFallingEdge = BIT_TIMES(2) + WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME;
+        if (timeSinceLastFallingEdge < minimumTimeSinceLastFallingEdge)
         {
-            auto remainingWaitTime = WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME - timeSinceLastFallingEdge;
+            auto remainingWaitTime = minimumTimeSinceLastFallingEdge - timeSinceLastFallingEdge;
             timer.match(timeChannel, remainingWaitTime);
         }
     }
