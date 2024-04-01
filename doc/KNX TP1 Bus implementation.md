@@ -172,8 +172,7 @@ flowchart TB
     WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Falling edge captured--> INIT_RX_FOR_RECEIVING_NEW_TEL
     WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Nothing to send--> IDLE
     WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE --Something to send--> SEND_START_BIT
-    SEND_START_BIT --Collision on ACK or inner frame char--> INIT
-    SEND_START_BIT --Collision on first frame char--> INIT_RX_FOR_RECEIVING_NEW_TEL
+    SEND_START_BIT --Collision--> INIT_RX_FOR_RECEIVING_NEW_TEL
     SEND_START_BIT --> SEND_BIT_0
     SEND_BIT_0 --> SEND_BITS_OF_BYTE
     SEND_BITS_OF_BYTE --More bits to send--> SEND_BITS_OF_BYTE
