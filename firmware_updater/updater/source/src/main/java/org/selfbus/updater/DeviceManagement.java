@@ -114,7 +114,7 @@ public final class DeviceManagement {
     public byte[] requestUIDFromDevice()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("\nRequesting UID from {}...", progDestination.getAddress());
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[0], MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_UID.id) {
             UPDProtocol.checkResult(result, true);
             restartProgrammingDevice();
@@ -143,7 +143,7 @@ public final class DeviceManagement {
         telegram[0] = (byte) ToolInfo.versionMajor();
         telegram[1] = (byte) ToolInfo.versionMinor();
 
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_BL_IDENTITY, telegram, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_BL_IDENTITY, telegram, getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BL_IDENTITY.id)
         {
             if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_BL_VERSION_MISMATCH.id) {
@@ -177,7 +177,7 @@ public final class DeviceManagement {
     public BootDescriptor requestBootDescriptor()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("Requesting Boot Descriptor...");
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
             restartProgrammingDevice();
@@ -192,7 +192,7 @@ public final class DeviceManagement {
 
     public String requestAppVersionString()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[0], MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.APP_VERSION_RESPONSE.id){
             UPDProtocol.checkResult(result);
             return null;
@@ -203,7 +203,7 @@ public final class DeviceManagement {
     public void unlockDeviceWithUID(byte[] uid)
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
         logger.info("Unlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
-        byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, getMaxUpdCommandRetry()).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Selfbus update failed.");
@@ -224,7 +224,7 @@ public final class DeviceManagement {
             logger.trace("mc.ResponseTimeout temporarily increased to {}", mc.responseTimeout());
         }
 
-        byte[] result = sendWithRetry(UPDCommand.ERASE_ADDRESS_RANGE, telegram, MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.ERASE_ADDRESS_RANGE, telegram, getMaxUpdCommandRetry()).data();
 
         mc.responseTimeout(oldResponseTimeout); // restore responseTimeout
         logger.trace("mc.ResponseTimeout restored to {}", mc.responseTimeout());
@@ -237,7 +237,7 @@ public final class DeviceManagement {
 
     public void eraseFlash()
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
-        byte[] result = sendWithRetry(UPDCommand.ERASE_COMPLETE_FLASH, new byte[0], MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.ERASE_COMPLETE_FLASH, new byte[0], getMaxUpdCommandRetry()).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Deleting the entire flash failed.");
@@ -318,7 +318,7 @@ public final class DeviceManagement {
         System.out.println();
         logger.info(String.format("Updating boot descriptor with crc32 0x%04X, length %d",
                 crc32Value, streamBootDescriptor.length));
-        ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, DeviceManagement.MAX_UPD_COMMAND_RETRY);
+        ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, getMaxUpdCommandRetry());
         if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Updating boot descriptor failed.");
@@ -333,7 +333,7 @@ public final class DeviceManagement {
     public void requestBootLoaderStatistic()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
 
-        byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], MAX_UPD_COMMAND_RETRY).data();
+        byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)
         {
             BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
@@ -446,5 +446,9 @@ public final class DeviceManagement {
 
     public int getMaxPayload() {
         return maxPayload;
+    }
+
+    public int getMaxUpdCommandRetry() {
+        return MAX_UPD_COMMAND_RETRY;
     }
 }
