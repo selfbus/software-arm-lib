@@ -61,7 +61,7 @@ public class FlashFullMode {
 
             // send data to the bootloader
             long flashTimeStart = System.currentTimeMillis(); // time this run started
-            resultSendData = dm.doFlash(txBuffer, -1, dataSendDelay);
+            resultSendData = dm.doFlash(txBuffer, dm.getMaxUpdCommandRetry(), dataSendDelay);
             resultTotal.addCounters(resultSendData); // keep track of static data
 
             // logging of connection speed
@@ -96,7 +96,7 @@ public class FlashFullMode {
             logger.info(programFlashInfo);
             logger.trace("with crc32 {}", String.format("crc32 0x%08X", crc32));
 
-            resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, -1);
+            resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, dm.getMaxUpdCommandRetry());
 
             long result = UPDProtocol.checkResult(resultProgramData.data());
             if ((result == BYTECOUNT_RECEIVED_TOO_LOW.id) || (result == BYTECOUNT_RECEIVED_TOO_HIGH.id)) {

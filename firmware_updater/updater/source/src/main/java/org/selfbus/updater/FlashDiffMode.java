@@ -113,7 +113,7 @@ public final class FlashDiffMode {
                 }
                 // transmit telegram
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
-                result.set(dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, -1));
+                result.set(dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, dm.getMaxUpdCommandRetry()));
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
                 if (UPDProtocol.checkResult(result.get().data(), false) != UDPResult.IAP_SUCCESS.id) {
                     dm.restartProgrammingDevice();
@@ -126,7 +126,7 @@ public final class FlashDiffMode {
             Utils.longToStream(progPars, 0, (int) crc32);
             System.out.println();
             logger.info("Program device next page diff, crc32 0x{}", String.format("%08X", crc32));
-            result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, -1));
+            result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, dm.getMaxUpdCommandRetry()));
             if (UPDProtocol.checkResult(result.get().data()) != UDPResult.IAP_SUCCESS.id) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");

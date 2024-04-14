@@ -304,7 +304,7 @@ public final class DeviceManagement {
 
         byte[] streamBootDescriptor = bootDescriptor.toStream();
         // send new boot descriptor
-        ResponseResult flashResult = doFlash(streamBootDescriptor, -1, delay);
+        ResponseResult flashResult = doFlash(streamBootDescriptor, getMaxUpdCommandRetry(), delay);
         if (flashResult.written() != streamBootDescriptor.length) {
             throw new UpdaterException(String.format("Sending Boot descriptor (length %d) failed. Wrote %d", streamBootDescriptor.length, flashResult.written()));
         }
