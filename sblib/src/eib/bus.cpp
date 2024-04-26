@@ -130,7 +130,6 @@ void Bus::pause(bool waitForTelegramSent)
             timer.captureMode(captureChannel, FALLING_EDGE);
             timer.matchMode(timeChannel, RESET);
             timer.match(timeChannel, 0xfffe);
-            timer.value(timer.capture(captureChannel));
             // In both pausable states, pwmChannel is set to 0xffff already.
             state = INIT;
             paused = true;
@@ -143,51 +142,12 @@ void Bus::pause(bool waitForTelegramSent)
 
 void Bus::resume()
 {
-    auto timerValue = timer.value();
-    auto captureValue = timer.capture(captureChannel);
-    auto timeSinceLastFallingEdge =
-        (timerValue > captureValue)
-        ? (timerValue - captureValue)
-        : ((0xfffe + 1 - captureValue) + timerValue);
+    // It is possible to optimize this and resume in INIT with smaller wait time or directly in IDLE
+    // or WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE. That costs quite some code size, though, so
+    // take the easy (and small) route.
 
-    // Either continue in INIT or WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, depending
-    // on time passed since the last falling edge.
     noInterrupts();
-    if (timeSinceLastFallingEdge < WAIT_40BIT)
-    {
-        timer.value(timeSinceLastFallingEdge);
-        timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
-        timer.matchMode(timeChannel, INTERRUPT);
-        timer.match(timeChannel, WAIT_40BIT);
-    }
-    else
-    {
-        // At the time of the last falling edge, a device sent a 0 bit.
-        //
-        // In the worst case, this was a 0xFE checksum byte of a telegram that was not acknowledged.
-        // Then, the minimum time to wait would be the time of the 0 bit, seven 1 bits, parity bit,
-        // stop bit, plus 50 bits idle time, i.e. a whopping 60 bit times.
-        //
-        // In the common case, though, the last frame was an acknowledge frame, and those all have
-        // parityBit=0, i.e. the last falling edge was the parity bit of the acknowledge frame.
-        // Then, it's sufficient to wait for parity bit, stop bit, and 50 bits idle time,
-        // i.e. 52 bit times.
-        //
-        // If we go with waiting only for 52 bit times to optimize for the common case, but we are
-        // actually in the worst case, that is still fine with the KNX spec: We'd have start_of_frame
-        // already after 42 bit times, and the KNX spec v2.1 chapter 3/2/2 section 2.3.1 figure 40
-        // (p.35) requires a minimum start_of_frame of 40 bit times, so we're within in spec.
-
-        const int minimumWaitTimeAfterLastFallingEdge = BIT_TIMES(2) + WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME;
-
-        uint16_t remainingWaitTime;
-        if (timeSinceLastFallingEdge < minimumWaitTimeAfterLastFallingEdge)
-            remainingWaitTime = minimumWaitTimeAfterLastFallingEdge - timeSinceLastFallingEdge;
-        else
-            remainingWaitTime = 1;
-
-        startSendingAfter(remainingWaitTime);
-    }
+    initState();
     interrupts();
 }
 
@@ -269,18 +229,41 @@ void Bus::sendTelegram(unsigned char* telegram, unsigned short length)
     noInterrupts();
     if (state == IDLE)
     {
-        startSendingAfter(1);
+        startSendingImmediately();
     }
     interrupts();
 }
 
 void Bus::initState()
 {
-    // any cap intr during start up time is ignored and will reset start up time
+    // Any capture interrupt during INIT resets the timer (see timerInterruptHandler).
+    // Interesting is the amount of time to wait, though.
+    //
+    // At the time of the last falling edge, a device sent a 0 bit.
+    //
+    // In the worst case, this was a 0xFE checksum byte of a telegram that was not acknowledged.
+    // Then, the minimum time to wait would be the time of the 0 bit, seven 1 bits, parity bit,
+    // stop bit, plus 50 bits idle time, i.e. a whopping 60 bit times.
+    //
+    // In the common case, though, the last frame was an acknowledge frame, and those all have
+    // parityBit=0, i.e. the last falling edge was the parity bit of the acknowledge frame.
+    // Then, it's sufficient to wait for parity bit, stop bit, and 50 bits idle time,
+    // i.e. 52 bit times.
+    //
+    // If we go with waiting only for 52 bit times to optimize for the common case, but we are
+    // actually in the worst case, that is still fine with the KNX spec: We'd have start_of_frame
+    // already after 42 bit times, and the KNX spec v2.1 chapter 3/2/2 section 2.3.1 figure 40
+    // (p.35) requires a minimum start_of_frame of 40 bit times, so we're within in spec.
+    //
+    // So, wait for 42 bit times in INIT, then transition to
+    // WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE.
+
+    const uint16_t waitTime = BIT_TIMES(2) + WAIT_40BIT;
+
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
     timer.matchMode(timeChannel, INTERRUPT); // at timeout we can start to receive, but need to wait 10BT more before starting to send
     timer.restart();
-    timer.match(timeChannel, WAIT_40BIT);
+    timer.match(timeChannel, waitTime);
     timer.match(pwmChannel, 0xffff);
     state = INIT;
     sendAck = 0;
@@ -299,11 +282,11 @@ void Bus::idleState()
     state = Bus::IDLE;
 }
 
-void Bus::startSendingAfter(uint16_t usec)
+void Bus::startSendingImmediately()
 {
     state = Bus::WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
-    timer.reset();
-    timer.match(timeChannel, usec);
+    timer.restart();
+    timer.match(timeChannel, 1);
     timer.matchMode(timeChannel, INTERRUPT | RESET);
 }
 
@@ -643,7 +626,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         // Timeout. Enhance the timer to 9 bit times more in state WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, so
         // we can start receiving right away (even if it's a cap event at the same time), but wait some more time
         // before starting to send.
-        timer.match(timeChannel, WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME);
+        timer.match(timeChannel, BIT_TIMES(2) + WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME);
         timer.matchMode(timeChannel, INTERRUPT | RESET);
         state = WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
         if (timer.flag(captureChannel))
