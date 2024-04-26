@@ -352,7 +352,6 @@ void Bus::handleTelegram(bool valid)
 #endif
 
     DB_TELEGRAM(
-        //telRXtime= ttimer.value();
         if (nextByteIndex){
             for (int i = 0; i < nextByteIndex; ++i)
             {
@@ -694,7 +693,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             {
                 rx_error |= RX_CHECKSUM_ERROR;
             }
-            DB_TELEGRAM(telRXEndTime= ttimer.value() - timer.value();); // timer was restarted at end of last stop bit
+            DB_TELEGRAM(telRXEndTime = telRXTelByteEndTime);
 #           ifdef PIO_FOR_TEL_END_IND
                 digitalWrite(PIO_FOR_TEL_END_IND, 1); // set handleTelegram() PIO
 #           endif
@@ -777,6 +776,8 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
 
         if (timeout)  // Timer timeout: end of byte
         {
+            DB_TELEGRAM(telRXTelByteEndTime = ttimer.value() - timer.value()); // timer was restarted
+
             currentByte &= 0xff;
 
             // check bit0 and bit 1 of first byte for low level preamble bits

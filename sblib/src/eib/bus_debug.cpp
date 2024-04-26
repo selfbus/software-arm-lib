@@ -43,7 +43,6 @@
     volatile unsigned int tx_busy_rep_count = 0;
     volatile unsigned int tx_telrxerror = 0;
 
-    volatile unsigned int telRXtime = 0;
     volatile uint8_t telcollisions;
     volatile unsigned int telrxerror = 0;
     volatile unsigned int telRXStartTime = 0;
@@ -56,6 +55,7 @@
     volatile unsigned int telRXWaitIdleTime = 0;
     volatile unsigned int telRXTelStartTime = 0;
     volatile unsigned int telRXTelByteStartTime = 0;
+    volatile unsigned int telRXTelByteEndTime = 0;
     volatile unsigned int telRXTelBitTimingErrorLate = 0;
     volatile unsigned int telRXTelBitTimingErrorEarly = 0;
     //volatile unsigned int db_state= 2000;
