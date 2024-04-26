@@ -218,7 +218,7 @@ void dumpTXTelegram()
 
 void dumpShortAcknowledgeFrameTiming(int delta)
 {
-    delta -= BIT_TIMES(15);
+    delta -= BIT_TIMES_DELAY(15);
     if (delta < -5)
     {
         serial.print(" afe ", delta + 5); // acknowledge frame early
@@ -238,9 +238,9 @@ void dumpFrameTiming(int delta)
     auto prio = priority(const_cast<unsigned char *>(telBuffer));
     auto isRepetition = isRepeated(const_cast<unsigned char *>(telBuffer));
     if (prio == PRIORITY_SYSTEM || prio == PRIORITY_ALARM || isRepetition)
-        delta -= BIT_TIMES(50);
+        delta -= BIT_TIMES_DELAY(50);
     else
-        delta -= BIT_TIMES(53);
+        delta -= BIT_TIMES_DELAY(53);
 
     if (delta < 0)
     {

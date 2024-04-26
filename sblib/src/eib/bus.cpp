@@ -258,7 +258,7 @@ void Bus::initState()
     // So, wait for 42 bit times in INIT, then transition to
     // WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE.
 
-    const uint16_t waitTime = BIT_TIMES(2) + WAIT_40BIT;
+    const uint16_t waitTime = BIT_TIMES_DELAY(2) + WAIT_40BIT;
 
     timer.captureMode(captureChannel, FALLING_EDGE | INTERRUPT);
     timer.matchMode(timeChannel, INTERRUPT); // at timeout we can start to receive, but need to wait 10BT more before starting to send
@@ -626,7 +626,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         // Timeout. Enhance the timer to 9 bit times more in state WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE, so
         // we can start receiving right away (even if it's a cap event at the same time), but wait some more time
         // before starting to send.
-        timer.match(timeChannel, BIT_TIMES(2) + WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME);
+        timer.match(timeChannel, BIT_TIMES_DELAY(2) + WAIT_50BIT_FOR_IDLE - PRE_SEND_TIME);
         timer.matchMode(timeChannel, INTERRUPT | RESET);
         state = WAIT_50BT_FOR_NEXT_RX_OR_PENDING_TX_OR_IDLE;
         if (timer.flag(captureChannel))
@@ -904,7 +904,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
             }
             // if we have repetition of telegram or system or alarm prio, we wait only 50bit time
             if (((sendCurTelegram[0] & SB_TEL_REPEAT_FLAG)) && ((sendCurTelegram[0] & PRIO_FLAG_HIGH)) ) {
-                time = PRE_SEND_TIME + BIT_TIMES(3);
+                time = PRE_SEND_TIME + BIT_TIMES_DELAY(3);
             }
             else
                 time = PRE_SEND_TIME;
@@ -1230,7 +1230,7 @@ __attribute__((optimize("Os"))) void Bus::timerInterruptHandler()
         if (nextByteIndex < sendTelegramLen && !sendAck)
         {
             // There are more bytes to send. Finish stop bit, send two fill bits, and start bit pulse of next byte.
-            time = BIT_TIMES(3);
+            time = BIT_TIMES_DELAY(3);
             state = Bus::SEND_START_BIT;  // state for bit-0 of next byte to send
             timer.match(pwmChannel, time - BIT_PULSE_TIME); // start of pulse for next low bit - falling edge on bus will trigger cap interrupt
         }

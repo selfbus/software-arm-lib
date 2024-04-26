@@ -97,7 +97,9 @@ enum TxErrorCode
 
 #define TICKS_PER_SECOND    1000000                                  //!< Timer is in microseconds (usec)
 #define TIMER_PRESCALER     (SystemCoreClock / TICKS_PER_SECOND - 1) //!< The value for the prescaler
-#define BIT_TIMES(x)        (((x) * TICKS_PER_SECOND + 4800) / 9600) //!< Microseconds of x bits on the bus, with integer rounding
+#define BIT_TIME            (TICKS_PER_SECOND / 9600)                //!< Default time between two bits (104 usec)
+#define BIT_TIMES(x)        ((x) * BIT_TIME)                         //!< Microseconds of x bits on the bus
+#define BIT_TIMES_DELAY(x)  (((x) * TICKS_PER_SECOND + 4800) / 9600) //!< Microseconds of x bits delay on the bus (inter frame), with integer rounding
 
 #define ZERO_BIT_MIN_TIME 3     //!< Bus must be low for at least this number of usec for it to be considered a 0 bit
 #define REFLECTION_IGNORE_DELAY 3  //!< The first 3us after a rising edge caused by us, ignore falling edges as they are likely to be reflections
@@ -106,7 +108,6 @@ enum TxErrorCode
 #define BIT_OFFSET_MIN 7        //!< >=7 us before expected bit check for bus busy
 #define BIT_OFFSET_MAX 33       //!< <=33 us after expected bit is still ok
 
-#define BIT_TIME            BIT_TIMES(1)               //!< Default time between two bits (104 usec)
 #define BIT_WAIT_TIME       ((BIT_TIME * 4 + 3) / 6)   //!< Time between two bits (69 usec) - high level part of the pulse on the bus
 #define BIT_PULSE_TIME      (BIT_TIME - BIT_WAIT_TIME) //!< Pulse duration of a bit (35 usec)
 
@@ -119,25 +120,25 @@ enum TxErrorCode
  */
 #define MAX_INTER_CHAR_TIME (BIT_TIMES(2) + STARTBIT_OFFSET_MAX)
 
-#define SEND_ACK_WAIT_TIME  BIT_TIMES(15) //!< Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
+#define SEND_ACK_WAIT_TIME  BIT_TIMES_DELAY(15) //!< Time to wait before sending an ACK after valid rx telegram: 15* BIT Time
 
 /**
  * For rx process: Time from end of stop bit to start of ACK = 15* bit time -5us/+30us according to KNX Spec 2.1 3/2/2 2.3.1 p.35 figure 40 (ack_char)
  * We add an marging of 100us as we have seen some early acks on the bus
  */
-#define ACK_WAIT_TIME_MIN   (BIT_TIMES(15) - 5 - 100)
-#define ACK_WAIT_TIME_MAX   (BIT_TIMES(15) +30 + 100)
+#define ACK_WAIT_TIME_MIN   (BIT_TIMES_DELAY(15) - 5 - 100)
+#define ACK_WAIT_TIME_MAX   (BIT_TIMES_DELAY(15) +30 + 100)
 
-#define WAIT_40BIT          BIT_TIMES(40) //!< Minimum time to wait for start of frame (see KNX spec 2.1 chapter 3/2/2 section 2.3.1 p. 35): BIT_TIME * 40
-#define WAIT_50BIT_FOR_IDLE BIT_TIMES(50) //!< Time to wait before bus is in idle state: BIT_TIME * 50
-#define SEND_WAIT_TIME      BIT_TIMES(50) //!< Time to wait before starting to send: BIT_TIME * 50
+#define WAIT_40BIT          BIT_TIMES_DELAY(40) //!< Minimum time to wait for start of frame (see KNX spec 2.1 chapter 3/2/2 section 2.3.1 p. 35): BIT_TIME * 40
+#define WAIT_50BIT_FOR_IDLE BIT_TIMES_DELAY(50) //!< Time to wait before bus is in idle state: BIT_TIME * 50
+#define SEND_WAIT_TIME      BIT_TIMES_DELAY(50) //!< Time to wait before starting to send: BIT_TIME * 50
 #define RANDOMIZE_FACTOR    131           //!< Factor for calculation of randomized additional time before starting to send
-#define RANDOMIZE_MODULUS   BIT_TIMES(3)  //!< Modulus for calculation of randomized additional time before starting to send
+#define RANDOMIZE_MODULUS   BIT_TIMES_DELAY(3)  //!< Modulus for calculation of randomized additional time before starting to send
 
 //!< Time to wait before repetition of sending a telegram due to busy from remote side  BIT_TIME * 150
-#define BUSY_WAIT_150BIT    BIT_TIMES(150)
+#define BUSY_WAIT_150BIT    BIT_TIMES_DELAY(150)
 
-#define PRE_SEND_TIME       BIT_TIMES(1) //!< Time to listen for bus activity before sending starts: BIT_TIME * 1
+#define PRE_SEND_TIME       BIT_TIMES_DELAY(1) //!< Time to listen for bus activity before sending starts: BIT_TIME * 1
 
 #endif /* SBLIB_KNX_BUS_CONST_H_ */
 
