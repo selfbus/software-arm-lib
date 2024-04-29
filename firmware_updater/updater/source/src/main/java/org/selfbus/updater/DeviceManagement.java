@@ -337,15 +337,7 @@ public final class DeviceManagement {
         if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)
         {
             BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-            String colored;
-            if ((blStatistic.getDisconnectCount() < BootloaderStatistic.THRESHOLD_DISCONNECT) &&
-                (blStatistic.getRepeatedT_ACKcount() < BootloaderStatistic.THRESHOLD_REPEATED)) {
-                colored = ConColors.BRIGHT_GREEN;
-            }
-            else {
-                colored = ConColors.BRIGHT_YELLOW;
-            }
-            logger.info("  Bootloader: {}{}{}", colored, blStatistic, ConColors.RESET);
+            logger.info("  Bootloader: {}", blStatistic);
         }
         else {
             logger.warn("  {}{}{}", ConColors.RED,

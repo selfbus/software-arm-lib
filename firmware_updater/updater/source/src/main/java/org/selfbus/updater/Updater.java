@@ -331,20 +331,20 @@ public class Updater implements Runnable {
                 logger.info("Requesting Bootloader statistic...");
                 dm.requestBootLoaderStatistic();
 
-                String updaterStatisticMsg = "  Updater:   ";
+                String updaterStatisticMsg = "  Updater:    ";
                 String colored;
                 if (resultTotal.dropCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
                     colored = ConColors.BRIGHT_YELLOW;
                 } else {
                     colored = ConColors.BRIGHT_GREEN;
                 }
-                updaterStatisticMsg += String.format(" %s#Disconnect: %2d%s", colored, resultTotal.dropCount(), ConColors.RESET);
+                updaterStatisticMsg += String.format("#Disconnect: %s%2d%s", colored, resultTotal.dropCount(), ConColors.RESET);
                 if (resultTotal.timeoutCount() > BootloaderStatistic.THRESHOLD_REPEATED) {
                     colored = ConColors.BRIGHT_YELLOW;
                 } else {
                     colored = ConColors.BRIGHT_GREEN;
                 }
-                updaterStatisticMsg += String.format(" %s#Timeout       : %2d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
+                updaterStatisticMsg += String.format(" #Timeout       : %s%2d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
                 logger.info("{}", updaterStatisticMsg);
                 printStatisticData(flashTimeStart, resultTotal);
             }

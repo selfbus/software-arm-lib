@@ -1,5 +1,6 @@
 package org.selfbus.updater.bootloader;
 
+import org.selfbus.updater.ConColors;
 import org.selfbus.updater.Utils;
 
 public class BootloaderStatistic {
@@ -21,8 +22,21 @@ public class BootloaderStatistic {
     }
 
     public String toString() {
-        return String.format("#Disconnect: %2d #repeated T_ACK: %2d",
-                              getDisconnectCount(), getRepeatedT_ACKcount());
+        String result;
+        String colored;
+        if (getDisconnectCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
+            colored = ConColors.BRIGHT_YELLOW;
+        } else {
+            colored = ConColors.BRIGHT_GREEN;
+        }
+        result = String.format("#Disconnect: %s%2d%s", colored, getDisconnectCount(), ConColors.RESET);
+        if (getRepeatedT_ACKcount() > BootloaderStatistic.THRESHOLD_REPEATED) {
+            colored = ConColors.BRIGHT_YELLOW;
+        } else {
+            colored = ConColors.BRIGHT_GREEN;
+        }
+        result += String.format(" #repeated T_ACK: %s%2d%s", colored, getRepeatedT_ACKcount(), ConColors.RESET);
+        return result;
     }
 
     public long getDisconnectCount()
