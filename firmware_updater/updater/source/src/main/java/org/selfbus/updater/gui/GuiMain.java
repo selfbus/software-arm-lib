@@ -319,6 +319,16 @@ public class GuiMain extends JFrame {
         }
     }
 
+    private String cliParameterToString(ArrayList<String> list) {
+        StringBuilder result = new StringBuilder();
+        for (String s : list) {
+            if (!s.isEmpty()) {
+                result.append(" ").append(s);
+            }
+        }
+        return result.toString().trim();
+    }
+
     private void setCliOptions() throws KNXFormatException, ParseException {
         ArrayList<String> argsList = new ArrayList<>();
 
@@ -353,12 +363,13 @@ public class GuiMain extends JFrame {
             argsList.add("--ERASEFLASH");
         if (noFlashCheckBox.isVisible() && noFlashCheckBox.isSelected()) argsList.add("-f0");
 
+        String updaterFileName = String.format("SB_updater-%s-all.jar", ToolInfo.getVersion());
         String[] args = new String[argsList.size()];
         args = argsList.toArray(args);
-
+        logger.info("java -jar {} {}", updaterFileName, cliParameterToString(argsList));
         try {
             // read in user-supplied command line options
-            this.cliOptions = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()),
+            this.cliOptions = new CliOptions(args, updaterFileName,
                     "Selfbus KNX-Firmware update tool options", "", Updater.PHYS_ADDRESS_BOOTLOADER, Updater.PHYS_ADDRESS_OWN);
         } catch (final KNXIllegalArgumentException | KNXFormatException | ParseException e) {
             throw e;
