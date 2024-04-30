@@ -29,6 +29,7 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         comObjects(nullptr),
         progButtonDebouncer(),
         restartType(RestartType::None),
+        restartSendDisconnect(false),
         restartTimeout(Timeout())
 {
     timerBusObj = bus;
@@ -92,12 +93,17 @@ void BcuBase::loop()
         // Management Server should send a T_DISCONNECT and the Management Client must send
         // one as well. So send one out immediately, and stay around for a bit to receive
         // one from the client and ACK it.
+        // The T_DISCONNECT messages might also be sent in different order, i.e. we might
+        // receive one from the Management Client before we even get the change to send
+        // one. In such a case we need to send it anyway. Therefore, don't check the current
+        // connection status, but the one when we processed the restart request.
         // Although the spec clearly says that clients should ignore T_DISCONNECT messages
         // as well as errors, calimero warns about "negative confirmation" frames if we
         // don't ACK it. So be nice and try to avoid these warnings.
-        if (directConnection())
+        if (restartSendDisconnect)
         {
             disconnect();
+            restartSendDisconnect = false;
         }
         else if (restartTimeout.expired())
         {
@@ -175,6 +181,7 @@ void BcuBase::send(unsigned char* telegram, unsigned short length)
 void BcuBase::scheduleRestart(RestartType type)
 {
     restartType = type;
+    restartSendDisconnect = directConnection();
     restartTimeout.start(250);
 }
 

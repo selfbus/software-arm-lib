@@ -131,6 +131,7 @@ protected:
 
 private:
     RestartType restartType;
+    bool restartSendDisconnect;
     Timeout restartTimeout;
 };
 #endif /*sblib_BcuBase_h*/
