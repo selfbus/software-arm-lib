@@ -78,11 +78,11 @@ public class BootDescriptor {
     public String toString() {
         String res;
         if (valid) {
-            res = String.format("  %svalid%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%04X",
+            res = String.format("  %svalid%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
                     ConColors.BRIGHT_GREEN, ConColors.RESET, startAddress, endAddress, length(), crc32);
         }
         else {
-            res = String.format("%sinvalid%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%04X",
+            res = String.format("%sinvalid%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
                     ConColors.RED, ConColors.RESET, INVALID_ADDRESS & 0x0000FFFF,
                     INVALID_ADDRESS & 0x0000FFFF, length(), crc32);
         }
