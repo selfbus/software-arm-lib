@@ -94,7 +94,6 @@ public final class DeviceManagement {
         try {
             logger.info("Restarting device {} into bootloader mode using {}", device, link);
             restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
-            mcDevice.detach();
             logger.info("Device {} reported {}{} second(s){} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
             waitRestartTime(restartProcessTime);
             System.out.println();
@@ -105,7 +104,6 @@ public final class DeviceManagement {
             logger.info("Waiting {}{} seconds{} for device {} to restart", ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET, device);
             waitRestartTime(restartProcessTime);
         } finally {
-            mcDevice.detach();
             mcDevice.close();
         }
         return false;
