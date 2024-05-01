@@ -64,12 +64,12 @@ public final class DeviceManagement {
         mc.restart(progDestination);
     }
 
-    private void waitRestartTime(int restartTimeMs) {
+    private void waitRestartTime(int restartTimeSeconds) {
         try {
-            while (restartTimeMs > 0) {
+            while (restartTimeSeconds > 0) {
                 Thread.sleep(1000);
                 System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET);
-                restartTimeMs--;
+                restartTimeSeconds--;
             }
         }
         catch (final InterruptedException e) {
