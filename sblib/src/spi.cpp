@@ -70,6 +70,9 @@ SPI::SPI(int spiPort, int mode)
 
     if (spiPort == 0) // SPI port 0
     {
+        // Set lower priority for SPI than the bus access timer has.
+        NVIC_SetPriority(SSP0_IRQn, 1);
+
         // Enable the clock for the SPI port
         LPC_SYSCON->SYSAHBCLKCTRL |= 1 << 11;
 
@@ -78,6 +81,9 @@ SPI::SPI(int spiPort, int mode)
     }
     else // SPI port 1
     {
+        // Set lower priority for SPI than the bus access timer has.
+        NVIC_SetPriority(SSP1_IRQn, 1);
+
         // Enable the clock for the SPI port
         LPC_SYSCON->SYSAHBCLKCTRL |= 1 << 18;
 
