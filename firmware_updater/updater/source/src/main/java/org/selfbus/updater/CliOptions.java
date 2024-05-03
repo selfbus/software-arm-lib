@@ -353,23 +353,6 @@ public class CliOptions {
     private void parse(final String[] args) {
         CommandLineParser parser = new DefaultParser();
         try {
-            int i = 0;
-            String cliCensored = "";
-            while (i < args.length) {
-                String testCli = args[i].toLowerCase(Locale.ROOT);
-                if ((testCli.contains(OPT_LONG_USER_ID.toLowerCase(Locale.ROOT))) ||
-                    (testCli.contains(OPT_LONG_USER_PASSWORD.toLowerCase(Locale.ROOT))) ||
-                    (testCli.contains(OPT_LONG_DEVICE_PASSWORD.toLowerCase(Locale.ROOT)))) {
-                    cliCensored += " " + args[i] + " (censored)";
-                    i++;
-                }
-                else {
-                    cliCensored += " " + args[i];
-                }
-                i++;
-            }
-            logger.debug("cli: {}", cliCensored.trim());
-
             cmdLine = parser.parse(cliOptions, args);
             // get the log level for log file output
             ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
