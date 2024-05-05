@@ -79,21 +79,17 @@ public final class DeviceManagement {
 
     /**
      * Restarts the <code>device</code> running in normal into the Bootloader mode
-     * @param link
-     *          the KNX network link  to communicate with the device
      * @param device
      *          the IndividualAddress of the device to restart
      * @return true if successful, otherwise false
      */
-    public boolean restartDeviceToBootloader(KNXNetworkLink link, IndividualAddress device)
+    public boolean restartDeviceToBootloader(IndividualAddress device)
             throws KNXLinkClosedException {
-        SBManagementClientImpl mcDevice = new SBManagementClientImpl(link);
-        Destination dest;
-        dest = mcDevice.createDestination(device, true, false, false);
+        Destination dest = this.mc.createDestination(device, true, false, false);
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try {
-            logger.info("Restarting device {} into bootloader mode using {}", device, link);
-            restartProcessTime =  mcDevice.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
+            logger.info("Restarting device {} into bootloader mode using {}", device, this.link);
+            restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             logger.info("Device {} reported {}{} second(s){} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
             waitRestartTime(restartProcessTime);
             System.out.println();
@@ -104,7 +100,7 @@ public final class DeviceManagement {
             logger.info("Waiting {}{} seconds{} for device {} to restart", ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET, device);
             waitRestartTime(restartProcessTime);
         } finally {
-            mcDevice.close();
+            dest.close();
         }
         return false;
     }
