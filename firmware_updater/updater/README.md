@@ -20,11 +20,11 @@ windows: gradlew.bat fatJar
 ## Usage
 ```
 java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
-       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|URGENT|NORMAL|LOW>]
-       [-bs <256|512|1024>] [--user <id>] [--user-pwd <password>] [--device-pwd <password>] [-u
-       <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-h | -v]
-       [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
-       [--statistic]
+       <COM-port> | --usb <vendorId:productId>]    [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>]
+       [--priority <SYSTEM|URGENT|NORMAL|LOW>] [-bs <256|512|1024>] [--user <id>] [--user-pwd
+       <password>] [--device-pwd <password>] [-u <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p
+       <port>] [-t2] [-t1] [-n] [-r] [-h | -v]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>]
+       [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0] [--statistic]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
@@ -32,6 +32,8 @@ Selfbus KNX-Firmware update tool options:
  -s,--serial <COM-port>                     use FT1.2 serial communication
  -t,--tpuart <COM-port>                     use TPUART serial communication (experimental, needs
                                             serialcom or rxtx library in java.library.path)
+    --usb <vendorId:productId>              use USB-Interface. Specify VendorID and ProductID e.g.
+                                            147B:5120 for the Selfbus USB-Interface (experimental)
  -d,--device <x.x.x>                        KNX device address in normal operating mode (default
                                             none)
  -D,--progDevice <x.x.x>                    KNX device address in bootloader mode (default

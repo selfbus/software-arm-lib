@@ -11,6 +11,7 @@ import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
 import tuwien.auto.calimero.link.KNXNetworkLinkTpuart;
+import tuwien.auto.calimero.link.KNXNetworkLinkUsb;
 import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.RFSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -102,6 +103,10 @@ public class SBKNXLink {
             KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.tpuart(), medium, Collections.emptyList());
             linkTpuart.addAddress(cliOptions.ownAddress()); //\todo check if this is rly needed
             return linkTpuart;
+        } else if (!cliOptions.getUsbInterface().isEmpty()) {
+            // create USB network link
+            KNXNetworkLinkUsb linkUsb = new KNXNetworkLinkUsb(cliOptions.getUsbInterface(), medium);
+            return linkUsb;
         }
 
         // create local and remote socket address for network link
