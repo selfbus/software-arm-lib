@@ -25,10 +25,10 @@ import static org.selfbus.updater.Mcu.MAX_PAYLOAD;
 public final class FlashDiffMode {
     private final static Logger logger = LoggerFactory.getLogger(FlashDiffMode.class.getName());
     // hexCacheDir will be used as a cache directory for the cached *.hex files used by the differential update mode
-    // windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\[version]
-    // linux  : /home/[user-home]]/.cache/Selfbus-Updater/[version]
+    // windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\
+    // linux  : /home/[user-home]]/.cache/Selfbus-Updater/
     private static final String hexCacheDirectory = AppDirsFactory.getInstance().getUserCacheDir(
-            ToolInfo.getTool(), ToolInfo.getVersion(), ToolInfo.getAuthor());
+            ToolInfo.getTool(), "", ToolInfo.getAuthor());
     private final static String IMAGE_IDENTIFIER = "image";
     private final static String FILE_NAME_SEP = "-";
     private final static String FILE_EXTENSION = ".bin";
@@ -103,7 +103,7 @@ public final class FlashDiffMode {
             // process compressed page
             //TODO check why 5 bytes are added to size in FlashDiff.java / generateDiff(...)
             logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size() - 5));
-            byte[] buf = new byte[MAX_PAYLOAD + 1];
+            byte[] buf = new byte[MAX_PAYLOAD];
             int i = 0;
             while (i < outputDiffStream.size()) {
                 // fill data for one telegram
@@ -113,7 +113,7 @@ public final class FlashDiffMode {
                 }
                 // transmit telegram
                 byte[] txBuf = Arrays.copyOf(buf, j); // avoid padded last telegram
-                result.set(dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, -1));
+                result.set(dm.sendWithRetry(UPDCommand.SEND_DATA_TO_DECOMPRESS, txBuf, dm.getMaxUpdCommandRetry()));
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
                 if (UPDProtocol.checkResult(result.get().data(), false) != UDPResult.IAP_SUCCESS.id) {
                     dm.restartProgrammingDevice();
@@ -125,8 +125,8 @@ public final class FlashDiffMode {
             byte[] progPars = new byte[4];
             Utils.longToStream(progPars, 0, (int) crc32);
             System.out.println();
-            logger.info("Program device next page diff, CRC32 0x{}", String.format("%08X", crc32));
-            result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, -1));
+            logger.info("Program device next page diff, crc32 0x{}", String.format("%08X", crc32));
+            result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, dm.getMaxUpdCommandRetry()));
             if (UPDProtocol.checkResult(result.get().data()) != UDPResult.IAP_SUCCESS.id) {
                 dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");

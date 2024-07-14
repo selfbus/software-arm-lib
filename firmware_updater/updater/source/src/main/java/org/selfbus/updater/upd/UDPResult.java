@@ -1,10 +1,7 @@
 package org.selfbus.updater.upd;
 
-import org.selfbus.updater.Utils;
-
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Implementation of the UPD/UDP protocol result commands
@@ -32,7 +29,7 @@ public enum UDPResult {
     /** Flash (IAP) Command to prepare sector for write operation was not executed */
     IAP_SECTOR_NOT_PREPARED_FOR_WRITE_OPERATION((byte)0x76, "Flash (IAP) Command to prepare sector for write operation was not executed.", true),
     /** Flash (IAP) Source and destination data is not same */
-    IAP_COMPARE_ERROR((byte)0x75, "Flash (IAP) Source and destination data is not same.", true),
+    IAP_COMPARE_ERROR((byte)0x75, "Flash (IAP) Source and destination data is not same. Make sure that the affected flash sectors/pages are erased prior flashing.", true),
     /** Flash (IAP) Flash programming hardware interface is busy */
     IAP_BUSY((byte)0x74, "Flash (IAP) Flash programming hardware interface is busy.", true),
 
@@ -72,6 +69,12 @@ public enum UDPResult {
 
     /** Address range not allowed to erase */
     UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE((byte)0x51, "Address range not allowed to erase", true),
+
+    /** Number of bytes received with @ref UPD_SEND_DATA is lower than number of bytes to program with @ref UPD_PROGRAM */
+    BYTECOUNT_RECEIVED_TOO_LOW((byte)0x50, "Number of bytes received is lower than number of bytes to program", true),
+
+    /** Number of bytes received with @ref UPD_SEND_DATA is higher than number of bytes to program with @ref UPD_PROGRAM */
+    BYTECOUNT_RECEIVED_TOO_HIGH((byte)0x4f, "Number of bytes received is greater than number of bytes to program", true),
 
     /** Command not implemented */
     NOT_IMPLEMENTED((byte)0x02, "Command not implemented", true),

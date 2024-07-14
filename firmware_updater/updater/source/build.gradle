@@ -4,9 +4,11 @@ plugins {
 }
 
 group 'org.selfbus'
-version '1.11' ///\todo also change in ../README.md and ToolInfo.java (String version)
+version '1.20' ///\todo also change in ../README.md and ToolInfo.java (String version)
 
-sourceCompatibility = 11
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+}
 
 application {
     mainClass = 'org.selfbus.updater.Updater' // avoids warning "The JavaExec.main property has been deprecated" see https://youtrack.jetbrains.com/issue/IDEA-279280
@@ -46,7 +48,7 @@ artifacts {
 
 repositories {
     mavenCentral()
-    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
 }
 
 gradle.projectsEvaluated{
@@ -68,14 +70,17 @@ dependencies {
     implementation 'net.harawata:appdirs:1.2.1'
 
     // For search in byte array
-    implementation 'com.google.guava:guava:31.1-jre'
+    implementation 'com.google.guava:guava:32.0.0-jre'
 
     // command line option
     implementation 'commons-cli:commons-cli:1.5.0'
 
     // console and file logging
-    implementation 'ch.qos.logback:logback-classic:1.4.5'
+    implementation 'ch.qos.logback:logback-classic:1.4.12'
 
     // unit test
     testImplementation group: 'junit', name: 'junit', version: '4.13.2'
+
+    // GUI
+    implementation files('libs/forms_rt.jar')
 }

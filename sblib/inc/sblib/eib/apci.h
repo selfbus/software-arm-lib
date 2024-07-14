@@ -108,7 +108,7 @@ enum ApciCommand
  * A_Restart-PDU Master Reset Erase Code
  * @details <br>see KNX spec 2.1 3/5/2 3.7.1.2.3.1 page 67</b>
  */
-enum RestartPDUMasterReset
+enum RestartPDUMasterReset : uint8_t
 {
     T_MASTERRESET_CONFIRMED_RESTART = 0x01, //!< Confirmed restart
     T_MASTERRESET_FACTORY_RESET     = 0x02, //!< Factory reset, channel=0 all resources, channel!=0 only specified resources

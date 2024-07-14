@@ -33,6 +33,16 @@ enum IAP_Status
     IAP_BUSY = 11                                    //!< Flash programming hardware interface is busy.
 };
 
+/**
+ * Number of bytes allowed to write in a single iapProgram (4096, 1024, 512, 256)
+ * @note See IAP limitations in UM10398 26.7.2 p. 442
+ */
+constexpr uint16_t IapBlockSize[4] = {16*FLASH_PAGE_SIZE, 4*FLASH_PAGE_SIZE, 2*FLASH_PAGE_SIZE, FLASH_PAGE_SIZE};
+
+/**
+ *  Number of elements in @ref blockSize
+ */
+constexpr uint8_t IapBlockSizesCount = sizeof(IapBlockSize)/sizeof(IapBlockSize[0]);
 
 /**
  * Get the index of the FLASH sector for the passed address.

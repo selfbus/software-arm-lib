@@ -29,6 +29,8 @@ UserRam::UserRam(uint32_t start, uint32_t size, uint32_t shadowSize) :
         _runState(0),
         shadowSize(shadowSize)
 {
+    endAddress -= shadowSize;
+    sizeTotal -= shadowSize;
 }
 
 uint8_t& UserRam::status()

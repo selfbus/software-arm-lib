@@ -25,7 +25,7 @@
 					<folderInfo id="com.crt.advproject.config.lib.debug.95539643.1457915723." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.lib.debug.2042109956" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.lib.debug">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.lib.debug.2135606263" name="ARM-based MCU (Debug)" superClass="com.crt.advproject.platform.lib.debug"/>
-							<builder buildPath="${workspace_loc:/sblib}/Debug_BCU1" id="com.crt.advproject.builder.lib.debug.1782721077" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="com.crt.advproject.builder.lib.debug"/>
+							<builder buildPath="${workspace_loc:/sblib}/Debug" id="com.crt.advproject.builder.lib.debug.1782721077" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="com.crt.advproject.builder.lib.debug"/>
 							<tool id="com.crt.advproject.cpp.lib.debug.708693572" name="MCU C++ Compiler" superClass="com.crt.advproject.cpp.lib.debug">
 								<option id="com.crt.advproject.cpp.arch.787175118" name="Architecture" superClass="com.crt.advproject.cpp.arch" useByScannerDiscovery="false" value="com.crt.advproject.cpp.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.cpp.thumb.228285943" name="Thumb mode" superClass="com.crt.advproject.cpp.thumb" useByScannerDiscovery="false" value="true" valueType="boolean"/>
@@ -113,7 +113,7 @@
 					<folderInfo id="com.crt.advproject.config.lib.release.1620162541.914962737." name="/" resourcePath="">
 						<toolChain id="com.crt.advproject.toolchain.lib.release.1856111354" name="Code Red MCU Tools" superClass="com.crt.advproject.toolchain.lib.release">
 							<targetPlatform binaryParser="org.eclipse.cdt.core.ELF;org.eclipse.cdt.core.GNU_ELF" id="com.crt.advproject.platform.lib.release.1494604895" name="ARM-based MCU (Debug)" superClass="com.crt.advproject.platform.lib.release"/>
-							<builder buildPath="${workspace_loc:/sblib}/Release_BCU1" id="com.crt.advproject.builder.lib.release.964843676" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="com.crt.advproject.builder.lib.release"/>
+							<builder buildPath="${workspace_loc:/sblib}/Release" id="com.crt.advproject.builder.lib.release.964843676" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="com.crt.advproject.builder.lib.release"/>
 							<tool id="com.crt.advproject.cpp.lib.release.110999232" name="MCU C++ Compiler" superClass="com.crt.advproject.cpp.lib.release">
 								<option id="com.crt.advproject.cpp.arch.69197125" name="Architecture" superClass="com.crt.advproject.cpp.arch" useByScannerDiscovery="false" value="com.crt.advproject.cpp.target.cm0" valueType="enumerated"/>
 								<option id="com.crt.advproject.cpp.thumb.229808650" name="Thumb mode" superClass="com.crt.advproject.cpp.thumb" useByScannerDiscovery="false" value="true" valueType="boolean"/>
@@ -210,51 +210,12 @@
 &lt;/TargetConfig&gt;</projectStorage>
 	</storageModule>
 	<storageModule moduleId="refreshScope" versionNumber="2">
-		<configuration configurationName="Debug_BCU2">
+		<configuration configurationName="Debug">
 			<resource resourceType="PROJECT" workspacePath="/sblib"/>
 		</configuration>
-		<configuration configurationName="Debug_BCU1">
+		<configuration configurationName="Release">
 			<resource resourceType="PROJECT" workspacePath="/sblib"/>
 		</configuration>
-		<configuration configurationName="Debug_BCU2_IO16_UP">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112_IO16_UP">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112_11Uxx">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BCU1_IO16_UP">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BCU1_11UXX">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BIM112_75">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BIM112">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BIM112_75">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BCU2">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Release_BCU1">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_BCU1_11UXX">
-			<resource resourceType="PROJECT" workspacePath="/sblib"/>
-		</configuration>
-		<configuration configurationName="Debug_SYSTEM_B"/>
-		<configuration configurationName="Debug"/>
-		<configuration configurationName="Release"/>
 	</storageModule>
 	<storageModule moduleId="com.crt.advproject"/>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>

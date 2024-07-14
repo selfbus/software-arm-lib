@@ -10,7 +10,6 @@
 
 #include <sblib/core.h>
 #include <sblib/eib/bcu1.h>
-#include <sblib/internal/variables.h>
 
 #include <cstring> // for memcpy in propertyValueReadTelegram()
 

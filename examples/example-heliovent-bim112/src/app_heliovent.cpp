@@ -18,7 +18,6 @@
  *  published by the Free Software Foundation.
  */
 
-#include <sblib/internal/iap.h>
 #include <sblib/timeout.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/digital_pin.h>

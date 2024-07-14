@@ -34,30 +34,6 @@ public:
     ~BcuDefault() = default;
 
     /**
-     * Set RxPin of board, must be called before begin method
-     * @param rxPin pin definition
-     */
-    void setRxPin(int rxPin);
-    
-    /**
-     * Set TxPin of board, must be called before begin method
-     * @param txPin pin definition
-     */
-    void setTxPin(int txPin);
-    
-    /**
-     * Set timer class, must be called before begin method
-     * @param timer
-     */
-    void setTimer(Timer& timer);
-
-    /**
-     * Set capture channel of processor, must be called before begin method
-     * @param capture channel definition of processor
-     */
-    void setCaptureChannel(TimerCapture captureChannel);
-
-    /**
      * End using the EIB bus coupling unit.
      */
     void end();
@@ -74,7 +50,7 @@ public:
      * Get the mask version.
      * Usually 0x0012 for BCU1, 0x0020 for BCU2.
      */
-    virtual uint16_t getMaskVersion() const = 0; ///\todo subclass BL doesn't need it
+    virtual uint16_t getMaskVersion() const = 0;
 
     virtual const char* getBcuType() const = 0;
 
@@ -231,16 +207,15 @@ protected:
      *
      * @return True on success, false on failure
      */
-    bool processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id);  ///\todo move to a new subclass BL doesnt need that
+    bool processDeviceDescriptorReadTelegram(uint8_t * sendBuffer, int id);
 
     /**
      * Flushes all pending write operations to user memory (eeprom, memmapper) and sends a callback to the user
      *
      * @param reason    The reason, why the memory is flushed
-     * @param waitIdle  set true to wait for an idle bus
      * @return  True if eeprom was flushed, otherwise false
      */
-    bool flushUserMemory(UsrCallbackType reason, bool waitIdle);
+    bool flushUserMemory(UsrCallbackType reason);
 
     MemMapper *memMapper;
     UsrCallback *usrCallback;

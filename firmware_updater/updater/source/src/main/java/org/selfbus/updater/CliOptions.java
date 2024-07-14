@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXFormatException;
+import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
 import tuwien.auto.calimero.link.medium.TPSettings;
@@ -34,10 +35,8 @@ import java.util.Locale;
  *         - declare a short and a long option
  *           private static final String OPT_SHORT_XXX = "X";
  *           private static final String OPT_LONG_XXX = "XXXXX";
- *
  *         - in constructor @ref CliOptions(.) create an instance of class Option
  *           and add it with cliOptions.addOption(yourOptionInstance)
- *
  *         - check with cmdLine.hasOption(OPT_SHORT_XXX) in method parse(.) is it set or not
  */
 public class CliOptions {
@@ -71,14 +70,15 @@ public class CliOptions {
     private static final String OPT_SHORT_OWN_ADDRESS = "o";
     private static final String OPT_LONG_OWN_ADDRESS = "own";
 
-    private static final String OPT_SHORT_APP_VERSION_PTR = "a";
-    public static final String OPT_LONG_APP_VERSION_PTR = "appVersionPtr";
     private static final String OPT_SHORT_UID = "u";
     private static final String OPT_LONG_UID = "uid";
 
     private static final String OPT_LONG_DELAY = "delay";
-    private static final String OPT_LONG_TIMEOUT = "timeout"; ///\todo delete after TL4 Style 3 implementation in sblib
 
+    private static final String OPT_SHORT_TUNNEL_V2 = "t2";
+    private static final String OPT_LONG_TUNNEL_V2 = "tunnelingv2";
+    private static final String OPT_SHORT_TUNNEL_V1 = "t1";
+    private static final String OPT_LONG_TUNNEL_V1 = "tunneling";
     private static final String OPT_SHORT_NAT = "n";
     private static final String OPT_LONG_NAT = "nat";
     private static final String OPT_SHORT_ROUTING = "r";
@@ -107,10 +107,12 @@ public class CliOptions {
 
     private static final String OPT_LONG_LOGSTATISTIC = "statistic";
 
+    private static final String OPT_SHORT_BLOCKSIZE = "bs";
+    public static final String OPT_LONG_BLOCKSIZE = "blocksize";
+    private final static List<Integer> VALID_BLOCKSIZES = Arrays.asList(256, 512, 1024);
+
     private static final int PRINT_WIDTH = 100;
     private final static List<String> VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
-    private final static List<String> VALID_PRIORITIES = Arrays.asList("SYSTEM", "NORMAL", "URGENT", "LOW");
-
 
     private final Options cliOptions = new Options();
     // define parser
@@ -129,6 +131,8 @@ public class CliOptions {
     private boolean nat = false;
     private String ft12 = "";
     private String tpuart = "";
+    private boolean tunnelingV2 = false;
+    private boolean tunnelingV1 = false;
     private boolean routing = false;
     private String medium = "tp1";
 
@@ -140,12 +144,10 @@ public class CliOptions {
     private IndividualAddress progDevice;
     private IndividualAddress ownAddress;
     private IndividualAddress device = null;
-    private int appVersionPtr = 0;
     private byte[] uid;
     private boolean full = false;
     private int delay = 0;
 
-    private boolean tl4Timeout = false; ///\todo delete after TL4 Style 3 implementation in sblib
     private boolean NO_FLASH = false;
     private Level logLevel = Level.DEBUG;
     private boolean eraseFullFlash = false;
@@ -155,6 +157,7 @@ public class CliOptions {
     private Priority priority = Priority.LOW;
 
     private boolean logStatistics = false;
+    private int blockSize = Mcu.UPD_PROGRAM_SIZE;
 
     private boolean help = false;
     private boolean version = false;
@@ -169,14 +172,15 @@ public class CliOptions {
         this.progDevice = progDevice;
         this.ownAddress = ownAddress;
 
-        Option nat = new Option(OPT_SHORT_NAT, OPT_LONG_NAT, false, "enable Network Address Translation (NAT)");
-        Option routing = new Option(OPT_SHORT_ROUTING, OPT_LONG_ROUTING, false, "use KNXnet/IP routing (not implemented)");
+        Option tunnelingV2 = new Option(OPT_SHORT_TUNNEL_V2, OPT_LONG_TUNNEL_V2, false, "use KNXnet/IP tunneling v2 (TCP) (experimental)");
+        Option tunnelingV1 = new Option(OPT_SHORT_TUNNEL_V1, OPT_LONG_TUNNEL_V1, false, "use KNXnet/IP tunneling v1 (UDP)");
+        Option nat = new Option(OPT_SHORT_NAT, OPT_LONG_NAT, false, "enable Network Address Translation (NAT) (only available with tunneling v1)");
+        Option routing = new Option(OPT_SHORT_ROUTING, OPT_LONG_ROUTING, false, "use KNXnet/IP routing/multicast (experimental)");
         Option full = new Option(OPT_SHORT_FULL, OPT_LONG_FULL, false, "force full upload mode (disables differential mode)");
         Option help = new Option(OPT_SHORT_HELP, OPT_LONG_HELP, false, "show this help message");
         Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
         Option eraseFlash = new Option(null, OPT_LONG_ERASEFLASH, false, "USE WITH CAUTION! Erases the complete flash memory including the physical KNX address and all settings of the device. Only the bootloader is not deleted.");
-        Option timeout = new Option(null, OPT_LONG_TIMEOUT, false, "Enable transport layer 4 connection-oriented 6000ms timeout. Can be helpful with connection problems.");
 
         Option dumpFlash = Option.builder(null).longOpt(OPT_LONG_DUMPFLASH)
                 .argName("start> <end")
@@ -244,12 +248,6 @@ public class CliOptions {
                 .required(false)
                 .type(IndividualAddress.class)
                 .desc(String.format("own physical KNX address (default %s)", this.ownAddress.toString())).build();
-        Option appVersionPtr = Option.builder(OPT_SHORT_APP_VERSION_PTR).longOpt(OPT_LONG_APP_VERSION_PTR)
-                .argName("address")
-                .hasArg()
-                .required(false)
-                .type(String.class)
-                .desc("pointer address to APP_VERSION string in new firmware file").build();
         Option uid = Option.builder(OPT_SHORT_UID).longOpt(OPT_LONG_UID)
                 .argName("uid")
                 .hasArg()
@@ -288,11 +286,19 @@ public class CliOptions {
                 .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) quotation marks(\") in password may not work").build();
 
         Option knxPriority = Option.builder(null).longOpt(OPT_LONG_PRIORITY)
-                .argName("SYSTEM|NORMAL|URGENT|LOW")
+                .argName("SYSTEM|URGENT|NORMAL|LOW")
                 .hasArg()
                 .required(false)
                 .type(String.class)
                 .desc(String.format("KNX telegram priority (default %s)", this.priority.toString().toUpperCase())).build();
+
+        Option blockSize = Option.builder(OPT_SHORT_BLOCKSIZE).longOpt(OPT_LONG_BLOCKSIZE)
+                .argName("256|512|1024")
+                .valueSeparator(' ')
+                .numberOfArgs(1)
+                .required(false)
+                .type(Number.class)
+                .desc(String.format("Block size to program (default %d bytes)", this.blockSize)).build();
 
         Option logStatistic = new Option(null, OPT_LONG_LOGSTATISTIC, false, "show more statistic data");
 
@@ -311,6 +317,7 @@ public class CliOptions {
         cliOptions.addOption(optProgDevice);
         cliOptions.addOption(ownPhysicalAddress);
         cliOptions.addOption(knxPriority);
+        cliOptions.addOption(blockSize);
 
         cliOptions.addOption(userId);
         cliOptions.addOption(userPasswd);
@@ -321,9 +328,10 @@ public class CliOptions {
         cliOptions.addOption(localhost);
         cliOptions.addOption(localport);
         cliOptions.addOption(port);
+        cliOptions.addOption(tunnelingV2);
+        cliOptions.addOption(tunnelingV1);
         cliOptions.addOption(nat);
         cliOptions.addOption(routing);
-        cliOptions.addOption(appVersionPtr);
 
         // help or version, not both
         OptionGroup grpHelper = new OptionGroup();
@@ -332,7 +340,6 @@ public class CliOptions {
         cliOptions.addOptionGroup(grpHelper);
 
         cliOptions.addOption(delay);
-        cliOptions.addOption(timeout);
         cliOptions.addOption(logLevel);
         cliOptions.addOption(eraseFlash);
         cliOptions.addOption(dumpFlash);
@@ -346,23 +353,6 @@ public class CliOptions {
     private void parse(final String[] args) {
         CommandLineParser parser = new DefaultParser();
         try {
-            int i = 0;
-            String cliCensored = "";
-            while (i < args.length) {
-                String testCli = args[i].toLowerCase(Locale.ROOT);
-                if ((testCli.contains(OPT_LONG_USER_ID.toLowerCase(Locale.ROOT))) ||
-                    (testCli.contains(OPT_LONG_USER_PASSWORD.toLowerCase(Locale.ROOT))) ||
-                    (testCli.contains(OPT_LONG_DEVICE_PASSWORD.toLowerCase(Locale.ROOT)))) {
-                    cliCensored += " " + args[i] + " (censored)";
-                    i++;
-                }
-                else {
-                    cliCensored += " " + args[i];
-                }
-                i++;
-            }
-            logger.debug("cli: {}", cliCensored.trim());
-
             cmdLine = parser.parse(cliOptions, args);
             // get the log level for log file output
             ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
@@ -379,12 +369,11 @@ public class CliOptions {
             logger.debug("logLevel={}", root.getLevel().toString());
 
             if (cmdLine.hasOption(OPT_LONG_PRIORITY)) {
-                String cliPriority = cmdLine.getOptionValue(OPT_LONG_PRIORITY).toUpperCase();
-                if (VALID_PRIORITIES.contains(cliPriority)) {
-                    priority = Priority.valueOf(cliPriority);
+                try {
+                    priority = Priority.get(cmdLine.getOptionValue(OPT_LONG_PRIORITY));
                 }
-                else {
-                    logger.warn("{}invalid {} {}, using {}{}", ConColors.RED, OPT_LONG_LOGLEVEL, cliPriority, priority, ConColors.RESET);
+                catch (KNXIllegalArgumentException e) {
+                    logger.warn("{}invalid {} {}, using {}{}", ConColors.RED, OPT_LONG_PRIORITY, cmdLine.getOptionValue(OPT_LONG_PRIORITY), priority, ConColors.RESET);
                 }
             }
             logger.debug("priority={}", priority.toString());
@@ -424,6 +413,16 @@ public class CliOptions {
             }
             logger.debug("full={}", full);
 
+            if (cmdLine.hasOption(OPT_SHORT_TUNNEL_V2)) {
+                tunnelingV2 = true;
+            }
+            logger.debug("tunnelingV2={}", tunnelingV2);
+
+            if (cmdLine.hasOption(OPT_SHORT_TUNNEL_V1)) {
+                tunnelingV1 = true;
+            }
+            logger.debug("tunneling={}", tunnelingV1);
+
             if (cmdLine.hasOption(OPT_SHORT_ROUTING)) {
                 routing = true;
             }
@@ -438,10 +437,6 @@ public class CliOptions {
                 fileName = cmdLine.getOptionValue(OPT_SHORT_FILENAME);
             }
             logger.debug("fileName={}", fileName);
-
-            if (fileName.length() <= 0) {
-                throw new ParseException("No fileName specified.");
-            }
 
             if (cmdLine.hasOption(OPT_SHORT_LOCALHOST)) {
                 localhost = Utils.parseHost(cmdLine.getOptionValue(OPT_SHORT_LOCALHOST));
@@ -472,21 +467,21 @@ public class CliOptions {
             }
             logger.debug("delay={}", delay);
 
-            if (cmdLine.hasOption(OPT_LONG_TIMEOUT)) {
-                tl4Timeout = true;
+            if (cmdLine.hasOption(OPT_SHORT_BLOCKSIZE)) {
+                int newBlockSize = ((Number)cmdLine.getParsedOptionValue(OPT_LONG_BLOCKSIZE)).intValue();
+                if (VALID_BLOCKSIZES.contains(newBlockSize)) {
+                    blockSize = newBlockSize;
+                }
+                else {
+                    logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ConColors.YELLOW, OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, blockSize, ConColors.RESET);
+                }
             }
-            logger.debug("tl4Timeout={}", tl4Timeout);
+            logger.debug("{}={}", OPT_LONG_BLOCKSIZE, delay);
 
             if (cmdLine.hasOption(OPT_SHORT_UID)) {
                uid =  uidToByteArray(cmdLine.getOptionValue(OPT_SHORT_UID));
             }
             logger.debug("uid={}", Utils.byteArrayToHex(uid));
-
-            if (cmdLine.hasOption(OPT_SHORT_APP_VERSION_PTR)) {
-                appVersionPtr = Integer.decode(cmdLine.getOptionValue(OPT_SHORT_APP_VERSION_PTR));
-
-            }
-            logger.debug("appVersionPtr={}", appVersionPtr);
 
             if (cmdLine.hasOption(OPT_SHORT_DEVICE)) {
                 device = new IndividualAddress(cmdLine.getOptionValue(OPT_SHORT_DEVICE));
@@ -516,7 +511,7 @@ public class CliOptions {
             }
             logger.debug("tpuart={}", tpuart);
 
-            if ((ft12.length() == 0) && (tpuart.length() == 0)) {
+            if ((ft12.isEmpty()) && (tpuart.isEmpty())) {
                 // no ft12 or tpuart => get the <KNX Interface>
                 if (cmdLine.getArgs().length <= 0) {
                     throw new ParseException("No <KNX Interface>, ft12 or tpuart specified.");
@@ -553,6 +548,21 @@ public class CliOptions {
                 logger.info("{}--{} is set. --> switching to full flash mode{}", ConColors.RED, OPT_LONG_ERASEFLASH, ConColors.RESET);
             }
 
+            if (nat() && (!tunnelingV1())) {
+                throw new ParseException(String.format("%sOption --%s can only be used together with --%s%s", ConColors.RED, OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ConColors.RESET));
+            }
+
+            int interfacesSet = 0;
+            if (!(userPassword().isEmpty()) && !(devicePassword().isEmpty())) interfacesSet++;
+            if (tunnelingV2()) interfacesSet++;
+            if (tunnelingV1()) interfacesSet++;
+            if (routing()) interfacesSet++;
+            if (!ft12().isEmpty()) interfacesSet++;
+            if (!tpuart().isEmpty()) interfacesSet++;
+
+            if (interfacesSet > 1) {
+                throw new ParseException(String.format("%sOnly one bus interface can be used.%s", ConColors.RED, ConColors.RESET));
+            }
 
         } catch (ParseException | KNXFormatException e) {
             StringBuilder cliParsed = new StringBuilder();
@@ -630,6 +640,10 @@ public class CliOptions {
         return tpuart;
     }
 
+    public boolean tunnelingV2() { return tunnelingV2; }
+
+    public boolean tunnelingV1() { return tunnelingV1; }
+
     public boolean routing() {
         return routing;
     }
@@ -650,10 +664,6 @@ public class CliOptions {
         return ownAddress;
     }
 
-    public int appVersionPtr() {
-        return appVersionPtr;
-    }
-
     public byte[] uid() {
         return uid;
     }
@@ -665,8 +675,6 @@ public class CliOptions {
     public int delay() {
         return delay;
     }
-
-    public boolean tl4Timeout() { return tl4Timeout; }
 
     public boolean NO_FLASH() {
         return NO_FLASH;
@@ -712,5 +720,15 @@ public class CliOptions {
         return priority;
     }
 
-    public boolean logStatistics() {return logStatistics;};
+    public boolean logStatistics() {
+        return logStatistics;
+    }
+
+    public String getOptionLongFileName() {
+        return OPT_LONG_FILENAME;
+    }
+
+    public int getBlockSize() {
+        return blockSize;
+    }
 }

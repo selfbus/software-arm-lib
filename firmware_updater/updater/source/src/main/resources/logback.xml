@@ -13,6 +13,13 @@
         </encoder>
     </appender>
 
+    <appender name="list" class="org.selfbus.updater.gui.TextAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+    </appender>
+
+<!--
     <appender name="logFile" class="ch.qos.logback.core.FileAppender">
         <file>${application.home:-.}/log/updater-${appStartTimestamp}.log</file>
         <append>false</append>
@@ -20,6 +27,7 @@
             <pattern>%-40(%d{HH:mm:ss.SSS} [%thread]) %-5level [%logger{36}] %method \(%line\) - %message%n</pattern>
         </encoder>
     </appender>
+-->
 
     <appender name="htmlAppender" class="ch.qos.logback.core.FileAppender">
         <file>${application.home:-.}/log/updater-${appStartTimestamp}.html</file>
@@ -47,7 +55,10 @@
     <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
     <root level="DEBUG">
         <appender-ref ref="CONSOLE" />
+        <appender-ref ref="list" />
+        <!--
         <appender-ref ref="logFile" />
+        -->
         <appender-ref ref="htmlAppender" />
         <appender-ref ref="htmlWarnAppender" />
     </root>

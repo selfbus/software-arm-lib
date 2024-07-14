@@ -19,7 +19,6 @@
 #include <sblib/interrupt.h>
 #include <sblib/timer.h>
 
-#include <sblib/internal/variables.h>
 #include <sblib/eib/bcu_base.h>
 
 /**
@@ -29,7 +28,6 @@
 static inline void lib_setup()
 {
 	SysTick_Config(SystemCoreClock / 1000);
-	systemTime = 0;
 }
 
 /**

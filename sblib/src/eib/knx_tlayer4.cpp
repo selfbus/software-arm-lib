@@ -120,7 +120,7 @@ void dumpState(TLayer4::TL4State dumpState)
 void dumpTicks()
 {
     dump2(
-        uint32_t ticks = systemTime - lastTick;
+        uint32_t ticks = millis() - lastTick;
         serial.print(telegramCount, DEC, 6);
         serial.print(LOG_SEP);
         serial.print("t:", (unsigned int)ticks, DEC, 5);
@@ -132,7 +132,7 @@ void dumpTicks()
         serial.print(LOG_SEP);
         serial.print(disconnectCount);
         serial.print(LOG_SEP);
-        lastTick = systemTime;
+        lastTick = millis();
     );
 }
 
@@ -250,8 +250,8 @@ void TLayer4::_begin()
 #endif
     state = TLayer4::CLOSED;
     sendTelegramBufferState = TELEGRAM_FREE;
-    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
-    sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
+    sendConnectedTelegramBufferState = TELEGRAM_FREE;
+    sendConnectedTelegramBuffer2State = TELEGRAM_FREE;
     connectedAddr = 0;
     seqNoSend = -1;
     seqNoRcv = -1;
@@ -606,17 +606,21 @@ void TLayer4::finishedSendingTelegram(bool successful)
 {
     sendTelegramBufferState = TELEGRAM_FREE;
 
-    if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
+    auto tpci = sendTelegram[6] & 0xc3; //0b11000011 Transport control field (see KNX 3/3/4 p.6 TPDU)
+    auto isConnectionControlCommand = (tpci & T_CONNECTION_CTRL_COMMAND_Msk);  // A connection control command
+
+    if (isConnectionControlCommand)
     {
-        // For successfully sent connection control telegrams, continue with the next direct telegram.
-        // If there was an error, one of the connected parties will encounter a timeout and either close
-        // the connection or send the last telegram again. In both cases it does not make sense to respond
-        // with an outdated telegram, so throw it away instead.
-        sendConnectedTelegramBufferState = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
-    }
-    else if (sendConnectedTelegramBuffer2State == CONNECTED_TELEGRAM_WAIT_T_ACK_SENT)
-    {
-        sendConnectedTelegramBuffer2State = successful ? CONNECTED_TELEGRAM_WAIT_LOOP : CONNECTED_TELEGRAM_FREE;
+        if (!successful && conCtrlRepCount < TL4_MAX_REPETITION_COUNT)
+        {
+            // Connection control telegrams are so high priority that we retry sending them right away.
+            conCtrlRepCount++;
+            sendPreparedTelegram();
+        }
+        else
+        {
+            conCtrlRepCount = 0;
+        }
     }
 }
 
@@ -721,6 +725,11 @@ bool TLayer4::processApci(ApciCommand apciCmd, unsigned char * telegram, uint8_t
     return (false); // we return nothing
 }
 
+void TLayer4::disconnect()
+{
+    actionA06DisconnectAndClose();
+}
+
 void TLayer4::actionA00Nothing()
 {
     dump2(serial.println("A00Nothing"));
@@ -736,7 +745,7 @@ void TLayer4::actionA01Connect(uint16_t address)
     connectedAddr = address;
     seqNoSend = 0;
     seqNoRcv = 0;
-    connectedTime = systemTime; // "start connection timeout timer"
+    connectedTime = millis(); // "start connection timeout timer"
     setTL4State(TLayer4::OPEN_IDLE);
     dump2(lastTick = connectedTime;); // for debug logging
 }
@@ -748,11 +757,11 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     seqNoRcv++;                 // increment sequence counter
     seqNoRcv &= 0x0F;           // handle overflow
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 
     byte * sendBuffer;
-    volatile SendConnectedTelegramBufferState * sendBufferState;
-    if (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_FREE)
+    volatile SendTelegramBufferState * sendBufferState;
+    if (sendConnectedTelegramBufferState == TELEGRAM_FREE)
     {
         sendBuffer = sendConnectedTelegram;
         sendBufferState = &sendConnectedTelegramBufferState;
@@ -767,7 +776,7 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     // This ensures finishedSendingTelegram() can move the buffer to the next state and thus prevents
     // messages lingering in the buffer. The message will not be sent prematurely as the sending is
     // triggered in loop(), which can only execute after this function returns.
-    *sendBufferState = CONNECTED_TELEGRAM_WAIT_T_ACK_SENT;
+    *sendBufferState = TELEGRAM_ACQUIRED;
     auto sendResponse = processApci(apciCmd, telegram, telLength, sendBuffer);
     if (sendResponse)
     {
@@ -779,7 +788,7 @@ void TLayer4::actionA02sendAckPduAndProcessApci(ApciCommand apciCmd, const int8_
     }
     else
     {
-        *sendBufferState = CONNECTED_TELEGRAM_FREE;
+        *sendBufferState = TELEGRAM_FREE;
     }
 }
 
@@ -788,14 +797,14 @@ void TLayer4::actionA03sendAckPduAgain(const int8_t seqNo)
     dump2(serial.println("ERROR A03sendAckPduAgain "));
     sendConControlTelegram(T_ACK_PDU, connectedAddr, seqNo);
     repeatedT_ACKcount++; // counting for statistics
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA04SendNAck(const uint8_t seqNo)
 {
     dump2(serial.println("ERROR actionA04SendNAck"));
     sendConControlTelegram(T_NACK_PDU, connectedAddr, seqNo);
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA05DisconnectUser()
@@ -829,7 +838,7 @@ void TLayer4::actionA07SendDirectTelegram()
         return;
     }
 
-    if (sendConnectedTelegramBufferState != CONNECTED_TELEGRAM_WAIT_LOOP)
+    if (sendConnectedTelegramBufferState != TELEGRAM_ACQUIRED)
     {
         dump2(
               serial.print("ERROR A07SendTelegram Nothing to send");
@@ -848,15 +857,15 @@ void TLayer4::actionA07SendDirectTelegram()
     );
 
     setTL4State(TLayer4::OPEN_WAIT);
-    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_SENDING;
+    sendConnectedTelegramBufferState = TELEGRAM_SENDING;
 
     dump2(
         dumpTelegramBytes(true, sendConnectedTelegram, telegramSize(sendConnectedTelegram), true);
     );
     sendPreparedConnectedTelegram();
     repCount = 0;
-    sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    sentTelegramTime = millis(); // "start the acknowledge timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA08IncrementSequenceNumber()
@@ -864,14 +873,14 @@ void TLayer4::actionA08IncrementSequenceNumber()
     dump2(serial.print("A08IncrementSequenceNumber "));
     seqNoSend++;
     seqNoSend &= 0x0F;
-    connectedTime = systemTime; // "restart the connection timeout timer"
-    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
+    connectedTime = millis(); // "restart the connection timeout timer"
+    sendConnectedTelegramBufferState = TELEGRAM_FREE;
 
-    if (sendConnectedTelegramBuffer2State != CONNECTED_TELEGRAM_FREE)
+    if (sendConnectedTelegramBuffer2State != TELEGRAM_FREE)
     {
         memcpy(sendConnectedTelegram, sendConnectedTelegram2, telegramSize(sendConnectedTelegram2));
         sendConnectedTelegramBufferState = sendConnectedTelegramBuffer2State;
-        sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
+        sendConnectedTelegramBuffer2State = TELEGRAM_FREE;
     }
 }
 
@@ -884,8 +893,8 @@ void TLayer4::actionA09RepeatMessage()
 
     sendPreparedConnectedTelegram();
     repCount++;
-    sentTelegramTime = systemTime; // "start the acknowledge timeout timer"
-    connectedTime = systemTime; // "restart the connection timeout timer"
+    sentTelegramTime = millis(); // "start the acknowledge timeout timer"
+    connectedTime = millis(); // "restart the connection timeout timer"
 }
 
 void TLayer4::actionA10Disconnect(uint16_t address)
@@ -902,6 +911,11 @@ void TLayer4::loop()
     if (!enabled)
         return;
 
+    // Rest of function can potentially send telegrams. Although we would busy wait until
+    // the send buffer is free, it makes more sense to keep the main loop running.
+    if (sendTelegramBufferState != TELEGRAM_FREE)
+        return;
+
     // Send a disconnect after TL4_CONNECTION_TIMEOUT_MS milliseconds inactivity
     if ((state != TLayer4::CLOSED) && (elapsed(connectedTime) >= TL4_CONNECTION_TIMEOUT_MS))
     {
@@ -911,7 +925,7 @@ void TLayer4::loop()
     }
 
     // Send a potential response message
-    if ((state == TLayer4::OPEN_IDLE) && (sendConnectedTelegramBufferState == CONNECTED_TELEGRAM_WAIT_LOOP))
+    if ((state == TLayer4::OPEN_IDLE) && (sendConnectedTelegramBufferState == TELEGRAM_ACQUIRED))
     {
         // event E15
         actionA07SendDirectTelegram();
@@ -949,8 +963,8 @@ void TLayer4::resetConnection()
           serial.print(LOG_SEP)
     );
 
-    sendConnectedTelegramBufferState = CONNECTED_TELEGRAM_FREE;
-    sendConnectedTelegramBuffer2State = CONNECTED_TELEGRAM_FREE;
+    sendConnectedTelegramBufferState = TELEGRAM_FREE;
+    sendConnectedTelegramBuffer2State = TELEGRAM_FREE;
 }
 
 bool TLayer4::setTL4State(TLayer4::TL4State newState)

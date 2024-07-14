@@ -20,7 +20,7 @@ import java.util.zip.CRC32;
 public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class.getName());
     public static final String PROGRESS_MARKER = "."; //!< symbol to print progress to console
-
+    public static final int CONSOLE_WIDTH = 80;
 
     public static long streamToLong(byte[] stream, int offset) {
         return ((stream[offset] & 0xFF)) |

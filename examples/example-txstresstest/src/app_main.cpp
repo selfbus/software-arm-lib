@@ -35,7 +35,7 @@
 #define TEST_FILLBYTE       (0x00)      //!< Value the payload bytes should be filled with
 #define TEST_DELAY_MS       (1)         //!< Delay in milliseconds between two test telegrams
 #define TEST_TELEGRAM_SIZE  (24)        //!< Length of the test telegram, including trailing 0x00 byte and checksum byte (sblib supports up to 24 Bytes)
-#define TEST_MAX_SEND_RETIES (100)        //!< maximum retries in case of no ACK
+#define TEST_MAX_SEND_RETRIES (100)     //!< maximum retries in case of no ACK
 #define TEST_STARTUP_DELAY_MS (1000)    //!< Delay in milliseconds before the test starts
 
 
@@ -82,7 +82,7 @@ BcuBase* setup()
 {
     bcu.begin(MANUFACTURER, DEVICETYPE, APPVERSION);
     bcu.setOwnAddress(KNX_PHYS_ADDRESS);
-    bcu.bus->maxSendTries(TEST_MAX_SEND_RETIES);
+    bcu.bus->maxSendRetries(TEST_MAX_SEND_RETRIES);
     bcu.setHardwareType(hardwareVersion, sizeof(hardwareVersion));
     // prepare test telegram
     initTestTelegram();
@@ -96,12 +96,7 @@ BcuBase* setup()
  */
 void loop(void)
 {
-    if (!bcu.bus->idle())
-    {
-        return;
-    }
-
-    if ((TEST_DELAY_MS <= 0) || (sendTimeout.expired()))
+    if (!bcu.bus->sendingFrame() && ((TEST_DELAY_MS <= 0) || (sendTimeout.expired())))
     {
         sendTestTelegram();
     }

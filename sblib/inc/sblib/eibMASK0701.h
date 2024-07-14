@@ -1,5 +1,5 @@
 /*
- *  eib.h - Include the EIB / BCU related header files.
+ *  eibMASK0701.h - Include the MASK0701 related header files.
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *

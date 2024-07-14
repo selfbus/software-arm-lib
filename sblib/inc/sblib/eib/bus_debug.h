@@ -49,8 +49,7 @@
     extern volatile unsigned int tx_busy_rep_count;
     extern volatile unsigned int tx_telrxerror;
 
-    extern volatile unsigned int telRXtime; //!< time of the timeout after the last bit of the received telegram
-    extern volatile bool telcollision;
+    extern volatile uint8_t telcollisions;
     extern volatile unsigned int telrxerror;
     extern volatile unsigned int telRXStartTime; //!< time when the reception  (start bit of first byte) of a telegram from bus started
     extern volatile unsigned int telTXStartTime; //!< time when the transmission (start bit of first byte)of a telegram to the bus started
@@ -62,6 +61,7 @@
     extern volatile unsigned int telRXWaitIdleTime; //!< bus is in idle after 50 bit times, now wait for next start of RX/TX
     extern volatile unsigned int telRXTelStartTime; //!< Start Time of a telegram
     extern volatile unsigned int telRXTelByteStartTime; //!< Start Time of a byte within a telegram
+    extern volatile unsigned int telRXTelByteEndTime; //!< End Time of a byte within a telegram
     extern volatile unsigned int telRXTelBitTimingErrorLate; //!< late bit error - falling rx edge was not in the expected window >33us
     extern volatile unsigned int telRXTelBitTimingErrorEarly; //!< early bit error - falling rx edge was not in the expected window -7us till +33us
     //volatile unsigned int db_state= 2000;

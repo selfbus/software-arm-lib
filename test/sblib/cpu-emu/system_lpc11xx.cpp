@@ -136,20 +136,23 @@ void IAP_Call (uintptr_t * cmd, uintptr_t * stat)
         break;
 
     case IAP_READ_UID:
+    {
         iap_calls [I_READ_UID]++;
         uint8_t guid[16] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16};
         cmd += 6; //points now to p.res
         memcpy(cmd, &guid, 16);
         break;
+    }
 
     default:
         * stat = INVALID_COMMAND;
     }
 }
 
-extern unsigned int systemTime;
-extern unsigned int wfiSystemTimeInc;
+extern unsigned int millis();
+extern void setMillis(unsigned int newSystemTime);
+
 void _test_wfi(void)
 {
-	systemTime +=  wfiSystemTimeInc;
+    setMillis(millis() + wfiSystemTimeInc);
 }

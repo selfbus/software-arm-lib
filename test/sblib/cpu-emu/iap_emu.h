@@ -28,6 +28,7 @@ enum IAP_Function
 
 extern int iap_calls[6];
 void IAP_Init_Flash(unsigned char value);
+void IAP_Call (uintptr_t * cmd, uintptr_t * stat);
 
 
 // Size of a flash sector: 4k

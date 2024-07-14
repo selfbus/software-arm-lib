@@ -23,7 +23,6 @@
 #ifndef BCU_UPDATER_H_
 #define BCU_UPDATER_H_
 
-#include <sblib/internal/variables.h>
 #include <sblib/timeout.h>
 #include <sblib/io_pin_names.h>
 #include <sblib/eib/bcu_base.h>

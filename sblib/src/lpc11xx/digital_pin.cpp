@@ -158,7 +158,7 @@ void pinInterruptMode(int pin, int mode)
     if (mode & 0x0001) port->IEV |=  mask;
     else              port->IEV &= ~mask;
 
-    /* Enable the ionterrupt for this pin */
+    /* Enable the interrupt for this pin */
     if (mode & 0x1000) port->IE  |=  mask;
     else               port->IE  &= ~mask;
 }

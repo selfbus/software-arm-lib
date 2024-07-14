@@ -9,8 +9,6 @@
  */
 
 #include <sblib/timer.h>
-
-#include <sblib/internal/variables.h>
 #include <sblib/interrupt.h>
 
 
@@ -18,7 +16,7 @@
 #define SYSTICK_INTERRUPT_ENABLED   ((SysTick->CTRL &  SysTick_CTRL_TICKINT_Msk) == SysTick_CTRL_TICKINT_Msk)
 
 // The number of milliseconds since processor start/reset
-volatile unsigned int systemTime;
+static volatile unsigned int systemTime = 0;
 
 // The timers
 static LPC_TMR_TypeDef* const timers[4] = { LPC_TMR16B0, LPC_TMR16B1, LPC_TMR32B0, LPC_TMR32B1 };
@@ -98,6 +96,23 @@ void delayMicroseconds(unsigned int usec)
 }
 #endif
 
+#ifdef IAP_EMULATION
+void setMillis(unsigned int newSystemTime)
+{
+    systemTime = newSystemTime;
+}
+#endif
+
+unsigned int millis()
+{
+    return systemTime;
+}
+
+unsigned int elapsed(unsigned int ref)
+{
+    return millis() - ref;
+}
+
 //----- Class Timer -----------------------------------------------------------
 
 Timer timer16_0(TIMER16_0);
@@ -129,8 +144,9 @@ void Timer::matchMode(int channel, int mode)
     // Configure the match control channel
 
     offset = channel * 3;
-    timer->MCR &= ~(7 << offset);
-    timer->MCR |= (mode & 7) << offset;
+    timer->MCR = (timer->MCR
+               & ~(7 << offset))
+               | ((mode & 7) << offset);
 
     // Configure the external match channel
     matchModePinConfig(channel, mode);
@@ -161,8 +177,9 @@ void Timer::captureMode(int channel, int mode)
     if (mode & INTERRUPT)
         val |= 4;
 
-    timer->CCR &= ~(7 << offset);
-    timer->CCR |= val << offset;
+    timer->CCR = (timer->CCR
+               & ~(7 << offset))
+               | (val << offset);
 }
 
 int Timer::captureMode(int channel) const
@@ -227,8 +244,7 @@ void Timer::setIRQPriority(uint32_t newPriority)
 
 //
 // The original timer handler is used for performance reasons.
-// Use attachInterrupt() to override this handler.
-// TODO there is nothing like attachInterrupt() in the sblib, copy&paste error?
+//
 extern "C" void SysTick_Handler()
 {
     ++systemTime;
