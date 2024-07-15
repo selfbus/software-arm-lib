@@ -428,8 +428,8 @@ public class GuiMain extends JFrame {
         comboBoxIpGateways.addItem(new CalimeroSearchComboItem(bundle.getString("selectInterface"), null));
 
         DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
-                comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.getResponse().getDevice().getName() +
-                        " (" + r.getResponse().getControlEndpoint().getAddress().getHostAddress() + ")", r)));
+                comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
+                        " (" + r.response().getControlEndpoint().endpoint().getAddress().getHostAddress() + ")", r)));
 
         comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
         reloadGatewaysButton.setEnabled(true);

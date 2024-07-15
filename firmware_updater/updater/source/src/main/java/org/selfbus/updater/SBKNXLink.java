@@ -96,11 +96,7 @@ public class SBKNXLink {
         logger.debug("Creating KNX network link {}...", medium);
         if (!cliOptions.ft12().isEmpty()) {
             // create FT1.2 network link
-            try {
-                return new KNXNetworkLinkFT12(Integer.parseInt(cliOptions.ft12()), medium);
-            } catch (final NumberFormatException e) {
-                return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
-            }
+            return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
         } else if (!cliOptions.tpuart().isEmpty()) {
             // create TPUART network link
             KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.tpuart(), medium, Collections.emptyList());
