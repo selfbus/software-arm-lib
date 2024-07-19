@@ -73,6 +73,10 @@ Selfbus KNX-Firmware update tool options:
     --statistic                             show more statistic data
 ```
 ## Common use cases:
+Updater with graphical user interface (**experimental**)
+```
+java -jar SB_updater-x.xx-all.jar
+```
 Read UID of the device:
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
