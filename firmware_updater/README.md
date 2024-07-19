@@ -12,17 +12,17 @@ The memory settings of the application to be flashed must be set in MCUxpresso a
 
 When using the release version of the bootloader:
 
-|Type   |Name    |Alias     |Location      |Size     |
-|:------|:-------|:---------|:-------------|---------|
-|Flash  |MFlash64|Flash     |0x3000        |0xD000   |
-|RAM    |RamLoc8 |RAM       |0x10000100    |0x1f00   |
+| Type  | Name     | Alias | Location   | Size   |
+|:------|:---------|:------|:-----------|--------|
+| Flash | MFlash64 | Flash | 0x3000     | 0xD000 |
+| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
 
 When using the debug version of the bootloader:
 
-|Type   |Name    |Alias     |Location      |Size     |
-|:------|:-------|:---------|:-------------|---------|
-|Flash  |MFlash64|Flash     |0x7000        |0x9000   |
-|RAM    |RamLoc8 |RAM       |0x10000100    |0x1f00   |
+| Type  | Name     | Alias | Location   | Size   |
+|:------|:---------|:------|:-----------|--------|
+| Flash | MFlash64 | Flash | 0x7000     | 0x9000 |
+| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
 These memory settings can also be set automatically with this [linker-script](../examples/example-linkerscripts/memory.ldt).
 
 ## Build:
@@ -44,16 +44,16 @@ Die Speicher Einstellungen der zu flashenden App müssen in
 
 Bei Verwendung der Release Version des Bootloaders:
 
-|Type   |Name    |Alias     |Location      |Size     |
-|:------|:-------|:---------|:-------------|---------|
-|Flash  |MFlash64|Flash     |0x3000        |0xD000   |
-|RAM    |RamLoc8 |RAM       |0x10000100    |0x1f00   |
+| Type  | Name     | Alias | Location   | Size   |
+|:------|:---------|:------|:-----------|--------|
+| Flash | MFlash64 | Flash | 0x3000     | 0xD000 |
+| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
 
 Bei Verwendung der Debug Version des Bootloaders:
 
-|Type   |Name    |Alias     |Location      |Size     |
-|:------|:-------|:---------|:-------------|---------|
-|Flash  |MFlash64|Flash     |0x7000        |0x9000   |
-|RAM    |RamLoc8 |RAM       |0x10000100    |0x1f00   |
+| Type  | Name     | Alias | Location   | Size   |
+|:------|:---------|:------|:-----------|--------|
+| Flash | MFlash64 | Flash | 0x7000     | 0x9000 |
+| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
 
 Diese Speichereinstellung können auch automatisch durch dieses [Linkerscript](../examples/example-linkerscripts/memory.ldt) gesetzt werden.
