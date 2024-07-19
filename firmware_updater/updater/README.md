@@ -4,7 +4,7 @@
 
 * JDK 17+
 * gradle >=7.4
-* Selfbus device with flashed [bootloader](../../bootloader) version 1.00 or higher
+* Selfbus device with flashed [bootloader](../bootloader) version 1.00 or higher
 
 ## Build
 ```
@@ -93,7 +93,7 @@ java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim1
 IntelliJ IDEA Community 2023.3.4 (Build -> Build Artifacts)<br>
 eclipse project is currently not maintained
 ## gradle:
-update [gradle wrapper](gradle/wrapper) to the newest version:
+update [gradle wrapper](source/gradle/wrapper) to the newest version:
 ```
 gradlew wrapper
 ```
