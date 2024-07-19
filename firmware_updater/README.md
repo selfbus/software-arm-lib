@@ -1,9 +1,9 @@
-Selfbus Bootloader and Updater
-==============================
+Selfbus Updater, Bootloader and Bootloaderupdater
+=================================================
 
 Bootloader and Updater for updating the application software of Selfbus devices.
 
-Always use the bootloader and the Updater with the same version number!
+If possible, the Updater and Bootloader should be of the same version number.
 *[Wiki entry about the Bootloader and Updater](https://selfbus.org/wiki/software/tools/7-selfbus-bus-updater-tool)*
 
 ## Important:
@@ -26,16 +26,16 @@ When using the debug version of the bootloader:
 These memory settings can also be set automatically with this [linker-script](../examples/example-linkerscripts/memory.ldt).
 
 ## Build:
-All build configurations link against the *release version* of the sblib.
-- "Debug with UART (LPC11XX)" is set to compile with -Od (Optimize for debug) to fit into the first 0x7000 of flash
-- "Debug (LPC11XX)" is also set to compile with -Od
-- "Release (LPC11xx)" is set to compile with -Os (Optimize for size) to fit into the first 0x3000 of flash
+Most build configurations link against the *release version* of the sblib.
+- "Debug low level" is set to compile with -Od (Optimize for debug) to fit into the first 0x7000 of flash
+- "Debug" is also set to compile with -Od
+- "Release" is set to compile with -Os (Optimize for size) to fit into the first 0x3000 of flash
 
 
 # Deutsch:
 Bootloader und Updater zum Updaten der Applikationssoftware von Selfbus Geräten
 
-Immer den Bootloader und das PC-Tool mit der gleichen Versionsnummer verwenden!
+Wenn möglich sollten Updater und Bootloader mit derselben Versionsnummer verwendet werden.
 *[Wiki-Eintrag zum Bootloader und Updater](https://selfbus.org/wiki/software/tools/7-selfbus-bus-updater-tool)*
 
 ## WICHTIG:
