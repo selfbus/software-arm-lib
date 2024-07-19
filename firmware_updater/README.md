@@ -15,14 +15,14 @@ When using the release version of the bootloader:
 | Type  | Name     | Alias | Location   | Size   |
 |:------|:---------|:------|:-----------|--------|
 | Flash | MFlash64 | Flash | 0x3000     | 0xD000 |
-| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
+| RAM   | RamLoc8  | RAM   | 0x100000c0 | 0x1f40 |
 
 When using the debug version of the bootloader:
 
 | Type  | Name     | Alias | Location   | Size   |
 |:------|:---------|:------|:-----------|--------|
 | Flash | MFlash64 | Flash | 0x7000     | 0x9000 |
-| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
+| RAM   | RamLoc8  | RAM   | 0x100000c0 | 0x1f40 |
 These memory settings can also be set automatically with this [linker-script](../examples/example-linkerscripts/memory.ldt).
 
 ## Build:
@@ -47,13 +47,13 @@ Bei Verwendung der Release Version des Bootloaders:
 | Type  | Name     | Alias | Location   | Size   |
 |:------|:---------|:------|:-----------|--------|
 | Flash | MFlash64 | Flash | 0x3000     | 0xD000 |
-| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
+| RAM   | RamLoc8  | RAM   | 0x100000c0 | 0x1f40 |
 
 Bei Verwendung der Debug Version des Bootloaders:
 
 | Type  | Name     | Alias | Location   | Size   |
 |:------|:---------|:------|:-----------|--------|
 | Flash | MFlash64 | Flash | 0x7000     | 0x9000 |
-| RAM   | RamLoc8  | RAM   | 0x10000100 | 0x1f00 |
+| RAM   | RamLoc8  | RAM   | 0x100000c0 | 0x1f40 |
 
 Diese Speichereinstellung können auch automatisch durch dieses [Linkerscript](../examples/example-linkerscripts/memory.ldt) gesetzt werden.
