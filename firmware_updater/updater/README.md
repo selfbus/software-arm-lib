@@ -15,7 +15,7 @@ gradle fatJar
 linux: gradlew fatJar
 windows: gradlew.bat fatJar
 ```
-*SB_updater-x.xx-all.jar* file is created in build/libs directory.
+*SB_updater-x.xx-all.jar* file is created in [build/libs](source/build/libs) directory.
 
 ## Usage
 ```
