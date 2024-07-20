@@ -3,8 +3,8 @@
 ## Requirements
 
 * JDK 17+
-* gradle >=7.4
-* Selfbus device with flashed [bootloader](../../bootloader) version 1.00 or higher
+* gradle >=8.5
+* Selfbus device with flashed [bootloader](../bootloader) version 1.00 or higher
 
 ## Build
 ```
@@ -15,7 +15,7 @@ gradle fatJar
 linux: gradlew fatJar
 windows: gradlew.bat fatJar
 ```
-*SB_updater-x.xx-all.jar* file is created in build/libs directory.
+*SB_updater-x.xx-all.jar* file is created in [build/libs](source/build/libs) directory.
 
 ## Usage
 ```
@@ -73,6 +73,10 @@ Selfbus KNX-Firmware update tool options:
     --statistic                             show more statistic data
 ```
 ## Common use cases:
+Updater with graphical user interface (**experimental**)
+```
+java -jar SB_updater-x.xx-all.jar
+```
 Read UID of the device:
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
@@ -93,7 +97,7 @@ java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim1
 IntelliJ IDEA Community 2023.3.4 (Build -> Build Artifacts)<br>
 eclipse project is currently not maintained
 ## gradle:
-update [gradle wrapper](gradle/wrapper) to the newest version:
+update [gradle wrapper](source/gradle/wrapper) to the newest version:
 ```
 gradlew wrapper
 ```
