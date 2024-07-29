@@ -11,7 +11,7 @@ java {
 }
 
 application {
-    mainClass = 'org.selfbus.updater.Updater' // avoids warning "The JavaExec.main property has been deprecated" see https://youtrack.jetbrains.com/issue/IDEA-279280
+    mainClass = 'org.selfbus.updater.Updater'
 }
 
 jar {
