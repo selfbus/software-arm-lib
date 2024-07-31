@@ -1,5 +1,6 @@
 package org.selfbus.updater;
 
+import org.fusesource.jansi.AnsiConsole;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
 import tuwien.auto.calimero.*;
 import org.apache.commons.cli.ParseException;
@@ -14,6 +15,8 @@ import tuwien.auto.calimero.link.KNXNetworkLink;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 import static org.selfbus.updater.Utils.shortenPath;
 
 import org.selfbus.updater.gui.GuiMain;
@@ -95,6 +98,7 @@ public class Updater implements Runnable {
     }
 
     public static void main(final String[] args) {
+        AnsiConsole.systemInstall();
         if(args.length == 0) {
             GuiMain.startSwingGui();
         }else {
@@ -110,6 +114,7 @@ public class Updater implements Runnable {
                 logger.debug("main exit");
             }
         }
+        AnsiConsole.systemUninstall();
     }
 
     /**

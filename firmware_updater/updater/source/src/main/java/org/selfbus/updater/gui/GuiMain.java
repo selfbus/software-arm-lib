@@ -839,7 +839,7 @@ public class GuiMain extends JFrame {
         if (fontName == null) {
             resultName = currentFont.getName();
         } else {
-            Font testFont = new Font(fontName, PLAIN, 10);
+            Font testFont = new Font(fontName, Font.PLAIN, 10);
             if (testFont.canDisplay('a') && testFont.canDisplay('1')) {
                 resultName = fontName;
             } else {

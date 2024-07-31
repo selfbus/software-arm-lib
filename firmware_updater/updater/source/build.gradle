@@ -81,6 +81,9 @@ dependencies {
     // unit test
     testImplementation group: 'junit', name: 'junit', version: '4.13.2'
 
+    // Console ansi color support
+    implementation 'org.fusesource.jansi:jansi:2.4.0'
+
     // GUI
     implementation files('libs/forms_rt.jar')
 }

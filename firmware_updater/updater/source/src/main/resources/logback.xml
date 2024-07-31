@@ -5,6 +5,7 @@
     <timestamp key="appStartTimestamp" datePattern="yyyy-MM-dd'_'HH-mm-ss.SSS"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <withJansi>true</withJansi>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
