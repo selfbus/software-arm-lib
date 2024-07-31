@@ -317,8 +317,8 @@ public class Updater implements Runnable {
             }
 
             if (!dm.setBlockSize(cliOptions.getBlockSize())) {
-                logger.info("{}Connected bootloader doesn't support block size {}. Using {} bytes.{}", ConColors.YELLOW,
-                        cliOptions.getBlockSize(), dm.getBlockSize(), ConColors.RESET);
+                logger.info(ansi().fg(YELLOW).a("Connected bootloader doesn't support block size {}. Using {} bytes.").reset().toString(),
+                        cliOptions.getBlockSize(), dm.getBlockSize());
             }
 
             if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!

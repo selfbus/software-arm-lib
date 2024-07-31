@@ -26,6 +26,9 @@ import java.io.StringWriter;
 import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 import java.util.Locale;
 
 /**
@@ -473,7 +476,7 @@ public class CliOptions {
                     blockSize = newBlockSize;
                 }
                 else {
-                    logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ConColors.YELLOW, OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, blockSize, ConColors.RESET);
+                    logger.info(ansi().fg(YELLOW).a("--{} {} is not supported => Set --{} to default {} bytes").reset().toString(), OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, blockSize);
                 }
             }
             logger.debug("{}={}", OPT_LONG_BLOCKSIZE, delay);
