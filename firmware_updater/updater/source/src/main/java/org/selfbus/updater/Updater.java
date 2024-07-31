@@ -70,14 +70,14 @@ public class Updater implements Runnable {
     public Updater(final String[] args) throws ParseException, KNXFormatException {
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
-        logger.info(ConColors.BRIGHT_BOLD_GREEN +
+        logger.info(ansi().fgBright(GREEN).bold().a(
                 "   _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
                 "  / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
                 "  \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
                 " ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
                 "/____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "by Dr. Stefan Haller, Oliver Stefan et al.                       " + ToolInfo.getToolAndVersion() +
-                ConColors.RESET);
+                "by Dr. Stefan Haller, Oliver Stefan et al.                       {}").reset().toString(),
+                ToolInfo.getToolAndVersion());
         try {
             // read in user-supplied command line options
             this.cliOptions = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) ,
