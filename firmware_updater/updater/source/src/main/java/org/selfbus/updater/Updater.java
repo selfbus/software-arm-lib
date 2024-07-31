@@ -212,9 +212,9 @@ public class Updater implements Runnable {
             }
             else {
                 System.out.println();
-                logger.info("{}{}No firmware file (*.hex) specified! Specify with --{}{}", ConColors.BLACK, ConColors.BG_RED,
-                        cliOptions.getOptionLongFileName(), ConColors.RESET);
-                logger.info("{}Reading only device information{}", ConColors.BRIGHT_YELLOW, ConColors.RESET);
+                logger.info(ansi().bg(RED).fg(BLACK).a("No firmware file (*.hex) specified! Specify with --{}").reset().toString(),
+                        cliOptions.getOptionLongFileName());
+                logger.info(ansi().fgBright(YELLOW).a("Reading only device information").reset().toString());
                 System.out.println();
             }
 
@@ -325,7 +325,7 @@ public class Updater implements Runnable {
                 // Start to flash the new firmware
                 long flashTimeStart = System.currentTimeMillis(); // time flash process started
                 ResponseResult resultTotal;
-                logger.info("{}{}Starting to send new firmware now:{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
+                logger.info(ansi().bg(GREEN).fg(BLACK).a("Starting to send new firmware now:").reset().toString());
                 if (diffMode && FlashDiffMode.isInitialized()) {
                     logger.error("{}Differential mode is EXPERIMENTAL -> Use with caution.{}", ConColors.BRIGHT_RED, ConColors.RESET);
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
@@ -368,12 +368,12 @@ public class Updater implements Runnable {
                 deviceInfo = cliOptions.device().toString();
             }
             logger.info("Finished programming {}device {} with {}{}", ConColors.BRIGHT_YELLOW, deviceInfo, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
-            logger.info("{}{}Firmware Update done, Restarting device now...{}", ConColors.BLACK, ConColors.BG_GREEN, ConColors.RESET);
+            logger.info(ansi().bg(GREEN).fg(BLACK).a("Firmware Update done, Restarting device now...").reset().toString());
             dm.restartProgrammingDevice();
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
-                logger.info("{}{}Wait {} second(s) for Bootloader Updater to finish its job...{}", ConColors.BLACK, ConColors.BG_GREEN,
-                        String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f), ConColors.RESET);
+                logger.info(ansi().bg(GREEN).fg(BLACK).a("Wait {} second(s) for Bootloader Updater to finish its job...").reset().toString(),
+                        String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f));
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
             }
         } catch (final KNXException | UpdaterException | RuntimeException e) {
