@@ -17,6 +17,9 @@ import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.zip.CRC32;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
+
 public class BinImage {
     private final static Logger logger = LoggerFactory.getLogger(BinImage.class.getName());
     private byte[] binData;
@@ -126,8 +129,8 @@ public class BinImage {
         File binFile = new File(fileName);
         if (!binFile.getParentFile().exists()) {
             if (!binFile.getParentFile().mkdirs()) {
-                logger.warn("{}Could not create bin-file directory {}{}",
-                        ConColors.RED, binFile.getParentFile().toString(), ConColors.RESET);
+                logger.warn(ansi().fg(RED).a("Could not create bin-file directory {}").reset().toString(),
+                        binFile.getParentFile().toString());
             }
             return false;
         }
@@ -136,8 +139,7 @@ public class BinImage {
             fos.write(binData);
             return true;
         } catch (IOException e) {
-            logger.warn("{}Could not write bin-file {}{}",
-                    ConColors.RED, binFile.getPath(), ConColors.RESET);
+            logger.warn(ansi().fg(RED).a("Could not write bin-file {}").reset().toString(), binFile.getPath());
         }
         return false;
     }

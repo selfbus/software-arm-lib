@@ -198,7 +198,7 @@ public class Updater implements Runnable {
             if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
-                    logger.error("{}File {} does not exist!{}", ConColors.RED, cliOptions.fileName(), ConColors.RESET);
+                    logger.error(ansi().fg(RED).a("File {} does not exist!").reset().toString(), cliOptions.fileName());
                     throw new UpdaterException("Selfbus update failed.");
                 }
                 // Load Firmware hex file
@@ -354,7 +354,8 @@ public class Updater implements Runnable {
                 printStatisticData(flashTimeStart, resultTotal);
             }
             else {
-                logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH, ConColors.RED, ConColors.RESET);
+                logger.warn("--{} => {}", CliOptions.OPT_LONG_NO_FLASH,
+                        ansi().fg(RED).a("only boot description block will be written").reset().toString());
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),

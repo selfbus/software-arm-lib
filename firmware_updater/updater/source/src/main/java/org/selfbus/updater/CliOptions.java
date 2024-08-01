@@ -366,7 +366,7 @@ public class CliOptions {
                     root.setLevel(logLevel);
                 }
                 else {
-                    logger.warn("{}invalid {} {}, using {}{}", ConColors.RED, OPT_LONG_LOGLEVEL, cliLogLevel, root.getLevel().toString(), ConColors.RESET);
+                    logger.warn(ansi().fg(RED).a("invalid {} {}, using {}").reset().toString(), OPT_LONG_LOGLEVEL, cliLogLevel, root.getLevel().toString());
                 }
             }
             logger.debug("logLevel={}", root.getLevel().toString());
@@ -376,7 +376,8 @@ public class CliOptions {
                     priority = Priority.get(cmdLine.getOptionValue(OPT_LONG_PRIORITY));
                 }
                 catch (KNXIllegalArgumentException e) {
-                    logger.warn("{}invalid {} {}, using {}{}", ConColors.RED, OPT_LONG_PRIORITY, cmdLine.getOptionValue(OPT_LONG_PRIORITY), priority, ConColors.RESET);
+                    logger.warn(ansi().fg(RED).a("invalid {} {}, using {}").reset().toString(),
+                            OPT_LONG_PRIORITY, cmdLine.getOptionValue(OPT_LONG_PRIORITY), priority);
                 }
             }
             logger.debug("priority={}", priority.toString());
@@ -464,7 +465,8 @@ public class CliOptions {
             if (cmdLine.hasOption(OPT_LONG_DELAY)) {
                 delay = ((Number)cmdLine.getParsedOptionValue(OPT_LONG_DELAY)).intValue();
                 if ((delay < Updater.DELAY_MIN) || (delay > Updater.DELAY_MAX)) {
-                    logger.warn("{}option --delay {} is invalid (min:{}, max:{}) => setting --delay {}{}", ConColors.RED, delay, Updater.DELAY_MIN, Updater.DELAY_MAX, Updater.DELAY_DEFAULT, ConColors.RESET);
+                    logger.warn(ansi().fg(RED).a("option --delay {} is invalid (min:{}, max:{}) => setting --delay {}").reset().toString(),
+                            delay, Updater.DELAY_MIN, Updater.DELAY_MAX, Updater.DELAY_DEFAULT);
                     delay = Updater.DELAY_DEFAULT;    // set to DELAY_DEFAULT in case of invalid waiting time
                 }
             }
@@ -548,11 +550,12 @@ public class CliOptions {
             // differential mode and eraseflash makes no sense
             if (eraseFullFlash() && (!full())) {
                 full = true;
-                logger.info("{}--{} is set. --> switching to full flash mode{}", ConColors.RED, OPT_LONG_ERASEFLASH, ConColors.RESET);
+                logger.info(ansi().fg(RED).a("--{} is set. --> switching to full flash mode").reset().toString(), OPT_LONG_ERASEFLASH);
             }
 
             if (nat() && (!tunnelingV1())) {
-                throw new ParseException(String.format("%sOption --%s can only be used together with --%s%s", ConColors.RED, OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ConColors.RESET));
+                throw new ParseException(String.format(ansi().fg(RED).a("Option --%s can only be used together with --%s").reset().toString(),
+                        OPT_LONG_NAT, OPT_LONG_TUNNEL_V1));
             }
 
             int interfacesSet = 0;
@@ -564,7 +567,7 @@ public class CliOptions {
             if (!tpuart().isEmpty()) interfacesSet++;
 
             if (interfacesSet > 1) {
-                throw new ParseException(String.format("%sOnly one bus interface can be used.%s", ConColors.RED, ConColors.RESET));
+                throw new ParseException(ansi().fg(RED).a("Only one bus interface can be used.").reset().toString());
             }
 
         } catch (ParseException | KNXFormatException e) {
@@ -574,7 +577,7 @@ public class CliOptions {
             }
             logger.error("Invalid command line parameters:");
             logger.error("{}", cliParsed);
-            logger.error("{}{}{}", ConColors.RED, e.getMessage(), ConColors.RESET);
+            logger.error(ansi().fg(RED).a(e.getMessage()).reset().toString());
             logger.error("For more information about the usage start with --{}", OPT_LONG_HELP);
             logger.error("", e);
             System.exit(0);

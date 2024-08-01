@@ -145,8 +145,8 @@ public final class DeviceManagement {
             if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_BL_VERSION_MISMATCH.id) {
                 long minMajorVersion = result[DATA_POSITION] & 0xff;
                 long minMinorVersion = result[DATA_POSITION + 1] & 0xff;
-                logger.error("{}Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.{}",
-                        ConColors.RED, ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ConColors.RESET);
+                logger.error(ansi().fg(RED).a("Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.").reset().toString(),
+                        ToolInfo.getVersion(), minMajorVersion, minMinorVersion);
             }
             else {
                 UPDProtocol.checkResult(result);
@@ -163,8 +163,8 @@ public final class DeviceManagement {
 
         if (!versionsMatch)
         {
-            logger.error("{}Bootloader version {} is not compatible, please update Bootloader to version {} or higher{}",
-                    ConColors.RED, bl.getVersion(), ToolInfo.minVersionBootloader(), ConColors.RESET);
+            logger.error(ansi().fg(RED).a("Bootloader version {} is not compatible, please update Bootloader to version {} or higher").reset().toString(),
+                    bl.getVersion(), ToolInfo.minVersionBootloader());
             throw new UpdaterException("Bootloader version not compatible!");
         }
         return bl;
@@ -276,7 +276,7 @@ public final class DeviceManagement {
             result.addCounters(tmp);
 
             if ((tmp.dropCount() > 0) || (tmp.timeoutCount() > 0)) {
-                logger.warn("{}x{}", ConColors.RED, ConColors.RESET);
+                logger.warn(ansi().fg(RED).a("x").reset().toString());
                 continue;
             }
 
@@ -336,10 +336,10 @@ public final class DeviceManagement {
             logger.info("  Bootloader: {}", blStatistic);
         }
         else {
-            logger.warn("  {}{}{}", ConColors.RED,
+            logger.warn(ansi().fg(RED).a("  {}").reset().toString(),
                     String.format("Requesting Bootloader statistic failed! result[%d]=0x%02X, result[%d]=0x%02X",
                             COMMAND_POSITION, result[COMMAND_POSITION],
-                            DATA_POSITION, result[DATA_POSITION]), ConColors.RESET);
+                            DATA_POSITION, result[DATA_POSITION]));
         }
     }
 
@@ -353,11 +353,11 @@ public final class DeviceManagement {
                 return result;
             }
             catch (KNXTimeoutException e) {
-                logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
+                logger.warn(ansi().fg(RED).a("{} {} : {}").reset().toString(), command, e.getMessage(), e.getClass().getSimpleName());
                 result.incTimeoutCount();
             }
             catch (KNXDisconnectException | KNXRemoteException e) { ///\todo check causes of KNXRemoteException, if think they are unrecoverable
-                logger.warn("{}{} {} : {}{}", ConColors.RED, command, e.getMessage(), e.getClass().getSimpleName(), ConColors.RESET);
+                logger.warn(ansi().fg(RED).a("{} {} : {}").reset().toString(), command, e.getMessage(), e.getClass().getSimpleName());
                 result.incDropCount();
             }
             catch (KNXIllegalArgumentException e) {
