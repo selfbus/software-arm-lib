@@ -1,7 +1,6 @@
 package org.selfbus.updater.tests.flashdiff;
 
 import org.selfbus.updater.BinImage;
-import org.selfbus.updater.ConColors;
 import org.selfbus.updater.UpdaterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

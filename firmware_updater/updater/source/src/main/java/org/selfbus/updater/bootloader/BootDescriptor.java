@@ -1,6 +1,5 @@
 package org.selfbus.updater.bootloader;
 
-import org.selfbus.updater.ConColors;
 import org.selfbus.updater.UpdaterException;
 import org.selfbus.updater.Utils;
 

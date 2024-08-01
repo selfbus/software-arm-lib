@@ -1,7 +1,6 @@
 package org.selfbus.updater.upd;
 
 import ch.qos.logback.classic.Level;
-import org.selfbus.updater.ConColors;
 import org.selfbus.updater.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
