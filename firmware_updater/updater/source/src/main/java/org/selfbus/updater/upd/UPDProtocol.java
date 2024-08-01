@@ -43,14 +43,14 @@ public final class UPDProtocol {
                 ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
                 if (root.getLevel() == Level.TRACE) {
                     // only to display the message on the console
-                    logger.debug("{}done ({}){}", ConColors.BRIGHT_GREEN, udpResult.id, ConColors.RESET);
+                    logger.debug("done ({})", ansi().fgBright(GREEN).a(udpResult.id).reset().toString());
                 }
                 else {
-                    logger.trace("{}done ({}){}", ConColors.BRIGHT_GREEN, udpResult.id, ConColors.RESET);
+                    logger.trace("done ({})", ansi().fgBright(GREEN).a(udpResult.id).reset().toString());
                 }
 
             } else {
-                System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET); // Success in green
+                System.out.printf(ansi().fgBright(GREEN).a(Utils.PROGRESS_MARKER).reset().toString()); // Success in green
                 logger.debug(Utils.PROGRESS_MARKER);
             }
         }

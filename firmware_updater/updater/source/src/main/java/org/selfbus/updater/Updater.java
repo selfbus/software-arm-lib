@@ -240,8 +240,8 @@ public class Updater implements Runnable {
             dm.unlockDeviceWithUID(uid);
 
             if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
-                logger.warn("{}Dumping flash content range 0x{}-0x{} to bootloader's serial port.{}",
-                        ConColors.BRIGHT_GREEN, String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()), ConColors.RESET);
+                logger.warn(ansi().fgBright(GREEN).a("Dumping flash content range 0x{}-0x{} to bootloader's serial port.").reset().toString(),
+                        String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()));
                 dm.dumpFlashRange(cliOptions.dumpFlashStartAddress(), cliOptions.dumpFlashEndAddress());
                 return;
             }
@@ -283,7 +283,7 @@ public class Updater implements Runnable {
             BinImage imageCache = BinImage.copyFromArray(newFirmware.getBinData(), newFirmware.startAddress());
             imageCache.writeToBinFile(cacheFileName);
 
-            logger.info("  File APP_VERSION   : {}{}{}", ConColors.BRIGHT_GREEN, newFirmware.getAppVersion(), ConColors.RESET);
+            logger.info("  File APP_VERSION   : {}", ansi().fgBright(GREEN).a(newFirmware.getAppVersion()).reset().toString());
 
             // Check if FW image has correct offset for MCUs bootloader size
             if (newFirmware.startAddress() < bootLoaderIdentity.getApplicationFirstAddress()) {

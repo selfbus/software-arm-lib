@@ -4,6 +4,9 @@ import org.selfbus.updater.ConColors;
 import org.selfbus.updater.UpdaterException;
 import org.selfbus.updater.Utils;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
+
 /**
  *  Holds Application Boot Block Descriptor the MCU's bootloader
  *  see software-arm-lib/Bus-Updater/inc/boot_descriptor_block.h for more information
@@ -78,12 +81,12 @@ public class BootDescriptor {
     public String toString() {
         String res;
         if (valid) {
-            res = String.format("  %svalid%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
-                    ConColors.BRIGHT_GREEN, ConColors.RESET, startAddress, endAddress, length(), crc32);
+            res = String.format("%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
+                    ansi().fgBright(GREEN).a("  valid").reset().toString(), startAddress, endAddress, length(), crc32);
         }
         else {
-            res = String.format("%sinvalid%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
-                    ConColors.RED, ConColors.RESET, INVALID_ADDRESS & 0x0000FFFF,
+            res = String.format("%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
+                    ansi().fg(RED).a("invalid").reset().toString(), INVALID_ADDRESS & 0x0000FFFF,
                     INVALID_ADDRESS & 0x0000FFFF, length(), crc32);
         }
 

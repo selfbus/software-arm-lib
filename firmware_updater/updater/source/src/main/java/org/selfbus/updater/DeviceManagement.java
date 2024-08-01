@@ -70,7 +70,7 @@ public final class DeviceManagement {
         try {
             while (restartTimeSeconds > 0) {
                 Thread.sleep(1000);
-                System.out.printf("%s%s%s", ConColors.BRIGHT_GREEN, Utils.PROGRESS_MARKER, ConColors.RESET);
+                System.out.printf(ansi().fgBright(GREEN).a(Utils.PROGRESS_MARKER).reset().toString());
                 restartTimeSeconds--;
             }
         }
@@ -92,14 +92,14 @@ public final class DeviceManagement {
         try {
             logger.info("Restarting device {} into bootloader mode using {}", device, this.link);
             restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
-            logger.info("Device {} reported {}{} second(s){} for restarting", device, ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET);
+            logger.info("Device {} reported {} second(s) for restarting", device, ansi().fgBright(GREEN).a(restartProcessTime).reset().toString());
             waitRestartTime(restartProcessTime);
             System.out.println();
             return true;
         } catch (final KNXException | InterruptedException e) {
             logger.info(ansi().fgBright(RED).a("Restart state of device {} unknown. {}").reset().toString(), device, e.getMessage());
             logger.debug("KNXException ", e);
-            logger.info("Waiting {}{} seconds{} for device {} to restart", ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET, device);
+            logger.info("Waiting {} seconds for device {} to restart", ansi().fgBright(GREEN).a(restartProcessTime).reset().toString(), device);
             waitRestartTime(restartProcessTime);
         } finally {
             dest.close();

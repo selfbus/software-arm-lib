@@ -9,8 +9,5 @@ public class ConColors {
 
     // Regular Colors
     public static final String RED    = "\033[0;31m";   // RED
-
-    // High Intensity
-    public static final String BRIGHT_GREEN  = "\033[0;92m";  // GREEN
 }
 
