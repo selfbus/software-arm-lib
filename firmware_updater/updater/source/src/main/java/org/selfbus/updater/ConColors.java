@@ -11,7 +11,6 @@ public class ConColors {
     public static final String RED    = "\033[0;31m";   // RED
 
     // High Intensity
-    public static final String BRIGHT_RED    = "\033[0;91m";  // RED
     public static final String BRIGHT_GREEN  = "\033[0;92m";  // GREEN
 }
 

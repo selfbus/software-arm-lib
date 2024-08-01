@@ -6,6 +6,9 @@ import org.selfbus.updater.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
+
 /**
  * Implementation of the UPD/UDP protocol handling
  */
@@ -34,7 +37,7 @@ public final class UPDProtocol {
 
         UDPResult udpResult = UDPResult.valueOfIndex(result[DATA_POSITION]);
         if (udpResult.isError()) {
-            logger.error("{}{} resultCode=0x{}{}", ConColors.BRIGHT_RED, udpResult, String.format("%02X", udpResult.id), ConColors.RESET);
+            logger.error(ansi().fgBright(RED).a("{} resultCode=0x{}").reset().toString(), udpResult, String.format("%02X", udpResult.id));
         } else {
             if (verbose) {
                 ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);

@@ -157,12 +157,12 @@ public class Updater implements Runnable {
         float bytesPerSecond = (float) result.written() / (flashTimeDuration / 1000f);
         String col;
         if (bytesPerSecond >= 50.0) {
-            col = ConColors.BRIGHT_GREEN;
+            col = ansi().fgBright(GREEN).toString();
         } else {
-            col = ConColors.BRIGHT_RED;
+            col = ansi().fgBright(RED).toString();
         }
         String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
-                result.written(), flashTimeDuration, col, bytesPerSecond, ConColors.RESET);
+                result.written(), flashTimeDuration, col, bytesPerSecond, ansi().reset().toString());
         logger.info("{}", infoMsg);
     }
 
@@ -206,7 +206,7 @@ public class Updater implements Runnable {
                 newFirmware = BinImage.readFromHex(hexFileName);
                 // Check for APP_VERSION string in new firmware
                 if (newFirmware.getAppVersion().isEmpty()) {
-                    logger.warn("  {}Missing APP_VERSION string in new firmware!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                    logger.warn(ansi().fgBright(RED).a("  Missing APP_VERSION string in new firmware!").reset().toString());
                     throw new UpdaterException("Missing APP_VERSION string in firmware!");
                 }
             }
@@ -257,10 +257,10 @@ public class Updater implements Runnable {
             logger.info("Requesting APP_VERSION...");
             String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
-                logger.info("  Current APP_VERSION: {}{}{}", ConColors.BRIGHT_GREEN, appVersion, ConColors.RESET);
+                logger.info("  Current APP_VERSION: {}", ansi().fgBright(GREEN).a(appVersion).reset().toString());
             }
             else {
-                logger.info("{}  failed!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                logger.info(ansi().fgBright(RED).a("  failed!").reset().toString());
             }
 
             //  From here on we need a valid firmware
@@ -274,7 +274,7 @@ public class Updater implements Runnable {
             }
 
             if (cliOptions.eraseFullFlash()) {
-                logger.warn("{}Deleting the entire flash except from the bootloader itself!{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                logger.warn(ansi().fgBright(RED).a("Deleting the entire flash except from the bootloader itself!").reset().toString());
                 dm.eraseFlash();
             }
 
@@ -287,12 +287,12 @@ public class Updater implements Runnable {
 
             // Check if FW image has correct offset for MCUs bootloader size
             if (newFirmware.startAddress() < bootLoaderIdentity.getApplicationFirstAddress()) {
-                logger.error("{}  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!{}", ConColors.BRIGHT_RED, ConColors.RESET);
-                logger.error("{}  Firmware needs to start at or beyond 0x{}{}", ConColors.BRIGHT_RED, String.format("%04X", bootLoaderIdentity.getApplicationFirstAddress()), ConColors.RESET);
+                logger.error(ansi().fgBright(RED).a("  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!").reset().toString());
+                logger.error(ansi().fgBright(RED).a("  Firmware needs to start at or beyond 0x{}").reset().toString(), String.format("%04X", bootLoaderIdentity.getApplicationFirstAddress()));
                 throw new UpdaterException("Firmware offset not correct!");
             }
             else if (newFirmware.startAddress() == bootLoaderIdentity.getApplicationFirstAddress()) {
-                logger.info("  {}Firmware starts directly beyond bootloader.{}", ConColors.BRIGHT_GREEN, ConColors.RESET);
+                logger.info(ansi().fgBright(GREEN).a("  Firmware starts directly beyond bootloader.").reset().toString());
             }
             else {
                 logger.info(ansi().fgBright(YELLOW).a("  Info: There are {} bytes of unused flash between bootloader and firmware.").reset().toString(),
@@ -305,7 +305,7 @@ public class Updater implements Runnable {
                     diffMode = FlashDiffMode.setupDifferentialMode(bootDescriptor);
                 }
                 else {
-                    logger.error("{}  BootDescriptor is not valid -> switching to full mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                    logger.error(ansi().fgBright(RED).a("  BootDescriptor is not valid -> switching to full mode").reset().toString());
                 }
             }
 
@@ -327,7 +327,7 @@ public class Updater implements Runnable {
                 ResponseResult resultTotal;
                 logger.info(ansi().bg(GREEN).fg(BLACK).a("Starting to send new firmware now:").reset().toString());
                 if (diffMode && FlashDiffMode.isInitialized()) {
-                    logger.error("{}Differential mode is EXPERIMENTAL -> Use with caution.{}", ConColors.BRIGHT_RED, ConColors.RESET);
+                    logger.error(ansi().fgBright(RED).a("Differential mode is EXPERIMENTAL -> Use with caution.").reset().toString());
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
                 }
                 else {

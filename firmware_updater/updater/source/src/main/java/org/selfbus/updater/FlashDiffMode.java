@@ -17,6 +17,8 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 import static org.selfbus.updater.Mcu.MAX_PAYLOAD;
 
 /**
@@ -59,12 +61,12 @@ public final class FlashDiffMode {
         //     if they are not the same app, we should switch to full flash mode
         if (Utils.fileExists(oldFileName)) {
             logger.info("  Found current device firmware in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
-            logger.info("  {}--> switching to diff upload mode{}", ConColors.BRIGHT_GREEN, ConColors.RESET);
+            logger.info(ansi().fgBright(GREEN).a("  --> switching to diff upload mode").reset().toString());
             initialized = true;
         }
         else {
             logger.warn("  Current device firmware not found in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
-            logger.warn("  {}--> switching to FULL upload mode{}", ConColors.BRIGHT_RED, ConColors.RESET);
+            logger.warn(ansi().fgBright(RED).a("  --> switching to FULL upload mode").reset().toString());
             initialized = false;
         }
         return  initialized;

@@ -97,7 +97,7 @@ public final class DeviceManagement {
             System.out.println();
             return true;
         } catch (final KNXException | InterruptedException e) {
-            logger.info("{}Restart state of device {} unknown. {}{}", ConColors.BRIGHT_RED, device, e.getMessage(), ConColors.RESET);
+            logger.info(ansi().fgBright(RED).a("Restart state of device {} unknown. {}").reset().toString(), device, e.getMessage());
             logger.debug("KNXException ", e);
             logger.info("Waiting {}{} seconds{} for device {} to restart", ConColors.BRIGHT_GREEN, restartProcessTime, ConColors.RESET, device);
             waitRestartTime(restartProcessTime);
@@ -391,7 +391,7 @@ public final class DeviceManagement {
             else if ((devices.length == 1) && (progDeviceAddr != null) && (progDeviceAddr.equals(devices[0]))) { // correct device in prog mode
             	return;
             }
-            logger.warn("{}{} Device(s) in bootloader/programming mode: {}{}", ConColors.BRIGHT_RED, devices.length, Arrays.stream(devices).toArray(), ConColors.RESET);
+            logger.warn(ansi().fgBright(RED).a("{} Device(s) in bootloader/programming mode: {}").reset().toString(), devices.length, Arrays.stream(devices).toArray());
             if (devices.length == 0) {
                 throw new UpdaterException("No device in programming mode.");
             }
