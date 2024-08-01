@@ -13,6 +13,5 @@ public class ConColors {
     // High Intensity
     public static final String BRIGHT_RED    = "\033[0;91m";  // RED
     public static final String BRIGHT_GREEN  = "\033[0;92m";  // GREEN
-    public static final String BRIGHT_YELLOW = "\033[0;93m";  // YELLOW
 }
 

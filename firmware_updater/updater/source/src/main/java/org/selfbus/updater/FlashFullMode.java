@@ -11,6 +11,8 @@ import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 import static org.selfbus.updater.upd.UDPResult.*;
 
 /**
@@ -69,9 +71,9 @@ public class FlashFullMode {
             float bytesPerSecond = (float) resultSendData.written() / (flashTimeDuration / 1000f);
             String col;
             if (bytesPerSecond >= 50.0) {
-                col = ConColors.BRIGHT_GREEN;
+                col = ansi().fgBright(GREEN).toString();
             } else {
-                col = ConColors.BRIGHT_YELLOW;
+                col = ansi().fgBright(YELLOW).toString();
             }
             String percentageDone = String.format("%5.1f", (float) 100 * (resultTotal.written()) / totalLength);
             String progressInfo = String.format("%s %s%% %s%6.2f B/s%s", ConColors.BRIGHT_GREEN, percentageDone, col, bytesPerSecond, ConColors.RESET);

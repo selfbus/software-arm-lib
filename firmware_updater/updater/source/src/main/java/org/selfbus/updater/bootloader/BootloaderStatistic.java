@@ -3,6 +3,9 @@ package org.selfbus.updater.bootloader;
 import org.selfbus.updater.ConColors;
 import org.selfbus.updater.Utils;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
+
 public class BootloaderStatistic {
     public static final int THRESHOLD_DISCONNECT = 1;
     public static final int THRESHOLD_REPEATED = 1;
@@ -25,17 +28,17 @@ public class BootloaderStatistic {
         String result;
         String colored;
         if (getDisconnectCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
-            colored = ConColors.BRIGHT_YELLOW;
+            colored = ansi().fgBright(YELLOW).toString();
         } else {
-            colored = ConColors.BRIGHT_GREEN;
+            colored = ansi().fgBright(GREEN).toString();
         }
-        result = String.format("#Disconnect: %s%2d%s", colored, getDisconnectCount(), ConColors.RESET);
+        result = String.format("#Disconnect: %s%2d%s", colored, getDisconnectCount(), ansi().reset().toString());
         if (getRepeatedT_ACKcount() > BootloaderStatistic.THRESHOLD_REPEATED) {
-            colored = ConColors.BRIGHT_YELLOW;
+            colored = ansi().fgBright(YELLOW).toString();
         } else {
-            colored = ConColors.BRIGHT_GREEN;
+            colored = ansi().fgBright(GREEN).toString();
         }
-        result += String.format(" #repeated T_ACK: %s%2d%s", colored, getRepeatedT_ACKcount(), ConColors.RESET);
+        result += String.format(" #repeated T_ACK: %s%2d%s", colored, getRepeatedT_ACKcount(), ansi().reset().toString());
         return result;
     }
 

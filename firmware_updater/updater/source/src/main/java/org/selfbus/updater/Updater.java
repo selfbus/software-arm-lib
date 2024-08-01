@@ -295,8 +295,8 @@ public class Updater implements Runnable {
                 logger.info("  {}Firmware starts directly beyond bootloader.{}", ConColors.BRIGHT_GREEN, ConColors.RESET);
             }
             else {
-                logger.info("  {}Info: There are {} bytes of unused flash between bootloader and firmware.{}",
-                        ConColors.BRIGHT_YELLOW, newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress(), ConColors.RESET);
+                logger.info(ansi().fgBright(YELLOW).a("  Info: There are {} bytes of unused flash between bootloader and firmware.").reset().toString(),
+                        newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress());
             }
 
             boolean diffMode = false;
@@ -339,17 +339,17 @@ public class Updater implements Runnable {
                 String updaterStatisticMsg = "  Updater:    ";
                 String colored;
                 if (resultTotal.dropCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
-                    colored = ConColors.BRIGHT_YELLOW;
+                    colored = ansi().fgBright(YELLOW).toString();
                 } else {
-                    colored = ConColors.BRIGHT_GREEN;
+                    colored = ansi().fgBright(GREEN).toString();
                 }
-                updaterStatisticMsg += String.format("#Disconnect: %s%2d%s", colored, resultTotal.dropCount(), ConColors.RESET);
+                updaterStatisticMsg += String.format("#Disconnect: %s%2d%s", colored, resultTotal.dropCount(), ansi().reset().toString());
                 if (resultTotal.timeoutCount() > BootloaderStatistic.THRESHOLD_REPEATED) {
-                    colored = ConColors.BRIGHT_YELLOW;
+                    colored = ansi().fgBright(YELLOW).toString();
                 } else {
-                    colored = ConColors.BRIGHT_GREEN;
+                    colored = ansi().fgBright(GREEN).toString();
                 }
-                updaterStatisticMsg += String.format(" #Timeout       : %s%2d%s", colored, resultTotal.timeoutCount(), ConColors.RESET);
+                updaterStatisticMsg += String.format(" #Timeout       : %s%2d%s", colored, resultTotal.timeoutCount(), ansi().reset().toString());
                 logger.info("{}", updaterStatisticMsg);
                 printStatisticData(flashTimeStart, resultTotal);
             }
@@ -367,7 +367,8 @@ public class Updater implements Runnable {
             if (cliOptions.device() != null) {
                 deviceInfo = cliOptions.device().toString();
             }
-            logger.info("Finished programming {}device {} with {}{}", ConColors.BRIGHT_YELLOW, deviceInfo, shortenPath(cliOptions.fileName(), 1), ConColors.RESET);
+            logger.info("Finished programming device {} with {}", ansi().fgBright(YELLOW).a(deviceInfo).reset().toString(),
+                    ansi().fgBright(YELLOW).a(shortenPath(cliOptions.fileName(), 1)).reset().toString());
             logger.info(ansi().bg(GREEN).fg(BLACK).a("Firmware Update done, Restarting device now...").reset().toString());
             dm.restartProgrammingDevice();
 

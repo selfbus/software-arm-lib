@@ -4,13 +4,15 @@ import org.selfbus.updater.bootloader.BootloaderStatistic;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 
 public class BootloaderStatisticTest {
     @Test
     public void testToString() {
-        String colorOK = ConColors.BRIGHT_GREEN;
-        String colorWarn = ConColors.BRIGHT_YELLOW;
-        String colorReset = ConColors.RESET;
+        String colorOK = ansi().fgBright(GREEN).toString();
+        String colorWarn = ansi().fgBright(YELLOW).toString();
+        String colorReset = ansi().reset().toString();
         String info1 = "#Disconnect: ";
         String info2 = " #repeated T_ACK: ";
 

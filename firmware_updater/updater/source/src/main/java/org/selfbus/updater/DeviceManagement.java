@@ -20,6 +20,8 @@ import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 import java.time.Duration;
 import java.util.Arrays;
 
+import static org.fusesource.jansi.Ansi.*;
+import static org.fusesource.jansi.Ansi.Color.*;
 import static org.selfbus.updater.Mcu.MAX_FLASH_ERASE_TIMEOUT;
 import static org.selfbus.updater.upd.UPDProtocol.COMMAND_POSITION;
 import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
@@ -154,7 +156,7 @@ public final class DeviceManagement {
         }
 
         BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-        logger.info("  Device Bootloader: {}{}{}", ConColors.BRIGHT_YELLOW, bl, ConColors.RESET);
+        logger.info("  Device Bootloader: {}", ansi().fgBright(YELLOW).a(bl).reset().toString());
 
         boolean versionsMatch = (bl.getVersionMajor() > ToolInfo.minMajorVersionBootloader()) ||
                 ((bl.getVersionMajor() == ToolInfo.minMajorVersionBootloader()) && (bl.getVersionMinor() >= ToolInfo.minMinorVersionBootloader()));
