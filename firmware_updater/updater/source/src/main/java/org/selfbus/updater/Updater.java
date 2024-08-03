@@ -198,7 +198,7 @@ public class Updater implements Runnable {
             if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
-                    logger.error(ansi().fg(RED).a("File {} does not exist!").reset().toString(), cliOptions.fileName());
+                    logger.error(ansi().fg(RED).a("File '{}' does not exist!").reset().toString(), cliOptions.fileName());
                     throw new UpdaterException("Selfbus update failed.");
                 }
                 // Load Firmware hex file
@@ -368,7 +368,7 @@ public class Updater implements Runnable {
             if (cliOptions.device() != null) {
                 deviceInfo = cliOptions.device().toString();
             }
-            logger.info("Finished programming device {} with {}", ansi().fgBright(YELLOW).a(deviceInfo).reset().toString(),
+            logger.info("Finished programming device {} with '{}'", ansi().fgBright(YELLOW).a(deviceInfo).reset().toString(),
                     ansi().fgBright(YELLOW).a(shortenPath(cliOptions.fileName(), 1)).reset().toString());
             logger.info(ansi().bg(GREEN).fg(BLACK).a("Firmware Update done, Restarting device now...").reset().toString());
             dm.restartProgrammingDevice();
