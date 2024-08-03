@@ -1,9 +1,9 @@
 package org.selfbus.updater;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;;
 
 public class BootloaderIdentityTest {
 

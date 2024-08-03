@@ -1,15 +1,18 @@
 package org.selfbus.updater;
 
-import junit.framework.TestCase;
+import org.junit.jupiter.api.Test;
 
-public class ToolInfoTest extends TestCase {
+public class ToolInfoTest {
 
+    @Test
     public void testGetVersion() {
     }
 
+    @Test
     public void testGetAuthor() {
     }
 
+    @Test
     public void testGetTool() {
     }
 }

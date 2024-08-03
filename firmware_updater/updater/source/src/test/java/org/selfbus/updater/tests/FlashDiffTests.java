@@ -1,6 +1,6 @@
 package org.selfbus.updater.tests;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.selfbus.updater.BinImage;
 import org.selfbus.updater.UpdaterException;
 import org.selfbus.updater.tests.flashdiff.Decompressor;

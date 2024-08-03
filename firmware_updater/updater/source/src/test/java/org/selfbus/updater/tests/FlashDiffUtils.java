@@ -1,6 +1,6 @@
 package org.selfbus.updater.tests;
 
-import org.junit.Assert;
+import static org.junit.jupiter.api.Assertions.fail;
 import org.selfbus.updater.BinImage;
 
 public class FlashDiffUtils {
@@ -29,7 +29,7 @@ public class FlashDiffUtils {
                 System.out.println(" EQ");
             } else {
                 System.out.println(" NOT EQUAL !!!");
-                Assert.fail("Arrays not equals");
+                fail("Arrays not equals");
             }
         }
     }
