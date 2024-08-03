@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.List;
 
 import static java.awt.Font.PLAIN;
+import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultBackgroundColor;
+import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultForegroundColor;
 
 @SuppressWarnings("serial")
 public class GuiMain extends JFrame {
@@ -390,8 +392,8 @@ public class GuiMain extends JFrame {
         this.setTitle(ToolInfo.getToolAndVersion());
         this.setSize(1000, 800);
         this.jLoggingPane.setFont(new Font("Courier New", PLAIN, 12));
-        this.jLoggingPane.setBackground(Color.black);
-        this.jLoggingPane.setForeground(Color.white);
+        this.jLoggingPane.setBackground(DefaultBackgroundColor);
+        this.jLoggingPane.setForeground(DefaultForegroundColor);
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
