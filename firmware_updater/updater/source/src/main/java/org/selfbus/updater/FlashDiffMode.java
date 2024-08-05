@@ -42,7 +42,7 @@ public final class FlashDiffMode {
     private FlashDiffMode() {}
 
     public static String createCacheFileName(long startAddress, long length, long crc32) {
-        return String.format("%s%s%s%s0x%s%s%s%s0x%s%s", hexCacheDirectory, File.separator, IMAGE_IDENTIFIER, FILE_NAME_SEP,
+        return String.format("%s%s%s0x%s%s%s%s0x%s%s", hexCacheDirectory, IMAGE_IDENTIFIER, FILE_NAME_SEP,
                 Long.toHexString(startAddress), FILE_NAME_SEP, length, FILE_NAME_SEP,
                 Integer.toHexString((int)crc32), FILE_EXTENSION);
     }
