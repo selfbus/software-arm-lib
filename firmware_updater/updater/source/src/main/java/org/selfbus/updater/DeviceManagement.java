@@ -254,14 +254,14 @@ public final class DeviceManagement {
         while (nIndex < data.length)
         {
             byte[] txBuffer;
-            if ((data.length + updSendDataOffset - nIndex) >= maxPayload) {
-                txBuffer = new byte[maxPayload];
+            if ((data.length + updSendDataOffset - nIndex) >= getMaxPayload()) {
+                txBuffer = new byte[getMaxPayload()];
             }
             else {
                 txBuffer = new byte[data.length + updSendDataOffset - nIndex];
             }
 
-            if (protocolVersion == UDPProtocolVersion.UDP_V0) {
+            if (getProtocolVersion() == UDPProtocolVersion.UDP_V0) {
                 txBuffer[0] = (byte) nIndex; // First byte contains mcu's ramBuffer start position to copy to
             }
             System.arraycopy(data, nIndex, txBuffer, updSendDataOffset, txBuffer.length - updSendDataOffset);
@@ -418,7 +418,7 @@ public final class DeviceManagement {
     }
 
     public boolean setBlockSize(int blockSize) {
-        if (this.protocolVersion == UDPProtocolVersion.UDP_V0) {
+        if (getProtocolVersion() == UDPProtocolVersion.UDP_V0) {
             return false;
         }
         this.blockSize = blockSize;
