@@ -1,6 +1,5 @@
 package org.selfbus.updater;
 
-import org.fusesource.jansi.AnsiConsole;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.KNXException;
@@ -20,8 +19,6 @@ import java.util.zip.CRC32;
  */
 public class Utils {
     private static final Logger logger = LoggerFactory.getLogger(Utils.class.getName());
-    public static final String PROGRESS_MARKER = "."; //!< symbol to print progress to console
-    private static final int FALLBACK_CONSOLE_WIDTH = 80;
 
     public static long streamToLong(byte[] stream, int offset) {
         return ((stream[offset] & 0xFF)) |
@@ -177,13 +174,5 @@ public class Utils {
         for (final var c : connections) {
             c.close();
         }
-    }
-
-    public static int getConsoleWidth() {
-        int jansiConsoleWidth = AnsiConsole.getTerminalWidth();
-        if (jansiConsoleWidth != 0) {
-            return jansiConsoleWidth;
-        }
-        return FALLBACK_CONSOLE_WIDTH;
     }
 }

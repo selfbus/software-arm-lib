@@ -217,7 +217,7 @@ public class FlashDiff {
                 }
                 debug("\n");
               
-                System.out.print("Page " + pages + ", ");
+                logger.debug("Page {}, ",pages);
                 flashProgrammer.sendCompressedPage(outputDiffStream, crc32Block.getValue());
                 outputDiffStream.clear();
                 pages++;
@@ -241,7 +241,7 @@ public class FlashDiff {
             }
             debug("\n");
 
-            System.out.print("Page " + pages + ", ");
+            logger.debug("Page {}, ", pages);
             flashProgrammer.sendCompressedPage(outputDiffStream, crc32Block.getValue());
             totalBytesTransferred = size;
             logger.debug("OK! Total diff stream length={} bytes", ansi().fgBright(GREEN).a(size).reset().toString());
@@ -250,6 +250,6 @@ public class FlashDiff {
     }
 
     protected void debug(String format, Object... args) {
-    	//System.out.format(format, args);
+        logger.trace(String.format(format, args));
     }
 }

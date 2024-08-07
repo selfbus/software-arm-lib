@@ -99,13 +99,17 @@ public final class FlashDiffMode {
         FlashDiff differ = new FlashDiff();
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {});
         long bytesToFlash = differ.getTotalBytesTransferred();
+        ProgressInfo progressInfo = new ProgressInfo(bytesToFlash);
+        SpinningCursor.reset();
         logger.info("Start sending differential data ({} bytes)", bytesToFlash);
+        dm.startProgressInfo();
+
         AtomicReference<ResponseResult> result = new AtomicReference<>();
         differ = new FlashDiff();
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
 
             // process compressed page
-            logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size()));
+            logger.debug("Sending new firmware ({} diff bytes)", (outputDiffStream.size()));
             byte[] buf = new byte[MAX_PAYLOAD];
             int i = 0;
             while (i < outputDiffStream.size()) {
@@ -122,18 +126,19 @@ public final class FlashDiffMode {
                     dm.restartProgrammingDevice();
                     throw new UpdaterException("Selfbus update failed.");
                 }
+                dm.updateProgressInfo(progressInfo, txBuf.length);
             }
             // diff data of a single page transmitted
             // flash the page
             byte[] progPars = new byte[4];
             Utils.longToStream(progPars, 0, (int) crc32);
-            System.out.println();
-            logger.info("Program device next page diff, crc32 0x{}", String.format("%08X", crc32));
+            logger.debug("Program device next page diff, crc32 0x{}", String.format("%08X", crc32));
             result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, dm.getMaxUpdCommandRetry()));
             if (UPDProtocol.checkResult(result.get().data()) != UDPResult.IAP_SUCCESS.id) {
                 throw new UpdaterException("Selfbus update failed.");
             }
         });
+        dm.finalProgressInfo(progressInfo);
         result.get().setWritten(differ.getTotalBytesTransferred());
         return result.get();
     }

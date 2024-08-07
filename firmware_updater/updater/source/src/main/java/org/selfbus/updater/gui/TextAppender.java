@@ -4,53 +4,50 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
 
 import javax.swing.*;
-import javax.swing.text.StyledDocument;
-import java.util.ArrayList;
+import javax.swing.text.BadLocationException;
 
 import static javax.swing.SwingUtilities.invokeLater;
 
 public class TextAppender extends AppenderBase<ILoggingEvent> {
+    private JTextPane textPane;
 
-    private static final ArrayList<JTextPane> textPanes = new ArrayList<>();
+    @SuppressWarnings("unused")
+    public TextAppender() {
+        this.textPane = null;
+    }
 
-    // Add the target JTextPane to be populated and updated by the logging information.
-    public static void addLog4j2TextPaneAppender(final JTextPane textPane){
-        TextAppender.textPanes.add(textPane);
+    private void updateTextPane(String message) throws BadLocationException {
+        if (getTextPane() == null) {
+            return;
+        }
+        ConColorsToStyledDoc.Convert(message, getTextPane());
     }
 
     @Override
     protected void append(ILoggingEvent event) {
-        String message = event.getFormattedMessage();
-        message = message + System.lineSeparator(); // jeden Eintrag als newline enden lassen
-
-        String finalMessage = message;
-
-        // Append formatted message to text area using the Thread.
-        try
-        {
-            invokeLater(() ->
-            {
-                for (JTextPane textPane : textPanes)
-                {
-                    try
-                    {
-                        if (textPane != null)
-                        {
-                                StyledDocument document = (StyledDocument) textPane.getDocument();
-                                ConColorsToStyledDoc.Convert(finalMessage, document);
-
-                                // immer die letzte Zeile zeigen
-                                textPane.setCaretPosition(textPane.getDocument().getLength());
-                        }
-                    } catch (Throwable throwable)
-                    {
-                        throwable.printStackTrace();
-                    }
-                }
-            });
-        } catch (IllegalStateException exception)
-        {
-            exception.printStackTrace();
+        String eventMessage = event.getFormattedMessage();
+        // Make sure, that every eventMessage ends with a line separator
+        if (eventMessage.lastIndexOf(System.lineSeparator()) != eventMessage.length() - System.lineSeparator().length()) {
+            eventMessage += System.lineSeparator();
         }
+
+        final String finalMessage = eventMessage;
+        invokeLater(() -> {
+            try {
+                // Append formatted message to text area using the Thread.
+                updateTextPane(finalMessage);
+            }
+            catch (Throwable e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public JTextPane getTextPane() {
+        return textPane;
+    }
+
+    public void setTextPane(JTextPane textPane) {
+        this.textPane = textPane;
     }
 }

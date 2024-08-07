@@ -1,21 +1,58 @@
 package org.selfbus.updater.gui;
 
+import org.selfbus.updater.AnsiCursor;
+
+import javax.swing.*;
 import javax.swing.text.*;
+import java.awt.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class ConColorsToStyledDoc {
+import static org.fusesource.jansi.Ansi.ansi;
+
+public final class ConColorsToStyledDoc {
+    @SuppressWarnings("unused")
+    private ConColorsToStyledDoc() {}  // avoids instance creation
 
     private static final Style stringStyle = new javax.swing.text.StyleContext().addStyle("testStyle", null);
 
     public static final java.awt.Color DefaultForegroundColor = java.awt.Color.white;
     public static final java.awt.Color DefaultBackgroundColor = java.awt.Color.black;
-    private static final String RegExAnsi = "\033\\[([;\\d]*)m"; // Regular expression to match ANSI escape sequences
+    private static final String AnsiEscape = "\033"; // ASCII escape character (ESC)
+    private static final String AnsiBracket = "[";   // Ansi second character [
+
+    /**
+     * Regular expression for matching ANSI escape sequences.
+     * <p>
+     * Includes sequences for text styles, colors and some cursor movements.
+     * <p>
+     * <ul>
+     *   <li>{@code ([;\\d*)[A-Hmsu]} - Matches a sequence of zero or more digits and semicolons
+     *   followed by a character indicating the type of ANSI control or formatting action.
+     *       <ul>
+     *         <li>A-H - Cursor movement</li>
+     *         <li>m   - Set Graphics Mode (color, bold, underline, etc.)</li>
+     *         <li>s   - Save Cursor Position</li>
+     *         <li>u   - Restore Cursor Position</li>
+     *       </ul>
+     *   </li>
+     *   <li>{@code (\\?25[hl])} - Cursor on/off</li>
+     * </ul>
+     * <p>
+     * <p>
+     * Great overview on ANSI escape codes and their usage:
+     * <a href="https://gist.github.com/dominikwilkowski/60eed2ea722183769d586c76f22098dd#colors">ANSI escape codes</a>
+     * </p>
+     */
+    private static final String RegExAnsi = AnsiEscape + "\\" + AnsiBracket + "(([;\\d]*)[A-Hmsu]|(\\?25[hl]))";
+    private static final String RegExAnsiCursor = AnsiEscape + "\\" + AnsiBracket + "(([;\\d]*)[A-Hsu])";
     private static final String AnsiCodeSeparator = ";";
 
-    private static void insertStyledString(String toInsert, String colorCode, StyledDocument document) throws BadLocationException {
+    private static void insertStyledString(String toInsert, String colorCode, JTextPane textPane) throws BadLocationException {
         Style newStyle = colorCodeToStyle(colorCode.split(AnsiCodeSeparator));
+        StyledDocument document = (StyledDocument) textPane.getDocument();
         document.insertString(document.getLength(), toInsert, newStyle);
+        textPane.setCaretPosition(document.getLength());
     }
 
     /*
@@ -23,28 +60,117 @@ public class ConColorsToStyledDoc {
      * z.B. wird ein String "\033[0;31m dieser Text wird rot sein,\033[44m jetzt auf blauem Hintergrund" übergeben
      * Dieser String wird entsprechend der Steuerbefehle in ein StyledDocument gefüllt
      */
-    public static void Convert(String input, StyledDocument originDocument) throws BadLocationException {
+    public static void Convert(String input, JTextPane textPane) throws BadLocationException {
         Pattern pattern = Pattern.compile(RegExAnsi);
         Matcher matcher = pattern.matcher(input);
 
         String cleanedString = "";
-        String colorCode = "";
+        String ansiCode = "";
         int index = 0;
         while (matcher.find()) {
             if (matcher.start() > index) { // possible text before the ANSI escape sequence
                 cleanedString = input.substring(index, matcher.start());
-                insertStyledString(cleanedString, colorCode, originDocument);
+                insertStyledString(cleanedString, ansiCode, textPane);
             }
-            colorCode = matcher.group(1);
+            ansiCode = matcher.group();
+
+            if (processAnsiCursor(ansiCode, textPane)) {
+                index = matcher.end();
+                ansiCode = "";
+                continue;
+            }
+
+            ansiCode = ansiCode.replace(AnsiEscape + AnsiBracket, "");
             index = matcher.end();
         }
 
         if (index < input.length()) { // possible remaining text after the last ANSI escape sequence
             cleanedString = input.substring(index);
-            insertStyledString(cleanedString, colorCode, originDocument);
+            insertStyledString(cleanedString, ansiCode, textPane);
         }
+
+        // immer die letzte Zeile zeigen
+        textPane.setCaretPosition(textPane.getDocument().getLength());
     }
 
+    /**
+     * Processes ANSI cursor control codes and updates the cursor position in the given {@link JTextPane}.
+     *
+     * <p><strong>Warning:</strong> This method is partially implemented. Some cursor movement codes are not yet handled and will throw an exception if encountered.</p>     *
+     * <p>When encountering an unsupported ANSI cursor movement code, an {@link IllegalStateException} is thrown.</p>
+     *
+     * @param ansiCode the ANSI code to process
+     * @param textPane the {@link JTextPane} whose cursor position will be updated
+     * @return {@code true} if the ANSI code was successfully processed; {@code false} otherwise
+     * @throws BadLocationException if an error occurs when updating the cursor position
+     * @throws IllegalStateException if an not implemented or unexpected ANSI code is encountered
+     */
+    private static boolean processAnsiCursor(String ansiCode, JTextPane textPane) throws BadLocationException {
+        if (ansiCode.equals(AnsiCursor.off()) || ansiCode.equals(AnsiCursor.on())) {
+            return true; // there is no visible cursor in the JTextPane
+        }
+
+        if (ansiCode.equals(ansi().restoreCursorPosition().toString()) ||
+            ansiCode.equals(ansi().saveCursorPosition().toString())) {
+            //todo implement save and restore cursor position
+            throw new IllegalStateException("Save/Restore cursor position not implemented: " + ansiCode);
+        }
+
+        Pattern pattern = Pattern.compile(RegExAnsiCursor);
+        Matcher matcher = pattern.matcher(ansiCode);
+        String cursorMovement = "";
+        while (matcher.find()) {
+            cursorMovement = matcher.group(1);
+            if (cursorMovement.isEmpty()) {
+                continue;
+            }
+
+            Point moveCursor = getCursorPosition(textPane);
+            int cursorMovementCode = cursorMovement.charAt(cursorMovement.length() - 1);
+            int number;
+            if (cursorMovement.length() > 1) {
+                number = Integer.parseInt(cursorMovement.substring(0, cursorMovement.length() - 1));
+            }
+            else {
+                number = 1;
+            }
+
+            switch (cursorMovementCode) {
+                //todo implement remaining cursor movements
+                case 65: // A Move up by n rows
+                case 66: // B Move down by n rows
+                case 67: // C Move right by n columns
+                case 68: // D Move left by n columns
+                case 72: // H Move cursor to row n and column m
+                    throw new IllegalStateException("Not implemented cursorMovement: " + cursorMovement);
+
+                case 69: // E Move cursor to beginning of line and n lines down
+                    moveCursor.x = 1;
+                    moveCursor.y += number;
+                    setCursorPosition(textPane, moveCursor);
+                    return true;
+
+                case 70: // F Move cursor to beginning of line and n lines up
+                    moveCursor.x = 1;
+                    moveCursor.y -= number;
+                    setCursorPosition(textPane, moveCursor);
+                    return true;
+
+                case 71: // G Move cursor to column n
+                    moveCursor.x = number;
+                    setCursorPosition(textPane, moveCursor);
+                    return true;
+
+                default:
+                    throw new IllegalStateException("Unexpected cursorMovement: " + cursorMovement);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Resets the styling attributes of the {@link #stringStyle}
+     */
     private static void resetStringStyle() {
         StyleConstants.setForeground(ConColorsToStyledDoc.stringStyle, DefaultForegroundColor);
         StyleConstants.setBackground(ConColorsToStyledDoc.stringStyle, DefaultBackgroundColor);
@@ -54,11 +180,26 @@ public class ConColorsToStyledDoc {
         StyleConstants.setStrikeThrough(ConColorsToStyledDoc.stringStyle,false);
     }
 
+    /**
+     * Converts an array of color codes to a {@link Style} with the corresponding styles applied.
+     * <p>
+     * This method parses ANSI color codes and applies the styles to the {@link #stringStyle}, such as
+     * setting text to bold, italic, underlined, strikethrough, and changing foreground and background colors.
+     * </p>
+     *
+     * @param colorCodes an array of ANSI color codes as {@link String} values
+     * @return the {@link #stringStyle} object with the styles applied
+     * @throws IllegalStateException if an 256 fore/background color code (38 or 48) or an unexpected code value is encountered
+     */
     private static Style colorCodeToStyle(String [] colorCodes) {
         for (String code : colorCodes) {
-            if (code.isEmpty()) {
+            if (code.isEmpty() || code.equals("m")) {
                 resetStringStyle();
                 continue;
+            }
+
+            if (code.charAt(code.length() - 1) == 'm') {
+                code = code.substring(0, code.length() - 1); // strip of 'm'
             }
 
             switch (Integer.parseInt(code)) {
@@ -243,10 +384,83 @@ public class ConColorsToStyledDoc {
         return stringStyle;
     }
 
-    public static Style testColorCodeToStyle(String [] colorCodes) {
-        return colorCodeToStyle(colorCodes);
+    /**
+     * Returns the current virtual cursor position within the given {@link JTextPane} as a {@link Point}.
+     * The position is represented as (column, row) with 1-based indexing like in consoles.
+     *
+     * @param textPane the {@link JTextPane} from which to retrieve the cursor position
+     * @return a {@link Point} representing the cursor position, where the x-coordinate is the column
+     *         number and the y-coordinate is the row number, both 1-based
+     */
+    private static Point getCursorPosition(JTextPane textPane) {
+        int caretPosition = textPane.getCaretPosition();
+        // Get the row at the caret position
+        Element docRoot = textPane.getStyledDocument().getDefaultRootElement();
+        int row = docRoot.getElementIndex(caretPosition);
+
+        // Get the start offset of the column
+        Element lineElement = docRoot.getElement(row);
+        int lineStartOffset = lineElement.getStartOffset();
+        int column = caretPosition - lineStartOffset;
+        return new Point(column + 1, row + 1); // 1-based indexing for ANSI console
     }
 
+    /**
+     * Sets the virtual cursor position in the specified {@link JTextPane} to the given {@link Point}.
+     * The {@link Point} specifies the row and column (1-based index).
+     *
+     * @param textPane The {@link JTextPane} in which to set the cursor position.
+     * @param newPosition A {@link Point} where the x-coordinate represents the column
+     *                    and the y-coordinate represents the row. Both coordinates are 1-based.
+     * @throws BadLocationException If the specified position is invalid within the document.
+     */
+    public static void setCursorPosition(JTextPane textPane, Point newPosition) throws BadLocationException {
+        StyledDocument doc = textPane.getStyledDocument();
+        int rowIndex = Math.max(0, newPosition.y - 1); // rowIndex starts from 0
+        int columnIndex = Math.max(0, newPosition.x - 1); // columnIndex starts from 0
+
+        // Get the line start offset
+        int lineStartOffset = doc.getDefaultRootElement().getElement(rowIndex).getStartOffset();
+
+        // Calculate the new caret position
+        int newCaretPosition = lineStartOffset + columnIndex;
+
+        if (newCaretPosition < 0) {
+            newCaretPosition = 0;
+        }
+
+        if (newCaretPosition > doc.getLength()) {
+            newCaretPosition = doc.getLength();
+        }
+
+        StyledDocument document = (StyledDocument) textPane.getDocument();
+        int currentLength = document.getLength();
+        // Set the caret position
+        if (newCaretPosition < currentLength) {
+            document.remove(newCaretPosition, currentLength - newCaretPosition);
+        }
+
+        textPane.setCaretPosition(document.getLength());
+    }
+
+    /**
+     * This method is intended for unit tests only.
+     * It invokes the {@link #colorCodeToStyle} method with the provided color codes.
+     *
+     * @param colorCodes an array of color codes to be converted to styles.
+     * @warning This method is intended for unit tests only.
+     */
+    public static void testColorCodeToStyle(String [] colorCodes) {
+        colorCodeToStyle(colorCodes);
+    }
+
+    /**
+     * This method is intended for unit tests only.
+     * It returns the current {@link #stringStyle}.
+     *
+     * @return the current string style.
+     * @warning This method is intended for unit tests only.
+     */
     public static Style testStringStyle() {
        return stringStyle;
     }

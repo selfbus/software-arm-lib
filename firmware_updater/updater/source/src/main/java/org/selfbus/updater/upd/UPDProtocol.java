@@ -1,7 +1,5 @@
 package org.selfbus.updater.upd;
 
-import ch.qos.logback.classic.Level;
-import org.selfbus.updater.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,9 +38,6 @@ public final class UPDProtocol {
         } else {
             if (verbose) {
                 logger.trace("done ({})", ansi().fgBright(GREEN).a(udpResult.id).reset().toString());
-            } else {
-                System.out.printf(ansi().fgBright(GREEN).a(Utils.PROGRESS_MARKER).reset().toString()); // Success in green
-                logger.debug(Utils.PROGRESS_MARKER);
             }
         }
         return udpResult.id;

@@ -46,9 +46,13 @@ public class FlashFullMode {
             logMessage += String.format(" with telegram delay of %dms", dataSendDelay);
         }
         logger.info(logMessage);
+        dm.startProgressInfo();
 
         int nRead = 0;
         boolean repeat = false;
+        SpinningCursor.reset();
+
+        ProgressInfo progressInfo = new ProgressInfo(totalLength);
         while (fis.available() > 0) {
             if (!repeat) {
                 nRead = fis.read(buffer);  // Read up to size of buffer
@@ -62,26 +66,8 @@ public class FlashFullMode {
             System.arraycopy(buffer, 0, txBuffer, 0, nRead);
 
             // send data to the bootloader
-            long flashTimeStart = System.currentTimeMillis(); // time this run started
-            resultSendData = dm.doFlash(txBuffer, dm.getMaxUpdCommandRetry(), dataSendDelay);
+            resultSendData = dm.doFlash(txBuffer, dm.getMaxUpdCommandRetry(), dataSendDelay, progressInfo);
             resultTotal.addCounters(resultSendData); // keep track of static data
-
-            // logging of connection speed
-            long flashTimeDuration = System.currentTimeMillis() - flashTimeStart;
-            float bytesPerSecond = (float) resultSendData.written() / (flashTimeDuration / 1000f);
-            String col;
-            if (bytesPerSecond >= 50.0) {
-                col = ansi().fgBright(GREEN).toString();
-            } else {
-                col = ansi().fgBright(YELLOW).toString();
-            }
-            String percentageDone = String.format("%5.1f", (float) 100 * (resultTotal.written()) / totalLength);
-            String progressInfo = ansi().fgBright(GREEN).a(String.format("%s%% %s%6.2f B/s", percentageDone, col, bytesPerSecond)).reset().toString();
-            // Check if printed Utils.PROGRESS_MARKER and progressInfo would exceed console width
-            int progressMarkerLength = dm.getBlockSize()/(dm.getMaxPayload() * Utils.PROGRESS_MARKER.length());
-            if ((progressMarkerLength + progressInfo.length()) > Utils.getConsoleWidth()) {
-                System.out.println();
-            }
 
             // flash the previously sent data
             int crc32 = Utils.crc32Value(txBuffer);
@@ -90,20 +76,19 @@ public class FlashFullMode {
             Utils.longToStream(progPars, 2, progAddress);
             Utils.longToStream(progPars, 6, crc32);
 
-            String programFlashInfo = String.format("%s 0x%04X-0x%04X", progressInfo, progAddress, progAddress + txBuffer.length - 1);
-            if (txBuffer.length != dm.getBlockSize())
-            {
-                programFlashInfo = String.format("%s (%d bytes)", programFlashInfo, txBuffer.length);
+            String debugInfo = String.format("%s 0x%04X-0x%04X", progressInfo, progAddress, progAddress + txBuffer.length - 1);
+            if (txBuffer.length != dm.getBlockSize()) {
+                debugInfo = String.format("%s (%d bytes)", debugInfo, txBuffer.length);
             }
-            logger.info(programFlashInfo);
-            logger.trace("with crc32 {}", String.format("crc32 0x%08X", crc32));
+            logger.debug("{} with crc32 {}", debugInfo, String.format("crc32 0x%08X", crc32));
 
             resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, dm.getMaxUpdCommandRetry());
 
             long result = UPDProtocol.checkResult(resultProgramData.data());
             if ((result == BYTECOUNT_RECEIVED_TOO_LOW.id) || (result == BYTECOUNT_RECEIVED_TOO_HIGH.id)) {
                 repeat = true;
-                resultTotal.setWritten(resultTotal.written() - txBuffer.length); // do not count failed transfer
+                // do not count failed transfer
+                progressInfo.update(-txBuffer.length);
             }
             else if (result == IAP_COMPARE_ERROR.id) {
                 throw new UpdaterException(String.format("ProgramData update failed. %s",
@@ -122,6 +107,8 @@ public class FlashFullMode {
             resultTotal.addCounters(resultProgramData); // keep track of statistic data
         }
         fis.close();
+        dm.finalProgressInfo(progressInfo);
+        resultTotal.setWritten(progressInfo.getBytesDone());
         return resultTotal;
     }
 }

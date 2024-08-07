@@ -110,6 +110,7 @@ public class Updater implements Runnable {
             } catch (final Throwable t) {
                 logger.error("parsing options ", t);
             } finally {
+                AnsiCursor.on();
                 logger.debug("main exit");
             }
         }
@@ -148,21 +149,6 @@ public class Updater implements Runnable {
         public void run() {
             t.interrupt();
         }
-    }
-
-    private static void printStatisticData(long flashTimeStart, ResponseResult result) {
-        // logging of some static data
-        long flashTimeDuration = System.currentTimeMillis() - flashTimeStart;
-        float bytesPerSecond = (float) result.written() / (flashTimeDuration / 1000f);
-        String col;
-        if (bytesPerSecond >= 50.0) {
-            col = ansi().fgBright(GREEN).toString();
-        } else {
-            col = ansi().fgBright(RED).toString();
-        }
-        String infoMsg = String.format("Wrote %d bytes from file to device in %tM:%<tS. %s(%.2f B/s)%s",
-                result.written(), flashTimeDuration, col, bytesPerSecond, ansi().reset().toString());
-        logger.info("{}", infoMsg);
     }
 
     public static final int DELAY_MIN = 0;            //!< minimum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
@@ -322,7 +308,6 @@ public class Updater implements Runnable {
 
             if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!
                 // Start to flash the new firmware
-                long flashTimeStart = System.currentTimeMillis(); // time flash process started
                 ResponseResult resultTotal;
                 logger.info(ansi().bg(GREEN).fg(BLACK).a("Starting to send new firmware now:").reset().toString());
                 if (diffMode && FlashDiffMode.isInitialized()) {
@@ -349,7 +334,6 @@ public class Updater implements Runnable {
                 }
                 updaterStatisticMsg += String.format(" #Timeout       : %s%2d%s", colored, resultTotal.timeoutCount(), ansi().reset().toString());
                 logger.info("{}", updaterStatisticMsg);
-                printStatisticData(flashTimeStart, resultTotal);
             }
             else {
                 logger.warn("--{} => {}", CliOptions.OPT_LONG_NO_FLASH,

@@ -1,5 +1,6 @@
 package org.selfbus.updater;
 
+import ch.qos.logback.classic.Level;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
@@ -70,7 +71,7 @@ public final class DeviceManagement {
         try {
             while (restartTimeSeconds > 0) {
                 Thread.sleep(1000);
-                System.out.printf(ansi().fgBright(GREEN).a(Utils.PROGRESS_MARKER).reset().toString());
+                System.out.printf(ansi().fgBright(GREEN).a(".").reset().toString());
                 restartTimeSeconds--;
             }
             System.out.println();
@@ -247,7 +248,7 @@ public final class DeviceManagement {
         }
     }
 
-    public ResponseResult doFlash(byte[] data, int maxRetry, int delay)
+    public ResponseResult doFlash(byte[] data, int maxRetry, int delay, ProgressInfo progressInfo)
             throws UpdaterException, KNXLinkClosedException, InterruptedException, KNXTimeoutException {
         int nIndex = 0;
         ResponseResult result = new ResponseResult();
@@ -269,16 +270,11 @@ public final class DeviceManagement {
             ResponseResult tmp = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
             result.addCounters(tmp);
 
-            if ((tmp.dropCount() > 0) || (tmp.timeoutCount() > 0)) {
-                logger.warn(ansi().fg(RED).a("x").reset().toString());
-                continue;
-            }
-
             if (UPDProtocol.checkResult(tmp.data(), false) != UDPResult.IAP_SUCCESS.id) {
                 restartProgrammingDevice();
                 throw new UpdaterException("doFlash failed.");
             }
-
+            updateProgressInfo(progressInfo, txBuffer.length);
             nIndex += txBuffer.length - updSendDataOffset;
 
             if (delay > 0) {
@@ -289,12 +285,50 @@ public final class DeviceManagement {
         return result;
     }
 
-    public ResponseResult programBootDescriptor(BootDescriptor bootDescriptor, int delay)
+    public void startProgressInfo() {
+        logger.info("   Done Speed   Avg   Min   Max  Time");
+        // We need one newLine for the gui
+        ListTextAppenders.appendEvent(Level.INFO, System.lineSeparator());
+    }
+
+    public void updateProgressInfo(ProgressInfo progressInfo, long bytesDone) {
+        if (progressInfo == null) {
+            return;
+        }
+
+        progressInfo.update(bytesDone);
+        // console output
+        String logText = String.format("%s%s%s%s",
+                AnsiCursor.off(),
+                ansi().cursorToColumn(1).fgBright(GREEN).a(SpinningCursor.getNext()).reset().toString(),
+                progressInfo,
+                AnsiCursor.on());
+        System.out.print(logText);
+
+        // gui JTextPane output
+        logText = ansi().cursorUpLine().toString() + logText; // need this CursorUp in gui
+        ListTextAppenders.appendEvent(Level.INFO, logText);
+    }
+
+    public void finalProgressInfo(ProgressInfo progressInfo) {
+        if (progressInfo == null) {
+            return;
+        }
+
+        //todo this is stupid
+        // We need two CursorUp in the gui, because it appends to every logMessage System.lineSeparator()
+        ListTextAppenders.appendEvent(Level.INFO, ansi().cursorUpLine(1).toString());
+
+        // Now normal logging in console and gui
+        logger.info("{} {}", ansi().cursorToColumn(1).toString(), progressInfo);
+    }
+
+    public void programBootDescriptor(BootDescriptor bootDescriptor, int delay)
             throws UpdaterException, KNXLinkClosedException, InterruptedException, KNXTimeoutException {
 
         byte[] streamBootDescriptor = bootDescriptor.toStream();
         // send new boot descriptor
-        ResponseResult flashResult = doFlash(streamBootDescriptor, getMaxUpdCommandRetry(), delay);
+        ResponseResult flashResult = doFlash(streamBootDescriptor, getMaxUpdCommandRetry(), delay, null);
         if (flashResult.written() != streamBootDescriptor.length) {
             throw new UpdaterException(String.format("Sending Boot descriptor (length %d) failed. Wrote %d", streamBootDescriptor.length, flashResult.written()));
         }
@@ -316,7 +350,6 @@ public final class DeviceManagement {
         if (delay > 0) {
             Thread.sleep(delay);
         }
-        return programResult;
     }
 
     public void requestBootLoaderStatistic()

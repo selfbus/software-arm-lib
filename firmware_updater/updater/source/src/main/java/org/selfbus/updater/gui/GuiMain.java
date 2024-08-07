@@ -3,16 +3,13 @@ package org.selfbus.updater.gui;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import org.selfbus.updater.*;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 
 import org.apache.commons.cli.ParseException;
-import org.selfbus.updater.CliOptions;
-import org.selfbus.updater.DiscoverKnxInterfaces;
-import org.selfbus.updater.ToolInfo;
-import org.selfbus.updater.Updater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -399,7 +396,11 @@ public class GuiMain extends JFrame {
 
         new Thread(this::LoadKnxIpInterfacesAndFillComboBox).start();
 
-        TextAppender.addLog4j2TextPaneAppender(this.jLoggingPane);
+        TextAppender textAppender = ListTextAppenders.searchAppender();
+        if (textAppender != null) {
+            textAppender.setTextPane(this.jLoggingPane);
+        }
+
 
         InitGuiElementsVisibility();
         fillScenarios();
