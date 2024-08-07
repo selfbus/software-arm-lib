@@ -73,6 +73,7 @@ public final class DeviceManagement {
                 System.out.printf(ansi().fgBright(GREEN).a(Utils.PROGRESS_MARKER).reset().toString());
                 restartTimeSeconds--;
             }
+            System.out.println();
         }
         catch (final InterruptedException e) {
             logger.error("InterruptedException ", e);
@@ -92,7 +93,6 @@ public final class DeviceManagement {
             restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             logger.info("Device {} reported {} second(s) for restarting", device, ansi().fgBright(GREEN).a(restartProcessTime).reset().toString());
             waitRestartTime(restartProcessTime);
-            System.out.println();
         } catch (final KNXException | InterruptedException e) {
             logger.info(ansi().fgBright(RED).a("Restart state of device {} unknown. {}").reset().toString(), device, e.getMessage());
             logger.debug("KNXException ", e);
