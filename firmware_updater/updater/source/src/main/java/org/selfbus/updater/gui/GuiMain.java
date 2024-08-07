@@ -16,6 +16,7 @@ import org.selfbus.updater.Updater;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.plaf.FontUIResource;
@@ -93,7 +94,6 @@ public class GuiMain extends JFrame {
     private JLabel labelKnxSecureDevicePwdHint;
     private JScrollPane mainScrollPane;
     private JButton reloadGatewaysButton;
-
 
     private CliOptions cliOptions;
     private Thread updaterThread;
@@ -467,6 +467,15 @@ public class GuiMain extends JFrame {
         comboBoxMedium = new JComboBox<String>();
         comboBoxScenario = new JComboBox<ComboItem>();
         comboBoxKnxTelegramPriority = new JComboBox<String>();
+
+        String logoResourceName = "/selfbus_logo_16x16.png";
+        try {
+            Image frameIcon = ImageIO.read(Objects.requireNonNull(this.getClass().getResource(logoResourceName)));
+            this.setIconImage(frameIcon);
+        }
+        catch (IOException e) {
+            logger.debug("Could not load '{}' {}", logoResourceName, e.toString());
+        }
     }
 
     public static class ComboItem {
