@@ -258,7 +258,7 @@ public final class DeviceManagement {
                 txBuffer = new byte[maxPayload];
             }
             else {
-                txBuffer = new byte[data.length + updSendDataOffset- nIndex];
+                txBuffer = new byte[data.length + updSendDataOffset - nIndex];
             }
 
             if (protocolVersion == UDPProtocolVersion.UDP_V0) {
