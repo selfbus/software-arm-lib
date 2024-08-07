@@ -92,11 +92,16 @@ public final class FlashDiffMode {
         }
 
         File oldImageCacheFile = new File(oldFileName);
-        FlashDiff differ = new FlashDiff();
         BinImage img2 = BinImage.copyFromArray(binData, startAddress);
         BinImage img1 = BinImage.readFromBin(oldImageCacheFile.getAbsolutePath(), bootDsc.startAddress());
 
+        //Execute lambda once to get total byte count to transfer
+        FlashDiff differ = new FlashDiff();
+        differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {});
+        long bytesToFlash = differ.getTotalBytesTransferred();
+        logger.info("Start sending differential data ({} bytes)", bytesToFlash);
         AtomicReference<ResponseResult> result = new AtomicReference<>();
+        differ = new FlashDiff();
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
 
             // process compressed page
