@@ -258,11 +258,6 @@ public class Updater implements Runnable {
                 System.exit(0);
             }
 
-            if (cliOptions.eraseFullFlash()) {
-                logger.warn(ansi().fgBright(RED).a("Deleting the entire flash except from the bootloader itself!").reset().toString());
-                dm.eraseFlash();
-            }
-
             // store new firmware bin file in cache directory
             String cacheFileName = FlashDiffMode.createCacheFileName(newFirmware.startAddress(), newFirmware.length(), newFirmware.crc32());
             BinImage imageCache = BinImage.copyFromArray(newFirmware.getBinData(), newFirmware.startAddress());
@@ -282,6 +277,11 @@ public class Updater implements Runnable {
             else {
                 logger.debug(ansi().fgBright(YELLOW).a("  Info: There are {} bytes of unused flash between bootloader and firmware.").reset().toString(),
                         newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress());
+            }
+
+            if (cliOptions.eraseFullFlash()) {
+                logger.warn(ansi().fgBright(RED).a("Deleting the entire flash except from the bootloader itself!").reset().toString());
+                dm.eraseFlash();
             }
 
             boolean diffMode = false;
