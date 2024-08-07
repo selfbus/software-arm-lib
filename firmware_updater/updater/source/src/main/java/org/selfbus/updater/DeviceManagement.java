@@ -86,10 +86,9 @@ public final class DeviceManagement {
      */
     public void restartDeviceToBootloader(IndividualAddress device)
             throws KNXLinkClosedException {
-        Destination dest = this.mc.createDestination(device, true, false, false);
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
-        try {
-            logger.info("Restarting device {} into bootloader mode using {}", device, this.link);
+        try (Destination dest = this.mc.createDestination(device, true, false, false)) {
+            logger.info("Restarting device {} into bootloader", device);
             restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             logger.info("Device {} reported {} second(s) for restarting", device, ansi().fgBright(GREEN).a(restartProcessTime).reset().toString());
             waitRestartTime(restartProcessTime);
@@ -99,8 +98,6 @@ public final class DeviceManagement {
             logger.debug("KNXException ", e);
             logger.info("Waiting {} seconds for device {} to restart", ansi().fgBright(GREEN).a(restartProcessTime).reset().toString(), device);
             waitRestartTime(restartProcessTime);
-        } finally {
-            dest.close();
         }
     }
 
