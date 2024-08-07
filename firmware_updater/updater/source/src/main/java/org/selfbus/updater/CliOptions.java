@@ -515,13 +515,11 @@ public class CliOptions {
             }
             logger.debug("tpuart={}", tpuart);
 
-            if ((ft12.isEmpty()) && (tpuart.isEmpty())) {
-                // no ft12 or tpuart => get the <KNX Interface>
-                if (cmdLine.getArgs().length <= 0) {
-                    throw new ParseException("No <KNX Interface>, ft12 or tpuart specified.");
-                } else {
-                    knxInterface = Utils.parseHost(cmdLine.getArgs()[0]);
-                }
+            if (cmdLine.getArgs().length > 0) {
+                knxInterface = Utils.parseHost(cmdLine.getArgs()[0]);
+            }
+            else {
+                knxInterface = null;
             }
             logger.debug("knxInterface={}", knxInterface);
 
@@ -558,15 +556,16 @@ public class CliOptions {
             }
 
             int interfacesSet = 0;
-            if (!(userPassword().isEmpty()) && !(devicePassword().isEmpty())) interfacesSet++;
-            if (tunnelingV2()) interfacesSet++;
-            if (tunnelingV1()) interfacesSet++;
+            if (knxInterface() != null) interfacesSet++;
             if (routing()) interfacesSet++;
             if (!ft12().isEmpty()) interfacesSet++;
             if (!tpuart().isEmpty()) interfacesSet++;
 
             if (interfacesSet > 1) {
                 throw new ParseException(ansi().fg(RED).a("Only one bus interface can be used.").reset().toString());
+            }
+            else if (interfacesSet == 0) {
+                throw new ParseException(ansi().fg(RED).a("No bus interface specified.").reset().toString());
             }
 
         } catch (ParseException | KNXFormatException e) {
