@@ -47,11 +47,6 @@ artifacts {
     archives fatJar
 }
 
-repositories {
-    mavenCentral()
-    maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-}
-
 gradle.projectsEvaluated{
     tasks.withType(JavaCompile){
         options.compilerArgs << "-Xlint:unchecked"
@@ -90,6 +85,10 @@ tasks.named('check') {
     dependsOn(testing.suites.integrationTest)
 }
 
+//
+// Repositories are now configured in settings.gradle, so we can include https://jitpack.io.
+// We need it to add java-intelhex-parser as an dependency, instead of copy/pasting the source.
+//
 dependencies {
     // calimero knx bus access library
     implementation 'com.github.calimero:calimero-core:2.6-rc1'
@@ -114,4 +113,13 @@ dependencies {
 
     // GUI
     implementation files('libs/forms_rt.jar')
+
+    // Intel hex parser
+    // commit 9dec823 of 2023/02/27
+    // https://github.com/j123b567/java-intelhex-parser/commit/9dec82355697dba028e8aa1832b8b9ee1b66d9e2
+    implementation 'com.github.j123b567:java-intelhex-parser:9dec823'
+    // To revert this, just delete "implementation 'com.github.j123b567:java-intelhex-parser:9dec823'"
+    // and c&p the code of
+    // ../cz/jaybee/intelhex to
+    // ../software-arm-lib/firmware_updater/updater/source/src/main/java/cz/jaybee/intelhex
 }

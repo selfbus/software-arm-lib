@@ -1,8 +1,17 @@
 rootProject.name = 'SB_updater'
-/*
-sourceControl {
-    gitRepository("https://github.com/calimero-project/calimero-core.git") {
-        producesModule('com.github.calimero:calimero-core')
+
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenCentral()
+        maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
+        maven { url 'https://jitpack.io' } // jitpack builds if needed java-intelhex-parser for us
     }
-}
+/*
+    sourceControl {
+        gitRepository(uri("https://github.com/calimero-project/calimero-core.git")) {
+            producesModule('com.github.calimero:calimero-core')
+        }
+    }
 */
+}
