@@ -9,13 +9,14 @@ import org.selfbus.updater.tests.flashdiff.FlashPage;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class FlashDiffTests {
     private void performTest(BinImage img1, BinImage img2) {
         int pages1 = (int) Math.ceil(img2.getBinData().length / (double) FlashPage.PAGE_SIZE);
         int pages2 = (int) Math.ceil(img2.getBinData().length / (double)FlashPage.PAGE_SIZE);
-        int pagesMax = pages1 > pages2 ? pages1 : pages2;
+        int pagesMax = Math.max(pages1, pages2);
         BinImage rom = new BinImage(img1, pagesMax * FlashPage.PAGE_SIZE);
         BinImage img2wholePages = new BinImage(img2, pagesMax * FlashPage.PAGE_SIZE);
         FlashDiff differ = new FlashDiff();
@@ -45,8 +46,8 @@ public class FlashDiffTests {
     public void testDiff() throws URISyntaxException {
         // test of upgrade from old version to newer (longer)
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        URI uri1 = contextClassLoader.getResource("updater.ino.slto.v1.hex").toURI();
-        URI uri2 = contextClassLoader.getResource("updater.ino.slto.v2.hex").toURI();
+        URI uri1 = Objects.requireNonNull(contextClassLoader.getResource("updater.ino.slto.v1.hex")).toURI();
+        URI uri2 = Objects.requireNonNull(contextClassLoader.getResource("updater.ino.slto.v2.hex")).toURI();
         BinImage img1 = BinImage.readFromHex(uri1.getPath());
         BinImage img2 = BinImage.readFromHex(uri2.getPath());
         performTest(img1, img2);
@@ -55,7 +56,7 @@ public class FlashDiffTests {
     @Test
     public void testDiff2() throws URISyntaxException, UpdaterException {
         // test of new firmware into empty MCU
-        URI uri2 = Thread.currentThread().getContextClassLoader().getResource("updater.ino.slto.v2.hex").toURI();
+        URI uri2 = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("updater.ino.slto.v2.hex")).toURI();
         BinImage img2 = BinImage.readFromHex(uri2.getPath());
         BinImage img1 = BinImage.dummyFilled(img2.getBinData().length, 0xff);
         performTest(img1, img2);
