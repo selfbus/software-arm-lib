@@ -550,9 +550,38 @@ public class CliOptions {
                 logger.info(ansi().fg(RED).a("--{} is set. --> switching to full flash mode").reset().toString(), OPT_LONG_ERASEFLASH);
             }
 
+            // nat only possible with tunneling v1
             if (nat() && (!tunnelingV1())) {
                 throw new ParseException(String.format(ansi().fg(RED).a("Option --%s can only be used together with --%s").reset().toString(),
                         OPT_LONG_NAT, OPT_LONG_TUNNEL_V1));
+            }
+
+            // nat not allowed with tunneling v2
+            if (nat() && (tunnelingV2())) {
+                throw new ParseException(String.format(ansi().fg(RED).a("Option --%s can not be used together with --%s").reset().toString(),
+                        OPT_LONG_NAT, OPT_LONG_TUNNEL_V2));
+            }
+
+            // check IP-secure configuration
+            if (!(userPassword().isEmpty()) || !(devicePassword().isEmpty())) {
+                if (knxInterface() == null) {
+                    throw new ParseException(ansi().fg(RED).a("No IP-Interface specified for IP-secure").reset().toString());
+                }
+                else if (!ft12().isEmpty()) {
+                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_FT12)).reset().toString());
+                }
+                else if (!tpuart().isEmpty()) {
+                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_TPUART)).reset().toString());
+                }
+                else if (nat()) {
+                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_NAT)).reset().toString());
+                }
+                else if (tunnelingV1()) {
+                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_TUNNEL_V1)).reset().toString());
+                }
+                else if (tunnelingV2()) {
+                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_TUNNEL_V2)).reset().toString());
+                }
             }
 
             int interfacesSet = 0;
