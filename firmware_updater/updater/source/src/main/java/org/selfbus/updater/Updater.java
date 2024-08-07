@@ -110,7 +110,6 @@ public class Updater implements Runnable {
             } catch (final Throwable t) {
                 logger.error("parsing options ", t);
             } finally {
-                logger.info("\n\n");
                 logger.debug("main exit");
             }
         }
@@ -202,7 +201,7 @@ public class Updater implements Runnable {
                     throw new UpdaterException("Selfbus update failed.");
                 }
                 // Load Firmware hex file
-                logger.info("Loading file '{}'...", hexFileName);
+                logger.info("Loading file '{}'", hexFileName);
                 newFirmware = BinImage.readFromHex(hexFileName);
                 // Check for APP_VERSION string in new firmware
                 if (newFirmware.getAppVersion().isEmpty()) {
@@ -223,7 +222,7 @@ public class Updater implements Runnable {
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
 
             logger.info("KNX connection: {}", link);
-            logger.info("Telegram priority: {}", cliOptions.priority());
+            logger.debug("Telegram priority: {}", cliOptions.priority());
 
             //for option --device restart the device in bootloader mode
             if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
@@ -251,16 +250,16 @@ public class Updater implements Runnable {
             // Request current main firmware boot descriptor from device
             BootDescriptor bootDescriptor = dm.requestBootDescriptor();
             if (newFirmware != null) {
-                logger.info("  New firmware:              {}", newFirmware);
+                logger.info("New firmware:              {}", newFirmware);
             }
 
-            logger.info("Requesting APP_VERSION...");
+            logger.debug("Requesting APP_VERSION");
             String appVersion = dm.requestAppVersionString();
             if (appVersion != null) {
-                logger.info("  Current APP_VERSION: {}", ansi().fgBright(GREEN).a(appVersion).reset().toString());
+                logger.info("Current APP_VERSION: {}", ansi().fgBright(GREEN).a(appVersion).reset().toString());
             }
             else {
-                logger.info(ansi().fgBright(RED).a("  failed!").reset().toString());
+                logger.info("Requesting APP_VERSION {}", ansi().fgBright(RED).a("  failed!").reset().toString());
             }
 
             //  From here on we need a valid firmware
@@ -283,7 +282,7 @@ public class Updater implements Runnable {
             BinImage imageCache = BinImage.copyFromArray(newFirmware.getBinData(), newFirmware.startAddress());
             imageCache.writeToBinFile(cacheFileName);
 
-            logger.info("  File APP_VERSION   : {}", ansi().fgBright(GREEN).a(newFirmware.getAppVersion()).reset().toString());
+            logger.info("File APP_VERSION   : {}", ansi().fgBright(GREEN).a(newFirmware.getAppVersion()).reset().toString());
 
             // Check if FW image has correct offset for MCUs bootloader size
             if (newFirmware.startAddress() < bootLoaderIdentity.getApplicationFirstAddress()) {
@@ -292,10 +291,10 @@ public class Updater implements Runnable {
                 throw new UpdaterException("Firmware offset not correct!");
             }
             else if (newFirmware.startAddress() == bootLoaderIdentity.getApplicationFirstAddress()) {
-                logger.info(ansi().fgBright(GREEN).a("  Firmware starts directly beyond bootloader.").reset().toString());
+                logger.debug(ansi().fgBright(GREEN).a("  Firmware starts directly beyond bootloader.").reset().toString());
             }
             else {
-                logger.info(ansi().fgBright(YELLOW).a("  Info: There are {} bytes of unused flash between bootloader and firmware.").reset().toString(),
+                logger.debug(ansi().fgBright(YELLOW).a("  Info: There are {} bytes of unused flash between bootloader and firmware.").reset().toString(),
                         newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress());
             }
 
@@ -333,10 +332,9 @@ public class Updater implements Runnable {
                 else {
                     resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash(), cliOptions.logStatistics());
                 }
-                logger.info("Requesting Bootloader statistic...");
                 dm.requestBootLoaderStatistic();
 
-                String updaterStatisticMsg = "  Updater:    ";
+                String updaterStatisticMsg = "Updater:    ";
                 String colored;
                 if (resultTotal.dropCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
                     colored = ansi().fgBright(YELLOW).toString();
@@ -362,7 +360,7 @@ public class Updater implements Runnable {
                     newFirmware.endAddress(),
                     (int) newFirmware.crc32(),
                     newFirmware.startAddress() + newFirmware.getAppVersionAddress());
-            logger.info("Preparing boot descriptor with {}", newBootDescriptor);
+            logger.info("Updating boot descriptor with {}", newBootDescriptor);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
             String deviceInfo = cliOptions.progDevice().toString();
             if (cliOptions.device() != null) {
@@ -370,11 +368,11 @@ public class Updater implements Runnable {
             }
             logger.info("Finished programming device {} with '{}'", ansi().fgBright(YELLOW).a(deviceInfo).reset().toString(),
                     ansi().fgBright(YELLOW).a(shortenPath(cliOptions.fileName(), 1)).reset().toString());
-            logger.info(ansi().bg(GREEN).fg(BLACK).a("Firmware Update done, Restarting device now...").reset().toString());
+            logger.info(ansi().bg(GREEN).fg(BLACK).a("Firmware Update done, Restarting device").reset().toString());
             dm.restartProgrammingDevice();
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
-                logger.info(ansi().bg(GREEN).fg(BLACK).a("Wait {} second(s) for Bootloader Updater to finish its job...").reset().toString(),
+                logger.info(ansi().bg(GREEN).fg(BLACK).a("Wait {} second(s) for Bootloader Updater to finish its job").reset().toString(),
                         String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f));
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
             }

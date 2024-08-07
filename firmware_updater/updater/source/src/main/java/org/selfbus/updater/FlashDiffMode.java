@@ -60,12 +60,11 @@ public final class FlashDiffMode {
         //TODO check that "Current App Version String" and "File App Version String" represent the same application,
         //     if they are not the same app, we should switch to full flash mode
         if (Utils.fileExists(oldFileName)) {
-            logger.info("  Found current device firmware in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
-            logger.info(ansi().fgBright(GREEN).a("  --> switching to diff upload mode").reset().toString());
+            logger.info("Found current device firmware in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
             initialized = true;
         }
         else {
-            logger.warn("  Current device firmware not found in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
+            logger.warn("Current device firmware not found in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
             logger.warn(ansi().fgBright(RED).a("  --> switching to FULL upload mode").reset().toString());
             initialized = false;
         }

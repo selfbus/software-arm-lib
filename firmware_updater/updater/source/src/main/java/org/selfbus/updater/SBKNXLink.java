@@ -33,7 +33,7 @@ public class SBKNXLink {
     private KNXNetworkLink createSecureTunnelingLink(InetSocketAddress local, InetSocketAddress remote,
                                              KNXMediumSettings medium) throws KNXException, InterruptedException {
         // KNX IP Secure TCP tunneling v2 connection
-        logger.info("Connect using KNX IP Secure tunneling...");
+        logger.info("Connect using KNX IP Secure tunneling");
         byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.devicePassword().toCharArray());
         byte[] userKey = SecureConnection.hashUserPassword(cliOptions.userPassword().toCharArray());
         final var session = Utils.tcpConnection(local, remote).newSecureSession(cliOptions.userId(), userKey, deviceAuthCode);
@@ -42,19 +42,19 @@ public class SBKNXLink {
 
     private KNXNetworkLink createTunnelingLinkV2(InetSocketAddress local, InetSocketAddress remote,
                                          KNXMediumSettings medium) throws KNXException, InterruptedException {
-        logger.info("Connect using TCP tunneling v2...");
+        logger.info("Connect using TCP tunneling v2");
         final var session = Utils.tcpConnection(local, remote);
         return KNXNetworkLinkIP.newTunnelingLink(session, medium);
     }
 
     private KNXNetworkLink createTunnelingLinkV1(InetSocketAddress local, InetSocketAddress remote, boolean useNat,
                                          KNXMediumSettings medium) throws KNXException, InterruptedException {
-        logger.info(ansi().fg(YELLOW).a("Connect using UDP tunneling v1 (nat:{})...").reset().toString(), useNat);
+        logger.info(ansi().fg(YELLOW).a("Connect using UDP tunneling v1 (nat:{})").reset().toString(), useNat);
         return KNXNetworkLinkIP.newTunnelingLink(local, remote, useNat, medium);
     }
 
     private KNXNetworkLink createRoutingLink(InetSocketAddress local, KNXMediumSettings medium) throws KNXException {
-        logger.info(ansi().fg(YELLOW).a("Connect using routing (multicast:{})...").reset().toString(), KNXnetIPRouting.DefaultMulticast);
+        logger.info(ansi().fg(YELLOW).a("Connect using routing (multicast:{})").reset().toString(), KNXnetIPRouting.DefaultMulticast);
 
         return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), KNXnetIPRouting.DefaultMulticast, medium);
     }
@@ -96,7 +96,7 @@ public class SBKNXLink {
     public KNXNetworkLink openLink() throws KNXException,
             InterruptedException, UpdaterException {
         final KNXMediumSettings medium = getMedium(cliOptions.medium(), cliOptions.ownAddress());
-        logger.debug("Creating KNX network link {}...", medium);
+        logger.debug("Creating KNX network link {}", medium);
         if (!cliOptions.ft12().isEmpty()) {
             // create FT1.2 network link
             return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);

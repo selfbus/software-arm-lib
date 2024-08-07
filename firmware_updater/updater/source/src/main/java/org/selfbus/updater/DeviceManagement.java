@@ -103,7 +103,7 @@ public final class DeviceManagement {
 
     public byte[] requestUIDFromDevice()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("\nRequesting UID from {}...", progDestination.getAddress());
+        logger.info("Requesting UID from {}", progDestination.getAddress());
         byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_UID.id) {
             UPDProtocol.checkResult(result, true);
@@ -127,7 +127,7 @@ public final class DeviceManagement {
 
     public BootloaderIdentity requestBootloaderIdentity()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("Requesting Bootloader Identity...");
+        logger.debug("Requesting Bootloader Identity");
 
         byte[] telegram = new byte[2];
         telegram[0] = (byte) ToolInfo.versionMajor();
@@ -150,7 +150,7 @@ public final class DeviceManagement {
         }
 
         BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-        logger.info("  Device Bootloader: {}", ansi().fgBright(YELLOW).a(bl).reset().toString());
+        logger.info("Device Bootloader: {}", ansi().fgBright(YELLOW).a(bl).reset().toString());
 
         boolean versionsMatch = (bl.getVersionMajor() > ToolInfo.minMajorVersionBootloader()) ||
                 ((bl.getVersionMajor() == ToolInfo.minMajorVersionBootloader()) && (bl.getVersionMinor() >= ToolInfo.minMinorVersionBootloader()));
@@ -166,7 +166,7 @@ public final class DeviceManagement {
 
     public BootDescriptor requestBootDescriptor()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("Requesting Boot Descriptor...");
+        logger.debug("Requesting Boot Descriptor");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
             UPDProtocol.checkResult(result);
@@ -176,7 +176,7 @@ public final class DeviceManagement {
                     DATA_POSITION, result[DATA_POSITION]));
         }
         BootDescriptor bootDescriptor = BootDescriptor.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-        logger.info("  Current firmware: {}", bootDescriptor);
+        logger.info("Current firmware: {}", bootDescriptor);
         return bootDescriptor;
     }
 
@@ -192,7 +192,7 @@ public final class DeviceManagement {
 
     public void unlockDeviceWithUID(byte[] uid)
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-        logger.info("Unlocking device {} with UID {}...", progDestination.getAddress(), Utils.byteArrayToHex(uid));
+        logger.info("Unlocking device {} with UID {}", progDestination.getAddress(), Utils.byteArrayToHex(uid));
         byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, getMaxUpdCommandRetry()).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
@@ -206,7 +206,7 @@ public final class DeviceManagement {
         byte[] telegram = new byte[8];
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
-        logger.info(String.format("Erasing firmware address range: 0x%04X - 0x%04X...", startAddress, endAddress));
+        logger.info(String.format("Erasing firmware address range: 0x%04X-0x%04X", startAddress, endAddress));
         Duration oldResponseTimeout = mc.responseTimeout();
         Duration newResponseTimeout = MAX_FLASH_ERASE_TIMEOUT.multipliedBy(2);
         if (oldResponseTimeout.compareTo(newResponseTimeout) < 0) {
@@ -305,8 +305,7 @@ public final class DeviceManagement {
         byte[] programBootDescriptor = new byte[8];
         Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
         Utils.longToStream(programBootDescriptor, 4, crc32Value);
-        System.out.println();
-        logger.info(String.format("Updating boot descriptor with crc32 0x%08X, length %d",
+        logger.debug(String.format("Updating boot descriptor with crc32 0x%08X, length %d",
                 crc32Value, streamBootDescriptor.length));
         ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, getMaxUpdCommandRetry());
         if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS.id) {
@@ -322,12 +321,12 @@ public final class DeviceManagement {
 
     public void requestBootLoaderStatistic()
             throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
-
+        logger.debug("Requesting Bootloader statistic");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)
         {
             BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-            logger.info("  Bootloader: {}", blStatistic);
+            logger.info("Bootloader: {}", blStatistic);
         }
         else {
             logger.warn(ansi().fg(RED).a("  {}").reset().toString(),
