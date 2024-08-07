@@ -79,7 +79,7 @@ public class FlashFullMode {
             String progressInfo = ansi().fgBright(GREEN).a(String.format("%s%% %s%6.2f B/s", percentageDone, col, bytesPerSecond)).reset().toString();
             // Check if printed Utils.PROGRESS_MARKER and progressInfo would exceed console width
             int progressMarkerLength = dm.getBlockSize()/(dm.getMaxPayload() * Utils.PROGRESS_MARKER.length());
-            if ((progressMarkerLength + progressInfo.length()) > Utils.CONSOLE_WIDTH) {
+            if ((progressMarkerLength + progressInfo.length()) > Utils.getConsoleWidth()) {
                 System.out.println();
             }
 
