@@ -29,7 +29,6 @@ import java.util.List;
 
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
-import java.util.Locale;
 
 /**
  * Parses command line interface (cli) options for the application
