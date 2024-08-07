@@ -155,7 +155,7 @@ public class FlashDiff {
                 size += possiblyFinishRawBuffer(rawBuffer, outputDiffStream);
                 logger.trace("{} bestResult={}", String.format("%08x ", i), bestResult);
                 i += bestResult.length;
-                size += 5;
+                size += 1;
                 byte cmdByte = (byte)CMD_COPY;
                 if (bestResult.length <= MAX_LENGTH_SHORT) {
                     cmdByte = (byte)(cmdByte | FLAG_SHORT | (bestResult.length & 0b111111));  // command + 6 bits of the length
@@ -166,6 +166,7 @@ public class FlashDiff {
                     debug("@ b=%02X i=%d CMD_COPY FLAG_LONG", (cmdByte & 0xff), i);
                     byte lengthLowByte = (byte)(bestResult.length & 0xff); // 8 low bits of the length
                     outputDiffStream.add(cmdByte);
+                    size += 1;
                     outputDiffStream.add(lengthLowByte);
                 }
                 // 3 bytes are enough to address ROM or RAM buffer, the highest bit indicates ROM or RAM source
@@ -185,6 +186,7 @@ public class FlashDiff {
                     }
                     debug("%02X ", (srcData[bestResult.offset + k] & 0xff));
                 }
+                size += 3;
                 addr3 = (byte)(addr3 | addrFromFlag);
                 outputDiffStream.add(addr3);
                 outputDiffStream.add(addr2);

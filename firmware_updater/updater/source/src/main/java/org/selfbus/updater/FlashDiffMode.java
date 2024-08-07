@@ -103,8 +103,7 @@ public final class FlashDiffMode {
         differ.generateDiff(img1, img2, (outputDiffStream, crc32) -> {
 
             // process compressed page
-            //TODO check why 5 bytes are added to size in FlashDiff.java / generateDiff(...)
-            logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size() - 5));
+            logger.info("Sending new firmware ({} diff bytes)", (outputDiffStream.size()));
             byte[] buf = new byte[MAX_PAYLOAD];
             int i = 0;
             while (i < outputDiffStream.size()) {
