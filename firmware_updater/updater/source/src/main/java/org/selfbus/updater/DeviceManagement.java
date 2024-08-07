@@ -81,11 +81,10 @@ public final class DeviceManagement {
 
     /**
      * Restarts the <code>device</code> running in normal into the Bootloader mode
-     * @param device
-     *          the IndividualAddress of the device to restart
-     * @return true if successful, otherwise false
+     *
+     * @param device the IndividualAddress of the device to restart
      */
-    public boolean restartDeviceToBootloader(IndividualAddress device)
+    public void restartDeviceToBootloader(IndividualAddress device)
             throws KNXLinkClosedException {
         Destination dest = this.mc.createDestination(device, true, false, false);
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
@@ -95,7 +94,6 @@ public final class DeviceManagement {
             logger.info("Device {} reported {} second(s) for restarting", device, ansi().fgBright(GREEN).a(restartProcessTime).reset().toString());
             waitRestartTime(restartProcessTime);
             System.out.println();
-            return true;
         } catch (final KNXException | InterruptedException e) {
             logger.info(ansi().fgBright(RED).a("Restart state of device {} unknown. {}").reset().toString(), device, e.getMessage());
             logger.debug("KNXException ", e);
@@ -104,7 +102,6 @@ public final class DeviceManagement {
         } finally {
             dest.close();
         }
-        return false;
     }
 
     public byte[] requestUIDFromDevice()
