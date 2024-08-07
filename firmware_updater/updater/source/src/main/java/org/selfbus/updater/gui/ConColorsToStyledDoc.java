@@ -130,7 +130,7 @@ public class ConColorsToStyledDoc {
                     StyleConstants.setForeground(stringStyle, java.awt.Color.white);
                     break;
                 case 38:
-                    throw new IllegalStateException("Extended foreground colors not implemented");
+                    throw new IllegalStateException("256 color foreground not implemented");
                 case 39: // Foreground color default
                     StyleConstants.setForeground(stringStyle, DefaultForegroundColor);
                     break;
@@ -164,7 +164,7 @@ public class ConColorsToStyledDoc {
                     StyleConstants.setBackground(stringStyle, java.awt.Color.white);
                     break;
                 case 48:
-                    throw new IllegalStateException("Extended background colors not implemented");
+                    throw new IllegalStateException("256 color background not implemented");
                 case 49: // Background color default
                     StyleConstants.setBackground(stringStyle, DefaultBackgroundColor);
                     break;
