@@ -129,7 +129,6 @@ public final class FlashDiffMode {
             logger.info("Program device next page diff, crc32 0x{}", String.format("%08X", crc32));
             result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, dm.getMaxUpdCommandRetry()));
             if (UPDProtocol.checkResult(result.get().data()) != UDPResult.IAP_SUCCESS.id) {
-                dm.restartProgrammingDevice();
                 throw new UpdaterException("Selfbus update failed.");
             }
         });
