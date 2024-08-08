@@ -2,7 +2,7 @@ package org.selfbus.updater;
 
 import net.harawata.appdirs.AppDirsFactory;
 import org.selfbus.updater.bootloader.BootDescriptor;
-import org.selfbus.updater.tests.flashdiff.FlashDiff;
+import org.selfbus.updater.mode.differential.FlashDiff;
 import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
