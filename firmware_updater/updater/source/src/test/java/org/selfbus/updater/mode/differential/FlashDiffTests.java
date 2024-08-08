@@ -30,13 +30,15 @@ public class FlashDiffTests {
             //System.exit(1);
         });
         // TODO
-//        differ.generateDiff(img1, img2, outputDiffStream -> {
-//            // process compressed page
-//            for (byte b : outputDiffStream) {
-//                decompressor.putByte(b);
-//            }
-//            decompressor.pageCompleted();
-//        });
+        /*
+        differ.generateDiff(img1, img2, outputDiffStream -> {
+            // process compressed page
+            for (byte b : outputDiffStream) {
+                decompressor.putByte(b);
+            }
+            decompressor.pageCompleted();
+        });
+        */
     }
 
     @SuppressWarnings("SpellCheckingInspection")
