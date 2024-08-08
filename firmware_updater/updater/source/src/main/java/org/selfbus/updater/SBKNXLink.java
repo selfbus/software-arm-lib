@@ -23,7 +23,7 @@ import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
 
 public class SBKNXLink {
-    private static final Logger logger = LoggerFactory.getLogger(CliOptions.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(SBKNXLink.class);
     private CliOptions cliOptions;
 
     public SBKNXLink() {
