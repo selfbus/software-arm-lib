@@ -189,6 +189,7 @@ public class ConColorsToStyledDocTests {
         JTextPane textPane = new JTextPane();
         StyledDocument document = (StyledDocument) textPane.getDocument();
         //todo add more testcases
+        @SuppressWarnings("SpellCheckingInspection")
         String[][] testCases = {
                 {"\"   Done Speed   Avg   Min   Max  Time\"", "\"   Done Speed   Avg   Min   Max  Time\""}, // no ansi
                 {"\033[mreset_jansi\033[m", "reset_jansi"}, // reset like jansi it sends

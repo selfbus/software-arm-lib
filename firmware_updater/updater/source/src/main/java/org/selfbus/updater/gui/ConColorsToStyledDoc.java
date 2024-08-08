@@ -44,6 +44,7 @@ public final class ConColorsToStyledDoc {
      * <a href="https://gist.github.com/dominikwilkowski/60eed2ea722183769d586c76f22098dd#colors">ANSI escape codes</a>
      * </p>
      */
+    @SuppressWarnings("SpellCheckingInspection")
     private static final String RegExAnsi = AnsiEscape + "\\" + AnsiBracket + "(([;\\d]*)[A-Hmsu]|(\\?25[hl]))";
     private static final String RegExAnsiCursor = AnsiEscape + "\\" + AnsiBracket + "(([;\\d]*)[A-Hsu])";
     private static final String AnsiCodeSeparator = ";";

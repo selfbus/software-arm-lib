@@ -39,6 +39,7 @@ public class FlashDiffTests {
 //        });
     }
 
+    @SuppressWarnings("SpellCheckingInspection")
     @Test
     public void testDiff() throws URISyntaxException {
         // test of upgrade from old version to newer (longer)
@@ -50,6 +51,7 @@ public class FlashDiffTests {
         performTest(img1, img2);
     }
 
+    @SuppressWarnings("SpellCheckingInspection")
     @Test
     public void testDiff2() throws URISyntaxException, UpdaterException {
         // test of new firmware into empty MCU

@@ -23,7 +23,7 @@ public enum UPDCommand {
     REQUEST_STATISTIC((byte)0xdf, "STATISTIC_REQUEST"),                 //!< Return some statistic data for the active connection
     RESPONSE_STATISTIC((byte)0xde, "STATISTIC_RESPONSE"),               //!< Response for @ref UPD_STATISTIC_RESPONSE containing the statistic data
     SEND_LAST_ERROR((byte)0xdc, "SEND_LAST_ERROR"),                     //!< Response containing the last error
-    UNLOCK_DEVICE((byte)0xbf, "UNLOCK_DEVICE"),                         //!< Unlock the device for operations, which are only allowed on a unlocked device
+    UNLOCK_DEVICE((byte)0xbf, "UNLOCK_DEVICE"),                         //!< Unlock the device for operations, which are only allowed on an unlocked device
     REQUEST_UID((byte)0xbe, "REQUEST_UID"),                             //!< Return the 12 byte shorten UID (GUID) of the mcu @note device must be unlocked
     RESPONSE_UID((byte)0xbd, "RESPONSE_UID"),                           //!< Response for @ref REQUEST_UID containing the first 12 bytes of the UID
     APP_VERSION_REQUEST((byte)0xbc, "APP_VERSION_REQUEST"),             //!< Return address of AppVersion string

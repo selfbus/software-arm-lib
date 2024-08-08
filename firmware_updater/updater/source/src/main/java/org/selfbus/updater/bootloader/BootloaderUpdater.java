@@ -2,6 +2,7 @@ package org.selfbus.updater.bootloader;
 
 public final class BootloaderUpdater {
     /** Bootloader Updater appVersion identity string from app_main.cpp of bootloaderupdater */
+    @SuppressWarnings("SpellCheckingInspection")
     public static final String BOOTLOADER_UPDATER_ID_STRING = "SBblu";
 
     /** Maximum restart and processing time in milliseconds to

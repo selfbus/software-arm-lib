@@ -99,7 +99,7 @@ public enum UDPResult {
      * Create a UDPResult instance from given id, description and error state
      * @param id ID of the UDPResult
      * @param description Description of the UDPResult
-     * @param isError Set to true, if the UPDResult represents a error, otherwise set to false
+     * @param isError Set to true, if the UPDResult represents an error, otherwise set to false
      */
     UDPResult(byte id, String description, boolean isError) {
         this.id = id;

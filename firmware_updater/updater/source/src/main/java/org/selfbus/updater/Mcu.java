@@ -6,7 +6,7 @@ import java.time.Duration;
  * Basic information about the bootloader's MCU
  */
 public final class Mcu {
-    /** Maximum length a asdu can be in a standard frame */
+    /** Maximum length an asdu can be in a standard frame */
     public static final int MAX_ASDU_LENGTH = 14;
     /** Maximum data payload one APCI_USERMSG_MANUFACTURER_0/APCI_USERMSG_MANUFACTURER_6 can handle */
     public static final int MAX_PAYLOAD = MAX_ASDU_LENGTH - 1;

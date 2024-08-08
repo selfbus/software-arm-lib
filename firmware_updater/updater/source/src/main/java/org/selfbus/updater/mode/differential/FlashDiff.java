@@ -140,7 +140,7 @@ public class FlashDiff {
         while (i < img2.getBinData().length) {
             SearchResult rBackwardRamWindow = letLongestCommonBytes(w.getOldBinData(), img2.getBinData(), i, 0, MAX_COPY_LENGTH);
             rBackwardRamWindow.sourceType = SourceType.BACKWARD_RAM;
-            //SearchResult rBackwardRamWindow = letLongestCommonBytes(img1.getBinData(), img2.getBinData(), i, 0);  // in case we would have two flash banks, ie. full old image available
+            //SearchResult rBackwardRamWindow = letLongestCommonBytes(img1.getBinData(), img2.getBinData(), i, 0);  // in case we would have two flash banks, i.e. full old image available
             //int currentPage = i / FlashPage.PAGE_SIZE;
             //int firstAddressInThisPage = currentPage * FlashPage.PAGE_SIZE;
             SearchResult rForwardOldFlash = letLongestCommonBytes(img1.getBinData(), img2.getBinData(), i, 0, MAX_COPY_LENGTH);
@@ -224,7 +224,7 @@ public class FlashDiff {
                 pages++;
                 // emulate we have loaded the original page from ROM to RAM and written new page to ROM
                 w.fillNextPage(img1.getBinData(), i - FlashPage.PAGE_SIZE); // backup old data from ROM to RAM
-                System.arraycopy(img2.getBinData(), i - FlashPage.PAGE_SIZE, img1.getBinData(), i - FlashPage.PAGE_SIZE, FlashPage.PAGE_SIZE); // emulatae write of new data to ROM
+                System.arraycopy(img2.getBinData(), i - FlashPage.PAGE_SIZE, img1.getBinData(), i - FlashPage.PAGE_SIZE, FlashPage.PAGE_SIZE); // emulate write of new data to ROM
             }
         }
         size += possiblyFinishRawBuffer(rawBuffer, outputDiffStream);
