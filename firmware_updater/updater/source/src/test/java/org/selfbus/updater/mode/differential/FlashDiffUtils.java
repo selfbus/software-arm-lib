@@ -20,11 +20,11 @@ public class FlashDiffUtils {
 
     public static void dumpSideBySide(byte[] ar1, byte[] ar2, int offset) {
         for (int i = offset; i < offset+2048; i+=8) {
-            System.out.print(String.format("%04x:  %02x %02x %02x %02x %02x %02x %02x %02x | %02x %02x %02x %02x %02x %02x %02x %02x",
+            System.out.printf("%04x:  %02x %02x %02x %02x %02x %02x %02x %02x | %02x %02x %02x %02x %02x %02x %02x %02x",
                     i,
                     ar1[i], ar1[i+1], ar1[i+2], ar1[i+3], ar1[i+4], ar1[i+5], ar1[i+6], ar1[i+7],
                     ar2[i], ar2[i+1], ar2[i+2], ar2[i+3], ar2[i+4], ar2[i+5], ar2[i+6], ar2[i+7]
-            ));
+            );
             if (isEqual(ar1, ar2, i, 8)) {
                 System.out.println(" EQ");
             } else {
