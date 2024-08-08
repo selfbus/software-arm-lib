@@ -5,7 +5,7 @@ import org.selfbus.updater.Utils;
 /**
  * Holds Bootloader identity information
  * <p>
- * see software-arm-lib/Bus-Updater/src/update.cpp (method updRequestBootloaderIdentity) for more information.
+ * see /firmware_updater/bootloader/src/update.cpp (method updRequestBootloaderIdentity) for more information.
  */
 public record BootloaderIdentity(long versionMajor,
                                  long versionMinor,

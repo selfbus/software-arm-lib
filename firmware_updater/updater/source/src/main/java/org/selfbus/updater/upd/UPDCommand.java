@@ -5,7 +5,8 @@ import java.util.Map;
 
 /**
  * Implementation of the UPD/UDP protocol control commands
- * see /Bus-Updater/inc/upd_protocol.h for details
+ * <p>
+ * see /firmware_updater/bootloader/inc/upd_protocol.h for details
  */
 public enum UPDCommand {
     // ERASE_SECTOR(0, "ERASE_SECTOR"),                            //!< Erase flash sector number (data[3]) @note device must be unlocked

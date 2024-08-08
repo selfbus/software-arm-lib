@@ -7,7 +7,8 @@ import static org.fusesource.jansi.Ansi.Color.*;
 
 /**
  *  Holds Application Boot Block Descriptor the MCU's bootloader
- *  see software-arm-lib/Bus-Updater/inc/boot_descriptor_block.h for more information
+ *  <p>
+ *  see /firmware_updater/bootloader/inc/boot_descriptor_block.h for more information
  */
 public class BootDescriptor {
     private static final long INVALID_ADDRESS = 0xFFFFFFFFL;

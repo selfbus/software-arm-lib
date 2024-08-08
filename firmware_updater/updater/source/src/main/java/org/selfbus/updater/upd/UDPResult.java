@@ -5,7 +5,8 @@ import java.util.Map;
 
 /**
  * Implementation of the UPD/UDP protocol result commands
- * see /Bus-Updater/inc/upd_protocol.h for details
+ * <p>
+ * see /firmware_updater/bootloader/inc/upd_protocol.h for details
  */
 public enum UDPResult {
     /** Flash (IAP) Command is executed successfully */
