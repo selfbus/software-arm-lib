@@ -34,7 +34,7 @@ public class UtilsTest {
                          long expectedLong = l + (k << 8) + (j << 16) + (i << 24);
                          long result;
                          result = Utils.streamToLong(testStream, 0);
-                         assertEquals(result, expectedLong);
+                         assertEquals(expectedLong, result);
                      }
                  }
              }
@@ -58,7 +58,7 @@ public class UtilsTest {
         for (int i = 0; i < underTest.length; i++) {
             Utils.longToStream(testStream, 0, underTest[i]);
             expectedLong = Utils.streamToLong(testStream, 0);
-            assertEquals(underTest[i], expectedLong);
+            assertEquals(expectedLong, underTest[i]);
         }
     }
 
@@ -81,26 +81,26 @@ public class UtilsTest {
         // test windows path
         testFileName = "C:\\Users\\user\\AppData\\Local\\Selfbus\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin";
         testFileName = Utils.shortenPath(testFileName, thresholdToTest + 1);
-        assertEquals(testFileName, "C:\\...\\Selfbus\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin");
+        assertEquals("C:\\...\\Selfbus\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin", testFileName);
 
         // test linux path
         testFileName = Utils.shortenPath("/home/username/.cache/Selfbus-Updater/0.61/image-0x7000-34624-0xe8b27ade.bin", thresholdToTest);
-        assertEquals(testFileName, "/.../.cache/Selfbus-Updater/0.61/image-0x7000-34624-0xe8b27ade.bin");
+        assertEquals("/.../.cache/Selfbus-Updater/0.61/image-0x7000-34624-0xe8b27ade.bin", testFileName);
 
         // test UNC path
         testFileName = Utils.shortenPath("\\\\share\\funstuff\\running\\from\\Selfbus\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin", thresholdToTest);
-        assertEquals(testFileName, "\\\\...\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin");
+        assertEquals("\\\\...\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin", testFileName);
 
         // test http
         testFileName = Utils.shortenPath("http://tester.com/a1/b2/c3/d4/image-0x7000-34624-0xe8b27ade.bin", thresholdToTest);
-        assertEquals(testFileName, "http://.../b2/c3/d4/image-0x7000-34624-0xe8b27ade.bin");
+        assertEquals("http://.../b2/c3/d4/image-0x7000-34624-0xe8b27ade.bin", testFileName);
 
         // test ftp
         testFileName = Utils.shortenPath("ftp://tester.com/a1/b2/c3/d4/e5/image-0x7000-34624-0xe8b27ade.bin", thresholdToTest);
-        assertEquals(testFileName, "ftp://.../c3/d4/e5/image-0x7000-34624-0xe8b27ade.bin");
+        assertEquals("ftp://.../c3/d4/e5/image-0x7000-34624-0xe8b27ade.bin", testFileName);
 
         // test nothing to shorten
         testFileName = Utils.shortenPath("C:\\Local\\Selfbus\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin", thresholdToTest);
-        assertEquals(testFileName, testFileName);
+        assertEquals("C:\\...\\Selfbus-Updater\\Cache\\0.61\\image-0x7000-34624-0xe8b27ade.bin", testFileName);
     }
 }
