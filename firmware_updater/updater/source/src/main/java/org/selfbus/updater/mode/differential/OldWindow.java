@@ -2,7 +2,7 @@ package org.selfbus.updater.mode.differential;
 
 public class OldWindow {
     public static final int PAGES = 2;
-    private byte[] old = new byte[PAGES * FlashPage.PAGE_SIZE];
+    private final byte[] old = new byte[PAGES * FlashPage.PAGE_SIZE];
 
     public OldWindow() {
     }

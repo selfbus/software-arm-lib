@@ -22,7 +22,7 @@ import static org.fusesource.jansi.Ansi.Color.*;
 
 public class BinImage {
     private final static Logger logger = LoggerFactory.getLogger(BinImage.class.getName());
-    private byte[] binData;
+    private final byte[] binData;
     private final long startAddress;
     private final long endAddress;
     private long crc32;

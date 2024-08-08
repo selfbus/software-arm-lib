@@ -6,7 +6,7 @@ import java.util.Arrays;
 
 public class FlashPage {
     public static final int PAGE_SIZE = Mcu.FLASH_PAGE_SIZE;
-    private byte[] old; // old content before patching
+    private final byte[] old; // old content before patching
 
     public FlashPage(byte[] fromByteArray, int begin) {
         old = Arrays.copyOfRange(fromByteArray, begin, begin + PAGE_SIZE);
