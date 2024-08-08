@@ -261,17 +261,17 @@ public class Updater implements Runnable {
             logger.info("File APP_VERSION   : {}", ansi().fgBright(GREEN).a(newFirmware.getAppVersion()).reset().toString());
 
             // Check if FW image has correct offset for MCUs bootloader size
-            if (newFirmware.startAddress() < bootLoaderIdentity.getApplicationFirstAddress()) {
+            if (newFirmware.startAddress() < bootLoaderIdentity.applicationFirstAddress()) {
                 logger.error(ansi().fgBright(RED).a("  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!").reset().toString());
-                logger.error(ansi().fgBright(RED).a("  Firmware needs to start at or beyond 0x{}").reset().toString(), String.format("%04X", bootLoaderIdentity.getApplicationFirstAddress()));
+                logger.error(ansi().fgBright(RED).a("  Firmware needs to start at or beyond 0x{}").reset().toString(), String.format("%04X", bootLoaderIdentity.applicationFirstAddress()));
                 throw new UpdaterException("Firmware offset not correct!");
             }
-            else if (newFirmware.startAddress() == bootLoaderIdentity.getApplicationFirstAddress()) {
+            else if (newFirmware.startAddress() == bootLoaderIdentity.applicationFirstAddress()) {
                 logger.debug(ansi().fgBright(GREEN).a("  Firmware starts directly beyond bootloader.").reset().toString());
             }
             else {
                 logger.debug(ansi().fgBright(YELLOW).a("  Info: There are {} bytes of unused flash between bootloader and firmware.").reset().toString(),
-                        newFirmware.startAddress() - bootLoaderIdentity.getApplicationFirstAddress());
+                        newFirmware.startAddress() - bootLoaderIdentity.applicationFirstAddress());
             }
 
             if (cliOptions.eraseFullFlash()) {
@@ -289,7 +289,7 @@ public class Updater implements Runnable {
                 }
             }
 
-            if ((bootLoaderIdentity.getVersionMajor()) <= 1 && (bootLoaderIdentity.getVersionMinor() < 20)) {
+            if ((bootLoaderIdentity.versionMajor()) <= 1 && (bootLoaderIdentity.versionMinor() < 20)) {
                 dm.setProtocolVersion(UDPProtocolVersion.UDP_V0);
             }
             else {

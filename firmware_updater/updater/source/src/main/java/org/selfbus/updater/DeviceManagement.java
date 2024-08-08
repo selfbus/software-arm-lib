@@ -152,8 +152,8 @@ public final class DeviceManagement {
         BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
         logger.info("Device Bootloader: {}", ansi().fgBright(YELLOW).a(bl).reset().toString());
 
-        boolean versionsMatch = (bl.getVersionMajor() > ToolInfo.minMajorVersionBootloader()) ||
-                ((bl.getVersionMajor() == ToolInfo.minMajorVersionBootloader()) && (bl.getVersionMinor() >= ToolInfo.minMinorVersionBootloader()));
+        boolean versionsMatch = (bl.versionMajor() > ToolInfo.minMajorVersionBootloader()) ||
+                ((bl.versionMajor() == ToolInfo.minMajorVersionBootloader()) && (bl.versionMinor() >= ToolInfo.minMinorVersionBootloader()));
 
         if (!versionsMatch)
         {
