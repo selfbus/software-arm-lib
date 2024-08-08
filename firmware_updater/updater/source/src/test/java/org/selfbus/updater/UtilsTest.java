@@ -63,18 +63,6 @@ public class UtilsTest {
     }
 
     @Test
-    public void testByteArrayToHex() {
-    }
-
-    @Test
-    public void testParseHost() {
-    }
-
-    @Test
-    public void testFileExists() {
-    }
-
-    @Test
     public void testShortenPath() {
         int thresholdToTest = 4;
         String testFileName;
