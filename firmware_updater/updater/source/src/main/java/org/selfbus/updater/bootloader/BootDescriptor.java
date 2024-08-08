@@ -78,22 +78,22 @@ public class BootDescriptor {
         return endAddress() - startAddress() + 1;
     }
 
+    //todo get rid of this dirty hack for shorter console output
+    private short long2short(long a) {
+        return (short) (a & 0x0000FFFF);
+    }
+
     public String toString() {
         String res;
         if (valid) {
             res = String.format("%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
-                    ansi().fgBright(GREEN).a("  valid").reset().toString(), startAddress, endAddress, length(), crc32);
+                    ansi().fgBright(GREEN).a("  valid").reset().toString(), long2short(startAddress), long2short(endAddress), length(), crc32);
         }
         else {
             res = String.format("%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X",
-                    ansi().fg(RED).a("invalid").reset().toString(), INVALID_ADDRESS & 0x0000FFFF,
-                    INVALID_ADDRESS & 0x0000FFFF, length(), crc32);
+                    ansi().fg(RED).a("invalid").reset().toString(), long2short(startAddress), long2short(endAddress), length(), crc32);
         }
-
-        if (appVersionAddress != INVALID_ADDRESS)
-        {
-            res += String.format(", APP_VERSION pointer: 0x%04X", appVersionAddress);
-        }
+        res += String.format(", APP_VERSION pointer: 0x%04X", long2short(appVersionAddress));
         return res;
     }
 
