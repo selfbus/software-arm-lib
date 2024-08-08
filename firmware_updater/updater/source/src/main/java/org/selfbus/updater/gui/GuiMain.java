@@ -95,7 +95,7 @@ public class GuiMain extends JFrame {
     private CliOptions cliOptions;
     private Thread updaterThread;
     public static GuiMain guiMainInstance;
-    private final static Logger logger = LoggerFactory.getLogger(GuiMain.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(GuiMain.class);
     private static final Properties userProperties = new Properties();
 
 

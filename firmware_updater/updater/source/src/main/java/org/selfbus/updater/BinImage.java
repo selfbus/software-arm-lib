@@ -21,7 +21,7 @@ import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
 
 public class BinImage {
-    private final static Logger logger = LoggerFactory.getLogger(BinImage.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(BinImage.class);
     private final byte[] binData;
     private final long startAddress;
     private final long endAddress;

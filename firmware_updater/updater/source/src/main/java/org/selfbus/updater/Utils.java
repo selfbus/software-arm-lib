@@ -17,7 +17,7 @@ import java.util.zip.CRC32;
  * Basic utilities usable for the application
  */
 public class Utils {
-    private static final Logger logger = LoggerFactory.getLogger(Utils.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
     public static long streamToLong(byte[] stream, int offset) {
         return ((stream[offset] & 0xFF)) |

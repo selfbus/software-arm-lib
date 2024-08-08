@@ -11,7 +11,7 @@ import java.util.Arrays;
  * (based on diff stream, original ROM content, and RAM buffer to store some latest ROM pages already flashed)
  */
 public class Decompressor {
-    private final static Logger logger = LoggerFactory.getLogger(Decompressor.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(Decompressor.class);
     private enum State {
         EXPECT_COMMAND_BYTE,
         EXPECT_COMMAND_PARAMS,

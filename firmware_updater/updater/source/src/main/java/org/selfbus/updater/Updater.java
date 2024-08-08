@@ -46,7 +46,7 @@ import org.selfbus.updater.gui.GuiMain;
  * @author Oliver Stefan
  */
 public class Updater implements Runnable {
-    private final static Logger logger = LoggerFactory.getLogger(Updater.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(Updater.class);
     private final CliOptions cliOptions;
     private final SBKNXLink sbKNXLink;
 

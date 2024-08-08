@@ -15,7 +15,7 @@ import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
 
 public class FlashDiff {
-    private final static Logger logger = LoggerFactory.getLogger(FlashDiff.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(FlashDiff.class);
     private static final int MINIMUM_PATTERN_LENGTH = 6; // less that this is not efficient (metadata would be larger than data)
     private static final int MAX_COPY_LENGTH = 2048-1; // 2^12 = 8 bits + 6 bits (remaining in CMD byte). Needs to match flash PAGE_SIZE?
     private static final int MAX_LENGTH_SHORT = 64-1;    // 2^6 = 6 bits (remaining in CMD byte)

@@ -46,7 +46,7 @@ public final class DeviceManagement {
         setProtocolVersion(UDPProtocolVersion.UDP_V1);
     }
 
-    private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class);
     private SBManagementClientImpl mc; //!< calimero device management client
     private Destination progDestination;
     private KNXNetworkLink link;

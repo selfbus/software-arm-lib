@@ -23,7 +23,7 @@ import static org.selfbus.updater.Mcu.MAX_PAYLOAD;
  * experimental (WIP) Provides differential flash mode for the bootloader (MCU)
  */
 public final class FlashDiffMode {
-    private final static Logger logger = LoggerFactory.getLogger(FlashDiffMode.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(FlashDiffMode.class);
     // hexCacheDir will be used as a cache directory for the cached *.hex files used by the differential update mode
     // windows: C:\Users\[currentUser]\AppData\Local\Selfbus\Selfbus-Updater\Cache\
     // linux  : /home/[user-home]]/.cache/Selfbus-Updater/

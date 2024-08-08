@@ -42,7 +42,7 @@ import static org.fusesource.jansi.Ansi.Color.*;
  *         - check with cmdLine.hasOption(OPT_SHORT_XXX) in method parse(.) is it set or not
  */
 public class CliOptions {
-    private static final Logger logger = LoggerFactory.getLogger(CliOptions.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(CliOptions.class);
 
     private static final String OPT_SHORT_FILENAME = "f";
     private static final String OPT_LONG_FILENAME = "fileName";

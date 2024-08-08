@@ -17,7 +17,7 @@ import static org.selfbus.updater.upd.UDPResult.*;
  * Provides full flash mode for the bootloader (MCU)
  */
 public class FlashFullMode {
-    private final static Logger logger = LoggerFactory.getLogger(FlashFullMode.class.getName());
+    private final static Logger logger = LoggerFactory.getLogger(FlashFullMode.class);
 
     /**
      * Normal update routine, sending complete image

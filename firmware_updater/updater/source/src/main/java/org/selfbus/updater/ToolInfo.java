@@ -17,7 +17,7 @@ public final class ToolInfo
     private static final long minMajorVersionBootloader = 1; ///\todo change also in ../README.md
     private static final long minMinorVersionBootloader = 0;
 
-    private static final Logger logger = LoggerFactory.getLogger(ToolInfo.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(ToolInfo.class);
     private static final String author = "Selfbus";
     private static final String tool = "Selfbus-Updater";
     private static final String desc = "A Tool for updating firmware of a Selfbus device in a KNX network.";

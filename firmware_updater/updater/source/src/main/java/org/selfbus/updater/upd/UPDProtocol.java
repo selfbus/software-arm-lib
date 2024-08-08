@@ -10,7 +10,7 @@ import static org.fusesource.jansi.Ansi.Color.*;
  * Implementation of the UPD/UDP protocol handling
  */
 public final class UPDProtocol {
-    private static final Logger logger = LoggerFactory.getLogger(UPDProtocol.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(UPDProtocol.class);
 
     public static final int COMMAND_POSITION = 2;
     public static final int DATA_POSITION = 3;
