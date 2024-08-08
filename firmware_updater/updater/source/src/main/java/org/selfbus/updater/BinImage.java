@@ -145,16 +145,16 @@ public class BinImage {
     }
 
     public final String toString() {
-        return String.format("0x%04X-0x%04X, %05d byte(s), crc32 0x%08X",
-                startAddress, endAddress, binData.length, crc32());
+        return String.format("0x%04X-0x%04X, %05d byte(s), crc32 0x%08X, APP_VERSION pointer: 0x%04X",
+                startAddress(), endAddress(), binData.length, crc32(), getAppVersionAddress());
     }
 
-    public int getAppVersionAddress() {
-        return Bytes.indexOf(this.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
+    public long getAppVersionAddress() {
+        return startAddress() + Bytes.indexOf(this.getBinData(), Mcu.APP_VER_PTR_MAGIC) + Mcu.APP_VER_PTR_MAGIC.length;
     }
 
     public String getAppVersion() {
-        int appVersionAddress = getAppVersionAddress();
+        int appVersionAddress = (int)(getAppVersionAddress() - startAddress());
         if (appVersionAddress <= Mcu.VECTOR_TABLE_END || appVersionAddress >= (this.length() - Mcu.BL_ID_STRING_LENGTH)) {
             return "";
         }

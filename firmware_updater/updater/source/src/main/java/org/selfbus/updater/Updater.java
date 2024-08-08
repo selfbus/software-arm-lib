@@ -341,9 +341,7 @@ public class Updater implements Runnable {
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
-                    newFirmware.endAddress(),
-                    (int) newFirmware.crc32(),
-                    newFirmware.startAddress() + newFirmware.getAppVersionAddress());
+                    newFirmware.endAddress(), (int) newFirmware.crc32(), newFirmware.getAppVersionAddress());
             logger.info("Updating boot descriptor with {}", newBootDescriptor);
             dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
             String deviceInfo = cliOptions.progDevice().toString();
