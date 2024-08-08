@@ -55,10 +55,10 @@ public class UtilsTest {
 
         long expectedLong;
         byte[] testStream = new byte[]{0, 0, 0, 0};
-        for (int i = 0; i < underTest.length; i++) {
-            Utils.longToStream(testStream, 0, underTest[i]);
+        for (long l : underTest) {
+            Utils.longToStream(testStream, 0, l);
             expectedLong = Utils.streamToLong(testStream, 0);
-            assertEquals(expectedLong, underTest[i]);
+            assertEquals(expectedLong, l);
         }
     }
 
