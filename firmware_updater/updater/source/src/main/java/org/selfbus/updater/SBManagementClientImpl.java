@@ -68,7 +68,6 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         }
         send = DataUnitBuilder.createAPDU(apciWrite, asdu);
 
-        final byte[] response = this.sendWait(dst, getPriority(), send, apciResponse, 2, MAX_ASDU_LENGTH, responseTimeout());
-        return response;
+        return this.sendWait(dst, getPriority(), send, apciResponse, 2, MAX_ASDU_LENGTH, responseTimeout());
     }
 }
