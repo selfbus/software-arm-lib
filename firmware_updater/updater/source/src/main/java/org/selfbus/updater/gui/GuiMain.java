@@ -93,6 +93,7 @@ public class GuiMain extends JFrame {
     private JScrollPane mainScrollPane;
     private JButton reloadGatewaysButton;
 
+    private final ResourceBundle guiTranslation;
     private CliOptions cliOptions;
     private Thread updaterThread;
     public static GuiMain guiMainInstance;
@@ -102,6 +103,7 @@ public class GuiMain extends JFrame {
 
     public GuiMain() {
         $$$setupUI$$$();
+        guiTranslation = ResourceBundle.getBundle("GuiTranslation");
         buttonLoadFile.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -125,45 +127,36 @@ public class GuiMain extends JFrame {
         buttonStartStopFlash.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                String stopFlash = guiTranslation.getString("stopFlash");
+                String startFlash = guiTranslation.getString("startFlash");
 
-                ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");
-
-                if (Objects.equals(buttonStartStopFlash.getText(), bundle.getString("startFlash"))) {
-                    jLoggingPane.setText("");
-
-                    updaterThread = new Thread() {
-                        public void run() {
-                            try {
-                                setCliOptions();
-                            } catch (KNXFormatException | ParseException ex) {
-                                throw new RuntimeException(ex);
-                            }
-
-                            try {
-                                final Updater d = new Updater(cliOptions);
-
-                                //final ShutdownHandler sh = new ShutdownHandler().register();
-                                d.run();
-                                SwingUtilities.invokeLater(() -> {
-                                    guiMainInstance.buttonStartStopFlash.setText(bundle.getString("startFlash"));
-                                });
-                                //sh.unregister();
-                            } catch (final Throwable t) {
-                                logger.error("parsing options ", t);
-                            } finally {
-                                logger.info("\n\n");
-                                logger.debug("main exit");
-                            }
-                        }
-                    };
-                    updaterThread.start();
-
-                    buttonStartStopFlash.setText(bundle.getString("stopFlash"));
-                } else {
-                    updaterThread.interrupt(); //.stop() is deprecated
-
-                    buttonStartStopFlash.setText(bundle.getString("startFlash"));
+                if (Objects.equals(buttonStartStopFlash.getText(), stopFlash)) {
+                    if (updaterThread != null) {
+                        updaterThread.interrupt();
+                        buttonStartStopFlash.setText(startFlash);
+                        logger.info(guiTranslation.getString("logMessageCanceledFlashing"));
+                        return;
+                    }
                 }
+
+                jLoggingPane.setText("");
+                updaterThread = new Thread() {
+                    public void run() {
+                        try {
+                            setCliOptions();
+                        } catch (KNXFormatException | ParseException ex) {
+                            throw new RuntimeException(ex);
+                        }
+
+                        final Updater d = new Updater(cliOptions);
+                        d.run();
+                        SwingUtilities.invokeLater(() -> {
+                            guiMainInstance.buttonStartStopFlash.setText(startFlash);
+                        });
+                    }
+                };
+                updaterThread.start();
+                buttonStartStopFlash.setText(stopFlash);
             }
         });
 
@@ -173,33 +166,15 @@ public class GuiMain extends JFrame {
 
                 updaterThread = new Thread(() -> {
                     try {
-                        // für den bestehenden Updater wird zwingend ein Dateiname benötigt
-                        if (textFieldFileName.getText().isEmpty()) {
-                            textFieldFileName.setText("dummy.hex");
-                        }
                         setCliOptions();
-                        if (Objects.equals(textFieldFileName.getText(), "dummy.hex")) {
-                            textFieldFileName.setText("");
-                        }
                     } catch (KNXFormatException | ParseException ex) {
                         throw new RuntimeException(ex);
                     }
-
-                    try {
-                        final Updater upd = new Updater(cliOptions);
-
-                        String uid = upd.requestUid();
-
-                        SwingUtilities.invokeLater(() -> {
-                            guiMainInstance.textFieldUid.setText(uid);
-                        });
-
-                    } catch (final Throwable t) {
-                        logger.error("parsing options ", t);
-                    } finally {
-                        logger.info("\n\n");
-                        logger.debug("main exit");
-                    }
+                    final Updater upd = new Updater(cliOptions);
+                    String uid = upd.requestUid();
+                    SwingUtilities.invokeLater(() -> {
+                        guiMainInstance.textFieldUid.setText(uid);
+                    });
                 });
                 updaterThread.start();
             }
@@ -428,8 +403,7 @@ public class GuiMain extends JFrame {
 
         comboBoxIpGateways.removeAllItems();
 
-        ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");
-        comboBoxIpGateways.addItem(new CalimeroSearchComboItem(bundle.getString("selectInterface"), null));
+        comboBoxIpGateways.addItem(new CalimeroSearchComboItem(guiTranslation.getString("selectInterface"), null));
 
         DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
                 comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
@@ -441,12 +415,9 @@ public class GuiMain extends JFrame {
 
     private void fillScenarios() {
         if (comboBoxScenario == null) return;
-
-        ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");
-
-        comboBoxScenario.addItem(new ComboItem(bundle.getString(GuiObjsVisOpts.NEWDEV.getVisOption()), GuiObjsVisOpts.NEWDEV));
-        comboBoxScenario.addItem(new ComboItem(bundle.getString(GuiObjsVisOpts.APPDEV.getVisOption()), GuiObjsVisOpts.APPDEV));
-        comboBoxScenario.addItem(new ComboItem(bundle.getString(GuiObjsVisOpts.REQUID.getVisOption()), GuiObjsVisOpts.REQUID));
+        comboBoxScenario.addItem(new ComboItem(guiTranslation.getString(GuiObjsVisOpts.NEWDEV.getVisOption()), GuiObjsVisOpts.NEWDEV));
+        comboBoxScenario.addItem(new ComboItem(guiTranslation.getString(GuiObjsVisOpts.APPDEV.getVisOption()), GuiObjsVisOpts.APPDEV));
+        comboBoxScenario.addItem(new ComboItem(guiTranslation.getString(GuiObjsVisOpts.REQUID.getVisOption()), GuiObjsVisOpts.REQUID));
     }
 
     private void fillMediumComboBox() {
@@ -634,19 +605,18 @@ public class GuiMain extends JFrame {
     }
 
     private void setGuiElementsVisibility() {
-        ResourceBundle bundle = ResourceBundle.getBundle("GuiTranslation");
 
         final GuiObjsVisOpts selectedScenario = (GuiObjsVisOpts) ((ComboItem) Objects.requireNonNull(comboBoxScenario.getSelectedItem())).getValue();
 
         switch (selectedScenario) {
             case NEWDEV:
-                labelScenarioHint.setText(bundle.getString("newDeviceHint"));
+                labelScenarioHint.setText(guiTranslation.getString("newDeviceHint"));
                 break;
             case APPDEV:
-                labelScenarioHint.setText(bundle.getString("appDeviceHint"));
+                labelScenarioHint.setText(guiTranslation.getString("appDeviceHint"));
                 break;
             case REQUID:
-                labelScenarioHint.setText(bundle.getString("requestUidHint"));
+                labelScenarioHint.setText(guiTranslation.getString("requestUidHint"));
                 break;
         }
 
