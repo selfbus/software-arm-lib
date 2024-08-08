@@ -8,10 +8,8 @@ import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 
 import java.io.File;
 import java.util.Arrays;
@@ -82,7 +80,7 @@ public final class FlashDiffMode {
 
     // Differential update routine
     public static ResponseResult doDifferentialFlash(DeviceManagement dm, long startAddress, byte[] binData)
-            throws KNXDisconnectException, KNXTimeoutException, KNXRemoteException, KNXLinkClosedException, InterruptedException, UpdaterException {
+            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         ///\todo add connection reset and sending again on failure, like in full flash mode
         if (!isInitialized()) {
             throw new UpdaterException("Differential mode not initialized!");
