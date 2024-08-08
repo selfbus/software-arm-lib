@@ -93,8 +93,14 @@ public class SBKNXLink {
      * @throws KNXException         on problems on link creation
      * @throws InterruptedException on interrupted thread
      */
-    public KNXNetworkLink openLink() throws KNXException,
-            InterruptedException, UpdaterException {
+    public KNXNetworkLink openLink() throws KNXException, InterruptedException, UpdaterException {
+        KNXNetworkLink newLink = doOpenLink();
+        logger.info("KNX connection: {}", newLink);
+        return newLink;
+    }
+
+    private KNXNetworkLink doOpenLink() throws KNXException,
+            InterruptedException {
         final KNXMediumSettings medium = getMedium(cliOptions.medium(), cliOptions.ownAddress());
         logger.debug("Creating KNX network link {}", medium);
         if (!cliOptions.ft12().isEmpty()) {

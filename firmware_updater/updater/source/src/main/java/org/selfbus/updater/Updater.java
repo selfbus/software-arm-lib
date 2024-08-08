@@ -207,7 +207,6 @@ public class Updater implements Runnable {
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
 
-            logger.info("KNX connection: {}", link);
             logger.debug("Telegram priority: {}", cliOptions.priority());
 
             //for option --device restart the device in bootloader mode
@@ -381,7 +380,6 @@ public class Updater implements Runnable {
         try {
             link = this.sbKNXLink.openLink();
             DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
-            logger.info("KNX connection: {}", link);
 
             //for option --device restart the device in bootloader mode
             if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
