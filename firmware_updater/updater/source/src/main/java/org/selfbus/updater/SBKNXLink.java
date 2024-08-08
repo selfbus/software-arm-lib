@@ -60,7 +60,7 @@ public class SBKNXLink {
     }
 
     private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port) {
-        final int p = port != null ? port.intValue() : 0;
+        final int p = port != null ? port : 0;
         return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(p);
     }
 
