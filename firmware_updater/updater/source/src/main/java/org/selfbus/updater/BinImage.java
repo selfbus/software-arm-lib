@@ -125,23 +125,21 @@ public class BinImage {
         this.crc32 = crc32File.getValue();
     }
 
-    public final boolean writeToBinFile(String fileName) {
+    public final void writeToBinFile(String fileName) {
         File binFile = new File(fileName);
         if (!binFile.getParentFile().exists()) {
             if (!binFile.getParentFile().mkdirs()) {
                 logger.warn(ansi().fg(RED).a("Could not create bin-file directory {}").reset().toString(),
                         binFile.getParentFile().toString());
             }
-            return false;
+            return;
         }
 
         try (FileOutputStream fos = new FileOutputStream(binFile)) {
             fos.write(binData);
-            return true;
         } catch (IOException e) {
             logger.warn(ansi().fg(RED).a("Could not write bin-file {}").reset().toString(), binFile.getPath());
         }
-        return false;
     }
 
     public final String toString() {
