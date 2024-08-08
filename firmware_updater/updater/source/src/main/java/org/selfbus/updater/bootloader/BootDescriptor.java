@@ -17,6 +17,7 @@ public class BootDescriptor {
     private long appVersionAddress;
     private boolean valid;
 
+    @SuppressWarnings("unused")
     private BootDescriptor() {}
 
     /**
