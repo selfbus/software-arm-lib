@@ -93,10 +93,21 @@ Manual specification of parameters if the App-Version pointer is not found/integ
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
 ```
-## Used IDE's:
-IntelliJ IDEA Community 2023.3.4 (Build -> Build Artifacts)<br>
-eclipse project is currently not maintained
-## gradle:
+## Development
+
+### IDEs:
+- [IntelliJ IDEA (Community Edition)](https://www.jetbrains.com/idea/download)
+- Eclipse project is currently not maintained
+
+### IntelliJ IDEA Settings for Updater GUI development:
+Change these in [**Settings Dialog**](https://www.jetbrains.com/help/idea/settings-preferences-dialog.html) (Menu File->Settings):
+- Editor->[GUI Designer](https://www.jetbrains.com/help/idea/gui-designer.html)->Generate GUI into: Java source code
+- [Plugins](https://www.jetbrains.com/help/idea/plugins-settings.html)->install "Resource Bundle Editor" [(howto)](https://www.jetbrains.com/help/idea/resource-bundle.html#open-bundle-editor)
+- Build, Execution, Deployment->[Build Tools](https://www.jetbrains.com/help/idea/settings-build-tools.html)->Gradle->Build and run using: Intellij IDEA
+- Build, Execution, Deployment->[Build Tools](https://www.jetbrains.com/help/idea/settings-build-tools.html)->Gradle->Run tests using: Intellij IDEA
+
+
+### gradle:
 update [gradle wrapper](source/gradle/wrapper) to the newest version:
 ```
 gradlew wrapper
