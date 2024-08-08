@@ -1,7 +1,5 @@
 package org.selfbus.updater;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXInvalidResponseException;
@@ -28,12 +26,12 @@ public class SBManagementClientImpl extends ManagementClientImpl {
     private static final int USERMSG_MANUFACTURER_6_RESPONSE = 0x2FE;
     private static final int apciWrite = USERMSG_MANUFACTURER_0_WRITE;
     private static final int apciResponse = USERMSG_MANUFACTURER_6_RESPONSE;
-    private final Logger logger;
+    //private final Logger logger; // uncomment when needed
 
     public SBManagementClientImpl(KNXNetworkLink link)
             throws KNXLinkClosedException {
         super(link);
-        logger = LoggerFactory.getLogger(SBManagementClientImpl.class.getName() + " " + link.getName());
+        //logger = LoggerFactory.getLogger(SBManagementClientImpl.class.getName() + " " + link.getName());
     }
 
     private byte[] prepareAsdu(final int cmd, final byte[] data) {
