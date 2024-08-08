@@ -83,9 +83,8 @@ public class FlashDiff {
                 logestCandidateLength = (firstDstPage + 1) * FlashPage.PAGE_SIZE - patternOffset;
             }
             if (logestCandidateLength >= MINIMUM_PATTERN_LENGTH) {
-                logger.trace("{}", ar1[logestCandidateSrcOffset] & 0xff);
-                logger.trace("{}", ar1[logestCandidateSrcOffset + 1] & 0xff);
-                logger.trace("{}", ar1[logestCandidateSrcOffset + 2] & 0xff);
+                logger.trace("{} {} {}", ar1[logestCandidateSrcOffset] & 0xff, ar1[logestCandidateSrcOffset + 1] & 0xff,
+                        ar1[logestCandidateSrcOffset + 2] & 0xff);
             }
             return new SearchResult(logestCandidateSrcOffset, logestCandidateLength);
         } else {
@@ -101,14 +100,14 @@ public class FlashDiff {
         int outSize;
         byte cmdByte;
         if (rawBuffer.size() <= MAX_LENGTH_SHORT) {
-            debug("RAW BUFFER SHORT size=" + rawBuffer.size());
+            logger.trace("RAW BUFFER SHORT size={}", rawBuffer.size());
             cmdByte = (byte)(CMD_RAW | FLAG_SHORT);
             cmdByte = (byte)(cmdByte | (rawBuffer.size() & 0b111111));  // command + 6 low bits of the length
             outputDiffStream.add(cmdByte);
             outSize = 1; // 1 byte = cmd with short length included
         }
         else {
-            debug("RAW BUFFER LONG size=" + rawBuffer.size());
+            logger.trace("RAW BUFFER LONG size={}", rawBuffer.size());
             cmdByte = (byte)(CMD_RAW | FLAG_LONG);
             cmdByte = (byte)(cmdByte | ((rawBuffer.size() >> 8) & 0b111111));  // command + 6 high bits of the length
             byte lengthLowByte = (byte)(rawBuffer.size() & 0xff);           // 8 low bits of the length
@@ -158,11 +157,11 @@ public class FlashDiff {
                 byte cmdByte = (byte)CMD_COPY;
                 if (bestResult.length <= MAX_LENGTH_SHORT) {
                     cmdByte = (byte)(cmdByte | FLAG_SHORT | (bestResult.length & 0b111111));  // command + 6 bits of the length
-                    debug("@ b=%02X i=%d CMD_COPY", (cmdByte & 0xff), i);
+                    logger.trace(String.format("@ b=%02X i=%d CMD_COPY", (cmdByte & 0xff), i));
                     outputDiffStream.add(cmdByte);
                 } else {
                     cmdByte = (byte)(cmdByte | FLAG_LONG | ((bestResult.length >> 8) & 0b111111));  // command + 6 bits from high byte of the length
-                    debug("@ b=%02X i=%d CMD_COPY FLAG_LONG", (cmdByte & 0xff), i);
+                    logger.trace(String.format("@ b=%02X i=%d CMD_COPY FLAG_LONG", (cmdByte & 0xff), i));
                     byte lengthLowByte = (byte)(bestResult.length & 0xff); // 8 low bits of the length
                     outputDiffStream.add(cmdByte);
                     size += 1;
@@ -173,32 +172,35 @@ public class FlashDiff {
                 byte addr2 = (byte)((bestResult.offset >> 8) & 0xff);  // middle byte
                 byte addr3 = (byte)((bestResult.offset >> 16) & 0xff);  // high byte
                 int addrFromFlag = bestResult.sourceType == SourceType.BACKWARD_RAM ? ADDR_FROM_RAM : ADDR_FROM_ROM;
+                String location;
                 if (bestResult.sourceType == SourceType.BACKWARD_RAM) {
-                    debug(" DO COPY FROM RAM l=%d sa=%08X", bestResult.length, bestResult.offset);
+                    location = "RAM";
                 } else {
-                    debug(" DO COPY FROM ROM l=%d sa=%08X", bestResult.length, bestResult.offset);
+                    location = "ROM";
                 }
+                logger.trace(String.format("DO COPY FROM %s l=%d sa=%08X",location , bestResult.length,  bestResult.offset));
                 byte[] srcData = bestResult.sourceType == SourceType.BACKWARD_RAM ? w.getOldBinData() : img1.getBinData();
+                StringBuilder traceMessage = new StringBuilder();
                 for (int k = 0; k < bestResult.length; k++) {
                     if (k % 16 == 0) {
-                        debug("\n  ");
+                        logger.trace(traceMessage.toString());
+                        traceMessage = new StringBuilder();
                     }
-                    debug("%02X ", (srcData[bestResult.offset + k] & 0xff));
+                    traceMessage.append(String.format("%02X ", (srcData[bestResult.offset + k] & 0xff)));
                 }
+                logger.trace(traceMessage.toString());
+
                 size += 3;
                 addr3 = (byte)(addr3 | addrFromFlag);
                 outputDiffStream.add(addr3);
                 outputDiffStream.add(addr2);
                 outputDiffStream.add(addr1);
-                debug("\n");
             }
             else {
-                logger.trace("{} RAW: {}", String.format("%08x", i), String.format("%02x", img2.getBinData()[i]));
-
-                debug("@ b=%02X i=%d raw", (img2.getBinData()[i] & 0xff), i);
+                logger.trace(String.format("%08x RAW: %02x@ b=%02X i=%d raw", i, img2.getBinData()[i],
+                        (img2.getBinData()[i] & 0xff), i));
                 rawBuffer.add(img2.getBinData()[i]);
                 i++;
-                debug("\n");
             }
             if (i%FlashPage.PAGE_SIZE == 0) {
                 // passed to new page
@@ -207,16 +209,18 @@ public class FlashDiff {
                 crc32Block.update(img2.getBinData(), i - FlashPage.PAGE_SIZE, FlashPage.PAGE_SIZE);
                 //p = new FlashPage(img1.getBinData(), i);
 
-                debug("# FLASH PAGE startAddrOfPageToBeFlashed=%08X", i*FlashPage.PAGE_SIZE);
+                logger.trace(String.format("# FLASH PAGE startAddrOfPageToBeFlashed=%08X", i*FlashPage.PAGE_SIZE));
+                StringBuilder traceMessage = new StringBuilder();
                 for (int k = pages*FlashPage.PAGE_SIZE; (k < (pages+1)*FlashPage.PAGE_SIZE && k < img2.getBinData().length); k++) {
                     if (k % 16 == 0) {
-                        debug("\n  ");
+                        logger.trace(traceMessage.toString());
+                        traceMessage = new StringBuilder();
                     }
-                    debug(String.format("%02X ", (img2.getBinData()[k] & 0xff)));
+                    traceMessage.append(String.format("%02X ", (img2.getBinData()[k] & 0xff)));
                 }
-                debug("\n");
+                logger.trace(traceMessage.toString());
               
-                logger.debug("Page {}, ",pages);
+                logger.trace("Page {}, ",pages);
                 flashProgrammer.sendCompressedPage(outputDiffStream, crc32Block.getValue());
                 outputDiffStream.clear();
                 pages++;
@@ -230,25 +234,22 @@ public class FlashDiff {
             crc32Block.reset();
             crc32Block.update(img2.getBinData(), img2.getBinData().length - (img2.getBinData().length % FlashPage.PAGE_SIZE), img2.getBinData().length % FlashPage.PAGE_SIZE);
 
-            debug("# FLASH PAGE startAddrOfPageToBeFlashed=%08X", i*FlashPage.PAGE_SIZE);
-            debug("\n  ");
+            logger.trace(String.format("# FLASH PAGE startAddrOfPageToBeFlashed=%08X", i*FlashPage.PAGE_SIZE));
+            StringBuilder traceMessage = new StringBuilder();
             for (int k = pages*FlashPage.PAGE_SIZE; (k < (pages+1)*FlashPage.PAGE_SIZE && k < img2.getBinData().length); k++) {
-                debug("%02X ", (img2.getBinData()[k] & 0xff));
+                traceMessage.append(String.format("%02X ", (img2.getBinData()[k] & 0xff)));
                 if (k % 16 == 0) {
-                    debug("\n  ");
+                    logger.trace(traceMessage.toString());
+                    traceMessage = new StringBuilder();
                 }
             }
-            debug("\n");
+            logger.trace(traceMessage.toString());
 
-            logger.debug("Page {}, ", pages);
+            logger.trace("Page {}, ", pages);
             flashProgrammer.sendCompressedPage(outputDiffStream, crc32Block.getValue());
             totalBytesTransferred = size;
-            logger.debug("OK! Total diff stream length={} bytes", ansi().fgBright(GREEN).a(size).reset().toString());
+            logger.trace("OK! Total diff stream length={} bytes", ansi().fgBright(GREEN).a(size).reset().toString());
         }
         //dumpSideBySide(img1, img2);
-    }
-
-    protected void debug(String format, Object... args) {
-        logger.trace(String.format(format, args));
     }
 }
