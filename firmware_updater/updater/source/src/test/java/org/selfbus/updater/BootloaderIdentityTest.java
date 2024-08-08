@@ -3,7 +3,7 @@ package org.selfbus.updater;
 import org.junit.jupiter.api.Test;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 
-import static org.junit.jupiter.api.Assertions.*;;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BootloaderIdentityTest {
 

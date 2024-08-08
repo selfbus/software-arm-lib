@@ -26,7 +26,7 @@ public class ProgressInfo {
         totalBytes = totalByteCount;
         bytesDone = 0;
         startTimeMs = System.currentTimeMillis();
-        lastUpdateTimeMs = startTimeMs;;
+        lastUpdateTimeMs = startTimeMs;
     }
 
     public void update(long byteCount) {
