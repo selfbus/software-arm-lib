@@ -65,7 +65,7 @@ public final class ConColorsToStyledDoc {
         Pattern pattern = Pattern.compile(RegExAnsi);
         Matcher matcher = pattern.matcher(input);
 
-        String cleanedString = "";
+        String cleanedString;
         String ansiCode = "";
         int index = 0;
         while (matcher.find()) {
@@ -119,9 +119,8 @@ public final class ConColorsToStyledDoc {
 
         Pattern pattern = Pattern.compile(RegExAnsiCursor);
         Matcher matcher = pattern.matcher(ansiCode);
-        String cursorMovement = "";
         while (matcher.find()) {
-            cursorMovement = matcher.group(1);
+            String cursorMovement = matcher.group(1);
             if (cursorMovement.isEmpty()) {
                 continue;
             }
