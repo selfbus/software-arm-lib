@@ -94,33 +94,32 @@ public class FlashDiff {
     }
 
     private int possiblyFinishRawBuffer(List<Byte> rawBuffer, List<Byte> outputDiffStream) {
-        int outSize;
         if (rawBuffer.isEmpty()) {
             return 0;
         }
 
-        byte cmdByte = CMD_RAW;
+        int outSize;
+        byte cmdByte;
         if (rawBuffer.size() <= MAX_LENGTH_SHORT) {
             debug("RAW BUFFER SHORT size=" + rawBuffer.size());
-            cmdByte = (byte)(cmdByte | FLAG_SHORT);
+            cmdByte = (byte)(CMD_RAW | FLAG_SHORT);
             cmdByte = (byte)(cmdByte | (rawBuffer.size() & 0b111111));  // command + 6 low bits of the length
             outputDiffStream.add(cmdByte);
-            outputDiffStream.addAll(rawBuffer);
-            outSize = 1 + rawBuffer.size(); // 1 byte = cmd with short length included
-            rawBuffer.clear();
-            return outSize;
-        } else {
+            outSize = 1; // 1 byte = cmd with short length included
+        }
+        else {
             debug("RAW BUFFER LONG size=" + rawBuffer.size());
-            cmdByte = (byte)(cmdByte | FLAG_LONG);
+            cmdByte = (byte)(CMD_RAW | FLAG_LONG);
             cmdByte = (byte)(cmdByte | ((rawBuffer.size() >> 8) & 0b111111));  // command + 6 high bits of the length
             byte lengthLowByte = (byte)(rawBuffer.size() & 0xff);           // 8 low bits of the length
             outputDiffStream.add(cmdByte);
             outputDiffStream.add(lengthLowByte);
-            outputDiffStream.addAll(rawBuffer);
-            outSize = 2 + rawBuffer.size(); // 2 bytes = cmd (6bits of length) + length (8bits of length)
-            rawBuffer.clear();
-            return outSize;
+            outSize = 2; // 2 bytes = cmd (6bits of length) + length (8bits of length)
         }
+        outputDiffStream.addAll(rawBuffer);
+        outSize += rawBuffer.size();
+        rawBuffer.clear();
+        return outSize;
     }
     
     public int getTotalBytesTransferred() {
