@@ -56,7 +56,7 @@ public class FlashDiff {
         }
     }
 
-    public SearchResult letLongestCommonBytes(byte[] ar1, byte[] ar2, int patternOffset, int oldDataMinimumAddr, int maxLength) {
+    private SearchResult letLongestCommonBytes(byte[] ar1, byte[] ar2, int patternOffset, int oldDataMinimumAddr, int maxLength) {
         // search as long as possible ar2[beginOffset..n] bytes (pattern) common with ar1[s..t], where n and t are up to length-1 of appropriate arrays and s is unknown
         int logestCandidateSrcOffset = 0;
         int logestCandidateLength = 0;
