@@ -5,7 +5,6 @@ import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class DiscoverKnxInterfaces {

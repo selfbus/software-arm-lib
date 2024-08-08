@@ -12,12 +12,10 @@ import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementClientImpl;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static org.selfbus.updater.Mcu.MAX_ASDU_LENGTH;
-import static org.selfbus.updater.Mcu.MAX_PAYLOAD;
 
 /**
  * Extends the calimero-core class {@link ManagementClientImpl}

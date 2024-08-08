@@ -3,7 +3,6 @@ package org.selfbus.updater;
 import org.fusesource.jansi.AnsiConsole;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
 import tuwien.auto.calimero.*;
-import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderUpdater;
@@ -12,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import static org.fusesource.jansi.Ansi.*;
@@ -64,10 +62,8 @@ public class Updater implements Runnable {
      *            list with options
      * @throws KNXIllegalArgumentException
      *             on unknown/invalid options
-     * @throws ParseException
-     *             on invalid command line parameters
      */
-    public Updater(final String[] args) throws ParseException, KNXFormatException {
+    public Updater(final String[] args) {
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
         logger.info(ansi().fgBright(GREEN).bold().a(
@@ -84,7 +80,7 @@ public class Updater implements Runnable {
                     "Selfbus KNX-Firmware update tool options", "", PHYS_ADDRESS_BOOTLOADER, PHYS_ADDRESS_OWN);
             this.sbKNXLink = new SBKNXLink();
             this.sbKNXLink.setCliOptions(cliOptions);
-        } catch (final KNXIllegalArgumentException | KNXFormatException | ParseException e) {
+        } catch (final KNXIllegalArgumentException e) {
             throw e;
         } catch (final RuntimeException e) {
             throw new KNXIllegalArgumentException(e.getMessage(), e);
@@ -362,8 +358,6 @@ public class Updater implements Runnable {
         } catch (final InterruptedException e) {
             canceled = true;
             Thread.currentThread().interrupt();
-        } catch (FileNotFoundException e) {
-            logger.error("FileNotFoundException ", e);
         } catch (IOException e) {
             logger.error("IOException ", e);
         } catch (Throwable e) {

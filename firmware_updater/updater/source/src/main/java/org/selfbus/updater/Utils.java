@@ -2,7 +2,6 @@ package org.selfbus.updater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.TcpConnection;
 
@@ -154,8 +153,7 @@ public class Utils {
     private static final Map<InetSocketAddress, TcpConnection> tcpConnectionPool = new HashMap<>();
     private static boolean registeredTcpShutdownHook;
 
-    static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server)
-            throws KNXException {
+    static synchronized TcpConnection tcpConnection(final InetSocketAddress local, final InetSocketAddress server) {
         if (!registeredTcpShutdownHook) {
             Runtime.getRuntime().addShutdownHook(new Thread(Utils::closeTcpConnections));
             registeredTcpShutdownHook = true;

@@ -4,10 +4,8 @@ import org.selfbus.updater.BinImage;
 import org.selfbus.updater.UpdaterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -126,7 +124,7 @@ public class FlashDiff {
     }
 
     public void generateDiff(BinImage img1Orig, BinImage img2, FlashProgrammer flashProgrammer)
-            throws InterruptedException, KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, UpdaterException {
+            throws InterruptedException, KNXTimeoutException, KNXLinkClosedException, UpdaterException {
         // TODO check if old image can be truncated for smaller new image, first test was fine
     	//BinImage img1 = new BinImage(img1Orig); // make copy to keep img1Orig untouched, this fails if arraycopy at 203, when new image is larger than old
         BinImage img1 = new BinImage(img1Orig,img2.getBinData().length); // make copy to keep img1Orig untouched, ensure old bin buffer is same size as new bin file

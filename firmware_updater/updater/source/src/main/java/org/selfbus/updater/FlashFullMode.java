@@ -4,10 +4,8 @@ import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.KNXRemoteException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
-import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -26,8 +24,8 @@ public class FlashFullMode {
      */
     public static ResponseResult doFullFlash(DeviceManagement dm, BinImage newFirmware, int dataSendDelay,
                                              boolean eraseFirmwareRange, boolean logStatistics)
-            throws IOException, KNXDisconnectException, KNXTimeoutException, KNXLinkClosedException,
-            InterruptedException, UpdaterException, KNXRemoteException {
+            throws IOException, KNXTimeoutException, KNXLinkClosedException,
+            InterruptedException, UpdaterException {
         ResponseResult resultSendData, resultProgramData;
         ResponseResult resultTotal = new ResponseResult(); // collect so static data
 

@@ -93,7 +93,7 @@ public class SBKNXLink {
      * @throws KNXException         on problems on link creation
      * @throws InterruptedException on interrupted thread
      */
-    public KNXNetworkLink openLink() throws KNXException, InterruptedException, UpdaterException {
+    public KNXNetworkLink openLink() throws KNXException, InterruptedException {
         KNXNetworkLink newLink = doOpenLink();
         logger.info("KNX connection: {}", newLink);
         return newLink;

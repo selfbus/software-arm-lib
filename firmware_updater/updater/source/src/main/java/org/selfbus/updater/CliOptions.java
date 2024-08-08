@@ -166,8 +166,7 @@ public class CliOptions {
 
 
     public CliOptions(final String[] args, String helpApplicationName, String helpHeader, String helpFooter,
-                      IndividualAddress progDevice, IndividualAddress ownAddress)
-            throws ParseException, KNXFormatException {
+                      IndividualAddress progDevice, IndividualAddress ownAddress) {
         this.helpApplicationName = helpApplicationName;
         this.helpHeader = helpHeader;
         this.helpFooter = helpFooter;

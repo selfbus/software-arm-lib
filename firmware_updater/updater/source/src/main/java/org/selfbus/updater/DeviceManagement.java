@@ -86,8 +86,7 @@ public final class DeviceManagement {
      *
      * @param device the IndividualAddress of the device to restart
      */
-    public void restartDeviceToBootloader(IndividualAddress device)
-            throws KNXLinkClosedException {
+    public void restartDeviceToBootloader(IndividualAddress device) {
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try (Destination dest = this.mc.createDestination(device, true, false, false)) {
             logger.info("Restarting device {} into bootloader", device);
@@ -103,7 +102,7 @@ public final class DeviceManagement {
     }
 
     public byte[] requestUIDFromDevice()
-            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.info("Requesting UID from {}", progDestination.getAddress());
         byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_UID.id) {
@@ -127,7 +126,7 @@ public final class DeviceManagement {
     }
 
     public BootloaderIdentity requestBootloaderIdentity()
-            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.debug("Requesting Bootloader Identity");
 
         byte[] telegram = new byte[2];
@@ -166,7 +165,7 @@ public final class DeviceManagement {
     }
 
     public BootDescriptor requestBootDescriptor()
-            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.debug("Requesting Boot Descriptor");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
@@ -182,7 +181,7 @@ public final class DeviceManagement {
     }
 
     public String requestAppVersionString()
-            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+            throws UpdaterException {
         byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] != UPDCommand.APP_VERSION_RESPONSE.id){
             UPDProtocol.checkResult(result);
@@ -192,7 +191,7 @@ public final class DeviceManagement {
     }
 
     public void unlockDeviceWithUID(byte[] uid)
-            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+            throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.info("Unlocking device {} with UID {}", progDestination.getAddress(), Utils.byteArrayToHex(uid));
         byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, getMaxUpdCommandRetry()).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
@@ -353,7 +352,7 @@ public final class DeviceManagement {
     }
 
     public void requestBootLoaderStatistic()
-            throws KNXTimeoutException, KNXLinkClosedException, KNXDisconnectException, KNXRemoteException, InterruptedException, UpdaterException {
+            throws UpdaterException {
         logger.debug("Requesting Bootloader statistic");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
         if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)

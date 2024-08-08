@@ -1,6 +1,5 @@
 package org.selfbus.updater.bootloader;
 
-import org.selfbus.updater.UpdaterException;
 import org.selfbus.updater.Utils;
 
 import static org.fusesource.jansi.Ansi.*;
@@ -27,9 +26,8 @@ public class BootDescriptor {
      * @param endAddress end address of the application firmware
      * @param crc32 crc32 checksum from start to end address
      * @param appVersionAddress AppVersionPointer address
-     * @throws UpdaterException Exception in case of invalid start or end address
      */
-    public BootDescriptor(long startAddress, long endAddress, int crc32, long appVersionAddress) throws UpdaterException {
+    public BootDescriptor(long startAddress, long endAddress, int crc32, long appVersionAddress) {
         this.startAddress = startAddress;
         this.endAddress = endAddress;
         this.crc32 = crc32;
@@ -39,7 +37,7 @@ public class BootDescriptor {
     }
 
 
-    public static BootDescriptor fromArray(byte[] parse) throws UpdaterException {
+    public static BootDescriptor fromArray(byte[] parse) {
         long startAddr = (parse[0] & 0xFF) +
                             ((parse[1] & 0xFF) << 8) +
                             ((parse[2] & 0xFF) << 16) +

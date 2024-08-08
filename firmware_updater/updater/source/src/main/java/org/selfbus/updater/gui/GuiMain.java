@@ -4,12 +4,10 @@ import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import org.selfbus.updater.*;
-import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 
-import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,11 +140,7 @@ public class GuiMain extends JFrame {
                 jLoggingPane.setText("");
                 updaterThread = new Thread() {
                     public void run() {
-                        try {
-                            setCliOptions();
-                        } catch (KNXFormatException | ParseException ex) {
-                            throw new RuntimeException(ex);
-                        }
+                        setCliOptions();
 
                         final Updater d = new Updater(cliOptions);
                         d.run();
@@ -165,11 +159,7 @@ public class GuiMain extends JFrame {
             public void actionPerformed(ActionEvent e) {
 
                 updaterThread = new Thread(() -> {
-                    try {
-                        setCliOptions();
-                    } catch (KNXFormatException | ParseException ex) {
-                        throw new RuntimeException(ex);
-                    }
+                    setCliOptions();
                     final Updater upd = new Updater(cliOptions);
                     String uid = upd.requestUid();
                     SwingUtilities.invokeLater(() -> {
@@ -304,7 +294,7 @@ public class GuiMain extends JFrame {
         return result.toString().trim();
     }
 
-    private void setCliOptions() throws KNXFormatException, ParseException {
+    private void setCliOptions() {
         ArrayList<String> argsList = new ArrayList<>();
 
         argsList.add(textBoxKnxGatewayIpAddr.getText());
@@ -346,7 +336,7 @@ public class GuiMain extends JFrame {
             // read in user-supplied command line options
             this.cliOptions = new CliOptions(args, updaterFileName,
                     "Selfbus KNX-Firmware update tool options", "", Updater.PHYS_ADDRESS_BOOTLOADER, Updater.PHYS_ADDRESS_OWN);
-        } catch (final KNXIllegalArgumentException | KNXFormatException | ParseException e) {
+        } catch (final KNXIllegalArgumentException e) {
             throw e;
         } catch (final RuntimeException e) {
             throw new KNXIllegalArgumentException(e.getMessage(), e);
