@@ -37,8 +37,8 @@ public class FlashDiff {
     }
 
     static class SearchResult {
-        int offset;
-        int length;
+        final int offset;
+        final int length;
         SourceType sourceType = SourceType.FORWARD_ROM;
 
         public SearchResult(int logestCandidateSrcOffset, int logestCandidateLength) {

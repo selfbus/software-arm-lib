@@ -119,7 +119,7 @@ public class CliOptions {
     private final Options cliOptions = new Options();
     // define parser
     CommandLine cmdLine;
-    HelpFormatter helper = new HelpFormatter();
+    final HelpFormatter helper = new HelpFormatter();
 
     private final String helpHeader;
     private final String helpFooter;
