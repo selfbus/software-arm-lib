@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -462,21 +463,41 @@ public class GuiMain extends JFrame {
         comboBoxKnxTelegramPriority.addItem("SYSTEM");
     }
 
+    private void setFrameImages() {
+        String resourceTemplate = "/frame_images/selfbus_logo_%sx%s.png";
+        String[] resolutions = {"16"}; // "24", "32", "48", "256"}; //todo enable also these resolutions
+        List<Image> frameImageList = new ArrayList<>();
+
+        for (String resolution : resolutions) {
+            String resourceName = String.format(resourceTemplate, resolution, resolution);
+            InputStream imageStream = this.getClass().getResourceAsStream(resourceName);
+            if (imageStream == null) {
+                logger.error("getResourceAsStream({}) failed", resourceName);
+                continue;
+            }
+
+            try {
+                Image image = ImageIO.read(imageStream);
+                frameImageList.add(image);
+                logger.debug("Added {} to frameImageList", resourceName);
+            }
+            catch (IOException e) {
+                logger.error("Could not add {} to frameImageList {}", resourceName, Arrays.toString(e.getStackTrace()));
+            }
+        }
+
+        if (!frameImageList.isEmpty()) {
+            this.setIconImages(frameImageList);
+        }
+    }
+
     private void createUIComponents() {
         // TODO: place custom component creation code here
         comboBoxIpGateways = new JComboBox<CalimeroSearchComboItem>();
         comboBoxMedium = new JComboBox<String>();
         comboBoxScenario = new JComboBox<ComboItem>();
         comboBoxKnxTelegramPriority = new JComboBox<String>();
-
-        String logoResourceName = "/selfbus_logo_16x16.png";
-        try {
-            Image frameIcon = ImageIO.read(Objects.requireNonNull(this.getClass().getResource(logoResourceName)));
-            this.setIconImage(frameIcon);
-        }
-        catch (IOException e) {
-            logger.debug("Could not load '{}' {}", logoResourceName, e.toString());
-        }
+        this.setFrameImages();
     }
 
     public static class ComboItem {
