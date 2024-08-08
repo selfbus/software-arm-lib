@@ -21,7 +21,8 @@ public class BootDescriptor {
     private BootDescriptor() {}
 
     /**
-     * Create a @ref BootDescriptor instance from given start/end address, crc32 and application pointer address
+     * Creates a {@link BootDescriptor} instance from the given start and end addresses, CRC32 checksum,
+     * and application version address.
      * @param startAddress start address of the application firmware
      * @param endAddress end address of the application firmware
      * @param crc32 crc32 checksum from start to end address
