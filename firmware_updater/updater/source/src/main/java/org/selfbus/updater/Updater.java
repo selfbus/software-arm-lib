@@ -310,7 +310,7 @@ public class Updater implements Runnable {
                 ResponseResult resultTotal;
                 logger.info(ansi().bg(GREEN).fg(BLACK).a("Starting to send new firmware now:").reset().toString());
                 if (diffMode && FlashDiffMode.isInitialized()) {
-                    logger.error(ansi().fgBright(RED).a("Differential mode is EXPERIMENTAL -> Use with caution.").reset().toString());
+                    logger.warn(ansi().fgBright(RED).a("Differential mode is EXPERIMENTAL -> Use with caution.").reset().toString());
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
                 }
                 else {
