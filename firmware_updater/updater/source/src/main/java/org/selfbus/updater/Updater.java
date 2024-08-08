@@ -106,7 +106,7 @@ public class Updater implements Runnable {
             } catch (final Throwable t) {
                 logger.error("parsing options ", t);
             } finally {
-                AnsiCursor.on();
+                System.out.print(AnsiCursor.on()); // make sure we enable the cursor
                 logger.debug("main exit");
             }
         }
