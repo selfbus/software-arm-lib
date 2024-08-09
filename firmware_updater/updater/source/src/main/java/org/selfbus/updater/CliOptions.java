@@ -329,10 +329,15 @@ public class CliOptions {
         cliOptions.addOption(localhost);
         cliOptions.addOption(localport);
         cliOptions.addOption(port);
-        cliOptions.addOption(tunnelingV2);
-        cliOptions.addOption(tunnelingV1);
+
+        // Tunneling v1, Tunneling v2 or routing
+        OptionGroup grpTunnelingOrRouting = new OptionGroup();
+        grpTunnelingOrRouting.addOption(tunnelingV2);
+        grpTunnelingOrRouting.addOption(tunnelingV1);
+        grpTunnelingOrRouting.addOption(routing);
+        cliOptions.addOptionGroup(grpTunnelingOrRouting);
+
         cliOptions.addOption(nat);
-        cliOptions.addOption(routing);
 
         // help or version, not both
         OptionGroup grpHelper = new OptionGroup();
