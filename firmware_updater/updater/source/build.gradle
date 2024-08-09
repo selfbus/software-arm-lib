@@ -97,7 +97,7 @@ dependencies {
     implementation 'com.github.calimero:calimero-rxtx:2.6-rc1'
 
     // find specific directories under linux and windows
-    implementation 'net.harawata:appdirs:1.2.1'
+    implementation 'net.harawata:appdirs:1.2.2'
 
     // For search in byte array
     implementation 'com.google.guava:guava:33.2.1-jre'
