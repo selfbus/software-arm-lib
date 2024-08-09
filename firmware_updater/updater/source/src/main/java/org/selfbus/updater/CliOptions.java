@@ -58,6 +58,7 @@ public class CliOptions {
     public static final String OPT_LONG_FT12 = "serial";
     private static final String OPT_SHORT_TPUART = "t";
     public static final String OPT_LONG_TPUART = "tpuart";
+    public static final String OPT_LONG_USB = "usb";
     private static final String OPT_SHORT_MEDIUM = "m";
     public static final String OPT_LONG_MEDIUM = "medium";
 
@@ -133,6 +134,7 @@ public class CliOptions {
     private boolean nat = false;
     private String ft12 = "";
     private String tpuart = "";
+    private String usbInterface = "";
     private boolean tunnelingV2 = false;
     private boolean tunnelingV1 = false;
     private boolean routing = false;
@@ -225,6 +227,11 @@ public class CliOptions {
                 .numberOfArgs(1)
                 .required(false)
                 .desc("use TPUART serial communication (experimental, needs serialcom or rxtx library in java.library.path)").build();
+        Option usbInterface = Option.builder(null).longOpt(OPT_LONG_USB)
+                .argName("vendorId:productId")
+                .numberOfArgs(1)
+                .required(false)
+                .desc("use USB-Interface. Specify VendorID and ProductID e.g. 147B:5120 for the Selfbus USB-Interface (experimental)").build();
         Option medium = Option.builder(OPT_SHORT_MEDIUM).longOpt(OPT_LONG_MEDIUM)
                 .argName("tp1|rf")
                 .numberOfArgs(1)
@@ -308,10 +315,11 @@ public class CliOptions {
 
         cliOptions.addOption(medium);
 
-        // ft12 or tpuart, not both
+        // usb, ft12 or tpuart, not both
         OptionGroup grpBusAccess = new OptionGroup();
         grpBusAccess.addOption(ft12);
         grpBusAccess.addOption(tpuart);
+        grpBusAccess.addOption(usbInterface);
         cliOptions.addOptionGroup(grpBusAccess);
 
         cliOptions.addOption(device);
@@ -520,6 +528,11 @@ public class CliOptions {
             }
             logger.debug("tpuart={}", tpuart);
 
+            if (cmdLine.hasOption(OPT_LONG_USB)) {
+                usbInterface = cmdLine.getOptionValue(OPT_LONG_USB);
+            }
+            logger.debug("usb={}", usbInterface);
+
             if (cmdLine.getArgs().length > 0) {
                 knxInterface = Utils.parseHost(cmdLine.getArgs()[0]);
             }
@@ -594,6 +607,7 @@ public class CliOptions {
             if (routing()) interfacesSet++;
             if (!ft12().isEmpty()) interfacesSet++;
             if (!tpuart().isEmpty()) interfacesSet++;
+            if (!getUsbInterface().isEmpty()) interfacesSet++;
 
             if (interfacesSet > 1) {
                 throw new ParseException(ansi().fg(RED).a("Only one bus interface can be used.").reset().toString());
@@ -768,5 +782,9 @@ public class CliOptions {
 
     public int getBlockSize() {
         return blockSize;
+    }
+
+    public String getUsbInterface() {
+        return usbInterface;
     }
 }
