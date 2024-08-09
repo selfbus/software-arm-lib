@@ -3,3 +3,5 @@
 build
 log
 out
+bin
+settings.xml
