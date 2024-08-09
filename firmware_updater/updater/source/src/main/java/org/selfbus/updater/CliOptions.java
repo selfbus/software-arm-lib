@@ -387,7 +387,7 @@ public class CliOptions {
                     priority = Priority.get(cmdLine.getOptionValue(OPT_LONG_PRIORITY));
                 }
                 catch (KNXIllegalArgumentException e) {
-                    logger.warn(ansi().fg(RED).a("invalid {} {}, using {}").reset().toString(),
+                    logger.warn(ansi().fg(RED).a("invalid --{} {}, using {}").reset().toString(),
                             OPT_LONG_PRIORITY, cmdLine.getOptionValue(OPT_LONG_PRIORITY), priority);
                 }
             }
@@ -542,17 +542,17 @@ public class CliOptions {
             logger.debug("knxInterface={}", knxInterface);
 
             if (cmdLine.hasOption(OPT_LONG_USER_ID)) {
-                logger.debug("KNX IP Secure userId is set"); // don't log knx secure ip specific options
+                logger.debug("KNX IP Secure --{} is set", OPT_LONG_USER_ID); // log only that it´s, but not the actual value
                 userId = ((Number)cmdLine.getParsedOptionValue(OPT_LONG_USER_ID)).intValue();
             }
 
             if (cmdLine.hasOption(OPT_LONG_USER_PASSWORD)) {
-                logger.debug("KNX IP Secure userPassword is set"); // don't log knx secure ip specific options
+                logger.debug("KNX IP Secure --{} is set", OPT_LONG_USER_PASSWORD); // log only that it´s, but not the actual value
                 userPassword = cmdLine.getOptionValue(OPT_LONG_USER_PASSWORD);
             }
 
             if (cmdLine.hasOption(OPT_LONG_DEVICE_PASSWORD)) {
-                logger.debug("KNX IP Secure devicePassword is set"); // don't log knx secure ip specific options
+                logger.debug("KNX IP Secure --{} is set", OPT_LONG_DEVICE_PASSWORD); // log only that it´s, but not the actual value
                 devicePassword = cmdLine.getOptionValue(OPT_LONG_DEVICE_PASSWORD);
             }
 
@@ -652,7 +652,7 @@ public class CliOptions {
         helper.setWidth(PRINT_WIDTH);
         helper.setOptionComparator(null);
         helper.printHelp(pw, helper.getWidth(), helpApplicationName + " <KNX Interface>",
-                "\n" + helpHeader + ":\n", cliOptions, helper.getLeftPadding(),
+                System.lineSeparator() + helpHeader + ":" + System.lineSeparator(), cliOptions, helper.getLeftPadding(),
                 helper.getDescPadding(), helpFooter, true);
         pw.flush();
         return sw.toString();
