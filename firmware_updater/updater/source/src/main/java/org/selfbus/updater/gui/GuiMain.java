@@ -58,7 +58,6 @@ public class GuiMain extends JFrame {
     private JCheckBox natCheckBox;
     private JTextField textFieldOwnAddress;
     private JTextField textFieldDelay;
-    private JTextField textFieldTimeout;
     private JCheckBox eraseCompleteFlashCheckBox;
     private JCheckBox noFlashCheckBox;
     private JLabel labelMedium;
@@ -68,7 +67,6 @@ public class GuiMain extends JFrame {
     private JLabel labelBootloaderDeviceAddr;
     private JLabel labelOwnAddress;
     private JLabel labelDelay;
-    private JLabel labelTimeout;
     private JLabel labelPortHint;
     private JLabel labeIIpHint;
     private JLabel labelFileNameHint;
@@ -226,7 +224,6 @@ public class GuiMain extends JFrame {
         userProperties.setProperty("DeviceAddress", textFieldDeviceAddress.getText());
         userProperties.setProperty("OwnAddress", textFieldOwnAddress.getText());
         userProperties.setProperty("DelayMs", textFieldDelay.getText());
-        userProperties.setProperty("Timeout", textFieldTimeout.getText());
         userProperties.setProperty("TelegramPriority", Objects.requireNonNull(comboBoxKnxTelegramPriority.getSelectedItem()).toString());
         userProperties.setProperty("SecureUser", textFieldKnxSecureUser.getText());
         userProperties.setProperty("SecureUserPassword", textFieldKnxSecureUserPwd.getText());
@@ -263,7 +260,6 @@ public class GuiMain extends JFrame {
                 textFieldDeviceAddress.setText(userProperties.getProperty("DeviceAddress"));
                 textFieldOwnAddress.setText(userProperties.getProperty("OwnAddress"));
                 textFieldDelay.setText(userProperties.getProperty("DelayMs"));
-                textFieldTimeout.setText(userProperties.getProperty("Timeout"));
                 comboBoxKnxTelegramPriority.setSelectedItem(userProperties.getProperty("TelegramPriority"));
                 textFieldKnxSecureUser.setText(userProperties.getProperty("SecureUser"));
                 textFieldKnxSecureUserPwd.setText(userProperties.getProperty("SecureUserPassword"));
@@ -544,9 +540,6 @@ public class GuiMain extends JFrame {
         GuiObjectsMap.put(labelDelay, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(textFieldDelay, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
 
-        GuiObjectsMap.put(labelTimeout, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
-        GuiObjectsMap.put(textFieldTimeout, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
-
         GuiObjectsMap.put(CheckBoxDiffFlash, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(labelFullFlashHint, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.ADVSET));
 
@@ -751,11 +744,6 @@ public class GuiMain extends JFrame {
         labelDelay = new JLabel();
         this.$$$loadLabelText$$$(labelDelay, this.$$$getMessageFromBundle$$$("GuiTranslation", "knxMessageDelay"));
         panel1.add(labelDelay, new GridConstraints(23, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
-        textFieldTimeout = new JTextField();
-        panel1.add(textFieldTimeout, new GridConstraints(24, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_WANT_GROW, GridConstraints.SIZEPOLICY_FIXED, null, new Dimension(150, -1), null, 0, false));
-        labelTimeout = new JLabel();
-        this.$$$loadLabelText$$$(labelTimeout, this.$$$getMessageFromBundle$$$("GuiTranslation", "knxTimeout"));
-        panel1.add(labelTimeout, new GridConstraints(24, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         panel1.add(comboBoxKnxTelegramPriority, new GridConstraints(25, 2, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_HORIZONTAL, GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         labelTelegramPriority = new JLabel();
         this.$$$loadLabelText$$$(labelTelegramPriority, this.$$$getMessageFromBundle$$$("GuiTranslation", "messagePriority"));
