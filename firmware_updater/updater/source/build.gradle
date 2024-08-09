@@ -8,7 +8,10 @@ group 'org.selfbus'
 version '1.20' ///\todo also change in ../README.md and ToolInfo.java (String version)
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+    // withJavadocJar() //todo fails, because there is no real docu
 }
 
 application {
@@ -47,13 +50,14 @@ artifacts {
     archives fatJar
 }
 
-gradle.projectsEvaluated{
-    tasks.withType(JavaCompile){
-        options.compilerArgs << "-Xlint:unchecked"
-        options.compilerArgs << "-Xlint:deprecation"
-        options.compilerArgs << "-Xlint:all"
-    }
-}
+compileJava.options.compilerArgs = [
+        '-Xlint:all',     // enable all warnings
+        '-Xlint:-serial', // disable serialisation warning
+]
+
+compileTestJava.options.compilerArgs = [
+        '-Xlint:all', // enable all warnings
+]
 
 testing {
     //
