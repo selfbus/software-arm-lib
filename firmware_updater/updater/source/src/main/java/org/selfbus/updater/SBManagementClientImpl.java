@@ -1,7 +1,6 @@
 package org.selfbus.updater;
 
 import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXInvalidResponseException;
 import tuwien.auto.calimero.KNXTimeoutException;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
@@ -9,9 +8,6 @@ import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementClientImpl;
-
-import java.util.Optional;
-import java.util.function.BiFunction;
 
 import static org.selfbus.updater.Mcu.MAX_ASDU_LENGTH;
 
@@ -45,15 +41,6 @@ public class SBManagementClientImpl extends ManagementClientImpl {
     // for Selfbus updater
     public byte[] sendUpdateData(final Destination dst, final int cmd, final byte[] data)
             throws KNXTimeoutException, KNXLinkClosedException, KNXInvalidResponseException, KNXDisconnectException, InterruptedException, UpdaterException {
-
-        BiFunction<IndividualAddress, byte[], Optional<byte[]>> responseFilter = (responder, apdu) -> {
-            if (responder.equals(dst.getAddress())) {
-                return Optional.of(apdu);
-            }
-            else {
-                return Optional.empty();
-            }
-        };
         final byte[] asdu = prepareAsdu(cmd, data);
 
         byte[] send;
