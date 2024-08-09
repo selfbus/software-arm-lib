@@ -39,9 +39,9 @@ public class FlashDiff {
         final int length;
         SourceType sourceType = SourceType.FORWARD_ROM;
 
-        public SearchResult(int logestCandidateSrcOffset, int logestCandidateLength) {
-            this.offset = logestCandidateSrcOffset;
-            this.length = logestCandidateLength;
+        public SearchResult(int longestCandidateSrcOffset, int longestCandidateLength) {
+            this.offset = longestCandidateSrcOffset;
+            this.length = longestCandidateLength;
         }
 
         @Override
@@ -55,9 +55,9 @@ public class FlashDiff {
     }
 
     private SearchResult letLongestCommonBytes(byte[] ar1, byte[] ar2, int patternOffset, int oldDataMinimumAddr, int maxLength) {
-        // search as long as possible ar2[beginOffset..n] bytes (pattern) common with ar1[s..t], where n and t are up to length-1 of appropriate arrays and s is unknown
-        int logestCandidateSrcOffset = 0;
-        int logestCandidateLength = 0;
+        // search as long as possible ar2[beginOffset...n] bytes (pattern) common with ar1[s...t], where n and t are up to length-1 of appropriate arrays and s is unknown
+        int longestCandidateSrcOffset = 0;
+        int longestCandidateLength = 0;
         for (int i = oldDataMinimumAddr; i < ar1.length; i++) {
             int j = 0;
             while ((patternOffset + j < ar2.length)
@@ -67,24 +67,24 @@ public class FlashDiff {
             ) {
                 j++;
             }
-            if (j > logestCandidateLength) {
+            if (j > longestCandidateLength) {
                 // found better (or first) solution
-                logestCandidateLength = j;
-                logestCandidateSrcOffset = i;
+                longestCandidateLength = j;
+                longestCandidateSrcOffset = i;
             }
         }
-        if (logestCandidateLength > 0) {
+        if (longestCandidateLength > 0) {
             int firstDstPage = patternOffset/FlashPage.PAGE_SIZE;
-            int lastDstPage = (patternOffset+logestCandidateLength-1)/FlashPage.PAGE_SIZE;
+            int lastDstPage = (patternOffset+longestCandidateLength-1)/FlashPage.PAGE_SIZE;
             if (lastDstPage != firstDstPage) {
                 // truncate to a single destination page
-                logestCandidateLength = (firstDstPage + 1) * FlashPage.PAGE_SIZE - patternOffset;
+                longestCandidateLength = (firstDstPage + 1) * FlashPage.PAGE_SIZE - patternOffset;
             }
-            if (logestCandidateLength >= MINIMUM_PATTERN_LENGTH) {
-                logger.trace("{} {} {}", ar1[logestCandidateSrcOffset] & 0xff, ar1[logestCandidateSrcOffset + 1] & 0xff,
-                        ar1[logestCandidateSrcOffset + 2] & 0xff);
+            if (longestCandidateLength >= MINIMUM_PATTERN_LENGTH) {
+                logger.trace("{} {} {}", ar1[longestCandidateSrcOffset] & 0xff, ar1[longestCandidateSrcOffset + 1] & 0xff,
+                        ar1[longestCandidateSrcOffset + 2] & 0xff);
             }
-            return new SearchResult(logestCandidateSrcOffset, logestCandidateLength);
+            return new SearchResult(longestCandidateSrcOffset, longestCandidateLength);
         } else {
             return new SearchResult(0, 0);
         }
