@@ -7,7 +7,7 @@ import java.util.Objects;
 
 public final class CliConverter {
     @SuppressWarnings("unused")
-    CliConverter() {};
+    CliConverter() {}
 
     public static String argument(String cliLongOption, JTextField textField) {
         return argument(cliLongOption, textField.getText(), true);

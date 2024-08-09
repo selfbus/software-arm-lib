@@ -114,8 +114,7 @@ public class SBKNXLink {
             return linkTpuart;
         } else if (!cliOptions.getUsbInterface().isEmpty()) {
             // create USB network link
-            KNXNetworkLinkUsb linkUsb = new KNXNetworkLinkUsb(cliOptions.getUsbInterface(), medium);
-            return linkUsb;
+            return new KNXNetworkLinkUsb(cliOptions.getUsbInterface(), medium);
         }
 
         // create local and remote socket address for network link
