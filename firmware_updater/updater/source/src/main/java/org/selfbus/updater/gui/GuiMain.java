@@ -29,6 +29,8 @@ import java.util.*;
 import java.util.List;
 
 import static java.awt.Font.PLAIN;
+import static org.selfbus.updater.CliOptions.*;
+import static org.selfbus.updater.gui.CliConverter.argument;
 import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultBackgroundColor;
 import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultForegroundColor;
 
@@ -284,54 +286,34 @@ public class GuiMain extends JFrame {
         }
     }
 
-    private String cliParameterToString(ArrayList<String> list) {
-        StringBuilder result = new StringBuilder();
-        for (String s : list) {
-            if (!s.isEmpty()) {
-                result.append(" ").append(s);
-            }
-        }
-        return result.toString().trim();
-    }
-
     private void setCliOptions() {
         ArrayList<String> argsList = new ArrayList<>();
 
-        argsList.add(textBoxKnxGatewayIpAddr.getText());
-
-        argsList.add("-f" + textFieldFileName.getText());
-        if (textFieldPort.isVisible() && !Objects.equals(textFieldPort.getText(), ""))
-            argsList.add("-p" + textFieldPort.getText());
-        if (textFieldUid.isVisible() && !Objects.equals(textFieldUid.getText(), ""))
-            argsList.add("-u" + textFieldUid.getText());
+        argsList.add(argument("", textBoxKnxGatewayIpAddr));
+        argsList.add(argument(OPT_LONG_FILENAME, textFieldFileName));
+        argsList.add(argument(OPT_LONG_PORT, textFieldPort));
+        argsList.add(argument(OPT_LONG_UID, textFieldUid));
         if (comboBoxMedium.isVisible())
-            argsList.add("-m" + comboBoxMedium.getSelectedItem());
-        if (textFieldSerial.isVisible() && !Objects.equals(textFieldSerial.getText(), ""))
-            argsList.add("-s" + textFieldSerial.getText());
-        if (textFieldTpuart.isVisible() && !Objects.equals(textFieldTpuart.getText(), ""))
-            argsList.add("-t" + textFieldTpuart.getText());
-        if (textFieldDeviceAddress.isVisible() && !Objects.equals(textFieldDeviceAddress.getText(), ""))
-            argsList.add("-d" + textFieldDeviceAddress.getText());
-        if (textFieldBootloaderDeviceAddress.isVisible() && !Objects.equals(textFieldBootloaderDeviceAddress.getText(), ""))
-            argsList.add("-D" + textFieldBootloaderDeviceAddress.getText());
-        if (textFieldOwnAddress.isVisible() && !Objects.equals(textFieldOwnAddress.getText(), ""))
-            argsList.add("-o" + textFieldOwnAddress.getText());
+            argsList.add(argument(OPT_LONG_MEDIUM, comboBoxMedium));
+        argsList.add(argument(OPT_LONG_FT12, textFieldSerial));
+        argsList.add(argument(OPT_LONG_TPUART, textFieldTpuart));
+        argsList.add(argument(OPT_LONG_DEVICE, textFieldDeviceAddress));
+        argsList.add(argument(OPT_LONG_PROG_DEVICE, textFieldBootloaderDeviceAddress));
+        argsList.add(argument(OPT_LONG_OWN_ADDRESS, textFieldOwnAddress));
         if ((CheckBoxDiffFlash.isVisible() && !CheckBoxDiffFlash.isSelected()) || !CheckBoxDiffFlash.isVisible())
-            argsList.add("-f1");
+            argsList.add(argument(OPT_LONG_FULL));
         if (natCheckBox.isVisible() && natCheckBox.isSelected())
-            argsList.add("-n");
-        if (textFieldDelay.isVisible() && !Objects.equals(textFieldDelay.getText(), ""))
-            argsList.add("--delay" + textFieldDelay.getText());
-        if (textFieldTimeout.isVisible() && !Objects.equals(textFieldTimeout.getText(), ""))
-            argsList.add("--timeout" + textFieldTimeout.getText());
+            argsList.add(argument(OPT_LONG_NAT));
+        argsList.add(argument(OPT_LONG_DELAY, textFieldDelay));
         if (eraseCompleteFlashCheckBox.isVisible() && eraseCompleteFlashCheckBox.isSelected())
-            argsList.add("--ERASEFLASH");
-        if (noFlashCheckBox.isVisible() && noFlashCheckBox.isSelected()) argsList.add("-f0");
+            argsList.add(argument(OPT_LONG_ERASEFLASH));
+        if (noFlashCheckBox.isVisible() && noFlashCheckBox.isSelected())
+            argsList.add(argument(OPT_LONG_NO_FLASH));
 
         String updaterFileName = String.format("SB_updater-%s-all.jar", ToolInfo.getVersion());
         String[] args = new String[argsList.size()];
         args = argsList.toArray(args);
-        logger.info("java -jar {} {}", updaterFileName, cliParameterToString(argsList));
+        logger.info("java -jar {} {}", updaterFileName, CliConverter.toString(argsList));
         try {
             // read in user-supplied command line options
             this.cliOptions = new CliOptions(args, updaterFileName,

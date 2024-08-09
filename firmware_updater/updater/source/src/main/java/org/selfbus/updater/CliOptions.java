@@ -45,71 +45,71 @@ public class CliOptions {
     private static final Logger logger = LoggerFactory.getLogger(CliOptions.class);
 
     private static final String OPT_SHORT_FILENAME = "f";
-    private static final String OPT_LONG_FILENAME = "fileName";
+    public static final String OPT_LONG_FILENAME = "fileName";
 
     private static final String OPT_SHORT_LOCALHOST = "H";
-    private static final String OPT_LONG_LOCALHOST = "localhost";
+    public static final String OPT_LONG_LOCALHOST = "localhost";
     private static final String OPT_SHORT_LOCALPORT = "P";
-    private static final String OPT_LONG_LOCALPORT = "localport";
+    public static final String OPT_LONG_LOCALPORT = "localport";
     private static final String OPT_SHORT_PORT = "p";
-    private static final String OPT_LONG_PORT = "port";
+    public static final String OPT_LONG_PORT = "port";
 
     private static final String OPT_SHORT_FT12 = "s";
-    private static final String OPT_LONG_FT12 = "serial";
+    public static final String OPT_LONG_FT12 = "serial";
     private static final String OPT_SHORT_TPUART = "t";
-    private static final String OPT_LONG_TPUART = "tpuart";
+    public static final String OPT_LONG_TPUART = "tpuart";
     private static final String OPT_SHORT_MEDIUM = "m";
-    private static final String OPT_LONG_MEDIUM = "medium";
+    public static final String OPT_LONG_MEDIUM = "medium";
 
-    private static final String OPT_LONG_USER_ID = "user";
-    private static final String OPT_LONG_USER_PASSWORD = "user-pwd";
-    private static final String OPT_LONG_DEVICE_PASSWORD = "device-pwd";
+    public static final String OPT_LONG_USER_ID = "user";
+    public static final String OPT_LONG_USER_PASSWORD = "user-pwd";
+    public static final String OPT_LONG_DEVICE_PASSWORD = "device-pwd";
 
     private static final String OPT_SHORT_PROG_DEVICE = "D";
-    private static final String OPT_LONG_PROG_DEVICE = "progDevice";
+    public static final String OPT_LONG_PROG_DEVICE = "progDevice";
     private static final String OPT_SHORT_DEVICE = "d";
-    private static final String OPT_LONG_DEVICE = "device";
+    public static final String OPT_LONG_DEVICE = "device";
     private static final String OPT_SHORT_OWN_ADDRESS = "o";
-    private static final String OPT_LONG_OWN_ADDRESS = "own";
+    public static final String OPT_LONG_OWN_ADDRESS = "own";
 
     private static final String OPT_SHORT_UID = "u";
-    private static final String OPT_LONG_UID = "uid";
+    public static final String OPT_LONG_UID = "uid";
 
-    private static final String OPT_LONG_DELAY = "delay";
+    public static final String OPT_LONG_DELAY = "delay";
 
     private static final String OPT_SHORT_TUNNEL_V2 = "t2";
-    private static final String OPT_LONG_TUNNEL_V2 = "tunnelingv2";
+    public static final String OPT_LONG_TUNNEL_V2 = "tunnelingv2";
     private static final String OPT_SHORT_TUNNEL_V1 = "t1";
-    private static final String OPT_LONG_TUNNEL_V1 = "tunneling";
+    public static final String OPT_LONG_TUNNEL_V1 = "tunneling";
     private static final String OPT_SHORT_NAT = "n";
-    private static final String OPT_LONG_NAT = "nat";
+    public static final String OPT_LONG_NAT = "nat";
     private static final String OPT_SHORT_ROUTING = "r";
-    private static final String OPT_LONG_ROUTING = "routing";
+    public static final String OPT_LONG_ROUTING = "routing";
 
     private static final String OPT_SHORT_FULL = "f1";
-    private static final String OPT_LONG_FULL = "full";
+    public static final String OPT_LONG_FULL = "full";
 
     private static final String OPT_SHORT_HELP = "h";
-    private static final String OPT_LONG_HELP = "help";
+    public static final String OPT_LONG_HELP = "help";
 
     private static final String OPT_SHORT_VERSION = "v";
-    private static final String OPT_LONG_VERSION = "version";
+    public static final String OPT_LONG_VERSION = "version";
 
     private static final String OPT_SHORT_NO_FLASH = "f0";
     public static final String OPT_LONG_NO_FLASH = "NO_FLASH";
 
     private static final String OPT_SHORT_LOGLEVEL = "l";
-    private static final String OPT_LONG_LOGLEVEL = "logLevel";
+    public static final String OPT_LONG_LOGLEVEL = "logLevel";
 
-    private static final String OPT_LONG_PRIORITY = "priority";
+    public static final String OPT_LONG_PRIORITY = "priority";
 
-    private static final String OPT_LONG_ERASEFLASH = "ERASEFLASH";
+    public static final String OPT_LONG_ERASEFLASH = "ERASEFLASH";
 
-    private static final String OPT_LONG_DUMPFLASH = "DUMPFLASH";
+    public static final String OPT_LONG_DUMPFLASH = "DUMPFLASH";
 
-    private static final String OPT_LONG_LOGSTATISTIC = "statistic";
+    public static final String OPT_LONG_LOGSTATISTIC = "statistic";
 
-    private static final String OPT_SHORT_BLOCKSIZE = "bs";
+    public static final String OPT_SHORT_BLOCKSIZE = "bs";
     public static final String OPT_LONG_BLOCKSIZE = "blocksize";
     private final static List<Integer> VALID_BLOCKSIZES = Arrays.asList(256, 512, 1024);
 
