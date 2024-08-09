@@ -25,6 +25,18 @@ jar {
     }
 }
 
+sourceSets {
+    main {
+        java.srcDirs = ['src/main']
+        resources.srcDirs = ['src/main/resources']
+    }
+    test {
+        java.srcDirs = ['src/test']
+        //java.exclude 'dir1/', 'dir2'
+        resources.srcDirs = ['src/test/resources']
+    }
+}
+
 task fatJar(type: Jar) {
     manifest.from jar.manifest
     archiveClassifier.set('all')
