@@ -306,12 +306,12 @@ public class CliOptions {
         // options will be shown in order as they are added to cliOptions
         cliOptions.addOption(fileName);
 
-        // ft12 or medium, not both
+        cliOptions.addOption(medium);
+
+        // ft12 or tpuart, not both
         OptionGroup grpBusAccess = new OptionGroup();
-        grpBusAccess.addOption(medium);
         grpBusAccess.addOption(ft12);
         grpBusAccess.addOption(tpuart);
-
         cliOptions.addOptionGroup(grpBusAccess);
 
         cliOptions.addOption(device);
