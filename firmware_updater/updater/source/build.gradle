@@ -36,11 +36,11 @@ jar {
 
 sourceSets {
     main {
-        java.srcDirs = ['src/main']
+        java.srcDirs = ['src/main/java']
         resources.srcDirs = ['src/main/resources']
     }
     test {
-        java.srcDirs = ['src/test']
+        java.srcDirs = ['src/test/java']
         //java.exclude 'dir1/', 'dir2'
         resources.srcDirs = ['src/test/resources']
     }
