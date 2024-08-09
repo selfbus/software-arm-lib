@@ -585,6 +585,9 @@ public class CliOptions {
                 if (knxInterface() == null) {
                     throw new CliInvalidException(ansi().fg(RED).a("No IP-Interface specified for IP-secure").reset().toString());
                 }
+                else if (!getUsbInterface().isEmpty()) {
+                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_USB)).reset().toString());
+                }
                 else if (!ft12().isEmpty()) {
                     throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_FT12)).reset().toString());
                 }
@@ -599,6 +602,12 @@ public class CliOptions {
                 }
                 else if (tunnelingV2()) {
                     throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_TUNNEL_V2)).reset().toString());
+                }
+
+                // ensure that all three IP-Secure arguments are set
+                if ((userPassword().isEmpty()) || (devicePassword().isEmpty())) {
+                    throw new CliInvalidException(ansi().fg(RED).a(String.format("For IP-secure --%s, --%s and --%s must be set", OPT_LONG_USER_ID,
+                            OPT_LONG_USER_PASSWORD, OPT_LONG_DEVICE_PASSWORD)).reset().toString());
                 }
             }
 
