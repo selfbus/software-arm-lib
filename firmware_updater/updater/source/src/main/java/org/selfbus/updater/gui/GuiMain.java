@@ -97,7 +97,7 @@ public class GuiMain extends JFrame {
     public static GuiMain guiMainInstance;
     private final static Logger logger = LoggerFactory.getLogger(GuiMain.class);
     private static final Properties userProperties = new Properties();
-
+    private static final String FILENAME_SETTINGS = "settings.xml";
 
     public GuiMain() {
         $$$setupUI$$$();
@@ -206,7 +206,7 @@ public class GuiMain extends JFrame {
         }
     };
 
-    private void saveAllParameters() {
+    private void saveAllParameters(String fileName) {
         userProperties.setProperty("AdvancedSettings", advancedSettingsCheckBox.isSelected() ? "true" : "false");
         userProperties.setProperty("GatewayIpAddr", textBoxKnxGatewayIpAddr.getText());
         userProperties.setProperty("GatewayPort", textFieldPort.getText());
@@ -232,17 +232,17 @@ public class GuiMain extends JFrame {
         userProperties.setProperty("WindowSizeWidth", String.valueOf(this.getSize().width));
 
         try {
-            userProperties.storeToXML(new FileOutputStream("settings.xml"), "");
+            userProperties.storeToXML(new FileOutputStream(fileName), "");
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
     }
 
-    private void loadAllParameters() {
+    private void loadAllParameters(String fileName) {
 
-        if (new File("settings.xml").exists()) {
+        if (new File(fileName).exists()) {
             try {
-                userProperties.loadFromXML(new FileInputStream("settings.xml"));
+                userProperties.loadFromXML(new FileInputStream(fileName));
 
                 advancedSettingsCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("AdvancedSettings")));
                 textBoxKnxGatewayIpAddr.setText(userProperties.getProperty("GatewayIpAddr"));
@@ -351,14 +351,14 @@ public class GuiMain extends JFrame {
         fillMediumComboBox();
         fillTelegramPriorityComboBox();
 
-        loadAllParameters();
+        loadAllParameters(FILENAME_SETTINGS);
 
         mainScrollPane.getVerticalScrollBar().setUnitIncrement(10);
 
         this.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                saveAllParameters();
+                saveAllParameters(FILENAME_SETTINGS);
             }
         });
     }
