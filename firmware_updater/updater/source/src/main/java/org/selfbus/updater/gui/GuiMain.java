@@ -34,7 +34,6 @@ import static org.selfbus.updater.gui.CliConverter.argument;
 import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultBackgroundColor;
 import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultForegroundColor;
 
-@SuppressWarnings("serial")
 public class GuiMain extends JFrame {
     private JButton buttonLoadFile;
     private JTextField textBoxKnxGatewayIpAddr;

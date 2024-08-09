@@ -3,7 +3,6 @@ package org.selfbus.updater;
 /**
  * Basic exception throwable by the application
  */
-@SuppressWarnings("serial")
 public class UpdaterException extends Exception {
     /**
      * Constructs a new <code>UpdaterException</code> without a detail message.
