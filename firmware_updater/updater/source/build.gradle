@@ -103,7 +103,7 @@ dependencies {
     implementation 'com.google.guava:guava:33.2.1-jre'
 
     // command line option
-    implementation 'commons-cli:commons-cli:1.5.0'
+    implementation 'commons-cli:commons-cli:1.8.0'
 
     // console and file logging
     implementation 'ch.qos.logback:logback-classic:1.5.6'
