@@ -194,7 +194,7 @@ public class Updater implements Runnable {
             else {
                 System.out.println();
                 logger.info(ansi().bg(RED).fg(BLACK).a("No firmware file (*.hex) specified! Specify with --{}").reset().toString(),
-                        cliOptions.getOptionLongFileName());
+                        CliOptions.OPT_LONG_FILENAME);
                 logger.info(ansi().fgBright(YELLOW).a("Reading only device information").reset().toString());
                 System.out.println();
             }

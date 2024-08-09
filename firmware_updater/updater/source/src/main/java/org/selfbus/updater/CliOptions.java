@@ -776,10 +776,6 @@ public class CliOptions {
         return logStatistics;
     }
 
-    public String getOptionLongFileName() {
-        return OPT_LONG_FILENAME;
-    }
-
     public int getBlockSize() {
         return blockSize;
     }
