@@ -570,35 +570,35 @@ public class CliOptions {
 
             // nat only possible with tunneling v1
             if (nat() && (!tunnelingV1())) {
-                throw new ParseException(String.format(ansi().fg(RED).a("Option --%s can only be used together with --%s").reset().toString(),
+                throw new CliInvalidException(String.format(ansi().fg(RED).a("Option --%s can only be used together with --%s").reset().toString(),
                         OPT_LONG_NAT, OPT_LONG_TUNNEL_V1));
             }
 
             // nat not allowed with tunneling v2
             if (nat() && (tunnelingV2())) {
-                throw new ParseException(String.format(ansi().fg(RED).a("Option --%s can not be used together with --%s").reset().toString(),
+                throw new CliInvalidException(String.format(ansi().fg(RED).a("Option --%s can not be used together with --%s").reset().toString(),
                         OPT_LONG_NAT, OPT_LONG_TUNNEL_V2));
             }
 
             // check IP-secure configuration
             if (!(userPassword().isEmpty()) || !(devicePassword().isEmpty())) {
                 if (knxInterface() == null) {
-                    throw new ParseException(ansi().fg(RED).a("No IP-Interface specified for IP-secure").reset().toString());
+                    throw new CliInvalidException(ansi().fg(RED).a("No IP-Interface specified for IP-secure").reset().toString());
                 }
                 else if (!ft12().isEmpty()) {
-                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_FT12)).reset().toString());
+                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_FT12)).reset().toString());
                 }
                 else if (!tpuart().isEmpty()) {
-                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_TPUART)).reset().toString());
+                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_TPUART)).reset().toString());
                 }
                 else if (nat()) {
-                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_NAT)).reset().toString());
+                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_NAT)).reset().toString());
                 }
                 else if (tunnelingV1()) {
-                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_TUNNEL_V1)).reset().toString());
+                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_TUNNEL_V1)).reset().toString());
                 }
                 else if (tunnelingV2()) {
-                    throw new ParseException(ansi().fg(RED).a(String.format("IP-secure is not possible with %s", OPT_LONG_TUNNEL_V2)).reset().toString());
+                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_TUNNEL_V2)).reset().toString());
                 }
             }
 
@@ -610,24 +610,40 @@ public class CliOptions {
             if (!getUsbInterface().isEmpty()) interfacesSet++;
 
             if (interfacesSet > 1) {
-                throw new ParseException(ansi().fg(RED).a("Only one bus interface can be used.").reset().toString());
+                throw new CliInvalidException(ansi().fg(RED).a("Only one bus interface can be used.").reset().toString());
             }
             else if (interfacesSet == 0) {
-                throw new ParseException(ansi().fg(RED).a("No bus interface specified.").reset().toString());
+                throw new CliInvalidException(ansi().fg(RED).a("No bus interface specified.").reset().toString());
             }
-
-        } catch (ParseException | KNXFormatException e) {
-            StringBuilder cliParsed = new StringBuilder();
-            for (String arg : args) {
-                cliParsed.append(String.format("%s ", arg));
-            }
-            logger.error("Invalid command line parameters:");
-            logger.error("{}", cliParsed);
-            logger.error(ansi().fg(RED).a(e.getMessage()).reset().toString());
-            logger.error("For more information about the usage start with --{}", OPT_LONG_HELP);
-            logger.error("", e);
+        }
+        catch (CliInvalidException e) {
+            logCliException(e, args, false);
             System.exit(0);
         }
+        catch (ParseException | KNXFormatException e) {
+            logCliException(e, args, true);
+            System.exit(0);
+        }
+    }
+
+    private void logCliException(Exception e, String[] args, boolean verbose) {
+        String cliParsed = argsToString(args);
+        System.out.printf("Invalid command line parameters: '%s'%s", cliParsed,
+                System.lineSeparator()); // don't log possible IP-secure parameters
+        logger.debug("Invalid command line parameters:");
+        logger.error(ansi().fg(RED).a(e.getMessage()).reset().toString());
+        logger.error("For more information about the usage start with --{}", OPT_LONG_HELP);
+        if (verbose) {
+            logger.error("", e);
+        }
+    }
+
+    private String argsToString(final String[] args) {
+        StringBuilder result = new StringBuilder();
+        for (String arg : args) {
+            result.append(String.format("%s ", arg));
+        }
+        return result.toString().trim();
     }
 
     public String helpToString() {
