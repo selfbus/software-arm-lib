@@ -196,7 +196,7 @@ public class CliOptions {
         Option fileName = Option.builder(OPT_SHORT_FILENAME).longOpt(OPT_LONG_FILENAME)
                 .argName("filename")
                 .numberOfArgs(1)
-                .required(false) ///\todo .required(true) leads to an exception with --help or --version
+                .required(false)
                 .type(String.class)
                 .desc("Filename of hex file to program").build();
         Option localhost = Option.builder(OPT_SHORT_LOCALHOST).longOpt(OPT_LONG_LOCALHOST)
