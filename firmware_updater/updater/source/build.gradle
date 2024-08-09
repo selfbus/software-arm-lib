@@ -109,7 +109,7 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.6'
 
     // Console ansi color support
-    implementation 'org.fusesource.jansi:jansi:2.4.0'
+    implementation 'org.fusesource.jansi:jansi:2.4.1'
 
     // GUI
     implementation files('libs/forms_rt.jar')
