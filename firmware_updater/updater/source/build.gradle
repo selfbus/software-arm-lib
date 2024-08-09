@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'com.gradleup.shadow' version '8.3.0'
     id 'jvm-test-suite'
 }
 
@@ -46,30 +47,8 @@ sourceSets {
     }
 }
 
-task fatJar(type: Jar) {
-    manifest.from jar.manifest
-    archiveClassifier.set('all')
-    duplicatesStrategy = DuplicatesStrategy.INCLUDE
-    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    } {
-        /*
-        exclude "META-INF/*.SF"
-        exclude "META-INF/*.DSA"
-        exclude "META-INF/*.RSA"
-        exclude "META-INF/LICENSE"
-        exclude "META-INF/LICENSE.txt"
-        exclude "META-INF/NOTICE.txt"
-        exclude "META-INF/LGPL2.1"
-        exclude "META-INF/AL2.0"
-        exclude "META-INF/versions/9/module-info.class"
-         */
-    }
-
-    with jar
-}
-
-artifacts {
-    archives fatJar
+tasks.named('compileJava') {
+    options.javaModuleVersion = provider { project.version }
 }
 
 // ensure UTF-8 encoding
@@ -85,6 +64,10 @@ compileJava.options.compilerArgs = [
 compileTestJava.options.compilerArgs = [
         '-Xlint:all', // enable all warnings
 ]
+
+artifacts {
+    archives shadowJar
+}
 
 testing {
     //
@@ -102,7 +85,7 @@ testing {
             }
 
             targets {
-                all {
+                configureEach {
                     testTask.configure {
                         shouldRunAfter(test)
                     }
@@ -153,4 +136,16 @@ dependencies {
     // and c&p the code of
     // ../cz/jaybee/intelhex to
     // ../software-arm-lib/firmware_updater/updater/source/src/main/java/cz/jaybee/intelhex
+}
+
+// Just to maintain compatibility with the old fatJar task for a while.
+tasks.register('fatJar') {
+    dependsOn shadowJar
+    group = 'build'
+    description = 'An alias for the shadowJar task that creates a fat JAR'
+    doFirst {
+        def blue = '\u001B[34m'
+        def reset = '\u001B[0m'
+        logger.warn("${blue}The fatJar task is deprecated. Please use the \"shadowJar\" task directly.${reset}")
+    }
 }
