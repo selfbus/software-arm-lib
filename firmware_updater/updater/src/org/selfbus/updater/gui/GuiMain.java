@@ -516,7 +516,7 @@ public class GuiMain extends JFrame {
         GuiObjectsMap.put(labelFileName, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV));
         GuiObjectsMap.put(labelFileNameHint, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV));
 
-        GuiObjectsMap.put(buttonRequestUid, Arrays.asList(GuiObjsVisOpts.REQUID));
+        GuiObjectsMap.put(buttonRequestUid, List.of(GuiObjsVisOpts.REQUID));
 
         GuiObjectsMap.put(labelUid, Arrays.asList(GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID));
         GuiObjectsMap.put(textFieldUid, Arrays.asList(GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID));
@@ -531,8 +531,8 @@ public class GuiMain extends JFrame {
         GuiObjectsMap.put(labelTpuart, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(textFieldTpuart, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
 
-        GuiObjectsMap.put(labelDeviceAddress, Arrays.asList(GuiObjsVisOpts.APPDEV));
-        GuiObjectsMap.put(textFieldDeviceAddress, Arrays.asList(GuiObjsVisOpts.APPDEV));
+        GuiObjectsMap.put(labelDeviceAddress, List.of(GuiObjsVisOpts.APPDEV));
+        GuiObjectsMap.put(textFieldDeviceAddress, List.of(GuiObjsVisOpts.APPDEV));
 
         GuiObjectsMap.put(labelBootloaderDeviceAddr, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(textFieldBootloaderDeviceAddress, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
