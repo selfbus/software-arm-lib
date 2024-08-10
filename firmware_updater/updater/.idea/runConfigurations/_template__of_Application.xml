@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="true" type="Application" factoryName="Application">
+    <option name="ALTERNATIVE_JRE_PATH" value="corretto-17" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <option name="MAIN_CLASS_NAME" value="org.selfbus.updater.Updater" />
+    <module name="SB_updater.main" />
+    <option name="VM_PARAMETERS" value="-Djansi.passthrough=true" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../../../../../busupdater" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
