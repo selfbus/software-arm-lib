@@ -189,7 +189,7 @@ public class GuiMain extends JFrame {
         reloadGatewaysButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                new Thread(() -> LoadKnxIpInterfacesAndFillComboBox()).start();
+                new Thread(() -> loadKnxIpInterfacesAndFillComboBox()).start();
             }
         });
 
@@ -341,7 +341,7 @@ public class GuiMain extends JFrame {
         this.setVisible(true);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-        new Thread(this::LoadKnxIpInterfacesAndFillComboBox).start();
+        new Thread(this::loadKnxIpInterfacesAndFillComboBox).start();
 
         TextAppender textAppender = ListTextAppenders.searchAppender();
         if (textAppender != null) {
@@ -349,7 +349,7 @@ public class GuiMain extends JFrame {
         }
 
 
-        InitGuiElementsVisibility();
+        initGuiElementsVisibility();
         fillScenarios();
         fillMediumComboBox();
         fillTelegramPriorityComboBox();
@@ -366,7 +366,7 @@ public class GuiMain extends JFrame {
         });
     }
 
-    private void LoadKnxIpInterfacesAndFillComboBox() {
+    private void loadKnxIpInterfacesAndFillComboBox() {
         reloadGatewaysButton.setEnabled(false);
         // ActionListener löschen und nach dem Füllen der ComboBox wieder hinzufügen
         // damit das Füllen kein Event auslöst
@@ -508,7 +508,7 @@ public class GuiMain extends JFrame {
 
     private static final Map<Object, List<GuiObjsVisOpts>> GuiObjectsMap = new HashMap<>();
 
-    private void InitGuiElementsVisibility() {
+    private void initGuiElementsVisibility() {
         // hier wird definiert, in welchem Zustand der GUI welche Elemente sichtbar sein sollen
 
         GuiObjectsMap.put(buttonLoadFile, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV));
