@@ -423,8 +423,7 @@ public class GuiMain extends JFrame {
                 Image image = ImageIO.read(imageStream);
                 frameImageList.add(image);
                 logger.debug("Added {} to frameImageList", resourceName);
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 logger.error("Could not add {} to frameImageList {}", resourceName, Arrays.toString(e.getStackTrace()));
             }
         }
@@ -685,7 +684,7 @@ public class GuiMain extends JFrame {
         this.$$$loadLabelText$$$(label5, this.$$$getMessageFromBundle$$$("language/GuiMain", "scenario"));
         panel1.add(label5, new GridConstraints(10, 1, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         labelScenarioHint = new JLabel();
-        labelScenarioHint.setText("Label");
+        this.$$$loadLabelText$$$(labelScenarioHint, this.$$$getMessageFromBundle$$$("language/GuiMain", "labelScenarioHint"));
         panel1.add(labelScenarioHint, new GridConstraints(10, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_FIXED, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
         buttonLoadFile = new JButton();
         this.$$$loadButtonText$$$(buttonLoadFile, this.$$$getMessageFromBundle$$$("language/GuiMain", "loadFile"));
