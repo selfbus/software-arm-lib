@@ -56,10 +56,17 @@ public final class ConColorsToStyledDoc {
         textPane.setCaretPosition(document.getLength());
     }
 
-    /*
-     * hier werden die Steuerzeichen für die Farben der Windows Konsole in Java Parameter gewandelt
-     * z.B. wird ein String "\033[0;31m dieser Text wird rot sein,\033[44m jetzt auf blauem Hintergrund" übergeben
-     * Dieser String wird entsprechend der Steuerbefehle in ein StyledDocument gefüllt
+    /**
+     * Converts ANSI escape sequences in the input string to styled text in a {@link JTextPane}.
+     * <p>
+     * The method processes ANSI color codes and applies the corresponding text styles to the content of the JTextPane.
+     * For example, a string like "\033[0;31m this text will be red, \033[44m now with a blue background"
+     * will be parsed and displayed with the appropriate styles in the JTextPane.
+     * </p>
+     *
+     * @param input The string containing ANSI escape sequences to be converted.
+     * @param textPane The {@link JTextPane} where the styled text will be inserted.
+     * @throws BadLocationException if an error occurs while inserting the styled text.
      */
     public static void Convert(String input, JTextPane textPane) throws BadLocationException {
         Pattern pattern = Pattern.compile(RegExAnsi);
@@ -104,7 +111,7 @@ public final class ConColorsToStyledDoc {
      * @param textPane the {@link JTextPane} whose cursor position will be updated
      * @return {@code true} if the ANSI code was successfully processed; {@code false} otherwise
      * @throws BadLocationException if an error occurs when updating the cursor position
-     * @throws IllegalStateException if an not implemented or unexpected ANSI code is encountered
+     * @throws IllegalStateException if a not implemented or unexpected ANSI code is encountered
      */
     private static boolean processAnsiCursor(String ansiCode, JTextPane textPane) throws BadLocationException {
         if (ansiCode.equals(AnsiCursor.off()) || ansiCode.equals(AnsiCursor.on())) {
