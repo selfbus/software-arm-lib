@@ -29,8 +29,6 @@ public final class ToolInfo
 
     /**
      * Returns the version as string representation.
-     * <p>
-     * The returned version
      *
      * @return version as string
      */
@@ -57,7 +55,8 @@ public final class ToolInfo
     }
 
     public static String getFullInfo() {
-        return getToolAndVersion() + String.format("\n%s\n%s", desc, author);
+        return getToolAndVersion() + String.format("%s%s%s%s", System.lineSeparator(), desc,
+                System.lineSeparator(),author);
     }
 
     public static String getToolAndVersion() {
