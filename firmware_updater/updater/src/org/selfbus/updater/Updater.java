@@ -20,97 +20,83 @@ import static org.selfbus.updater.Utils.shortenPath;
 import org.selfbus.updater.gui.GuiMain;
 
 /**
- * A Tool for updating firmware of a Selfbus device in a KNX network.
+ * A Tool for updating the firmware of a Selfbus device in a KNX network.
  * <p>
- * Updater is a {@link Runnable} tool implementation allowing a user to update
- * KNXduino devices.<br>
+ * {@link Updater} is a {@link Runnable} tool implementation allowing
+ * a user to update Selfbus KNX devices.<br>
  * <br>
- * This tool supports KNX network access using a KNXnet/IP connection FT1.2 or TPUART
- * connection. It uses the {@link SBManagementClientImpl} functionality of the library
- * to read KNX device description, properties, and memory locations. It collects
- * and shows device information similar to the ETS.
+ * This tool supports KNX network access using a KNXnet/IP, USB, FT1.2 or TPUART
+ * connection. It uses the {@link DeviceManagement} to access the Selfbus KNX device.
  * <p>
- * When running this tool from the console, the <code>main</code>- method of
- * this class is invoked, otherwise use this class in the context appropriate to
- * a {@link Runnable}.<br>
- * In console mode, the KNX device information, as well as errors and problems
- * during its execution are written to logback <code>LOGGER</code>.
- * <p>
- * CAUTION:
- * {@link SBManagementClientImpl} uses java reflections to get access to private field's/method's
- * of calimero-core's ManagementClientImpl
- *
- * @author Deti Fliegl
- * @author Pavel Kriz
- * @author Stefan Haller
- * @author Oliver Stefan
+ * When running this tool from the console, the {@code main} method of this class is invoked,
+ * otherwise use this class in the context appropriate to a {@link Runnable}.<br>
  */
 public class Updater implements Runnable {
+    @SuppressWarnings("unused")
+    private Updater() {} // disable default constructor
+
     private final static Logger logger = LoggerFactory.getLogger(Updater.class);
-    private final CliOptions cliOptions;
-    private final SBKNXLink sbKNXLink;
+    private CliOptions cliOptions = null;
+    private SBKNXLink sbKNXLink = null;
 
     /**
-     * Creates a new Updater instance using the supplied options.
-     * <p>
-     * Mandatory arguments are an IP host/address or a FT1.2 port identifier,
-     * depending on the type of connection to the KNX network, and the KNX
-     * device individual address ("area.line.device"). See
-     * {@link #main(String[])} for the list of options.
+     * Constructs an instance of the {@link #Updater} class.
      *
-     * @param args
-     *            list with options
-     * @throws KNXIllegalArgumentException
-     *             on unknown/invalid options
+     * @param cliOptions the command-line options to be used
      */
-    public Updater(final String[] args) {
+    public Updater(CliOptions cliOptions) {
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
-        logger.info(ansi().fgBright(GREEN).bold().a(
-                "   _____ ________    __________  __  _______    __  ______  ____  ___  ________________ \n" +
-                "  / ___// ____/ /   / ____/ __ )/ / / / ___/   / / / / __ \\/ __ \\/   |/_  __/ ____/ __ \\\n" +
-                "  \\__ \\/ __/ / /   / /_  / __  / / / /\\__ \\   / / / / /_/ / / / / /| | / / / __/ / /_/ /\n" +
-                " ___/ / /___/ /___/ __/ / /_/ / /_/ /___/ /  / /_/ / ____/ /_/ / ___ |/ / / /___/ _, _/ \n" +
-                "/____/_____/_____/_/   /_____/\\____//____/   \\____/_/   /_____/_/  |_/_/ /_____/_/ |_|  \n" +
-                "by Dr. Stefan Haller, Oliver Stefan et al.                       {}").reset().toString(),
-                ToolInfo.getToolAndVersion());
-        try {
-            // read in user-supplied command line options
-            this.cliOptions = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) ,
-                    "Selfbus KNX-Firmware update tool options", "", PHYS_ADDRESS_BOOTLOADER, PHYS_ADDRESS_OWN);
-            this.sbKNXLink = new SBKNXLink();
-            this.sbKNXLink.setCliOptions(cliOptions);
-        } catch (final KNXIllegalArgumentException e) {
-            throw e;
-        } catch (final RuntimeException e) {
-            throw new KNXIllegalArgumentException(e.getMessage(), e);
-        }
-    }
-
-    public Updater(CliOptions cliOptions){
         this.cliOptions = cliOptions;
         this.sbKNXLink = new SBKNXLink();
         this.sbKNXLink.setCliOptions(cliOptions);
     }
 
-    public static void main(final String[] args) {
+    public static void initJansi() {
         AnsiConsole.systemInstall();
-        if(args.length == 0) {
-            GuiMain.startSwingGui();
-        }else {
-            try {
-                final Updater d = new Updater(args);
-                final ShutdownHandler sh = new ShutdownHandler().register();
-                d.run();
-                sh.unregister();
-            } catch (final Throwable t) {
-                logger.error("parsing options ", t);
-            } finally {
-                System.out.print(AnsiCursor.on()); // make sure we enable the cursor
-                logger.debug("main exit");
-            }
-        }
+    }
+
+    public static void finalizeJansi() {
+        System.out.print(AnsiCursor.on()); // make sure we enable the cursor
         AnsiConsole.systemUninstall();
+    }
+
+    public static void main(final String[] args) {
+        initJansi();
+
+        if (args.length == 0) {
+            GuiMain.startSwingGui();
+            finalizeJansi();
+            return;
+        }
+
+        // read in user-supplied command line options
+        CliOptions options = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) ,
+                "Selfbus KNX-Firmware update tool options", "", PHYS_ADDRESS_BOOTLOADER, PHYS_ADDRESS_OWN);
+        if (options.version()) {
+            logger.info(ansi().fgBright(GREEN).bold().a(Credits.getAsciiLogo()).reset().toString());
+            logger.info(ansi().fgBright(GREEN).bold().a(Credits.getAuthors()).reset().toString());
+            ToolInfo.showVersion();
+            finalizeJansi();
+            return;
+        }
+
+        logger.info(ansi().fgBright(GREEN).bold().a(ToolInfo.getToolAndVersion()).reset().toString());
+        if (options.help()) {
+            logger.info(options.helpToString());
+            finalizeJansi();
+            return;
+        }
+
+        try {
+            final Updater updater = new Updater(options);
+            final ShutdownHandler shutDownHandler = new ShutdownHandler().register();
+            updater.run();
+            shutDownHandler.unregister();
+        } finally {
+            finalizeJansi();
+            logger.debug("main exit");
+        }
     }
 
     /**
@@ -178,15 +164,6 @@ public class Updater implements Runnable {
         boolean canceled = false;
         KNXNetworkLink link = null;
         try {
-            if (cliOptions.help()) {
-                logger.info(cliOptions.helpToString());
-                return;
-            }
-            if (cliOptions.version()) {
-                ToolInfo.showVersion();
-                return;
-            }
-
             byte[] uid = cliOptions.uid();
             final String hexFileName = cliOptions.fileName();
             BinImage newFirmware = null;
