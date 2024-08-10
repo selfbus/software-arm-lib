@@ -455,7 +455,8 @@ public final class ConColorsToStyledDoc {
      * It invokes the {@link #colorCodeToStyle} method with the provided color codes.
      *
      * @param colorCodes an array of color codes to be converted to styles.
-     * @warning This method is intended for unit tests only.
+     *
+     * <p><strong>Warning:</strong> This method is intended for unit tests only.</p>
      */
     public static void testColorCodeToStyle(String [] colorCodes) {
         colorCodeToStyle(colorCodes);
@@ -466,7 +467,7 @@ public final class ConColorsToStyledDoc {
      * It returns the current {@link #stringStyle}.
      *
      * @return the current string style.
-     * @warning This method is intended for unit tests only.
+     * <p><strong>Warning:</strong> This method is intended for unit tests only.</p>
      */
     public static Style testStringStyle() {
        return stringStyle;

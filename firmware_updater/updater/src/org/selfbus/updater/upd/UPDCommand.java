@@ -18,8 +18,11 @@ public enum UPDCommand {
     PROGRAM_DECOMPRESSED_DATA((byte)0xeb, "PROGRAM_DECOMPRESSED_DATA"),  //!< Flash bytes from ramBuffer to flash with differential method @note device must be unlocked
     ERASE_COMPLETE_FLASH((byte)0xea, "ERASE_COMPLETE_FLASH"),            //!< Erase the entire flash area excluding the bootloader itself @note device must be unlocked
     ERASE_ADDRESS_RANGE((byte)0xe9, "ERASE_ADDRESS_RANGE"),              //!< Erase flash from given start address to end address (start: data[3-6] end: data[7-10]) @note device must be unlocked
-    REQ_DATA((byte)0xe8, "REQ_DATA"),                                   //!< Return bytes from flash at given address?  @note device must be unlocked
-                                                                //!<@warning Not implemented
+    /**
+     * Return bytes from flash at given address?  @note device must be unlocked
+     * <p><strong>Warning:</strong>Not implemented.</p>
+     */
+    REQ_DATA((byte)0xe8, "REQ_DATA"),
     DUMP_FLASH((byte)0xe7, "DUMP_FLASH"),                               //!< DUMP the flash of a given address range (data[0-3] - data[4-7]) to serial port of the mcu, works only with DEBUG version of bootloader
     REQUEST_STATISTIC((byte)0xdf, "STATISTIC_REQUEST"),                 //!< Return some statistic data for the active connection
     RESPONSE_STATISTIC((byte)0xde, "STATISTIC_RESPONSE"),               //!< Response for @ref UPD_STATISTIC_RESPONSE containing the statistic data
@@ -35,7 +38,10 @@ public enum UPDCommand {
     REQUEST_BL_IDENTITY((byte)0xb8, "REQUEST_BL_IDENTITY"),             //!< Return the bootloader's identity @note device must be unlocked
     RESPONSE_BL_IDENTITY((byte)0xb7, "RESPONSE_BL_IDENTITY"),           //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the identity
     RESPONSE_BL_VERSION_MISMATCH((byte)0xb6, "RESPONSE_BL_VERSION_MISMATCH"), //!< Response for @ref UPD_REQUEST_BL_IDENTITY containing the minimum required major and minor version of Selfbus Updater
-    SET_EMULATION((byte)0x01, "SET_EMULATION");                        //!<@warning Not implemented
+    /**
+     * <p><strong>Warning:</strong>Not implemented.</p>
+     */
+    SET_EMULATION((byte)0x01, "SET_EMULATION");
 
     private static final Map<Byte, UPDCommand> BY_INDEX = new HashMap<>();
     static {
