@@ -99,6 +99,10 @@ public class GuiMain extends JFrame {
     private static final String FILENAME_SETTINGS = "settings.xml";
 
     public GuiMain() {
+        //todo load language from FILENAME_SETTINGS and set it here.
+        // Has to be done before calling $$$setupUI$$$();
+        //Locale.setDefault(Locale.ENGLISH); // for tests
+        //Locale.setDefault(Locale.ROOT);    // default language for tests
         $$$setupUI$$$();
         guiTranslation = ResourceBundle.getBundle("GuiTranslation");
         buttonLoadFile.addActionListener(new ActionListener() {
