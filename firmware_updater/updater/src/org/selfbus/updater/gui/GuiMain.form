@@ -16,7 +16,7 @@
         </constraints>
         <properties>
           <selected value="false"/>
-          <text resource-bundle="GuiTranslation" key="advancedSettings"/>
+          <text resource-bundle="language/GuiMain" key="advancedSettings"/>
         </properties>
       </component>
       <scrollpane id="665dd" binding="mainScrollPane">
@@ -52,7 +52,7 @@
                 </constraints>
                 <properties>
                   <font size="14" style="1"/>
-                  <text resource-bundle="GuiTranslation" key="KnxGatewayConnectionSettings"/>
+                  <text resource-bundle="language/GuiMain" key="KnxGatewayConnectionSettings"/>
                 </properties>
               </component>
               <component id="972ff" class="javax.swing.JLabel" binding="labelIpGateway">
@@ -60,7 +60,7 @@
                   <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="selectKnxIpGateway"/>
+                  <text resource-bundle="language/GuiMain" key="selectKnxIpGateway"/>
                 </properties>
               </component>
               <component id="e1373" class="javax.swing.JComboBox" binding="comboBoxIpGateways" custom-create="true">
@@ -74,7 +74,7 @@
                   <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="ipAddress"/>
+                  <text resource-bundle="language/GuiMain" key="ipAddress"/>
                 </properties>
               </component>
               <component id="af8a6" class="javax.swing.JTextField" binding="textBoxKnxGatewayIpAddr">
@@ -90,7 +90,7 @@
                   <grid row="2" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="ipAddrHint"/>
+                  <text resource-bundle="language/GuiMain" key="ipAddrHint"/>
                 </properties>
               </component>
               <component id="30052" class="javax.swing.JTextField" binding="textFieldPort">
@@ -106,7 +106,7 @@
                   <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="port"/>
+                  <text resource-bundle="language/GuiMain" key="port"/>
                 </properties>
               </component>
               <component id="c7756" class="javax.swing.JLabel" binding="labelPortHint">
@@ -114,7 +114,7 @@
                   <grid row="3" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="portHint"/>
+                  <text resource-bundle="language/GuiMain" key="portHint"/>
                 </properties>
               </component>
               <component id="b525" class="javax.swing.JCheckBox" binding="natCheckBox">
@@ -122,7 +122,7 @@
                   <grid row="4" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="useNat"/>
+                  <text resource-bundle="language/GuiMain" key="useNat"/>
                 </properties>
               </component>
               <component id="2f19a" class="javax.swing.JTextField" binding="textFieldTpuart">
@@ -138,7 +138,7 @@
                   <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="tpuart"/>
+                  <text resource-bundle="language/GuiMain" key="tpuart"/>
                 </properties>
               </component>
               <component id="c311b" class="javax.swing.JTextField" binding="textFieldSerial">
@@ -156,7 +156,7 @@
                   <grid row="6" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="serial"/>
+                  <text resource-bundle="language/GuiMain" key="serial"/>
                 </properties>
               </component>
               <component id="f641b" class="javax.swing.JLabel" binding="labelMedium">
@@ -164,7 +164,7 @@
                   <grid row="7" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="medium"/>
+                  <text resource-bundle="language/GuiMain" key="medium"/>
                 </properties>
               </component>
               <component id="13742" class="javax.swing.JLabel">
@@ -173,7 +173,7 @@
                 </constraints>
                 <properties>
                   <font size="14" style="1"/>
-                  <text resource-bundle="GuiTranslation" key="UpdaterSettings"/>
+                  <text resource-bundle="language/GuiMain" key="UpdaterSettings"/>
                 </properties>
               </component>
               <component id="daac0" class="javax.swing.JSeparator">
@@ -189,7 +189,7 @@
                   <grid row="10" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="scenario"/>
+                  <text resource-bundle="language/GuiMain" key="scenario"/>
                 </properties>
               </component>
               <component id="c92fa" class="javax.swing.JLabel" binding="labelScenarioHint">
@@ -205,7 +205,7 @@
                   <grid row="11" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="loadFile"/>
+                  <text resource-bundle="language/GuiMain" key="loadFile"/>
                 </properties>
               </component>
               <component id="7a1f9" class="javax.swing.JTextField" binding="textFieldFileName">
@@ -221,7 +221,7 @@
                   <grid row="12" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="fileName"/>
+                  <text resource-bundle="language/GuiMain" key="fileName"/>
                 </properties>
               </component>
               <component id="7a582" class="javax.swing.JLabel" binding="labelFileNameHint">
@@ -229,7 +229,7 @@
                   <grid row="12" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="fileNameHint"/>
+                  <text resource-bundle="language/GuiMain" key="fileNameHint"/>
                 </properties>
               </component>
               <component id="ec59d" class="javax.swing.JButton" binding="buttonRequestUid">
@@ -237,7 +237,7 @@
                   <grid row="13" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="requestUid"/>
+                  <text resource-bundle="language/GuiMain" key="requestUid"/>
                 </properties>
               </component>
               <component id="cfd70" class="javax.swing.JTextField" binding="textFieldUid">
@@ -253,7 +253,7 @@
                   <grid row="14" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="uid"/>
+                  <text resource-bundle="language/GuiMain" key="uid"/>
                 </properties>
               </component>
               <component id="4672c" class="javax.swing.JLabel" binding="labelUidHint">
@@ -261,7 +261,7 @@
                   <grid row="14" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="uidHint"/>
+                  <text resource-bundle="language/GuiMain" key="uidHint"/>
                 </properties>
               </component>
               <component id="f6036" class="javax.swing.JCheckBox" binding="CheckBoxDiffFlash">
@@ -269,7 +269,7 @@
                   <grid row="15" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="diffFlash"/>
+                  <text resource-bundle="language/GuiMain" key="diffFlash"/>
                 </properties>
               </component>
               <component id="31ad8" class="javax.swing.JLabel" binding="labelFullFlashHint">
@@ -277,7 +277,7 @@
                   <grid row="15" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="diffFlashHint"/>
+                  <text resource-bundle="language/GuiMain" key="diffFlashHint"/>
                 </properties>
               </component>
               <component id="209c6" class="javax.swing.JCheckBox" binding="eraseCompleteFlashCheckBox" default-binding="true">
@@ -285,7 +285,7 @@
                   <grid row="16" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="eraseFlash"/>
+                  <text resource-bundle="language/GuiMain" key="eraseFlash"/>
                 </properties>
               </component>
               <component id="289ef" class="javax.swing.JLabel" binding="labelEraseCompleteFlash">
@@ -293,7 +293,7 @@
                   <grid row="16" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="eraseCompleteFlashHint"/>
+                  <text resource-bundle="language/GuiMain" key="eraseCompleteFlashHint"/>
                 </properties>
               </component>
               <component id="173a7" class="javax.swing.JCheckBox" binding="noFlashCheckBox" default-binding="true">
@@ -301,7 +301,7 @@
                   <grid row="17" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="noFlash"/>
+                  <text resource-bundle="language/GuiMain" key="noFlash"/>
                 </properties>
               </component>
               <component id="44a68" class="javax.swing.JLabel" binding="labelNoFlashHint">
@@ -309,7 +309,7 @@
                   <grid row="17" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="noFlashHint"/>
+                  <text resource-bundle="language/GuiMain" key="noFlashHint"/>
                 </properties>
               </component>
               <component id="c00db" class="javax.swing.JLabel">
@@ -318,7 +318,7 @@
                 </constraints>
                 <properties>
                   <font size="14" style="1"/>
-                  <text resource-bundle="GuiTranslation" key="KnxBusSettings"/>
+                  <text resource-bundle="language/GuiMain" key="KnxBusSettings"/>
                 </properties>
               </component>
               <component id="d0e21" class="javax.swing.JLabel" binding="labelBootloaderDeviceAddr">
@@ -326,7 +326,7 @@
                   <grid row="20" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxProgDeviceAddr"/>
+                  <text resource-bundle="language/GuiMain" key="knxProgDeviceAddr"/>
                 </properties>
               </component>
               <component id="e5a0c" class="javax.swing.JLabel" binding="labelDeviceAddress">
@@ -334,7 +334,7 @@
                   <grid row="21" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxDeviceAddr"/>
+                  <text resource-bundle="language/GuiMain" key="knxDeviceAddr"/>
                 </properties>
               </component>
               <component id="87c38" class="javax.swing.JLabel" binding="labelOwnAddress">
@@ -342,7 +342,7 @@
                   <grid row="22" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxOwnAddress"/>
+                  <text resource-bundle="language/GuiMain" key="knxOwnAddress"/>
                 </properties>
               </component>
               <component id="b3d24" class="javax.swing.JTextField" binding="textFieldOwnAddress">
@@ -366,7 +366,7 @@
                   <grid row="23" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxMessageDelay"/>
+                  <text resource-bundle="language/GuiMain" key="knxMessageDelay"/>
                 </properties>
               </component>
               <component id="885ac" class="javax.swing.JComboBox" binding="comboBoxKnxTelegramPriority" custom-create="true">
@@ -380,7 +380,7 @@
                   <grid row="25" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="messagePriority"/>
+                  <text resource-bundle="language/GuiMain" key="messagePriority"/>
                 </properties>
               </component>
               <component id="abfef" class="javax.swing.JLabel" binding="labelKnxSecureUser">
@@ -388,7 +388,7 @@
                   <grid row="26" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxSecureUser"/>
+                  <text resource-bundle="language/GuiMain" key="knxSecureUser"/>
                 </properties>
               </component>
               <component id="3fed" class="javax.swing.JTextField" binding="textFieldKnxSecureUser">
@@ -404,7 +404,7 @@
                   <grid row="26" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxSecureUserHint"/>
+                  <text resource-bundle="language/GuiMain" key="knxSecureUserHint"/>
                 </properties>
               </component>
               <component id="ee5ac" class="javax.swing.JLabel" binding="labelKnxSecureUserPwd">
@@ -412,7 +412,7 @@
                   <grid row="27" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxSecureUserPwd"/>
+                  <text resource-bundle="language/GuiMain" key="knxSecureUserPwd"/>
                 </properties>
               </component>
               <component id="218d5" class="javax.swing.JLabel" binding="labelKnxSecureUserPwdHint">
@@ -420,7 +420,7 @@
                   <grid row="27" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxSecureUserPwdHint"/>
+                  <text resource-bundle="language/GuiMain" key="knxSecureUserPwdHint"/>
                 </properties>
               </component>
               <component id="61908" class="javax.swing.JTextField" binding="textFieldKnxSecureUserPwd">
@@ -436,7 +436,7 @@
                   <grid row="28" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxSecureDevicePwd"/>
+                  <text resource-bundle="language/GuiMain" key="knxSecureDevicePwd"/>
                 </properties>
               </component>
               <component id="e6fe3" class="javax.swing.JTextField" binding="textFieldKnxSecureDevicePwd">
@@ -452,7 +452,7 @@
                   <grid row="28" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="knxSecureDevicePwdHint"/>
+                  <text resource-bundle="language/GuiMain" key="knxSecureDevicePwdHint"/>
                 </properties>
               </component>
               <component id="21a6" class="javax.swing.JButton" binding="buttonStartStopFlash">
@@ -460,7 +460,7 @@
                   <grid row="29" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="startFlash"/>
+                  <text resource-bundle="language/GuiMain" key="startFlash"/>
                 </properties>
               </component>
               <scrollpane id="aa118">
@@ -522,7 +522,7 @@
                   <grid row="1" column="3" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
-                  <text resource-bundle="GuiTranslation" key="reloadKnxIpGateways"/>
+                  <text resource-bundle="language/GuiMain" key="reloadKnxIpGateways"/>
                 </properties>
               </component>
             </children>
