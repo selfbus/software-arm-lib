@@ -15,7 +15,7 @@ gradle fatJar
 linux: gradlew fatJar
 windows: gradlew.bat fatJar
 ```
-*SB_updater-x.xx-all.jar* file is created in [build/libs](source/build/libs) directory.
+*SB_updater-x.xx-all.jar* file is created in [build/libs](build/libs) directory.
 
 ## Usage
 ```
@@ -108,9 +108,8 @@ Change these in [**Settings Dialog**](https://www.jetbrains.com/help/idea/settin
 - Build, Execution, Deployment->[Build Tools](https://www.jetbrains.com/help/idea/settings-build-tools.html)->Gradle->Build and run using: Intellij IDEA
 - Build, Execution, Deployment->[Build Tools](https://www.jetbrains.com/help/idea/settings-build-tools.html)->Gradle->Run tests using: Intellij IDEA
 
-
 ### gradle:
-update [gradle wrapper](source/gradle/wrapper) to the newest version:
+update [gradle wrapper](gradle/wrapper) to the newest version:
 ```
 gradlew wrapper
 ```
