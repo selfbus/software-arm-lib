@@ -147,11 +147,26 @@ public class Updater implements Runnable {
         }
     }
 
-    public static final int DELAY_MIN = 0;            //!< minimum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
-    public static final int DELAY_MAX = 500;          //!< maximum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
-    public static final int DELAY_DEFAULT = 100;      //!< default delay between two UPDCommand.SEND_DATA telegrams in milliseconds
-    public static final IndividualAddress PHYS_ADDRESS_BOOTLOADER = new IndividualAddress(15, 15,192); //!< physical address the bootloader is using
-    public static final IndividualAddress PHYS_ADDRESS_OWN = new IndividualAddress(0, 0,0); //!< physical address the Selfbus Updater is using
+    /**
+     * Minimum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
+     */
+    public static final int DELAY_MIN = 0;
+    /**
+     * Maximum delay between two UPDCommand.SEND_DATA telegrams in milliseconds
+     */
+    public static final int DELAY_MAX = 500;
+    /**
+     * Default delay between two UPDCommand.SEND_DATA telegrams in milliseconds
+     */
+    public static final int DELAY_DEFAULT = 100;
+    /**
+     *  Physical address the bootloader is using
+     */
+    public static final IndividualAddress PHYS_ADDRESS_BOOTLOADER = new IndividualAddress(15, 15,192);
+    /**
+     *  Physical address the Selfbus Updater is using
+     */
+    public static final IndividualAddress PHYS_ADDRESS_OWN = new IndividualAddress(0, 0,0);
 
     /*
      * (non-Javadoc)

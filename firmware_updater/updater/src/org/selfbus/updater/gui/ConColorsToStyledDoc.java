@@ -104,7 +104,7 @@ public final class ConColorsToStyledDoc {
     /**
      * Processes ANSI cursor control codes and updates the cursor position in the given {@link JTextPane}.
      *
-     * <p><strong>Warning:</strong> This method is partially implemented. Some cursor movement codes are not yet handled and will throw an exception if encountered.</p>     *
+     * <p><strong>Warning:</strong> This method is partially implemented. Some cursor movement codes are not yet handled and will throw an exception if encountered.</p>
      * <p>When encountering an unsupported ANSI cursor movement code, an {@link IllegalStateException} is thrown.</p>
      *
      * @param ansiCode the ANSI code to process
@@ -451,23 +451,20 @@ public final class ConColorsToStyledDoc {
     }
 
     /**
-     * This method is intended for unit tests only.
+     * <p><strong>Warning:</strong> This method is intended for unit tests only.</p>
      * It invokes the {@link #colorCodeToStyle} method with the provided color codes.
      *
      * @param colorCodes an array of color codes to be converted to styles.
-     *
-     * <p><strong>Warning:</strong> This method is intended for unit tests only.</p>
      */
     public static void testColorCodeToStyle(String [] colorCodes) {
         colorCodeToStyle(colorCodes);
     }
 
     /**
-     * This method is intended for unit tests only.
+     * <p><strong>Warning:</strong> This method is intended for unit tests only.</p>
      * It returns the current {@link #stringStyle}.
      *
      * @return the current string style.
-     * <p><strong>Warning:</strong> This method is intended for unit tests only.</p>
      */
     public static Style testStringStyle() {
        return stringStyle;

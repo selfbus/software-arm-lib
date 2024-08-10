@@ -14,8 +14,14 @@ public final class UPDProtocol {
 
     public static final int COMMAND_POSITION = 2;
     public static final int DATA_POSITION = 3;
-    public static final int UID_LENGTH_USED = 12;     //!< uid/guid length of the mcu used for unlocking/flashing
-    public static final int UID_LENGTH_MAX = 16;      //!< uid/guid length of the mcu
+    /**
+     * uid/guid length of the mcu used for unlocking/flashing.
+     */
+    public static final int UID_LENGTH_USED = 12;
+    /**
+     * uid/guid length of the mcu.
+     */
+    public static final int UID_LENGTH_MAX = 16;
 
     private UPDProtocol() {}
 

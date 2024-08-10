@@ -31,10 +31,19 @@ import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
  * Provides methods to send firmware update telegrams to the bootloader (MCU)
  */
 public final class DeviceManagement {
-    private static final int RESTART_ERASE_CODE = 7; //!< EraseCode for the APCI_MASTER_RESET_PDU (valid from 1..7)
-    private static final int RESTART_CHANNEL = 255;  //!< Channelnumber for the APCI_MASTER_RESET_PDU
+    /**
+     * EraseCode for the APCI_MASTER_RESET_PDU (valid from 1..7)
+     */
+    private static final int RESTART_ERASE_CODE = 7;
+    /**
+     * Channelnumber for the APCI_MASTER_RESET_PDU
+     */
+    private static final int RESTART_CHANNEL = 255;
 
-    private static final int MAX_UPD_COMMAND_RETRY = 3; //!< default maximum retries a UPD command is sent to the client
+    /**
+     * Default maximum retries a UPD command is sent to the client
+     */
+    private static final int MAX_UPD_COMMAND_RETRY = 3;
 
     private UDPProtocolVersion protocolVersion;
 
@@ -47,7 +56,10 @@ public final class DeviceManagement {
     }
 
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class);
-    private SBManagementClientImpl mc; //!< calimero device management client
+    /**
+     * Calimero device management client
+     */
+    private SBManagementClientImpl mc;
     private Destination progDestination;
     private KNXNetworkLink link;
 
