@@ -18,7 +18,9 @@ import tuwien.auto.calimero.link.medium.TPSettings;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.Objects;
 
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
@@ -35,9 +37,9 @@ public class SBKNXLink {
                                              KNXMediumSettings medium) throws KNXException, InterruptedException {
         // KNX IP Secure TCP tunneling v2 connection
         logger.info("Connect using KNX IP Secure tunneling");
-        byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.devicePassword().toCharArray());
-        byte[] userKey = SecureConnection.hashUserPassword(cliOptions.userPassword().toCharArray());
-        final var session = Utils.tcpConnection(local, remote).newSecureSession(cliOptions.userId(), userKey, deviceAuthCode);
+        byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.getKnxSecureDevicePassword().toCharArray());
+        byte[] userKey = SecureConnection.hashUserPassword(cliOptions.getKnxSecureUserPassword().toCharArray());
+        final var session = Utils.tcpConnection(local, remote).newSecureSession(cliOptions.getKnxSecureUserId(), userKey, deviceAuthCode);
         return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
     }
 
@@ -60,9 +62,14 @@ public class SBKNXLink {
         return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), KNXnetIPRouting.DefaultMulticast, medium);
     }
 
-    private static InetSocketAddress createLocalSocket(final InetAddress host, final Integer port) {
-        final int p = port != null ? port : 0;
-        return host != null ? new InetSocketAddress(host, p) : new InetSocketAddress(p);
+    private static InetSocketAddress createLocalSocket(String host, Integer port) {
+        port = Objects.requireNonNullElse(port, 0);
+        if (host.isEmpty()) {
+            return new InetSocketAddress(port);
+        }
+        else {
+            return new InetSocketAddress(host, port);
+        }
     }
 
     private static KNXMediumSettings getMedium(final String id, IndividualAddress ownAddress) {
@@ -85,6 +92,12 @@ public class SBKNXLink {
         this.cliOptions = cliOptions;
     }
 
+    private InetAddress resolveHost(final String host) throws UnknownHostException {
+        InetAddress res = InetAddress.getByName(host);
+        logger.debug("Resolved {} with {}", host, res);
+        return res;
+    }
+
     /**
      * Creates the KNX network link to access the network specified in
      * <code>options</code>.
@@ -94,48 +107,48 @@ public class SBKNXLink {
      * @throws KNXException         on problems on link creation
      * @throws InterruptedException on interrupted thread
      */
-    public KNXNetworkLink openLink() throws KNXException, InterruptedException {
+    public KNXNetworkLink openLink() throws KNXException, InterruptedException, UnknownHostException {
         KNXNetworkLink newLink = doOpenLink();
         logger.info("KNX connection: {}", newLink);
         return newLink;
     }
 
     private KNXNetworkLink doOpenLink() throws KNXException,
-            InterruptedException {
-        final KNXMediumSettings medium = getMedium(cliOptions.medium(), cliOptions.ownAddress());
+            InterruptedException, UnknownHostException {
+        final KNXMediumSettings medium = getMedium(cliOptions.getMedium(), cliOptions.getOwnPhysicalAddress());
         logger.debug("Creating KNX network link {}", medium);
-        if (!cliOptions.ft12().isEmpty()) {
+        if (!cliOptions.getFt12SerialPort().isEmpty()) {
             // create FT1.2 network link
-            return new KNXNetworkLinkFT12(cliOptions.ft12(), medium);
-        } else if (!cliOptions.tpuart().isEmpty()) {
+            return new KNXNetworkLinkFT12(cliOptions.getFt12SerialPort(), medium);
+        } else if (!cliOptions.getTpuartSerialPort().isEmpty()) {
             // create TPUART network link
-            KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.tpuart(), medium, Collections.emptyList());
-            linkTpuart.addAddress(cliOptions.ownAddress()); //\todo check if this is rly needed
+            KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.getTpuartSerialPort(), medium, Collections.emptyList());
+            linkTpuart.addAddress(cliOptions.getOwnPhysicalAddress()); //\todo check if this is rly needed
             return linkTpuart;
-        } else if (!cliOptions.getUsbInterface().isEmpty()) {
+        } else if (!cliOptions.getUsbVendorIdAndProductId().isEmpty()) {
             // create USB network link
-            return new KNXNetworkLinkUsb(cliOptions.getUsbInterface(), medium);
+            return new KNXNetworkLinkUsb(cliOptions.getUsbVendorIdAndProductId(), medium);
         }
 
         // create local and remote socket address for network link
-        InetSocketAddress local = createLocalSocket(cliOptions.localhost(), cliOptions.localport());
+        InetSocketAddress local = createLocalSocket(cliOptions.getLocalhost(), cliOptions.getLocalPort());
 
-        final InetSocketAddress remote = new InetSocketAddress(cliOptions.knxInterface(), cliOptions.port());
+        final InetSocketAddress remote = new InetSocketAddress(resolveHost(cliOptions.getKnxInterface()), cliOptions.getPort());
 
         // Connect using KNX IP Secure
-        if ((!cliOptions.devicePassword().isEmpty()) && (!cliOptions.userPassword().isEmpty())) {
+        if ((!cliOptions.getKnxSecureDevicePassword().isEmpty()) && (!cliOptions.getKnxSecureUserPassword().isEmpty())) {
             return createSecureTunnelingLink(local, remote, medium);
         }
 
-        if (cliOptions.tunnelingV2()) {
+        if (cliOptions.getTunnelingV2isSet()) {
             return createTunnelingLinkV2(local, remote, medium);
         }
 
-        if (cliOptions.tunnelingV1()) {
-            return createTunnelingLinkV1(local, remote, cliOptions.nat(), medium);
+        if (cliOptions.getTunnelingV1isSet()) {
+            return createTunnelingLinkV1(local, remote, cliOptions.getNatIsSet(), medium);
         }
 
-        if (cliOptions.routing()) {
+        if (cliOptions.getRoutingIsSet()) {
             return createRoutingLink(local, medium);
         }
 
@@ -148,12 +161,12 @@ public class SBKNXLink {
 
         // try unsecure UDP tunneling v1 connection with nat option set on cli
         try {
-            return createTunnelingLinkV1(local, remote, cliOptions.nat(), medium);
+            return createTunnelingLinkV1(local, remote, cliOptions.getNatIsSet(), medium);
         } catch (final KNXException | InterruptedException e) {
             logger.info(ansi().fg(YELLOW).a("failed with {}").reset().toString(), e.toString());
         }
 
         // last chance try unsecure UDP tunneling v1 connection with INVERTED nat option set on cli
-        return createTunnelingLinkV1(local, remote, !cliOptions.nat(), medium);
+        return createTunnelingLinkV1(local, remote, !cliOptions.getNatIsSet(), medium);
     }
 }

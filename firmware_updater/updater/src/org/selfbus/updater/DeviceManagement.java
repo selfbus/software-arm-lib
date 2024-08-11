@@ -113,7 +113,7 @@ public final class DeviceManagement {
         }
     }
 
-    public byte[] requestUIDFromDevice()
+    public String requestUIDFromDevice()
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.info("Requesting UID from {}", progDestination.getAddress());
         byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[0], getMaxUpdCommandRetry()).data();
@@ -126,12 +126,12 @@ public final class DeviceManagement {
         byte[] uid;
         if ((result.length >= UPDProtocol.UID_LENGTH_USED) && (result.length <= UPDProtocol.UID_LENGTH_MAX)){
             uid = Arrays.copyOfRange(result, DATA_POSITION, UPDProtocol.UID_LENGTH_USED + DATA_POSITION);
-            logger.info("  got: {} length {}", Utils.byteArrayToHex(uid), uid.length);
-            return uid;
+            logger.info("  got: {} length {}", UPDProtocol.byteArrayToHex(uid), uid.length);
+            return UPDProtocol.byteArrayToHex(uid);
         } else {
             uid = Arrays.copyOfRange(result, DATA_POSITION, result.length - DATA_POSITION);
             logger.error("Request UID failed {} result.length={}, UID_LENGTH_USED={}, UID_LENGTH_MAX={}",
-                    Utils.byteArrayToHex(uid),uid.length, UPDProtocol.UID_LENGTH_USED, UPDProtocol.UID_LENGTH_MAX);
+                    UPDProtocol.byteArrayToHex(uid),uid.length, UPDProtocol.UID_LENGTH_USED, UPDProtocol.UID_LENGTH_MAX);
             restartProgrammingDevice();
             throw new UpdaterException("Selfbus update failed.");
         }
@@ -202,10 +202,10 @@ public final class DeviceManagement {
         return new String(result,DATA_POSITION,result.length - DATA_POSITION);	// Convert 12 bytes to string starting from result[DATA_POSITION];
     }
 
-    public void unlockDeviceWithUID(byte[] uid)
+    public void unlockDeviceWithUID(String uid)
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
-        logger.info("Unlocking device {} with UID {}", progDestination.getAddress(), Utils.byteArrayToHex(uid));
-        byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, uid, getMaxUpdCommandRetry()).data();
+        logger.info("Unlocking device {} with UID {}", progDestination.getAddress(), uid);
+        byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, UPDProtocol.uidToByteArray(uid), getMaxUpdCommandRetry()).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();
             throw new UpdaterException("Selfbus update failed.");

@@ -49,4 +49,32 @@ public final class UPDProtocol {
         }
         return udpResult.id;
     }
+
+    public static byte[] uidToByteArray(String str) {
+        String[] tokens = str.split(":");
+        if (tokens.length != UPDProtocol.UID_LENGTH_USED) {
+            logger.warn("ignoring --uid {}, wrong size {}, expected {}", str, tokens.length, UPDProtocol.UID_LENGTH_USED);
+            return null;
+        }
+        byte[] uid = new byte[tokens.length];
+        for (int n = 0; n < tokens.length; n++) {
+            uid[n] = (byte) Integer.parseUnsignedInt(tokens[n], 16);
+        }
+        return uid;
+    }
+
+    public static String byteArrayToHex(byte[] bytes) {
+        if (bytes == null) {
+            return "";
+        }
+
+        StringBuilder txt = new StringBuilder();
+        for (int i = 0; i < bytes.length; i++) {
+            if (i != 0) {
+                txt.append(":");
+            }
+            txt.append(String.format("%02X", bytes[i]));
+        }
+        return txt.toString();
+    }
 }

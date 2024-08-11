@@ -2,13 +2,10 @@ package org.selfbus.updater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.TcpConnection;
 
 import java.io.File;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.CRC32;
@@ -39,32 +36,6 @@ public class Utils {
     public static void shortToStream(byte[] stream, int offset, short val) {
         stream[offset + 1] = (byte) (val >> 8);
         stream[offset] = (byte) (val);
-    }
-
-    public static String byteArrayToHex(byte[] bytes) {
-        if (bytes == null) {
-            return "";
-        }
-
-        StringBuilder txt = new StringBuilder();
-        for (int i = 0; i < bytes.length; i++) {
-            if (i != 0) {
-                txt.append(":");
-            }
-            txt.append(String.format("%02X", bytes[i]));
-        }
-        return txt.toString();
-    }
-
-    public static InetAddress parseHost(final String host) {
-        try {
-            InetAddress res = InetAddress.getByName(host);
-            logger.debug("Resolved {} with {}", host, res);
-            return res;
-        } catch (final UnknownHostException e) {
-            throw new KNXIllegalArgumentException(
-                    "failed to read host " + host, e);
-        }
     }
 
     public static boolean fileExists(String fileName) {

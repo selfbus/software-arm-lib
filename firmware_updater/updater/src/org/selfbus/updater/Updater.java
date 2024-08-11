@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 
 import java.io.IOException;
+import java.net.UnknownHostException;
 
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
@@ -73,7 +74,7 @@ public class Updater implements Runnable {
         // read in user-supplied command line options
         CliOptions options = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) ,
                 "Selfbus KNX-Firmware update tool options", "", PHYS_ADDRESS_BOOTLOADER, PHYS_ADDRESS_OWN);
-        if (options.version()) {
+        if (options.getVersionIsSet()) {
             logger.info(ansi().fgBright(GREEN).bold().a(Credits.getAsciiLogo()).reset().toString());
             logger.info(ansi().fgBright(GREEN).bold().a(Credits.getAuthors()).reset().toString());
             ToolInfo.showVersion();
@@ -82,7 +83,7 @@ public class Updater implements Runnable {
         }
 
         logger.info(ansi().fgBright(GREEN).bold().a(ToolInfo.getToolAndVersion()).reset().toString());
-        if (options.help()) {
+        if (options.getHelpIsSet()) {
             logger.info(options.helpToString());
             finalizeJansi();
             return;
@@ -164,14 +165,13 @@ public class Updater implements Runnable {
         boolean canceled = false;
         KNXNetworkLink link = null;
         try {
-            byte[] uid = cliOptions.uid();
-            final String hexFileName = cliOptions.fileName();
+            final String hexFileName = cliOptions.getFileName();
             BinImage newFirmware = null;
 
             if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
-                    logger.error(ansi().fg(RED).a("File '{}' does not exist!").reset().toString(), cliOptions.fileName());
+                    logger.error(ansi().fg(RED).a("File '{}' does not exist!").reset().toString(), cliOptions.getFileName());
                     throw new UpdaterException("Selfbus update failed.");
                 }
                 // Load Firmware hex file
@@ -193,28 +193,28 @@ public class Updater implements Runnable {
 
             link = sbKNXLink.openLink();
 
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.getProgDevicePhysicalAddress(), cliOptions.getPriority());
 
-            logger.debug("Telegram priority: {}", cliOptions.priority());
+            logger.debug("Telegram priority: {}", cliOptions.getPriority());
 
             //for option --device restart the device in bootloader mode
-            if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
+            if (cliOptions.getDevicePhysicalAddress() != null) { // phys. knx address of the device in normal operation
                 dm.checkDeviceInProgrammingMode(null); // check that before no device is in programming mode
-                dm.restartDeviceToBootloader(cliOptions.device());
+                dm.restartDeviceToBootloader(cliOptions.getDevicePhysicalAddress());
             }
 
-            dm.checkDeviceInProgrammingMode(cliOptions.progDevice());
-
-            if (uid == null) {
+            dm.checkDeviceInProgrammingMode(cliOptions.getProgDevicePhysicalAddress());
+            String uid = cliOptions.getUid();
+            if (uid.isEmpty()) {
                 uid = dm.requestUIDFromDevice();
             }
 
             dm.unlockDeviceWithUID(uid);
 
-            if ((cliOptions.dumpFlashStartAddress() >= 0) && (cliOptions.dumpFlashEndAddress() >= 0)) {
+            if ((cliOptions.getDumpFlashStartAddress() >= 0) && (cliOptions.getDumpFlashEndAddress() >= 0)) {
                 logger.warn(ansi().fgBright(GREEN).a("Dumping flash content range 0x{}-0x{} to bootloader's serial port.").reset().toString(),
-                        String.format("%04X", cliOptions.dumpFlashStartAddress()), String.format("%04X", cliOptions.dumpFlashEndAddress()));
-                dm.dumpFlashRange(cliOptions.dumpFlashStartAddress(), cliOptions.dumpFlashEndAddress());
+                        String.format("%04X", cliOptions.getDumpFlashStartAddress()), String.format("%04X", cliOptions.getDumpFlashEndAddress()));
+                dm.dumpFlashRange(cliOptions.getDumpFlashStartAddress(), cliOptions.getDumpFlashEndAddress());
                 return;
             }
 
@@ -237,7 +237,7 @@ public class Updater implements Runnable {
 
             //  From here on we need a valid firmware
             if (newFirmware == null) {
-                if (cliOptions.device() != null) {
+                if (cliOptions.getDevicePhysicalAddress() != null) {
                     dm.restartProgrammingDevice();
                 }
                 // to get here `uid == null` must be true, so it's fine to exit with no-error
@@ -266,13 +266,13 @@ public class Updater implements Runnable {
                         newFirmware.startAddress() - bootLoaderIdentity.applicationFirstAddress());
             }
 
-            if (cliOptions.eraseFullFlash()) {
+            if (cliOptions.getEraseFullFlashIsSet()) {
                 logger.warn(ansi().fgBright(RED).a("Deleting the entire flash except from the bootloader itself!").reset().toString());
                 dm.eraseFlash();
             }
 
             boolean diffMode = false;
-            if (!(cliOptions.full())) {
+            if (!(cliOptions.getFlashingFullModeIsSet())) {
                 if (bootDescriptor.valid()) {
                     diffMode = FlashDiffMode.setupDifferentialMode(bootDescriptor);
                 }
@@ -293,7 +293,7 @@ public class Updater implements Runnable {
                         cliOptions.getBlockSize(), dm.getBlockSize());
             }
 
-            if (!cliOptions.NO_FLASH()) { // is flashing firmware disabled? for debugging use only!
+            if (!cliOptions.getNoFlashIsSet()) { // is flashing firmware disabled? for debugging use only!
                 // Start to flash the new firmware
                 ResponseResult resultTotal;
                 logger.info(ansi().bg(GREEN).fg(BLACK).a("Starting to send new firmware now:").reset().toString());
@@ -302,7 +302,7 @@ public class Updater implements Runnable {
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
                 }
                 else {
-                    resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.delay(), !cliOptions.eraseFullFlash(), cliOptions.logStatistics());
+                    resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.getDelayMs(), !cliOptions.getEraseFullFlashIsSet(), cliOptions.getLogStatisticsIsSet());
                 }
                 dm.requestBootLoaderStatistic();
 
@@ -330,13 +330,13 @@ public class Updater implements Runnable {
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
                     newFirmware.endAddress(), (int) newFirmware.crc32(), newFirmware.getAppVersionAddress());
             logger.info("Updating boot descriptor with {}", newBootDescriptor);
-            dm.programBootDescriptor(newBootDescriptor, cliOptions.delay());
-            String deviceInfo = cliOptions.progDevice().toString();
-            if (cliOptions.device() != null) {
-                deviceInfo = cliOptions.device().toString();
+            dm.programBootDescriptor(newBootDescriptor, cliOptions.getDelayMs());
+            String deviceInfo = cliOptions.getProgDevicePhysicalAddress().toString();
+            if (cliOptions.getDevicePhysicalAddress() != null) {
+                deviceInfo = cliOptions.getDevicePhysicalAddress().toString();
             }
             logger.info("Finished programming device {} with '{}'", ansi().fgBright(YELLOW).a(deviceInfo).reset().toString(),
-                    ansi().fgBright(YELLOW).a(shortenPath(cliOptions.fileName(), 1)).reset().toString());
+                    ansi().fgBright(YELLOW).a(shortenPath(cliOptions.getFileName(), 1)).reset().toString());
             logger.info(ansi().bg(GREEN).fg(BLACK).a("Firmware Update done, Restarting device").reset().toString());
             dm.restartProgrammingDevice();
 
@@ -365,25 +365,25 @@ public class Updater implements Runnable {
         KNXNetworkLink link;
         try {
             link = this.sbKNXLink.openLink();
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.progDevice(), cliOptions.priority());
+            DeviceManagement dm = new DeviceManagement(link, cliOptions.getProgDevicePhysicalAddress(), cliOptions.getPriority());
 
             //for option --device restart the device in bootloader mode
-            if (cliOptions.device() != null) { // phys. knx address of the device in normal operation
+            if (cliOptions.getDevicePhysicalAddress() != null) { // phys. knx address of the device in normal operation
                 dm.checkDeviceInProgrammingMode(null); // check that before no device is in programming mode
-                dm.restartDeviceToBootloader(cliOptions.device());
+                dm.restartDeviceToBootloader(cliOptions.getDevicePhysicalAddress());
             }
 
-            dm.checkDeviceInProgrammingMode(cliOptions.progDevice());
+            dm.checkDeviceInProgrammingMode(cliOptions.getProgDevicePhysicalAddress());
 
-            byte[] uid = dm.requestUIDFromDevice();
+            String uid = dm.requestUIDFromDevice();
 
-            if (cliOptions.device() != null) {
+            if (cliOptions.getDevicePhysicalAddress() != null) {
                 dm.restartProgrammingDevice();
             }
             link.close();
-            return Utils.byteArrayToHex(uid);
+            return uid;
 
-        } catch (InterruptedException | UpdaterException | KNXException e) {
+        } catch (InterruptedException | UpdaterException | KNXException | UnknownHostException e) {
             throw new RuntimeException(e);
         }
     }
