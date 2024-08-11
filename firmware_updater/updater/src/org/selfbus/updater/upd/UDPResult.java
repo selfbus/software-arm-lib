@@ -35,7 +35,7 @@ public enum UDPResult {
     IAP_BUSY((byte)0x74, "Flash (IAP) Flash programming hardware interface is busy.", true),
 
     /** Unknown IAP_Status */
-    UDP_IAP_UNKNOWN((byte)0x73, "Unknown IAP_Status", true),
+    IAP_UNKNOWN((byte)0x73, "Unknown IAP_Status", true),
 
     /** Command is not defined */
     UNKNOWN_COMMAND((byte)0x5f, "Command unknown", true),
@@ -61,7 +61,7 @@ public enum UDPResult {
     /** Data received is invalid */
     INVALID_DATA((byte)0x55, "Data received is invalid", true),
     /** No data received in telegram */
-    UDP_NO_DATA((byte)0x54, "No data received in telegram", true),
+    NO_DATA((byte)0x54, "No data received in telegram", true),
 
     /** Flash page could not be programmed */
     FLASH_ERROR((byte)0x53, "Flash page could not be programmed", true),
@@ -69,7 +69,7 @@ public enum UDPResult {
     PAGE_NOT_ALLOWED_TO_ERASE((byte)0x52, "Flash page not allowed to erase", true),
 
     /** Address range not allowed to erase */
-    UDP_ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE((byte)0x51, "Address range not allowed to erase", true),
+    ADDRESS_RANGE_NOT_ALLOWED_TO_ERASE((byte)0x51, "Address range not allowed to erase", true),
 
     /** Number of bytes received with @ref UPD_SEND_DATA is lower than number of bytes to program with @ref UPD_PROGRAM */
     BYTECOUNT_RECEIVED_TOO_LOW((byte)0x50, "Number of bytes received is lower than number of bytes to program", true),
@@ -90,14 +90,14 @@ public enum UDPResult {
     }
 
     /** ID of the UDPResult */
-    public final byte id;
+    private final byte id;
     /** Simple description of the UDPResult */
     private final String description;
     /** True if the UPDResult represents an error */
     private final boolean isError;
 
     /**
-     * Create a UDPResult instance from given id, description and error state
+     * Create a UDPResult from given id, description and error state
      * @param id ID of the UDPResult
      * @param description Description of the UDPResult
      * @param isError Set to true, if the UPDResult represents an error, otherwise set to false
@@ -109,22 +109,17 @@ public enum UDPResult {
     }
 
     /**
-     * Create a UPDResult instance from a given ID
+     * Create a UPDResult from a given ID
      * @param index ID of the UPDResult
      * @return Instance of the UPDResult from the given ID
      */
-    public static UDPResult valueOfIndex(byte index) {
-        for (UDPResult e: values()) {
-             if (e.id == index) {
-                 return e;
-             }
-        }
-        return INVALID;
+    public static UDPResult valueOf(byte index) {
+        return BY_INDEX.getOrDefault(index, INVALID);
     }
 
     @Override
     public String toString() {
-        return this.description;
+        return String.format("0x%02X %s", this.id, this.description);
     }
 
     /**

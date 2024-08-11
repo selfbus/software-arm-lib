@@ -206,7 +206,7 @@ public final class DeviceManagement {
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.info("Unlocking device {} with UID {}", progDestination.getAddress(), uid);
         byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, UPDProtocol.uidToByteArray(uid), getMaxUpdCommandRetry()).data();
-        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS) {
             restartProgrammingDevice();
             throw new UpdaterException("Selfbus update failed.");
         }
@@ -231,7 +231,7 @@ public final class DeviceManagement {
         mc.responseTimeout(oldResponseTimeout); // restore responseTimeout
         logger.trace("mc.ResponseTimeout restored to {}", mc.responseTimeout());
 
-        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS) {
             restartProgrammingDevice();
             throw new UpdaterException("Erasing firmware address range failed.");
         }
@@ -240,7 +240,7 @@ public final class DeviceManagement {
     public void eraseFlash()
             throws KNXLinkClosedException, InterruptedException, UpdaterException, KNXTimeoutException {
         byte[] result = sendWithRetry(UPDCommand.ERASE_COMPLETE_FLASH, new byte[0], getMaxUpdCommandRetry()).data();
-        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS) {
             restartProgrammingDevice();
             throw new UpdaterException("Deleting the entire flash failed.");
         }
@@ -253,7 +253,7 @@ public final class DeviceManagement {
         Utils.longToStream(telegram, 4 , endAddress);
         // sendWithRetry will always time out, because the mcu is busy dumping the flash
         byte[] result = sendWithRetry(UPDCommand.DUMP_FLASH, telegram, 0).data();
-        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS.id) {
+        if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS) {
             restartProgrammingDevice();
             throw new UpdaterException("Flash dumping failed.");
         }
@@ -281,7 +281,7 @@ public final class DeviceManagement {
             ResponseResult tmp = sendWithRetry(UPDCommand.SEND_DATA, txBuffer, maxRetry);
             result.addCounters(tmp);
 
-            if (UPDProtocol.checkResult(tmp.data(), false) != UDPResult.IAP_SUCCESS.id) {
+            if (UPDProtocol.checkResult(tmp.data(), false) != UDPResult.IAP_SUCCESS) {
                 restartProgrammingDevice();
                 throw new UpdaterException("doFlash failed.");
             }
@@ -353,7 +353,7 @@ public final class DeviceManagement {
         logger.debug("Updating boot descriptor with crc32 {}",
                 String.format("0x%08X, length %d", crc32Value, streamBootDescriptor.length));
         ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, getMaxUpdCommandRetry());
-        if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS.id) {
+        if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS) {
             restartProgrammingDevice();
             throw new UpdaterException("Updating boot descriptor failed.");
         }

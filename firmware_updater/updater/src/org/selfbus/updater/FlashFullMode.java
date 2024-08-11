@@ -1,5 +1,6 @@
 package org.selfbus.updater;
 
+import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
 import org.slf4j.Logger;
@@ -11,7 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
-import static org.selfbus.updater.upd.UDPResult.*;
 
 /**
  * Provides full flash mode for the bootloader (MCU)
@@ -82,17 +82,17 @@ public class FlashFullMode {
 
             resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, dm.getMaxUpdCommandRetry());
 
-            long result = UPDProtocol.checkResult(resultProgramData.data());
-            if ((result == BYTECOUNT_RECEIVED_TOO_LOW.id) || (result == BYTECOUNT_RECEIVED_TOO_HIGH.id)) {
+            UDPResult result = UPDProtocol.checkResult(resultProgramData.data());
+            if ((result == UDPResult.BYTECOUNT_RECEIVED_TOO_LOW) || (result == UDPResult.BYTECOUNT_RECEIVED_TOO_HIGH)) {
                 repeat = true;
                 // do not count failed transfer
                 progressInfo.update(-txBuffer.length);
             }
-            else if (result == IAP_COMPARE_ERROR.id) {
+            else if (result == UDPResult.IAP_COMPARE_ERROR) {
                 throw new UpdaterException(String.format("ProgramData update failed. %s",
                         String.format(ansi().fg(RED).a("Try again with option '--%s 256'").reset().toString(), CliOptions.OPT_LONG_BLOCKSIZE)));
             }
-            else if (result == IAP_SUCCESS.id) {
+            else if (result == UDPResult.IAP_SUCCESS) {
                 progAddress += txBuffer.length;
                 if (logStatistics) {
                     dm.requestBootLoaderStatistic();
