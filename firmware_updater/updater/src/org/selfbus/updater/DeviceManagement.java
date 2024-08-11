@@ -218,7 +218,7 @@ public final class DeviceManagement {
         byte[] telegram = new byte[8];
         Utils.longToStream(telegram, 0 , startAddress);
         Utils.longToStream(telegram, 4 , endAddress);
-        logger.info(String.format("Erasing firmware address range: 0x%04X-0x%04X", startAddress, endAddress));
+        logger.info("Erasing firmware address range: {}", String.format("0x%04X-0x%04X", startAddress, endAddress));
         Duration oldResponseTimeout = mc.responseTimeout();
         Duration newResponseTimeout = MAX_FLASH_ERASE_TIMEOUT.multipliedBy(2);
         if (oldResponseTimeout.compareTo(newResponseTimeout) < 0) {
@@ -350,8 +350,8 @@ public final class DeviceManagement {
         byte[] programBootDescriptor = new byte[8];
         Utils.longToStream(programBootDescriptor, 0, streamBootDescriptor.length);
         Utils.longToStream(programBootDescriptor, 4, crc32Value);
-        logger.debug(String.format("Updating boot descriptor with crc32 0x%08X, length %d",
-                crc32Value, streamBootDescriptor.length));
+        logger.debug("Updating boot descriptor with crc32 {}",
+                String.format("0x%08X, length %d", crc32Value, streamBootDescriptor.length));
         ResponseResult programResult = sendWithRetry(UPDCommand.UPDATE_BOOT_DESC, programBootDescriptor, getMaxUpdCommandRetry());
         if (UPDProtocol.checkResult(programResult.data()) != UDPResult.IAP_SUCCESS.id) {
             restartProgrammingDevice();

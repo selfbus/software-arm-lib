@@ -157,11 +157,11 @@ public class FlashDiff {
                 byte cmdByte = (byte)CMD_COPY;
                 if (bestResult.length <= MAX_LENGTH_SHORT) {
                     cmdByte = (byte)(cmdByte | FLAG_SHORT | (bestResult.length & 0b111111));  // command + 6 bits of the length
-                    logger.trace(String.format("@ b=%02X i=%d CMD_COPY", (cmdByte & 0xff), i));
+                    logger.trace("@ {} CMD_COPY", String.format("b=%02X i=%d", (cmdByte & 0xff), i));
                     outputDiffStream.add(cmdByte);
                 } else {
                     cmdByte = (byte)(cmdByte | FLAG_LONG | ((bestResult.length >> 8) & 0b111111));  // command + 6 bits from high byte of the length
-                    logger.trace(String.format("@ b=%02X i=%d CMD_COPY FLAG_LONG", (cmdByte & 0xff), i));
+                    logger.trace("@ {} CMD_COPY FLAG_LONG", String.format("b=%02X i=%d", (cmdByte & 0xff), i));
                     byte lengthLowByte = (byte)(bestResult.length & 0xff); // 8 low bits of the length
                     outputDiffStream.add(cmdByte);
                     size += 1;
@@ -178,7 +178,7 @@ public class FlashDiff {
                 } else {
                     location = "ROM";
                 }
-                logger.trace(String.format("DO COPY FROM %s l=%d sa=%08X",location , bestResult.length,  bestResult.offset));
+                logger.trace("DO COPY FROM {} {}", location, String.format("l=%d sa=%08X", bestResult.length,  bestResult.offset));
                 byte[] srcData = bestResult.sourceType == SourceType.BACKWARD_RAM ? w.getOldBinData() : img1.getBinData();
                 StringBuilder traceMessage = new StringBuilder();
                 for (int k = 0; k < bestResult.length; k++) {
@@ -197,8 +197,8 @@ public class FlashDiff {
                 outputDiffStream.add(addr1);
             }
             else {
-                logger.trace(String.format("%08x RAW: %02x@ b=%02X i=%d raw", i, img2.getBinData()[i],
-                        (img2.getBinData()[i] & 0xff), i));
+                logger.trace("{} raw", String.format("%08x RAW: %02x@ b=%02X i=%d",
+                        i, img2.getBinData()[i], (img2.getBinData()[i] & 0xff), i));
                 rawBuffer.add(img2.getBinData()[i]);
                 i++;
             }
@@ -209,7 +209,8 @@ public class FlashDiff {
                 crc32Block.update(img2.getBinData(), i - FlashPage.PAGE_SIZE, FlashPage.PAGE_SIZE);
                 //p = new FlashPage(img1.getBinData(), i);
 
-                logger.trace(String.format("# FLASH PAGE startAddrOfPageToBeFlashed=%08X", i*FlashPage.PAGE_SIZE));
+                logger.trace("# FLASH PAGE startAddrOfPageToBeFlashed={}",
+                        String.format("%08X", i * FlashPage.PAGE_SIZE));
                 StringBuilder traceMessage = new StringBuilder();
                 for (int k = pages*FlashPage.PAGE_SIZE; (k < (pages+1)*FlashPage.PAGE_SIZE && k < img2.getBinData().length); k++) {
                     if (k % 16 == 0) {
@@ -233,8 +234,7 @@ public class FlashDiff {
         if (!outputDiffStream.isEmpty()) {
             crc32Block.reset();
             crc32Block.update(img2.getBinData(), img2.getBinData().length - (img2.getBinData().length % FlashPage.PAGE_SIZE), img2.getBinData().length % FlashPage.PAGE_SIZE);
-
-            logger.trace(String.format("# FLASH PAGE startAddrOfPageToBeFlashed=%08X", i*FlashPage.PAGE_SIZE));
+            logger.trace("# FLASH PAGE startAddrOfPageToBeFlashed={}", String.format("%08X", i * FlashPage.PAGE_SIZE));
             StringBuilder traceMessage = new StringBuilder();
             for (int k = pages*FlashPage.PAGE_SIZE; (k < (pages+1)*FlashPage.PAGE_SIZE && k < img2.getBinData().length); k++) {
                 traceMessage.append(String.format("%02X ", (img2.getBinData()[k] & 0xff)));
