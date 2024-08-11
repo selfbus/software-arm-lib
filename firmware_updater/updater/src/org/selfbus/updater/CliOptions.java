@@ -153,7 +153,6 @@ public class CliOptions {
     private int delay = 0;
 
     private boolean NO_FLASH = false;
-    private Level logLevel = Level.DEBUG;
     private boolean eraseFullFlash = false;
     private long dumpFlashStartAddress = -1;
     private long dumpFlashEndAddress = -1;
@@ -272,7 +271,7 @@ public class CliOptions {
                 .numberOfArgs(1)
                 .required(false)
                 .type(String.class)
-                .desc(String.format("Logfile logging level [TRACE|DEBUG|INFO] (default %s)", this.logLevel.toString())).build();
+                .desc(String.format("Logfile logging level [TRACE|DEBUG|INFO] (default %s)", getLogLevel().toString())).build();
 
         Option userId = Option.builder(null).longOpt(OPT_LONG_USER_ID)
                 .argName("id")
@@ -368,19 +367,16 @@ public class CliOptions {
         CommandLineParser parser = new DefaultParser();
         try {
             cmdLine = parser.parse(cliOptions, args);
-            // get the log level for log file output
-            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
             if (cmdLine.hasOption(OPT_SHORT_LOGLEVEL)) {
                 String cliLogLevel = cmdLine.getOptionValue(OPT_SHORT_LOGLEVEL).toUpperCase();
                 if (VALID_LOG_LEVELS.contains(cliLogLevel)) {
-                    logLevel = Level.toLevel(cliLogLevel);
-                    root.setLevel(logLevel);
+                    setLogLevel(Level.toLevel(cliLogLevel));
                 }
                 else {
-                    logger.warn(ansi().fg(RED).a("invalid {} {}, using {}").reset().toString(), OPT_LONG_LOGLEVEL, cliLogLevel, root.getLevel().toString());
+                    logger.warn(ansi().fg(RED).a("invalid {} {}, using {}").reset().toString(), OPT_LONG_LOGLEVEL, cliLogLevel, getLogLevel().toString());
                 }
             }
-            logger.debug("logLevel={}", root.getLevel().toString());
+            logger.debug("logLevel={}", getLogLevel());
 
             if (cmdLine.hasOption(OPT_LONG_PRIORITY)) {
                 try {
@@ -777,8 +773,14 @@ public class CliOptions {
         return version;
     }
 
-    public Level logLevel() {
-        return logLevel;
+    public Level getLogLevel() {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        return root.getLevel();
+    }
+
+    public void setLogLevel(Level newLevel) {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
+        root.setLevel(newLevel);
     }
 
     public int userId() {
