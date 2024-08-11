@@ -137,15 +137,13 @@ public class GuiMain extends JFrame {
             }
 
             jLoggingPane.setText("");
-            updaterThread = new Thread() {
-                public void run() {
-                    setCliOptions();
+            updaterThread = new Thread(() -> {
+                setCliOptions();
 
-                    final Updater d = new Updater(cliOptions);
-                    d.run();
-                    SwingUtilities.invokeLater(() -> guiMainInstance.buttonStartStopFlash.setText(startFlash));
-                }
-            };
+                final Updater updater = new Updater(cliOptions);
+                updater.run();
+                SwingUtilities.invokeLater(() -> guiMainInstance.buttonStartStopFlash.setText(startFlash));
+            });
             updaterThread.start();
             buttonStartStopFlash.setText(stopFlash);
         });
@@ -407,10 +405,10 @@ public class GuiMain extends JFrame {
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
-        comboBoxIpGateways = new JComboBox<CalimeroSearchComboItem>();
-        comboBoxMedium = new JComboBox<String>();
-        comboBoxScenario = new JComboBox<ComboItem>();
-        comboBoxKnxTelegramPriority = new JComboBox<String>();
+        comboBoxIpGateways = new JComboBox<>();
+        comboBoxMedium = new JComboBox<>();
+        comboBoxScenario = new JComboBox<>();
+        comboBoxKnxTelegramPriority = new JComboBox<>();
         this.setFrameImages();
     }
 
