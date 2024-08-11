@@ -169,7 +169,7 @@ public class GuiMain extends JFrame {
 
     // externe Definition des ActionListeners, weil dieser vor der Füllung der ComboBox gelöscht und anschließend
     // wieder eingefügt werden muss
-    public ActionListener comboBoxIpGatewaysActionListener = new ActionListener() {
+    public final ActionListener comboBoxIpGatewaysActionListener = new ActionListener() {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (comboBoxIpGateways.getSelectedItem() == null) return;
@@ -416,7 +416,7 @@ public class GuiMain extends JFrame {
 
     public static class ComboItem {
         private final String key;
-        Object value;
+        final Object value;
 
         public ComboItem(String key, Object value) {
             this.key = key;
