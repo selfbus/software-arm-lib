@@ -10,6 +10,9 @@ import static org.fusesource.jansi.Ansi.Color.*;
  * Implementation of the UPD/UDP protocol handling
  */
 public final class UPDProtocol {
+    @SuppressWarnings("unused")
+    private UPDProtocol() {}
+
     private static final Logger logger = LoggerFactory.getLogger(UPDProtocol.class);
 
     public static final int COMMAND_POSITION = 2;
@@ -22,8 +25,6 @@ public final class UPDProtocol {
      * uid/guid length of the mcu.
      */
     public static final int UID_LENGTH_MAX = 16;
-
-    private UPDProtocol() {}
 
     public static long checkResult(byte[] result) {
         return checkResult(result, true);

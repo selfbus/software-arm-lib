@@ -180,6 +180,7 @@ public class GuiMain extends JFrame {
         }
     };
 
+    @SuppressWarnings("SameParameterValue")
     private void saveAllParameters(String fileName) {
         userProperties.setProperty("AdvancedSettings", advancedSettingsCheckBox.isSelected() ? "true" : "false");
         userProperties.setProperty("GatewayIpAddr", textBoxKnxGatewayIpAddr.getText());
@@ -212,6 +213,7 @@ public class GuiMain extends JFrame {
         }
     }
 
+    @SuppressWarnings("SameParameterValue")
     private void loadAllParameters(String fileName) {
 
         if (new File(fileName).exists()) {
