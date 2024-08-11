@@ -388,12 +388,8 @@ public final class DeviceManagement {
                 logger.warn(ansi().fg(RED).a("{} {} : {}").reset().toString(), command, e.getMessage(), e.getClass().getSimpleName());
                 result.incDropCount();
             }
-            catch (KNXIllegalArgumentException e) {
-                throw new UpdaterException(String.format("%s failed.", command), e);
-            }
             catch (Throwable e) {
                 throw new UpdaterException(String.format("%s failed.", command), e);
-                // logger.error("{}{} Exception {}{}", ConColors.RED, command, e, ConColors.RESET);
             }
 
             if (maxRetry > 0) {
