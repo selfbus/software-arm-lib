@@ -12,6 +12,7 @@ public final class Credits {
             "et al.",
     };
 
+    @SuppressWarnings("SameReturnValue")
     public static String getAsciiLogo() {
         return """
                   _____ ________    __________  __  _______    __  ______  ____  ___  ________________
