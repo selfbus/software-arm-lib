@@ -46,8 +46,8 @@ public class FlashDiffTests {
     public void testDiff() throws URISyntaxException {
         // test of upgrade from old version to newer (longer)
         ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        URI uri1 = Objects.requireNonNull(contextClassLoader.getResource("updater.ino.slto.v1.hex")).toURI();
-        URI uri2 = Objects.requireNonNull(contextClassLoader.getResource("updater.ino.slto.v2.hex")).toURI();
+        URI uri1 = Objects.requireNonNull(contextClassLoader.getResource("hex/updater.ino.slto.v1.hex")).toURI();
+        URI uri2 = Objects.requireNonNull(contextClassLoader.getResource("hex/updater.ino.slto.v2.hex")).toURI();
         BinImage img1 = BinImage.readFromHex(uri1.getPath());
         BinImage img2 = BinImage.readFromHex(uri2.getPath());
         performTest(img1, img2);
@@ -57,7 +57,7 @@ public class FlashDiffTests {
     @Test
     public void testDiff2() throws URISyntaxException, UpdaterException {
         // test of new firmware into empty MCU
-        URI uri2 = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("updater.ino.slto.v2.hex")).toURI();
+        URI uri2 = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("hex/updater.ino.slto.v2.hex")).toURI();
         BinImage img2 = BinImage.readFromHex(uri2.getPath());
         BinImage img1 = BinImage.dummyFilled(img2.getBinData().length, 0xff);
         performTest(img1, img2);
