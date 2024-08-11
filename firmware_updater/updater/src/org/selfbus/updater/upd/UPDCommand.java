@@ -1,5 +1,8 @@
 package org.selfbus.updater.upd;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -131,19 +134,49 @@ public enum UPDCommand {
             BY_INDEX.put(e.id, e);
         }
     }
-
-    public final byte id;
+    private static final Logger logger = LoggerFactory.getLogger(UPDCommand.class);
+    private final byte id;
     private final String description;
+
     UPDCommand(byte id, String description) {
         this.id = id;
         this.description = description;
     }
 
-    public static UPDCommand valueOfIndex(Integer index) {
-        return BY_INDEX.get(index);
+    public static UPDCommand valueOf(byte index) {
+        return BY_INDEX.getOrDefault(index, UPDCommand.INVALID);
     }
+
+    public byte toByte() {
+        return id;
+    }
+
+    //todo get rid of this stupid "helper" method (needs a little bit more refactoring)
+    public static UPDCommand tryFromByteArray(byte[] bytes) {
+        try {
+            return fromByteArray(bytes);
+        }
+        catch (UPDProtocolException e) {
+            logger.error("Failed with {}", e.getMessage());
+            logger.error("bytes: {}", bytes);
+            return UPDCommand.INVALID;
+        }
+    }
+
+    public static UPDCommand fromByteArray(byte[] bytes) throws UPDProtocolException {
+        if (bytes == null) {
+            throw new UPDProtocolException("bytes==null");
+        }
+
+        if (bytes.length < UPDProtocol.getCommandPosition() - 1) {
+            throw new UPDProtocolException(String.format("Too few bytes. Expected #%d called with #%d",
+                    bytes.length, UPDProtocol.getCommandPosition() - 1));
+        }
+        return UPDCommand.valueOf(bytes[UPDProtocol.getCommandPosition()]);
+    }
+
     @Override
     public String toString() {
-        return String.format("%s.%s", this.getClass().getSimpleName(), this.description);
+        return String.format("0x%02X %s %s", this.id, this.getClass().getSimpleName(), this.description);
     }
 }

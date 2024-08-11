@@ -24,7 +24,6 @@ import java.util.Arrays;
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.selfbus.updater.Mcu.MAX_FLASH_ERASE_TIMEOUT;
-import static org.selfbus.updater.upd.UPDProtocol.COMMAND_POSITION;
 import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 
 /**
@@ -117,10 +116,10 @@ public final class DeviceManagement {
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.info("Requesting UID from {}", progDestination.getAddress());
         byte[] result = sendWithRetry(UPDCommand.REQUEST_UID, new byte[0], getMaxUpdCommandRetry()).data();
-        if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_UID.id) {
-            UPDProtocol.checkResult(result, true);
+        UPDCommand command = UPDCommand.tryFromByteArray(result);
+        if (command != UPDCommand.RESPONSE_UID) {
             restartProgrammingDevice();
-            throw new UpdaterException(String.format("Requesting UID failed! result[%d]=0x%02X", COMMAND_POSITION, result[COMMAND_POSITION]));
+            throw new UpdaterException("Requesting UID failed!");
         }
 
         byte[] uid;
@@ -146,16 +145,14 @@ public final class DeviceManagement {
         telegram[1] = (byte) ToolInfo.versionMinor();
 
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BL_IDENTITY, telegram, getMaxUpdCommandRetry()).data();
-        if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BL_IDENTITY.id)
+        UPDCommand command = UPDCommand.tryFromByteArray(result);
+        if (command != UPDCommand.RESPONSE_BL_IDENTITY)
         {
-            if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_BL_VERSION_MISMATCH.id) {
+            if (command == UPDCommand.RESPONSE_BL_VERSION_MISMATCH) {
                 long minMajorVersion = result[DATA_POSITION] & 0xff;
                 long minMinorVersion = result[DATA_POSITION + 1] & 0xff;
                 logger.error(ansi().fg(RED).a("Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.").reset().toString(),
                         ToolInfo.getVersion(), minMajorVersion, minMinorVersion);
-            }
-            else {
-                UPDProtocol.checkResult(result);
             }
             restartProgrammingDevice();
             throw new UpdaterException("Requesting Bootloader Identity failed!");
@@ -180,25 +177,24 @@ public final class DeviceManagement {
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
         logger.debug("Requesting Boot Descriptor");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_BOOT_DESC, new byte[0], getMaxUpdCommandRetry()).data();
-        if (result[COMMAND_POSITION] != UPDCommand.RESPONSE_BOOT_DESC.id) {
-            UPDProtocol.checkResult(result);
+        UPDCommand command = UPDCommand.tryFromByteArray(result);
+        if (command != UPDCommand.RESPONSE_BOOT_DESC) {
             restartProgrammingDevice();
-            throw new UpdaterException(String.format("Boot descriptor request failed! result[%d]=0x%02X, result[%d]=0x%02X",
-                    COMMAND_POSITION, result[COMMAND_POSITION],
-                    DATA_POSITION, result[DATA_POSITION]));
+            throw new UpdaterException("Boot descriptor request failed!");
         }
+
         BootDescriptor bootDescriptor = BootDescriptor.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
         logger.info("Current firmware: {}", bootDescriptor);
         return bootDescriptor;
     }
 
-    public String requestAppVersionString()
-            throws UpdaterException {
+    public String requestAppVersionString() throws UpdaterException {
         byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[0], getMaxUpdCommandRetry()).data();
-        if (result[COMMAND_POSITION] != UPDCommand.APP_VERSION_RESPONSE.id){
-            UPDProtocol.checkResult(result);
-            return null;
+        UPDCommand command = UPDCommand.tryFromByteArray(result);
+        if (command != UPDCommand.APP_VERSION_RESPONSE) {
+            return "";
         }
+
         return new String(result,DATA_POSITION,result.length - DATA_POSITION);	// Convert 12 bytes to string starting from result[DATA_POSITION];
     }
 
@@ -363,21 +359,16 @@ public final class DeviceManagement {
         }
     }
 
-    public void requestBootLoaderStatistic()
-            throws UpdaterException {
+    public void requestBootLoaderStatistic() throws UpdaterException {
         logger.debug("Requesting Bootloader statistic");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
-        if (result[COMMAND_POSITION] == UPDCommand.RESPONSE_STATISTIC.id)
-        {
-            BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-            logger.info("Bootloader: {}", blStatistic);
+        UPDCommand command = UPDCommand.tryFromByteArray(result);
+        if (command != UPDCommand.RESPONSE_STATISTIC) {
+            logger.warn("Requesting Bootloader statistic {}failed!{}", ansi().fg(RED), ansi().reset());
         }
-        else {
-            logger.warn(ansi().fg(RED).a("  {}").reset().toString(),
-                    String.format("Requesting Bootloader statistic failed! result[%d]=0x%02X, result[%d]=0x%02X",
-                            COMMAND_POSITION, result[COMMAND_POSITION],
-                            DATA_POSITION, result[DATA_POSITION]));
-        }
+
+        BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
+        logger.info("Bootloader: {}", blStatistic); //todo does´nt work with ProgressInfo and SpinningCursor
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
@@ -385,7 +376,7 @@ public final class DeviceManagement {
         ResponseResult result = new ResponseResult();
         while (true) {
             try {
-                byte[] data2 = mc.sendUpdateData(progDestination, command.id, data);
+                byte[] data2 = mc.sendUpdateData(progDestination, command.toByte(), data);
                 result.copyFromArray(data2);
                 return result;
             }

@@ -15,7 +15,7 @@ public final class UPDProtocol {
 
     private static final Logger logger = LoggerFactory.getLogger(UPDProtocol.class);
 
-    public static final int COMMAND_POSITION = 2;
+    private static final int COMMAND_POSITION = 2;
     public static final int DATA_POSITION = 3;
     /**
      * uid/guid length of the mcu used for unlocking/flashing.
@@ -31,11 +31,10 @@ public final class UPDProtocol {
     }
 
     public static UDPResult checkResult(byte[] result, boolean verbose) {
-        if (result[COMMAND_POSITION] != UPDCommand.SEND_LAST_ERROR.id) {
-            logger.error("checkResult called on other than UPDCommand.SEND_LAST_ERROR.id=0x{}, result[{}]=0x{}",
-                    String.format("%02X", UPDCommand.SEND_LAST_ERROR.id),
-                    COMMAND_POSITION,
-                    String.format("%02X", result[COMMAND_POSITION]));
+        UPDCommand command = UPDCommand.valueOf(result[getCommandPosition()]);
+        if (command != UPDCommand.SEND_LAST_ERROR) {
+            logger.error("checkResult called on other than {}, ", UPDCommand.SEND_LAST_ERROR);
+            logger.error("   result[{}]=0x{}", getCommandPosition(), String.format("%02X", result[getCommandPosition()]));
             return UDPResult.INVALID;
         }
 
@@ -76,5 +75,9 @@ public final class UPDProtocol {
             txt.append(String.format("%02X", bytes[i]));
         }
         return txt.toString();
+    }
+
+    public static int getCommandPosition() {
+        return COMMAND_POSITION;
     }
 }

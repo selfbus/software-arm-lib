@@ -228,11 +228,10 @@ public class Updater implements Runnable {
 
             logger.debug("Requesting APP_VERSION");
             String appVersion = dm.requestAppVersionString();
-            if (appVersion != null) {
-                logger.info("Current APP_VERSION: {}", ansi().fgBright(GREEN).a(appVersion).reset().toString());
-            }
-            else {
-                logger.info("Requesting APP_VERSION {}", ansi().fgBright(RED).a("  failed!").reset().toString());
+            if (appVersion.isEmpty()) {
+                logger.info("Current APP_VERSION: {}invalid{} ", ansi().fgBright(RED), ansi().reset());
+            } else {
+                logger.info("Current APP_VERSION: {}{}{}", ansi().fgBright(GREEN), appVersion, ansi().reset());
             }
 
             //  From here on we need a valid firmware

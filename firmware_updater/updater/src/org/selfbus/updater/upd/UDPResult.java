@@ -114,7 +114,7 @@ public enum UDPResult {
      * @return Instance of the UPDResult from the given ID
      */
     public static UDPResult valueOf(byte index) {
-        return BY_INDEX.getOrDefault(index, INVALID);
+        return BY_INDEX.getOrDefault(index, UDPResult.INVALID);
     }
 
     @Override
