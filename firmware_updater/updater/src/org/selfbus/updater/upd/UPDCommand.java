@@ -10,12 +10,10 @@ import java.util.Map;
  * </p>
  */
 public enum UPDCommand {
-    /*
-     * Erase flash sector number (data[3]).
-     * <p>Device must be unlocked.</p>
-     * @deprecated Use ERASE_ADDRESSRANGE instead.
+    /**
+     * Marks an invalid {@link UPDCommand} code
      */
-    //ERASE_SECTOR((byte) 0, "ERASE_SECTOR"),
+    INVALID((byte) 0, "INVALID"),
     /**
      * Copy ((data[0] & 0x0f)-1) bytes to ramBuffer starting from address data[3].
      * <p>Device must be unlocked.</p>
