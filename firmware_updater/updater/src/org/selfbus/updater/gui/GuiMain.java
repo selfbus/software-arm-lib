@@ -561,18 +561,12 @@ public class GuiMain extends JFrame {
         }
 
         for (var guiObjectEntry : GuiObjectsMap.entrySet()) {
-            if (guiObjectEntry.getValue().contains(selectedScenario) && guiObjectEntry.getValue().contains(GuiObjsVisOpts.ADVSET)) {
-                if (advancedSettingsCheckBox.isSelected()) {
-                    ((JComponent) guiObjectEntry.getKey()).setVisible(true);
-                } else {
-                    ((JComponent) guiObjectEntry.getKey()).setVisible(false);
-                }
-
-            } else if (guiObjectEntry.getValue().contains(selectedScenario)) {
-                ((JComponent) guiObjectEntry.getKey()).setVisible(true);
-            } else {
-
-                ((JComponent) guiObjectEntry.getKey()).setVisible(false);
+            boolean isInScenario = guiObjectEntry.getValue().contains(selectedScenario);
+            if (isInScenario && guiObjectEntry.getValue().contains(GuiObjsVisOpts.ADVSET)) {
+                ((JComponent) guiObjectEntry.getKey()).setVisible(advancedSettingsCheckBox.isSelected());
+            }
+            else {
+                ((JComponent) guiObjectEntry.getKey()).setVisible(isInScenario);
             }
         }
     }
