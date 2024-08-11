@@ -148,9 +148,7 @@ public class GuiMain extends JFrame {
 
                         final Updater d = new Updater(cliOptions);
                         d.run();
-                        SwingUtilities.invokeLater(() -> {
-                            guiMainInstance.buttonStartStopFlash.setText(startFlash);
-                        });
+                        SwingUtilities.invokeLater(() -> guiMainInstance.buttonStartStopFlash.setText(startFlash));
                     }
                 };
                 updaterThread.start();
@@ -166,9 +164,7 @@ public class GuiMain extends JFrame {
                     setCliOptions();
                     final Updater upd = new Updater(cliOptions);
                     String uid = upd.requestUid();
-                    SwingUtilities.invokeLater(() -> {
-                        guiMainInstance.textFieldUid.setText(uid);
-                    });
+                    SwingUtilities.invokeLater(() -> guiMainInstance.textFieldUid.setText(uid));
                 });
                 updaterThread.start();
             }

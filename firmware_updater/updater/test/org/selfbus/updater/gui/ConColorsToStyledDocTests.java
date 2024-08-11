@@ -169,19 +169,13 @@ public class ConColorsToStyledDocTests {
 
     @Test
     public void testExceptionOnInvalidCode() {
-        assertThrows(IllegalStateException.class, () -> {
-            testColorCodeToStyle(new String[]{"999"});
-        });
+        assertThrows(IllegalStateException.class, () -> testColorCodeToStyle(new String[]{"999"}));
     }
 
     @Test
     public void testExceptionOnExtendedColors() {
-        assertThrows(IllegalStateException.class, () -> {
-            testColorCodeToStyle(new String[]{"0","38"});
-        });
-        assertThrows(IllegalStateException.class, () -> {
-            testColorCodeToStyle(new String[]{"1", "48"});
-        });
+        assertThrows(IllegalStateException.class, () -> testColorCodeToStyle(new String[]{"0","38"}));
+        assertThrows(IllegalStateException.class, () -> testColorCodeToStyle(new String[]{"1", "48"}));
     }
 
     @Test
@@ -247,9 +241,7 @@ public class ConColorsToStyledDocTests {
         };
         for (String underTest : testCases) {
             document.remove(0, document.getLength());
-            assertThrows(IllegalStateException.class, () -> {
-                ConColorsToStyledDoc.Convert(underTest, textPane);
-            });
+            assertThrows(IllegalStateException.class, () -> ConColorsToStyledDoc.Convert(underTest, textPane));
         }
     }
 
