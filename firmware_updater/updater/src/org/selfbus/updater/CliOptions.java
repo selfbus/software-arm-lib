@@ -147,7 +147,7 @@ public class CliOptions {
     private IndividualAddress progDevicePhysicalAddress;
     private IndividualAddress ownPhysicalAddress;
     private IndividualAddress devicePhysicalAddress = null;
-    private String uid;
+    private String uid = "";
     private boolean flashingFullModeIsSet = false;
     private int delayMs = 0;
 
