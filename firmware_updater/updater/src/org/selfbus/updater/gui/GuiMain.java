@@ -99,6 +99,73 @@ public class GuiMain extends JFrame {
     private static final String FILENAME_SETTINGS = "settings.xml";
     private static final String LANGUAGE_RESOURCE_BUNDLE = "language/GuiMain";
 
+    String getTranslation(String text) {
+        return $$$getMessageFromBundle$$$(LANGUAGE_RESOURCE_BUNDLE, text);
+    }
+
+    private boolean getUpdaterIsRunning() {
+        if (updaterThread == null) {
+            return false;
+        }
+        return updaterThread.getState() != Thread.State.TERMINATED;
+    }
+
+    private void handleStartStopFlashAction() {
+        if (getUpdaterIsRunning()) {
+            updaterThread.interrupt();
+            updaterFinished();
+            logger.info(getTranslation("logMessageCanceledFlashing"));
+            return;
+        }
+
+        jLoggingPane.setText("");
+        jLoggingPane.setFocusable(false); // Needed for the SpinningCursor to work properly
+        updaterThread = new Thread(() -> {
+            setCliOptions();
+            final Updater updater = new Updater(cliOptions);
+            updater.run();
+            SwingUtilities.invokeLater(this::updaterFinished);
+        });
+        updaterThread.start();
+        buttonStartStopFlash.setText(getTranslation("stopFlash"));
+    }
+
+    private void updaterFinished() {
+        buttonStartStopFlash.setText(getTranslation("startFlash"));
+        jLoggingPane.setFocusable(true);
+    }
+
+    private void handleLoadFileAction() {
+        JFileChooser fc = new JFileChooser();
+        String filePath = textFieldFileName.getText();
+
+        if (filePath != null && !filePath.isEmpty()) {
+            fc.setCurrentDirectory(new File(filePath).getParentFile());
+        }
+        fc.setFileFilter(new FileNameExtensionFilter("HEX", "hex"));
+        int result = fc.showOpenDialog(panelMain);
+
+        if (result == JFileChooser.APPROVE_OPTION) {
+            if (fc.getSelectedFile().exists()) {
+                textFieldFileName.setText(fc.getSelectedFile().toString());
+            }
+        }
+    }
+
+    private void handleRequestUidAction() {
+        updaterThread = new Thread(() -> {
+            setCliOptions();
+            final Updater upd = new Updater(cliOptions);
+            String uid = upd.requestUid();
+            SwingUtilities.invokeLater(() -> guiMainInstance.textFieldUid.setText(uid));
+        });
+        updaterThread.start();
+    }
+
+    private void handleReloadGatewaysAction() {
+        new Thread(this::loadKnxIpInterfacesAndFillComboBox).start();
+    }
+
     public GuiMain() {
         //todo load language from FILENAME_SETTINGS and set it here.
         // Has to be done before calling $$$setupUI$$$();
@@ -106,64 +173,13 @@ public class GuiMain extends JFrame {
         //Locale.setDefault(Locale.ROOT);    // default language for tests
         $$$setupUI$$$();
         guiTranslation = ResourceBundle.getBundle(LANGUAGE_RESOURCE_BUNDLE, Locale.getDefault());
-        buttonLoadFile.addActionListener(actionListener -> {
-            JFileChooser fc = new JFileChooser();
-            String filePath = textFieldFileName.getText();
 
-            if (filePath != null && !filePath.isEmpty()) {
-                fc.setCurrentDirectory(new File(filePath).getParentFile());
-            }
-            fc.setFileFilter(new FileNameExtensionFilter("HEX", "hex"));
-            int result = fc.showOpenDialog(panelMain);
-
-            if (result == JFileChooser.APPROVE_OPTION) {
-                if (fc.getSelectedFile().exists()) {
-                    textFieldFileName.setText(fc.getSelectedFile().toString());
-                }
-            }
-        });
-
-        buttonStartStopFlash.addActionListener(actionListener -> {
-            String stopFlash = guiTranslation.getString("stopFlash");
-            String startFlash = guiTranslation.getString("startFlash");
-
-            if (Objects.equals(buttonStartStopFlash.getText(), stopFlash)) {
-                if (updaterThread != null) {
-                    updaterThread.interrupt();
-                    buttonStartStopFlash.setText(startFlash);
-                    logger.info(guiTranslation.getString("logMessageCanceledFlashing"));
-                    return;
-                }
-            }
-
-            jLoggingPane.setText("");
-            updaterThread = new Thread(() -> {
-                setCliOptions();
-
-                final Updater updater = new Updater(cliOptions);
-                updater.run();
-                SwingUtilities.invokeLater(() -> guiMainInstance.buttonStartStopFlash.setText(startFlash));
-            });
-            updaterThread.start();
-            buttonStartStopFlash.setText(stopFlash);
-        });
-
-        buttonRequestUid.addActionListener(actionListener -> {
-
-            updaterThread = new Thread(() -> {
-                setCliOptions();
-                final Updater upd = new Updater(cliOptions);
-                String uid = upd.requestUid();
-                SwingUtilities.invokeLater(() -> guiMainInstance.textFieldUid.setText(uid));
-            });
-            updaterThread.start();
-        });
-
-        comboBoxScenario.addActionListener(actionListener -> setGuiElementsVisibility());
-
-        advancedSettingsCheckBox.addActionListener(actionListener -> setGuiElementsVisibility());
-        reloadGatewaysButton.addActionListener(actionListener -> new Thread(this::loadKnxIpInterfacesAndFillComboBox).start());
-
+        buttonLoadFile.addActionListener(actionEvent -> handleLoadFileAction());
+        buttonStartStopFlash.addActionListener(actionEvent -> handleStartStopFlashAction());
+        buttonRequestUid.addActionListener(actionEvent -> handleRequestUidAction());
+        comboBoxScenario.addActionListener(actionEvent -> setGuiElementsVisibility());
+        advancedSettingsCheckBox.addActionListener(actionEvent -> setGuiElementsVisibility());
+        reloadGatewaysButton.addActionListener(actionEvent -> handleReloadGatewaysAction());
         comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
     }
 
