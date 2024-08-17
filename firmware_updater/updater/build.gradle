@@ -128,6 +128,10 @@ dependencies {
     // GUI
     implementation files('libs/forms_rt.jar')
 
+    // GUI settings
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.17.2'
+    //implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
+
     // Intel hex parser
     // commit 9dec823 of 2023/02/27
     // https://github.com/j123b567/java-intelhex-parser/commit/9dec82355697dba028e8aa1832b8b9ee1b66d9e2

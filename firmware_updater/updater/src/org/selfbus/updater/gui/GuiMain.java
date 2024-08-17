@@ -19,8 +19,6 @@ import javax.swing.text.StyleContext;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
@@ -93,8 +91,8 @@ public class GuiMain extends JFrame {
     private CliOptions cliOptions;
     private Thread updaterThread;
     private final static Logger logger = LoggerFactory.getLogger(GuiMain.class);
-    private static final Properties userProperties = new Properties();
-    private static final String FILENAME_SETTINGS = "settings.xml";
+    private final GuiSettings guiSettings = new GuiSettings(this);
+    private static final String FILENAME_SETTINGS = "settings.json";
     private static final String LANGUAGE_RESOURCE_BUNDLE = "language/GuiMain";
 
     String getTranslation(String text) {
@@ -207,82 +205,64 @@ public class GuiMain extends JFrame {
         }
     };
 
+    private void setComponentNames() {
+        setName("MainFrame");
+        advancedSettingsCheckBox.setName("AdvancedSettings"); // 1
+        textBoxKnxGatewayIpAddr.setName("GatewayIpAddr");
+        textFieldPort.setName("GatewayPort");
+        natCheckBox.setName("UseNat");
+        textFieldTpuart.setName("TpUart"); // 5
+        textFieldSerial.setName("Serial");
+        comboBoxMedium.setName("Medium");
+        comboBoxScenario.setName("Scenario");
+        textFieldFileName.setName("FlashFilePath");
+        textFieldUid.setName("Uid"); // 10
+        CheckBoxDiffFlash.setName("DiffFlash");
+        eraseCompleteFlashCheckBox.setName("EraseCompleteFlash");
+        noFlashCheckBox.setName("NoFlash");
+        textFieldBootloaderDeviceAddress.setName("BootloaderDeviceAddress");
+        textFieldDeviceAddress.setName("DeviceAddress"); // 15
+        textFieldOwnAddress.setName("OwnAddress");
+        textFieldDelay.setName("DelayMs");
+        comboBoxKnxTelegramPriority.setName("TelegramPriority");
+        textFieldKnxSecureUser.setName("SecureUser");
+        textFieldKnxSecureUserPwd.setName("SecureUserPassword"); //20
+        textFieldKnxSecureDevicePwd.setName("SecureDevicePassword"); //21
+    }
+
     @SuppressWarnings("SameParameterValue")
     private void saveAllParameters(String fileName) {
-        userProperties.setProperty("AdvancedSettings", advancedSettingsCheckBox.isSelected() ? "true" : "false");
-        userProperties.setProperty("GatewayIpAddr", textBoxKnxGatewayIpAddr.getText());
-        userProperties.setProperty("GatewayPort", textFieldPort.getText());
-        userProperties.setProperty("UseNat", natCheckBox.isSelected() ? "true" : "false");
-        userProperties.setProperty("TpUart", textFieldTpuart.getText());
-        userProperties.setProperty("Serial", textFieldSerial.getText());
-        userProperties.setProperty("Medium", Objects.requireNonNull(comboBoxMedium.getSelectedItem()).toString());
-        userProperties.setProperty("Scenario", String.valueOf(((ComboItem) Objects.requireNonNull(comboBoxScenario.getSelectedItem())).getValue()));
-        userProperties.setProperty("FlashFilePath", textFieldFileName.getText());
-        userProperties.setProperty("Uid", textFieldUid.getText());
-        userProperties.setProperty("DiffFlash", CheckBoxDiffFlash.isSelected() ? "true" : "false");
-        userProperties.setProperty("EraseCompleteFlash", eraseCompleteFlashCheckBox.isSelected() ? "true" : "false");
-        userProperties.setProperty("NoFlash", noFlashCheckBox.isSelected() ? "true" : "false");
-        userProperties.setProperty("BootloaderDeviceAddress", textFieldBootloaderDeviceAddress.getText());
-        userProperties.setProperty("DeviceAddress", textFieldDeviceAddress.getText());
-        userProperties.setProperty("OwnAddress", textFieldOwnAddress.getText());
-        userProperties.setProperty("DelayMs", textFieldDelay.getText());
-        userProperties.setProperty("TelegramPriority", Objects.requireNonNull(comboBoxKnxTelegramPriority.getSelectedItem()).toString());
-        userProperties.setProperty("SecureUser", textFieldKnxSecureUser.getText());
-        userProperties.setProperty("SecureUserPassword", textFieldKnxSecureUserPwd.getText());
-        userProperties.setProperty("SecureDevicePassword", textFieldKnxSecureDevicePwd.getText());
-        userProperties.setProperty("WindowSizeHeight", String.valueOf(this.getSize().height));
-        userProperties.setProperty("WindowSizeWidth", String.valueOf(this.getSize().width));
-
         try {
-            userProperties.storeToXML(new FileOutputStream(fileName), "");
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
+            guiSettings.writeComponentSettings(fileName);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                    String.format(getTranslation("IOException.savingSettings.Message"), fileName, e.getMessage()),
+                    this.getTranslation("Warning"), JOptionPane.WARNING_MESSAGE);
         }
     }
 
     @SuppressWarnings("SameParameterValue")
-    private void loadAllParameters(String fileName) {
-
-        if (new File(fileName).exists()) {
-            try {
-                userProperties.loadFromXML(new FileInputStream(fileName));
-
-                advancedSettingsCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("AdvancedSettings")));
-                textBoxKnxGatewayIpAddr.setText(userProperties.getProperty("GatewayIpAddr"));
-                textFieldPort.setText(userProperties.getProperty("GatewayPort"));
-                natCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("UseNat")));
-                textFieldTpuart.setText(userProperties.getProperty("TpUart"));
-                textFieldSerial.setText(userProperties.getProperty("Serial"));
-                comboBoxMedium.setSelectedItem(userProperties.getProperty("Medium"));
-                textFieldFileName.setText(userProperties.getProperty("FlashFilePath"));
-                textFieldUid.setText(userProperties.getProperty("Uid"));
-                CheckBoxDiffFlash.setSelected(Boolean.parseBoolean(userProperties.getProperty("DiffFlash")));
-                eraseCompleteFlashCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("EraseCompleteFlash")));
-                noFlashCheckBox.setSelected(Boolean.parseBoolean(userProperties.getProperty("NoFlash")));
-                textFieldBootloaderDeviceAddress.setText(userProperties.getProperty("BootloaderDeviceAddress"));
-                textFieldDeviceAddress.setText(userProperties.getProperty("DeviceAddress"));
-                textFieldOwnAddress.setText(userProperties.getProperty("OwnAddress"));
-                textFieldDelay.setText(userProperties.getProperty("DelayMs"));
-                comboBoxKnxTelegramPriority.setSelectedItem(userProperties.getProperty("TelegramPriority"));
-                textFieldKnxSecureUser.setText(userProperties.getProperty("SecureUser"));
-                textFieldKnxSecureUserPwd.setText(userProperties.getProperty("SecureUserPassword"));
-                textFieldKnxSecureDevicePwd.setText(userProperties.getProperty("SecureDevicePassword"));
-
-                this.setSize(Integer.parseInt(userProperties.getProperty("WindowSizeWidth")), Integer.parseInt(userProperties.getProperty("WindowSizeHeight")));
-
-                for (int i = 0; i < comboBoxScenario.getItemCount(); i++) {
-                    if (Objects.equals(String.valueOf(comboBoxScenario.getItemAt(i).value), userProperties.getProperty("Scenario"))) {
-                        comboBoxScenario.setSelectedItem(comboBoxScenario.getItemAt(i));
-                        break;
-                    }
-                }
-
-                setGuiElementsVisibility();
-
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+    private boolean loadAllParameters(String fileName) {
+        try {
+            setComponentNames();
+            guiSettings.readComponentsSettings(fileName);
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(this,
+                    String.format(getTranslation("IOException.loadingSettings.Message"), fileName, e.getMessage()),
+                    this.getTranslation("Warning"), JOptionPane.WARNING_MESSAGE);
+            return false;
+        }
+        //todo fix combobox selection
+/*
+        for (int i = 0; i < comboBoxScenario.getItemCount(); i++) {
+            if (Objects.equals(String.valueOf(comboBoxScenario.getItemAt(i).value), guiSettings.getProperty("Scenario"))) {
+                comboBoxScenario.setSelectedItem(comboBoxScenario.getItemAt(i));
+                break;
             }
         }
+*/
+        setGuiElementsVisibility();
+        return true;
     }
 
     private void setCliOptions() {
@@ -328,30 +308,31 @@ public class GuiMain extends JFrame {
         new GuiMain();
     }
 
-    public void startUpdaterGui() {
-        this.setContentPane(this.panelMain);
-        this.setTitle(ToolInfo.getToolAndVersion());
-        this.setSize(1000, 800);
-        this.jLoggingPane.setFont(new Font(Font.MONOSPACED, PLAIN, 12));
-        this.jLoggingPane.setBackground(DefaultBackgroundColor);
-        this.jLoggingPane.setForeground(DefaultForegroundColor);
-        this.setVisible(true);
-        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        new Thread(this::loadKnxIpInterfacesAndFillComboBox).start();
-
+    private void startUpdaterGui() {
+        setContentPane(panelMain);
+        setTitle(ToolInfo.getToolAndVersion());
+        jLoggingPane.setFont(new Font(Font.MONOSPACED, PLAIN, 12));
+        jLoggingPane.setBackground(DefaultBackgroundColor);
+        jLoggingPane.setForeground(DefaultForegroundColor);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         TextAppender textAppender = ListTextAppenders.searchAppender();
         if (textAppender != null) {
             textAppender.setTextPane(this.jLoggingPane);
         }
-
-
         initGuiElementsVisibility();
         fillScenarios();
         fillMediumComboBox();
         fillTelegramPriorityComboBox();
 
-        loadAllParameters(FILENAME_SETTINGS);
+        setMinimumSize(new Dimension(800, 600));
+        if (!loadAllParameters(FILENAME_SETTINGS)) {
+            setLocationRelativeTo(null);
+        }
+        int windowExtendedState = getExtendedState();
+        if ((windowExtendedState & Frame.ICONIFIED) == Frame.ICONIFIED) {
+            windowExtendedState &= ~Frame.ICONIFIED;
+        }
+        setExtendedState(windowExtendedState);
 
         mainScrollPane.getVerticalScrollBar().setUnitIncrement(10);
 
@@ -361,6 +342,10 @@ public class GuiMain extends JFrame {
                 saveAllParameters(FILENAME_SETTINGS);
             }
         });
+        setVisible(true);
+        if (textBoxKnxGatewayIpAddr.getText().isEmpty()) {
+            new Thread(this::loadKnxIpInterfacesAndFillComboBox).start();
+        }
     }
 
     private void loadKnxIpInterfacesAndFillComboBox() {
@@ -435,7 +420,7 @@ public class GuiMain extends JFrame {
         comboBoxMedium = new JComboBox<>();
         comboBoxScenario = new JComboBox<>();
         comboBoxKnxTelegramPriority = new JComboBox<>();
-        this.setFrameImages();
+        setFrameImages();
     }
 
     public static class ComboItem {
