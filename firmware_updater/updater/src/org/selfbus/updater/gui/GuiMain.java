@@ -90,7 +90,6 @@ public class GuiMain extends JFrame {
     private JScrollPane mainScrollPane;
     private JButton reloadGatewaysButton;
 
-    private final ResourceBundle guiTranslation;
     private CliOptions cliOptions;
     private Thread updaterThread;
     public static GuiMain guiMainInstance;
@@ -186,8 +185,6 @@ public class GuiMain extends JFrame {
         //Locale.setDefault(Locale.ENGLISH); // for tests
         //Locale.setDefault(Locale.ROOT);    // default language for tests
         $$$setupUI$$$();
-        guiTranslation = ResourceBundle.getBundle(LANGUAGE_RESOURCE_BUNDLE, Locale.getDefault());
-
         buttonLoadFile.addActionListener(actionEvent -> handleLoadFileAction());
         buttonStartStopFlash.addActionListener(actionEvent -> handleStartStopFlashAction());
         buttonRequestUid.addActionListener(actionEvent -> handleRequestUidAction());
@@ -377,7 +374,7 @@ public class GuiMain extends JFrame {
 
         comboBoxIpGateways.removeAllItems();
 
-        comboBoxIpGateways.addItem(new CalimeroSearchComboItem(guiTranslation.getString("selectInterface"), null));
+        comboBoxIpGateways.addItem(new CalimeroSearchComboItem(getTranslation("selectInterface"), null));
 
         DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
                 comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
@@ -389,9 +386,9 @@ public class GuiMain extends JFrame {
 
     private void fillScenarios() {
         if (comboBoxScenario == null) return;
-        comboBoxScenario.addItem(new ComboItem(guiTranslation.getString(GuiObjsVisOpts.NEWDEV.getVisOption()), GuiObjsVisOpts.NEWDEV));
-        comboBoxScenario.addItem(new ComboItem(guiTranslation.getString(GuiObjsVisOpts.APPDEV.getVisOption()), GuiObjsVisOpts.APPDEV));
-        comboBoxScenario.addItem(new ComboItem(guiTranslation.getString(GuiObjsVisOpts.REQUID.getVisOption()), GuiObjsVisOpts.REQUID));
+        comboBoxScenario.addItem(new ComboItem(getTranslation(GuiObjsVisOpts.NEWDEV.getVisOption()), GuiObjsVisOpts.NEWDEV));
+        comboBoxScenario.addItem(new ComboItem(getTranslation(GuiObjsVisOpts.APPDEV.getVisOption()), GuiObjsVisOpts.APPDEV));
+        comboBoxScenario.addItem(new ComboItem(getTranslation(GuiObjsVisOpts.REQUID.getVisOption()), GuiObjsVisOpts.REQUID));
     }
 
     private void fillMediumComboBox() {
@@ -580,13 +577,13 @@ public class GuiMain extends JFrame {
 
         switch (selectedScenario) {
             case NEWDEV:
-                labelScenarioHint.setText(guiTranslation.getString("newDeviceHint"));
+                labelScenarioHint.setText(getTranslation("newDeviceHint"));
                 break;
             case APPDEV:
-                labelScenarioHint.setText(guiTranslation.getString("appDeviceHint"));
+                labelScenarioHint.setText(getTranslation("appDeviceHint"));
                 break;
             case REQUID:
-                labelScenarioHint.setText(guiTranslation.getString("requestUidHint"));
+                labelScenarioHint.setText(getTranslation("requestUidHint"));
                 break;
         }
 
@@ -594,8 +591,7 @@ public class GuiMain extends JFrame {
             boolean isInScenario = guiObjectEntry.getValue().contains(selectedScenario);
             if (isInScenario && guiObjectEntry.getValue().contains(GuiObjsVisOpts.ADVSET)) {
                 ((JComponent) guiObjectEntry.getKey()).setVisible(advancedSettingsCheckBox.isSelected());
-            }
-            else {
+            } else {
                 ((JComponent) guiObjectEntry.getKey()).setVisible(isInScenario);
             }
         }
