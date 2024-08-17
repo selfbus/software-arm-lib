@@ -92,7 +92,6 @@ public class GuiMain extends JFrame {
 
     private CliOptions cliOptions;
     private Thread updaterThread;
-    public static GuiMain guiMainInstance;
     private final static Logger logger = LoggerFactory.getLogger(GuiMain.class);
     private static final Properties userProperties = new Properties();
     private static final String FILENAME_SETTINGS = "settings.xml";
@@ -170,7 +169,7 @@ public class GuiMain extends JFrame {
             setCliOptions();
             final Updater upd = new Updater(cliOptions);
             String uid = upd.requestUid();
-            SwingUtilities.invokeLater(() -> guiMainInstance.textFieldUid.setText(uid));
+            SwingUtilities.invokeLater(() -> this.textFieldUid.setText(uid));
         });
         updaterThread.start();
     }
@@ -192,6 +191,7 @@ public class GuiMain extends JFrame {
         advancedSettingsCheckBox.addActionListener(actionEvent -> setGuiElementsVisibility());
         reloadGatewaysButton.addActionListener(actionEvent -> handleReloadGatewaysAction());
         comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
+        startUpdaterGui();
     }
 
     // externe Definition des ActionListeners, weil dieser vor der Füllung der ComboBox gelöscht und anschließend
@@ -325,10 +325,7 @@ public class GuiMain extends JFrame {
     }
 
     public static void startSwingGui() {
-        SwingUtilities.invokeLater(() -> {
-            guiMainInstance = new GuiMain();
-            guiMainInstance.startUpdaterGui();
-        });
+        new GuiMain();
     }
 
     public void startUpdaterGui() {
