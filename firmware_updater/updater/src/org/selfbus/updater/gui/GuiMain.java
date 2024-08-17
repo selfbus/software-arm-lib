@@ -137,12 +137,26 @@ public class GuiMain extends JFrame {
 
     private void handleLoadFileAction() {
         JFileChooser fc = new JFileChooser();
-        String filePath = textFieldFileName.getText();
+        String fileName = textFieldFileName.getText();
 
-        if (filePath != null && !filePath.isEmpty()) {
-            fc.setCurrentDirectory(new File(filePath).getParentFile());
+        File initialDirectory = null;
+        if (fileName != null && !fileName.isEmpty()) {
+            // try to set to the directory of the last .hex firmware
+            initialDirectory = new File(fileName).getParentFile();
+            if (!initialDirectory.exists() || !initialDirectory.isDirectory()) {
+                initialDirectory = null;
+            }
         }
-        fc.setFileFilter(new FileNameExtensionFilter("HEX", "hex"));
+
+        if (initialDirectory == null) {
+            // set to current working directory
+            String currentDirectory = System.getProperty("user.dir");
+            initialDirectory = new File(currentDirectory);
+        }
+
+        fc.setCurrentDirectory(initialDirectory);
+
+        fc.setFileFilter(new FileNameExtensionFilter(getTranslation("loadFile.firmwareFilterDescription"), "hex"));
         int result = fc.showOpenDialog(panelMain);
 
         if (result == JFileChooser.APPROVE_OPTION) {
