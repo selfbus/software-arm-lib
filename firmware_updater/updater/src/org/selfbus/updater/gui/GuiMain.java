@@ -600,6 +600,7 @@ public class GuiMain extends JFrame {
         panelMain = new JPanel();
         panelMain.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), -1, -1));
         panelMain.setAutoscrolls(true);
+        panelMain.setMinimumSize(new Dimension(400, 300));
         advancedSettingsCheckBox = new JCheckBox();
         advancedSettingsCheckBox.setSelected(false);
         this.$$$loadButtonText$$$(advancedSettingsCheckBox, this.$$$getMessageFromBundle$$$("language/GuiMain", "advancedSettings"));

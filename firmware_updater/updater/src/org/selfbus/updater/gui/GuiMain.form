@@ -7,6 +7,7 @@
     </constraints>
     <properties>
       <autoscrolls value="true"/>
+      <minimumSize width="400" height="300"/>
     </properties>
     <border type="none"/>
     <children>
