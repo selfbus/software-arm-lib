@@ -119,7 +119,7 @@ public class GuiMain extends JFrame {
             setCliOptions();
             final Updater updater = new Updater(cliOptions);
             updater.run();
-            SwingUtilities.invokeLater(this::updaterFinished);
+            SwingUtilities.invokeLater(this::updaterFinished); //todo implement callback in Updater when done
         });
         updaterThread.start();
         buttonStartStopFlash.setText(getTranslation("stopFlash"));

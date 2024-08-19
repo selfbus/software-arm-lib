@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 
 public class GuiSettings {
@@ -43,7 +42,7 @@ public class GuiSettings {
     }
 
     private void readComponentData(Component component, JsonNode node) {
-        String nodeKey = getComponentSettingKey(component);
+        String nodeKey;
         //todo this is a bad hack, because our GuiMain.MainFrame is saved with json key `ObjectNode`
         // not sure why
         if (component == parent) {
