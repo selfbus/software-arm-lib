@@ -61,6 +61,7 @@
                   <grid row="1" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="e1373"/>
                   <text resource-bundle="language/GuiMain" key="selectKnxIpGateway"/>
                 </properties>
               </component>
@@ -75,6 +76,7 @@
                   <grid row="2" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="af8a6"/>
                   <text resource-bundle="language/GuiMain" key="ipAddress"/>
                 </properties>
               </component>
@@ -107,6 +109,7 @@
                   <grid row="3" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="30052"/>
                   <text resource-bundle="language/GuiMain" key="port"/>
                 </properties>
               </component>
@@ -139,6 +142,7 @@
                   <grid row="5" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="2f19a"/>
                   <text resource-bundle="language/GuiMain" key="tpuart"/>
                 </properties>
               </component>
@@ -157,6 +161,7 @@
                   <grid row="6" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="c311b"/>
                   <text resource-bundle="language/GuiMain" key="serial"/>
                 </properties>
               </component>
@@ -165,6 +170,7 @@
                   <grid row="7" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="ccbd9"/>
                   <text resource-bundle="language/GuiMain" key="medium"/>
                 </properties>
               </component>
@@ -190,6 +196,7 @@
                   <grid row="10" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="924d5"/>
                   <text resource-bundle="language/GuiMain" key="scenario"/>
                 </properties>
               </component>
@@ -222,6 +229,7 @@
                   <grid row="12" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="7a1f9"/>
                   <text resource-bundle="language/GuiMain" key="fileName"/>
                 </properties>
               </component>
@@ -254,6 +262,7 @@
                   <grid row="14" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="cfd70"/>
                   <text resource-bundle="language/GuiMain" key="uid"/>
                 </properties>
               </component>
@@ -327,6 +336,7 @@
                   <grid row="20" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="df4fa"/>
                   <text resource-bundle="language/GuiMain" key="knxProgDeviceAddr"/>
                 </properties>
               </component>
@@ -335,6 +345,7 @@
                   <grid row="21" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="962a4"/>
                   <text resource-bundle="language/GuiMain" key="knxDeviceAddr"/>
                 </properties>
               </component>
@@ -343,6 +354,7 @@
                   <grid row="22" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="b3d24"/>
                   <text resource-bundle="language/GuiMain" key="knxOwnAddress"/>
                 </properties>
               </component>
@@ -367,6 +379,7 @@
                   <grid row="23" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="f08e7"/>
                   <text resource-bundle="language/GuiMain" key="knxMessageDelay"/>
                 </properties>
               </component>
@@ -381,6 +394,7 @@
                   <grid row="25" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="885ac"/>
                   <text resource-bundle="language/GuiMain" key="messagePriority"/>
                 </properties>
               </component>
@@ -389,6 +403,7 @@
                   <grid row="26" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="3fed"/>
                   <text resource-bundle="language/GuiMain" key="knxSecureUser"/>
                 </properties>
               </component>
@@ -413,6 +428,7 @@
                   <grid row="27" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="61908"/>
                   <text resource-bundle="language/GuiMain" key="knxSecureUserPwd"/>
                 </properties>
               </component>
@@ -437,6 +453,7 @@
                   <grid row="28" column="1" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
                 </constraints>
                 <properties>
+                  <labelFor value="e6fe3"/>
                   <text resource-bundle="language/GuiMain" key="knxSecureDevicePwd"/>
                 </properties>
               </component>

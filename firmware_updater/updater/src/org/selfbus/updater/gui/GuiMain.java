@@ -167,8 +167,7 @@ public class GuiMain extends JFrame {
         textFieldUid.setText("");
         try {
             setCliOptions();
-        }
-        finally {
+        } finally {
             textFieldFileName.setText(oldTextFieldFileName);
             textFieldUid.setText(oldTextFieldUid);
         }
@@ -769,6 +768,23 @@ public class GuiMain extends JFrame {
         reloadGatewaysButton = new JButton();
         this.$$$loadButtonText$$$(reloadGatewaysButton, this.$$$getMessageFromBundle$$$("language/GuiMain", "reloadKnxIpGateways"));
         panel1.add(reloadGatewaysButton, new GridConstraints(1, 3, 1, 1, GridConstraints.ANCHOR_WEST, GridConstraints.FILL_NONE, GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW, GridConstraints.SIZEPOLICY_FIXED, null, null, null, 0, false));
+        labelIpGateway.setLabelFor(comboBoxIpGateways);
+        label2.setLabelFor(textBoxKnxGatewayIpAddr);
+        label3.setLabelFor(textFieldPort);
+        labelTpuart.setLabelFor(textFieldTpuart);
+        labelSerial.setLabelFor(textFieldSerial);
+        labelMedium.setLabelFor(comboBoxMedium);
+        label5.setLabelFor(comboBoxScenario);
+        labelFileName.setLabelFor(textFieldFileName);
+        labelUid.setLabelFor(textFieldUid);
+        labelBootloaderDeviceAddr.setLabelFor(textFieldBootloaderDeviceAddress);
+        labelDeviceAddress.setLabelFor(textFieldDeviceAddress);
+        labelOwnAddress.setLabelFor(textFieldOwnAddress);
+        labelDelay.setLabelFor(textFieldDelay);
+        labelTelegramPriority.setLabelFor(comboBoxKnxTelegramPriority);
+        labelKnxSecureUser.setLabelFor(textFieldKnxSecureUser);
+        labelKnxSecureUserPwd.setLabelFor(textFieldKnxSecureUserPwd);
+        labelKnxSecureDevicePwd.setLabelFor(textFieldKnxSecureDevicePwd);
     }
 
     /**
