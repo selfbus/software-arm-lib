@@ -31,13 +31,13 @@ public class BootloaderStatistic {
         } else {
             colored = ansi().fgBright(GREEN).toString();
         }
-        result = String.format("#Disconnect: %s%2d%s", colored, getDisconnectCount(), ansi().reset().toString());
+        result = String.format("#Disconnect: %s%2d%s", colored, getDisconnectCount(), ansi().reset());
         if (getRepeatedT_ACKcount() > BootloaderStatistic.THRESHOLD_REPEATED) {
             colored = ansi().fgBright(YELLOW).toString();
         } else {
             colored = ansi().fgBright(GREEN).toString();
         }
-        result += String.format(" #repeated T_ACK: %s%2d%s", colored, getRepeatedT_ACKcount(), ansi().reset().toString());
+        result += String.format(" #repeated T_ACK: %s%2d%s", colored, getRepeatedT_ACKcount(), ansi().reset());
         return result;
     }
 

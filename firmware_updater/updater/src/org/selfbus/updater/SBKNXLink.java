@@ -55,12 +55,13 @@ public class SBKNXLink {
 
     private KNXNetworkLink createTunnelingLinkV1(InetSocketAddress local, InetSocketAddress remote, boolean useNat,
                                          KNXMediumSettings medium) throws KNXException, InterruptedException {
-        logger.info(ansi().fg(YELLOW).a("Connect using UDP tunneling v1 (nat:{})").reset().toString(), useNat);
+        logger.info("{}Connect using UDP tunneling v1 (nat:{}){}", ansi().fg(YELLOW), useNat, ansi().reset());
         return KNXNetworkLinkIP.newTunnelingLink(local, remote, useNat, medium);
     }
 
     private KNXNetworkLink createRoutingLink(InetSocketAddress local, KNXMediumSettings medium) throws KNXException {
-        logger.info(ansi().fg(YELLOW).a("Connect using routing (multicast:{})").reset().toString(), KNXnetIPRouting.DefaultMulticast);
+        logger.info("{}Connect using routing (multicast:{}){}",
+                ansi().fg(YELLOW), KNXnetIPRouting.DefaultMulticast, ansi().reset());
 
         return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), KNXnetIPRouting.DefaultMulticast, medium);
     }
@@ -167,7 +168,7 @@ public class SBKNXLink {
         try {
             return createTunnelingLinkV1(local, remote, cliOptions.getNatIsSet(), medium);
         } catch (final KNXException | InterruptedException e) {
-            logger.info(ansi().fg(YELLOW).a("failed with {}").reset().toString(), e.toString());
+            logger.info("{}failed with {}{}", ansi().fg(YELLOW), e, ansi().reset());
         }
 
         // last chance try unsecure UDP tunneling v1 connection with INVERTED nat option set on cli

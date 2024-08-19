@@ -368,7 +368,8 @@ public class CliOptions {
                     setLogLevel(Level.toLevel(cliLogLevel));
                 }
                 else {
-                    logger.warn(ansi().fg(RED).a("invalid {} {}, using {}").reset().toString(), OPT_LONG_LOGLEVEL, cliLogLevel, getLogLevel().toString());
+                    logger.warn("{}invalid {} {}, using {}{}", ansi().fg(RED), OPT_LONG_LOGLEVEL, cliLogLevel,
+                            getLogLevel().toString(), ansi().reset());
                 }
             }
             logger.debug("logLevel={}", getLogLevel());
@@ -378,8 +379,8 @@ public class CliOptions {
                     setPriority(Priority.get(cmdLine.getOptionValue(OPT_LONG_PRIORITY))); //todo simplify
                 }
                 catch (KNXIllegalArgumentException e) {
-                    logger.warn(ansi().fg(RED).a("invalid --{} {}, using {}").reset().toString(),
-                            OPT_LONG_PRIORITY, cmdLine.getOptionValue(OPT_LONG_PRIORITY), getPriority());
+                    logger.warn("{}invalid --{} {}, using {}{}",ansi().fg(RED),  OPT_LONG_PRIORITY,
+                            cmdLine.getOptionValue(OPT_LONG_PRIORITY), getPriority(), ansi().reset());
                 }
             }
             logger.debug("priority={}", getPriority().toString());
@@ -459,8 +460,8 @@ public class CliOptions {
                     setBlockSize(newBlockSize);
                 }
                 else {
-                    logger.info(ansi().fg(YELLOW).a("--{} {} is not supported => Set --{} to default {} bytes").reset().toString(),
-                            OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, getBlockSize());
+                    logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ansi().fg(YELLOW),
+                            OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, getBlockSize(), ansi().reset());
                 }
             }
             logger.debug("{}={}", OPT_LONG_BLOCKSIZE, getBlockSize());
@@ -532,49 +533,58 @@ public class CliOptions {
             // differential mode and eraseflash makes no sense
             if (getEraseFullFlashIsSet() && (!getFlashingFullModeIsSet())) {
                 setFlashingFullModeIsSet(true);
-                logger.info(ansi().fg(RED).a("--{} is set. --> switching to full flash mode").reset().toString(), OPT_LONG_ERASEFLASH);
+                logger.info("{}--{} is set. --> switching to full flash mode{}", ansi().fg(RED),
+                        OPT_LONG_ERASEFLASH, ansi().reset());
             }
 
             // nat only possible with tunneling v1
             if (getNatIsSet() && (!getTunnelingV1isSet())) {
-                throw new CliInvalidException(String.format(ansi().fg(RED).a("Option --%s can only be used together with --%s").reset().toString(),
-                        OPT_LONG_NAT, OPT_LONG_TUNNEL_V1));
+                throw new CliInvalidException(String.format("%sOption --%s can only be used together with --%s%s",
+                        ansi().fg(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ansi().reset()));
             }
 
             // nat not allowed with tunneling v2
             if (getNatIsSet() && (getTunnelingV2isSet())) {
-                throw new CliInvalidException(String.format(ansi().fg(RED).a("Option --%s can not be used together with --%s").reset().toString(),
-                        OPT_LONG_NAT, OPT_LONG_TUNNEL_V2));
+                throw new CliInvalidException(String.format("%sOption --%s can not be used together with --%s%s",
+                        ansi().fg(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V2, ansi().reset()));
             }
 
             // check IP-secure configuration
             if (!(getKnxSecureUserPassword().isEmpty()) || !(getKnxSecureDevicePassword().isEmpty())) {
                 if (getKnxInterface().isEmpty()) {
-                    throw new CliInvalidException(ansi().fg(RED).a("No IP-Interface specified for IP-secure").reset().toString());
+                    throw new CliInvalidException(String.format("%sNo IP-Interface specified for IP-secure%s",
+                            ansi().fg(RED), ansi().reset()));
                 }
                 else if (!getUsbVendorIdAndProductId().isEmpty()) {
-                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_USB)).reset().toString());
+                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                            ansi().fg(RED), OPT_LONG_USB, ansi().reset()));
                 }
                 else if (!getFt12SerialPort().isEmpty()) {
-                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_FT12)).reset().toString());
+                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                            ansi().fg(RED), OPT_LONG_FT12, ansi().reset()));
                 }
                 else if (!getTpuartSerialPort().isEmpty()) {
-                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_TPUART)).reset().toString());
+                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                            ansi().fg(RED), OPT_LONG_TPUART, ansi().reset()));
                 }
                 else if (getNatIsSet()) {
-                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_NAT)).reset().toString());
+                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                            ansi().fg(RED), OPT_LONG_NAT, ansi().reset()));
                 }
                 else if (getTunnelingV1isSet()) {
-                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_TUNNEL_V1)).reset().toString());
+                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                            ansi().fg(RED), OPT_LONG_TUNNEL_V1, ansi().reset()));
                 }
                 else if (getTunnelingV2isSet()) {
-                    throw new CliInvalidException(ansi().fg(RED).a(String.format("IP-secure is not possible with --%s", OPT_LONG_TUNNEL_V2)).reset().toString());
+                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                            ansi().fg(RED), OPT_LONG_TUNNEL_V2, ansi().reset()));
                 }
 
                 // ensure that all three IP-Secure arguments are set
                 if ((getKnxSecureUserPassword().isEmpty()) || (getKnxSecureDevicePassword().isEmpty())) {
-                    throw new CliInvalidException(ansi().fg(RED).a(String.format("For IP-secure --%s, --%s and --%s must be set", OPT_LONG_USER_ID,
-                            OPT_LONG_USER_PASSWORD, OPT_LONG_DEVICE_PASSWORD)).reset().toString());
+                    throw new CliInvalidException(String.format("%sFor IP-secure --%s, --%s and --%s must be set%s",
+                            ansi().fg(RED), OPT_LONG_USER_ID, OPT_LONG_USER_PASSWORD, OPT_LONG_DEVICE_PASSWORD,
+                            ansi().reset()));
                 }
             }
 
@@ -586,10 +596,12 @@ public class CliOptions {
             if (!getUsbVendorIdAndProductId().isEmpty()) interfacesSet++;
 
             if (interfacesSet > 1) {
-                throw new CliInvalidException(ansi().fg(RED).a("Only one bus interface can be used.").reset().toString());
+                throw new CliInvalidException(String.format("%sOnly one bus interface can be used.%s",
+                        ansi().fg(RED), ansi().reset()));
             }
             else if (interfacesSet == 0) {
-                throw new CliInvalidException(ansi().fg(RED).a("No bus interface specified.").reset().toString());
+                throw new CliInvalidException(String.format("%sNo bus interface specified.%s",
+                        ansi().fg(RED), ansi().reset()));
             }
         }
         catch (CliInvalidException e) {
@@ -607,7 +619,7 @@ public class CliOptions {
         System.out.printf("Invalid command line parameters: '%s'%s", cliParsed,
                 System.lineSeparator()); // don't log possible IP-secure parameters
         logger.debug("Invalid command line parameters:");
-        logger.error(ansi().fg(RED).a(e.getMessage()).reset().toString());
+        logger.error("{}{}{}", ansi().fg(RED), e.getMessage(), ansi().reset());
         logger.error("For more information about the usage start with --{}", OPT_LONG_HELP);
         if (verbose) {
             logger.error("", e);
@@ -776,9 +788,9 @@ public class CliOptions {
 
     private void setDelayMs(int delayMs) {
         if ((delayMs < Updater.DELAY_MIN) || (delayMs > Updater.DELAY_MAX)) {
-            logger.warn(ansi().fg(RED).a(
-                            String.format("option --%s {} is invalid (min:{}, max:{}) => set to {}", OPT_LONG_DELAY)).reset().toString(),
-                    delayMs, Updater.DELAY_MIN, Updater.DELAY_MAX, Updater.DELAY_DEFAULT);
+            logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
+                    ansi().fg(RED), OPT_LONG_DELAY, delayMs, Updater.DELAY_MIN,
+                    Updater.DELAY_MAX, Updater.DELAY_DEFAULT, ansi().reset());
             delayMs = Updater.DELAY_DEFAULT;    // set to DELAY_DEFAULT in case of invalid waiting time
         }
         this.delayMs = delayMs;

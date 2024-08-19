@@ -65,7 +65,7 @@ public class ProgressInfo {
         else {
             color = YELLOW;
         }
-        return ansi().fgBright(color).a(String.format("%5.1f", bytesPerSecond)).reset().toString();
+        return String.format("%s%5.1f%s", ansi().fgBright(color), bytesPerSecond, ansi().reset());
     }
 
     public String toString() {

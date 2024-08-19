@@ -63,7 +63,7 @@ public final class FlashDiffMode {
         }
         else {
             logger.warn("Current device firmware not found in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
-            logger.warn(ansi().fgBright(RED).a("  --> switching to FULL upload mode").reset().toString());
+            logger.warn("{}  --> switching to FULL upload mode{}", ansi().fgBright(RED), ansi().reset());
             initialized = false;
         }
         return  initialized;

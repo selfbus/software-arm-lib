@@ -82,7 +82,7 @@ public final class DeviceManagement {
         try {
             while (restartTimeSeconds > 0) {
                 Thread.sleep(1000);
-                System.out.printf(ansi().fgBright(GREEN).a(".").reset().toString());
+                System.out.printf("%s.%s", ansi().fgBright(GREEN), ansi().reset());
                 restartTimeSeconds--;
             }
             System.out.println();
@@ -102,12 +102,15 @@ public final class DeviceManagement {
         try (Destination dest = this.mc.createDestination(device, true, false, false)) {
             logger.info("Restarting device {} into bootloader", device);
             restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
-            logger.info("Device {} reported {} second(s) for restarting", device, ansi().fgBright(GREEN).a(restartProcessTime).reset().toString());
+            logger.info("Device {} reported {}{}{} second(s) for restarting",
+                    device, ansi().fgBright(GREEN), restartProcessTime, ansi().reset());
             waitRestartTime(restartProcessTime);
         } catch (final KNXException | InterruptedException e) {
-            logger.info(ansi().fgBright(RED).a("Restart state of device {} unknown. {}").reset().toString(), device, e.getMessage());
+            logger.info("{}Restart state of device {} unknown. {}{}",
+                    ansi().fgBright(RED), device, e.getMessage(), ansi().reset());
             logger.debug("KNXException ", e);
-            logger.info("Waiting {} seconds for device {} to restart", ansi().fgBright(GREEN).a(restartProcessTime).reset().toString(), device);
+            logger.info("Waiting {}{}{} seconds for device {} to restart",
+                    ansi().fgBright(GREEN), restartProcessTime, ansi().reset(), device);
             waitRestartTime(restartProcessTime);
         }
     }
@@ -151,23 +154,23 @@ public final class DeviceManagement {
             if (command == UPDCommand.RESPONSE_BL_VERSION_MISMATCH) {
                 long minMajorVersion = result[DATA_POSITION] & 0xff;
                 long minMinorVersion = result[DATA_POSITION + 1] & 0xff;
-                logger.error(ansi().fg(RED).a("Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.").reset().toString(),
-                        ToolInfo.getVersion(), minMajorVersion, minMinorVersion);
+                logger.error("{}Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.{}",
+                        ansi().fg(RED), ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ansi().reset());
             }
             restartProgrammingDevice();
             throw new UpdaterException("Requesting Bootloader Identity failed!");
         }
 
         BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-        logger.info("Device Bootloader: {}", ansi().fgBright(YELLOW).a(bl).reset().toString());
+        logger.info("Device Bootloader: {}{}{}", ansi().fgBright(YELLOW), bl, ansi().reset());
 
         boolean versionsMatch = (bl.versionMajor() > ToolInfo.minMajorVersionBootloader()) ||
                 ((bl.versionMajor() == ToolInfo.minMajorVersionBootloader()) && (bl.versionMinor() >= ToolInfo.minMinorVersionBootloader()));
 
         if (!versionsMatch)
         {
-            logger.error(ansi().fg(RED).a("Bootloader version {} is not compatible, please update Bootloader to version {} or higher").reset().toString(),
-                    bl.getVersion(), ToolInfo.minVersionBootloader());
+            logger.error("{}Bootloader version {} is not compatible, please update Bootloader to version {} or higher{}",
+                    ansi().fg(RED), bl.getVersion(), ToolInfo.minVersionBootloader(), ansi().reset());
             throw new UpdaterException("Bootloader version not compatible!");
         }
         return bl;
@@ -307,7 +310,7 @@ public final class DeviceManagement {
         // console output
         String logText = String.format("%s%s%s%s",
                 AnsiCursor.off(),
-                ansi().cursorToColumn(1).fgBright(GREEN).a(SpinningCursor.getNext()).reset().toString(),
+                ansi().cursorToColumn(1).fgBright(GREEN).a(SpinningCursor.getNext()).reset(),
                 progressInfo,
                 AnsiCursor.on());
         System.out.print(logText);
@@ -381,11 +384,13 @@ public final class DeviceManagement {
                 return result;
             }
             catch (KNXTimeoutException e) {
-                logger.warn(ansi().fg(RED).a("{} {} : {}").reset().toString(), command, e.getMessage(), e.getClass().getSimpleName());
+                logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
+                        e.getClass().getSimpleName(), ansi().reset());
                 result.incTimeoutCount();
             }
             catch (KNXDisconnectException | KNXRemoteException e) { ///\todo check causes of KNXRemoteException, if think they are unrecoverable
-                logger.warn(ansi().fg(RED).a("{} {} : {}").reset().toString(), command, e.getMessage(), e.getClass().getSimpleName());
+                logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
+                        e.getClass().getSimpleName(), ansi().reset());
                 result.incDropCount();
             }
             catch (Throwable e) {
@@ -415,7 +420,8 @@ public final class DeviceManagement {
             else if ((devices.length == 1) && (progDeviceAddr != null) && (progDeviceAddr.equals(devices[0]))) { // correct device in prog mode
             	return;
             }
-            logger.warn(ansi().fgBright(RED).a("{} Device(s) in bootloader/programming mode: {}").reset().toString(), devices.length, Arrays.stream(devices).toArray());
+            logger.warn("{}{} Device(s) in bootloader/programming mode: {}{}",
+                    ansi().fgBright(RED), devices.length, Arrays.stream(devices).toArray(), ansi().reset());
             if (devices.length == 0) {
                 throw new UpdaterException("No device in programming mode.");
             }

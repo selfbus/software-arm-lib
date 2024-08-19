@@ -89,8 +89,8 @@ public class FlashFullMode {
                 progressInfo.update(-txBuffer.length);
             }
             else if (result == UDPResult.IAP_COMPARE_ERROR) {
-                throw new UpdaterException(String.format("ProgramData update failed. %s",
-                        String.format(ansi().fg(RED).a("Try again with option '--%s 256'").reset().toString(), CliOptions.OPT_LONG_BLOCKSIZE)));
+                throw new UpdaterException(String.format("ProgramData update failed. %sTry again with option '--%s 256'%s",
+                        ansi().fg(RED), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
             }
             else if (result == UDPResult.IAP_SUCCESS) {
                 progAddress += txBuffer.length;
