@@ -76,7 +76,8 @@ public class SBKNXLink {
         if (id.equals("tp1")) {
             return new TPSettings(ownAddress);
         } else if (id.equals("rf")) {
-            return new RFSettings(null);
+            throw new KNXIllegalArgumentException("medium 'rf' not implemented");
+            //return new RFSettings(ownAddress);
         }
         //else if (id.equals("tp0"))
         //	return TPSettings.TP0;
