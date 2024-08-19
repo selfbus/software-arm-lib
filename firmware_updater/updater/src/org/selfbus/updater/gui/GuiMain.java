@@ -163,8 +163,18 @@ public class GuiMain extends JFrame {
     }
 
     private void handleRequestUidAction() {
-        updaterThread = new Thread(() -> {
+        String oldTextFieldFileName = textFieldFileName.getText();
+        String oldTextFieldUid = textFieldUid.getText();
+        textFieldFileName.setText("");
+        textFieldUid.setText("");
+        try {
             setCliOptions();
+        }
+        finally {
+            textFieldFileName.setText(oldTextFieldFileName);
+            textFieldUid.setText(oldTextFieldUid);
+        }
+        updaterThread = new Thread(() -> {
             final Updater upd = new Updater(cliOptions);
             String uid = upd.requestUid();
             SwingUtilities.invokeLater(() -> this.textFieldUid.setText(uid));
@@ -504,8 +514,8 @@ public class GuiMain extends JFrame {
         GuiObjectsMap.put(labelTpuart, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(textFieldTpuart, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
 
-        GuiObjectsMap.put(labelDeviceAddress, List.of(GuiObjsVisOpts.APPDEV));
-        GuiObjectsMap.put(textFieldDeviceAddress, List.of(GuiObjsVisOpts.APPDEV));
+        GuiObjectsMap.put(labelDeviceAddress, List.of(GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID));
+        GuiObjectsMap.put(textFieldDeviceAddress, List.of(GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID));
 
         GuiObjectsMap.put(labelBootloaderDeviceAddr, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
         GuiObjectsMap.put(textFieldBootloaderDeviceAddress, Arrays.asList(GuiObjsVisOpts.NEWDEV, GuiObjsVisOpts.APPDEV, GuiObjsVisOpts.REQUID, GuiObjsVisOpts.ADVSET));
