@@ -7,6 +7,7 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPRouting;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
+import tuwien.auto.calimero.knxnetip.TcpConnection;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 import tuwien.auto.calimero.link.KNXNetworkLinkFT12;
 import tuwien.auto.calimero.link.KNXNetworkLinkIP;
@@ -38,7 +39,10 @@ public class SBKNXLink {
         logger.info("Connect using KNX IP Secure tunneling");
         byte[] deviceAuthCode = SecureConnection.hashDeviceAuthenticationPassword(cliOptions.getKnxSecureDevicePassword().toCharArray());
         byte[] userKey = SecureConnection.hashUserPassword(cliOptions.getKnxSecureUserPassword().toCharArray());
-        final var session = Utils.tcpConnection(local, remote).newSecureSession(cliOptions.getKnxSecureUserId(), userKey, deviceAuthCode);
+        final TcpConnection.SecureSession session;
+        try (TcpConnection tcpConnection = Utils.tcpConnection(local, remote)) {
+            session = tcpConnection.newSecureSession(cliOptions.getKnxSecureUserId(), userKey, deviceAuthCode);
+        }
         return KNXNetworkLinkIP.newSecureTunnelingLink(session, medium);
     }
 
