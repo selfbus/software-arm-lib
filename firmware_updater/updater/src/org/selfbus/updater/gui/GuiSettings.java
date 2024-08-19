@@ -61,9 +61,9 @@ public class GuiSettings {
             textField.setText(componentNode.path("text").asText());
         }
         else if (component instanceof JComboBox<?> comboBox) {
-            String value = componentNode.path("selected_item").asText(null);
-            if (value != null) {
-                comboBox.setSelectedItem(value);
+            int selectionIndex = componentNode.path("selectionIndex").asInt(-1);
+            if ((selectionIndex >= 0) && (selectionIndex < comboBox.getItemCount())) {
+                comboBox.setSelectedIndex(selectionIndex);
             }
         }
         else if (component instanceof Container container) {
@@ -85,8 +85,8 @@ public class GuiSettings {
             node.put("text", textField.getText());
         }
         else if (component instanceof JComboBox<?> comboBox) {
-            Object selection = comboBox.getSelectedItem();
-            node.put("selected_item", selection != null ? selection.toString() : "");
+            int selectionIndex = comboBox.getSelectedIndex();
+            node.put("selectionIndex", selectionIndex);
         }
         else if (component instanceof Container container) {
             if (component instanceof JFrame frame) {

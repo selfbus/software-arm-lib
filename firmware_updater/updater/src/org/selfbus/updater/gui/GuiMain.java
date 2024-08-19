@@ -207,27 +207,28 @@ public class GuiMain extends JFrame {
 
     private void setComponentNames() {
         setName("MainFrame");
-        advancedSettingsCheckBox.setName("AdvancedSettings"); // 1
+        comboBoxIpGateways.setName("comboBoxIpGateways");
+        advancedSettingsCheckBox.setName("AdvancedSettings");
         textBoxKnxGatewayIpAddr.setName("GatewayIpAddr");
         textFieldPort.setName("GatewayPort");
         natCheckBox.setName("UseNat");
-        textFieldTpuart.setName("TpUart"); // 5
+        textFieldTpuart.setName("TpUart");
         textFieldSerial.setName("Serial");
         comboBoxMedium.setName("Medium");
         comboBoxScenario.setName("Scenario");
         textFieldFileName.setName("FlashFilePath");
-        textFieldUid.setName("Uid"); // 10
+        textFieldUid.setName("Uid");
         CheckBoxDiffFlash.setName("DiffFlash");
         eraseCompleteFlashCheckBox.setName("EraseCompleteFlash");
         noFlashCheckBox.setName("NoFlash");
         textFieldBootloaderDeviceAddress.setName("BootloaderDeviceAddress");
-        textFieldDeviceAddress.setName("DeviceAddress"); // 15
+        textFieldDeviceAddress.setName("DeviceAddress");
         textFieldOwnAddress.setName("OwnAddress");
         textFieldDelay.setName("DelayMs");
         comboBoxKnxTelegramPriority.setName("TelegramPriority");
         textFieldKnxSecureUser.setName("SecureUser");
-        textFieldKnxSecureUserPwd.setName("SecureUserPassword"); //20
-        textFieldKnxSecureDevicePwd.setName("SecureDevicePassword"); //21
+        textFieldKnxSecureUserPwd.setName("SecureUserPassword");
+        textFieldKnxSecureDevicePwd.setName("SecureDevicePassword");
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -252,15 +253,6 @@ public class GuiMain extends JFrame {
                     this.getTranslation("Warning"), JOptionPane.WARNING_MESSAGE);
             return false;
         }
-        //todo fix combobox selection
-/*
-        for (int i = 0; i < comboBoxScenario.getItemCount(); i++) {
-            if (Objects.equals(String.valueOf(comboBoxScenario.getItemAt(i).value), guiSettings.getProperty("Scenario"))) {
-                comboBoxScenario.setSelectedItem(comboBoxScenario.getItemAt(i));
-                break;
-            }
-        }
-*/
         setGuiElementsVisibility();
         return true;
     }
