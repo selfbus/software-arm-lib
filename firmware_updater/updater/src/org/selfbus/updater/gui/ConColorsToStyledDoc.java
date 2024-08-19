@@ -1,6 +1,8 @@
 package org.selfbus.updater.gui;
 
 import org.selfbus.updater.AnsiCursor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import javax.swing.text.*;
@@ -14,6 +16,7 @@ public final class ConColorsToStyledDoc {
     @SuppressWarnings("unused")
     private ConColorsToStyledDoc() {}  // avoids instance creation
 
+    private static final Logger logger = LoggerFactory.getLogger(ConColorsToStyledDoc.class);
     private static final Style stringStyle = new javax.swing.text.StyleContext().addStyle("testStyle", null);
 
     public static final java.awt.Color DefaultForegroundColor = java.awt.Color.white;
@@ -400,15 +403,16 @@ public final class ConColorsToStyledDoc {
      *         number and the y-coordinate is the row number, both 1-based
      */
     private static Point getCursorPosition(JTextPane textPane) {
-        int caretPosition = textPane.getCaretPosition();
-        // Get the row at the caret position
-        Element docRoot = textPane.getStyledDocument().getDefaultRootElement();
-        int row = docRoot.getElementIndex(caretPosition);
+        StyledDocument doc = textPane.getStyledDocument();
+        int docLength = doc.getLength();
+        // Get the row at the end of the document 
+        Element docRoot = doc.getDefaultRootElement();
+        int row = docRoot.getElementIndex(docLength);
 
         // Get the start offset of the column
         Element lineElement = docRoot.getElement(row);
         int lineStartOffset = lineElement.getStartOffset();
-        int column = caretPosition - lineStartOffset;
+        int column = docLength - lineStartOffset;
         return new Point(column + 1, row + 1); // 1-based indexing for ANSI console
     }
 
@@ -431,23 +435,26 @@ public final class ConColorsToStyledDoc {
 
         // Calculate the new caret position
         int newCaretPosition = lineStartOffset + columnIndex;
+        logger.debug("lineStartOffset={}", lineStartOffset);
+        logger.debug("newCaretPosition={}", newCaretPosition);
 
         if (newCaretPosition < 0) {
+            logger.debug("newCaretPosition set to 0");
             newCaretPosition = 0;
         }
 
         if (newCaretPosition > doc.getLength()) {
             newCaretPosition = doc.getLength();
+            logger.debug("newCaretPosition set to {}", newCaretPosition);
         }
 
-        StyledDocument document = (StyledDocument) textPane.getDocument();
-        int currentLength = document.getLength();
+        int currentLength = doc.getLength();
         // Set the caret position
         if (newCaretPosition < currentLength) {
-            document.remove(newCaretPosition, currentLength - newCaretPosition);
+            doc.remove(newCaretPosition, currentLength - newCaretPosition);
         }
 
-        textPane.setCaretPosition(document.getLength());
+        textPane.setCaretPosition(doc.getLength());
     }
 
     /**

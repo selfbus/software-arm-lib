@@ -115,7 +115,6 @@ public class GuiMain extends JFrame {
         }
 
         jLoggingPane.setText("");
-        jLoggingPane.setFocusable(false); // Needed for the SpinningCursor to work properly
         updaterThread = new Thread(() -> {
             setCliOptions();
             final Updater updater = new Updater(cliOptions);
@@ -128,7 +127,6 @@ public class GuiMain extends JFrame {
 
     private void updaterFinished() {
         buttonStartStopFlash.setText(getTranslation("startFlash"));
-        jLoggingPane.setFocusable(true);
     }
 
     private void handleLoadFileAction() {
