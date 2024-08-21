@@ -1,5 +1,6 @@
 package org.selfbus.updater;
 
+import org.selfbus.updater.bootloader.BootloaderStatistic;
 import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;
@@ -44,13 +45,23 @@ public class FlashFullMode {
             logMessage += String.format(" with telegram delay of %dms", dataSendDelay);
         }
         logger.info(logMessage);
-        dm.startProgressInfo();
 
         int nRead = 0;
         boolean repeat = false;
         SpinningCursor.reset();
 
-        ProgressInfo progressInfo = new ProgressInfo(totalLength);
+        ProgressInfo progressInfo;
+        BootloaderStatistic bootloaderStatistic;
+        if (logStatistics) {
+            bootloaderStatistic = dm.requestBootLoaderStatistic();
+            progressInfo = new ProgressInfoAdvanced(totalLength, bootloaderStatistic);
+        }
+        else {
+            bootloaderStatistic = null;
+            progressInfo = new ProgressInfo(totalLength);
+        }
+        dm.startProgressInfo(progressInfo);
+
         while (fis.available() > 0) {
             if (!repeat) {
                 nRead = fis.read(buffer);  // Read up to size of buffer
@@ -94,8 +105,8 @@ public class FlashFullMode {
             }
             else if (result == UDPResult.IAP_SUCCESS) {
                 progAddress += txBuffer.length;
-                if (logStatistics) {
-                    dm.requestBootLoaderStatistic();
+                if (bootloaderStatistic != null) {
+                    bootloaderStatistic = dm.requestBootLoaderStatistic();
                 }
             }
             else {

@@ -100,7 +100,7 @@ public final class FlashDiffMode {
         ProgressInfo progressInfo = new ProgressInfo(bytesToFlash);
         SpinningCursor.reset();
         logger.info("Start sending differential data ({} bytes)", bytesToFlash);
-        dm.startProgressInfo();
+        dm.startProgressInfo(progressInfo);
 
         AtomicReference<ResponseResult> result = new AtomicReference<>();
         differ = new FlashDiff();

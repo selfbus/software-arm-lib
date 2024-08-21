@@ -13,8 +13,8 @@ public class BootloaderStatisticTest {
         String colorOK = ansi().fgBright(GREEN).toString();
         String colorWarn = ansi().fgBright(YELLOW).toString();
         String colorReset = ansi().reset().toString();
-        String info1 = "#Disconnect: ";
-        String info2 = " #repeated T_ACK: ";
+        String info1 = "";
+        String info2 = " ";
 
         BootloaderStatistic test1 = new BootloaderStatistic(0, 0);
         BootloaderStatistic test2 = new BootloaderStatistic(BootloaderStatistic.THRESHOLD_DISCONNECT, 0);

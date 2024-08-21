@@ -295,8 +295,8 @@ public final class DeviceManagement {
         return result;
     }
 
-    public void startProgressInfo() {
-        logger.info("   Done Speed   Avg   Min   Max  Time");
+    public void startProgressInfo(ProgressInfo progressInfo) {
+        logger.info(progressInfo.getHeader());
         // We need one newLine for the gui
         ListTextAppenders.appendEvent(Level.INFO, System.lineSeparator());
     }
@@ -362,16 +362,18 @@ public final class DeviceManagement {
         }
     }
 
-    public void requestBootLoaderStatistic() throws UpdaterException {
+    public BootloaderStatistic requestBootLoaderStatistic() throws UpdaterException {
         logger.debug("Requesting Bootloader statistic");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
         UPDCommand command = UPDCommand.tryFromByteArray(result);
         if (command != UPDCommand.RESPONSE_STATISTIC) {
             logger.warn("Requesting Bootloader statistic {}failed!{}", ansi().fg(RED), ansi().reset());
+            return null;
         }
-
         BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-        logger.info("Bootloader: {}", blStatistic); //todo does´nt work with ProgressInfo and SpinningCursor
+        logger.debug("#Disconnect: {} #repeated T_ACK: {}", blStatistic.getDisconnectCountColored(),
+                blStatistic.getRepeatedT_ACKcount());
+        return blStatistic;
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)

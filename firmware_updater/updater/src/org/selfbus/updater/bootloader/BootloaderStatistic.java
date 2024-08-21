@@ -23,31 +23,37 @@ public class BootloaderStatistic {
         return new BootloaderStatistic(disConnectCount, repeatedT_ACKcount);
     }
 
+    private static String toColoredThreshold(int value, int threshold) {
+        String ansiColor;
+        if (value > threshold) {
+            ansiColor = ansi().fgBright(YELLOW).toString();
+        } else {
+            ansiColor = ansi().fgBright(GREEN).toString();
+        }
+        return String.format("%s%2d%s", ansiColor, value, ansi().reset());
+    }
+
     public String toString() {
-        String result;
-        String colored;
-        if (getDisconnectCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
-            colored = ansi().fgBright(YELLOW).toString();
-        } else {
-            colored = ansi().fgBright(GREEN).toString();
-        }
-        result = String.format("#Disconnect: %s%2d%s", colored, getDisconnectCount(), ansi().reset());
-        if (getRepeatedT_ACKcount() > BootloaderStatistic.THRESHOLD_REPEATED) {
-            colored = ansi().fgBright(YELLOW).toString();
-        } else {
-            colored = ansi().fgBright(GREEN).toString();
-        }
-        result += String.format(" #repeated T_ACK: %s%2d%s", colored, getRepeatedT_ACKcount(), ansi().reset());
+        String result = getDisconnectCountColored();
+        result += " " + getRepeatedT_ACKcountColored();
         return result;
     }
 
-    public long getDisconnectCount()
+    public int getDisconnectCount()
     {
         return disconnectCount;
     }
 
-    public long getRepeatedT_ACKcount()
+    public int getRepeatedT_ACKcount()
     {
         return repeatedT_ACKcount;
+    }
+
+    public String getDisconnectCountColored() {
+        return toColoredThreshold(getDisconnectCount(), BootloaderStatistic.THRESHOLD_DISCONNECT);
+    }
+
+    public String getRepeatedT_ACKcountColored() {
+        return toColoredThreshold(getRepeatedT_ACKcount(), BootloaderStatistic.THRESHOLD_REPEATED);
     }
 }

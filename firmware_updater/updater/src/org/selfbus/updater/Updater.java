@@ -311,23 +311,15 @@ public class Updater implements Runnable {
                 else {
                     resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.getDelayMs(), !cliOptions.getEraseFullFlashIsSet(), cliOptions.getLogStatisticsIsSet());
                 }
-                dm.requestBootLoaderStatistic();
-
-                String updaterStatisticMsg = "Updater:    ";
-                String colored;
-                if (resultTotal.dropCount() > BootloaderStatistic.THRESHOLD_DISCONNECT) {
-                    colored = ansi().fgBright(YELLOW).toString();
-                } else {
-                    colored = ansi().fgBright(GREEN).toString();
+                BootloaderStatistic bootloaderStatistic = dm.requestBootLoaderStatistic();
+                if (bootloaderStatistic != null) {
+                    logger.info("Bootloader: #Disconnect: {} #repeated T_ACK: {}",
+                            bootloaderStatistic.getDisconnectCountColored(), bootloaderStatistic.getRepeatedT_ACKcountColored());
                 }
-                updaterStatisticMsg += String.format("#Disconnect: %s%2d%s", colored, resultTotal.dropCount(), ansi().reset());
-                if (resultTotal.timeoutCount() > BootloaderStatistic.THRESHOLD_REPEATED) {
-                    colored = ansi().fgBright(YELLOW).toString();
-                } else {
-                    colored = ansi().fgBright(GREEN).toString();
-                }
-                updaterStatisticMsg += String.format(" #Timeout       : %s%2d%s", colored, resultTotal.timeoutCount(), ansi().reset());
-                logger.info("{}", updaterStatisticMsg);
+                BootloaderStatistic updaterStatistic = new BootloaderStatistic((int)resultTotal.dropCount(),
+                        (int)resultTotal.timeoutCount());
+                logger.info("Updater   : #Disconnect: {} #repeated T_ACK: {}",
+                        updaterStatistic.getDisconnectCountColored(), updaterStatistic.getRepeatedT_ACKcountColored());
             }
             else {
                 logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH,
