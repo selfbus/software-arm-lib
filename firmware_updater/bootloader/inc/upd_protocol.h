@@ -21,7 +21,7 @@
 
  *    -@ref UPD_PROGRAM
  *      - 9-12 How many bytes of the RAM Buffer should be programmed. Be aware that the value needs to be one of the following
- *             256, 512, 1024, 4096 (required by the IAP of the LPC11xx mcu)
+ *             256, 512, 1024 (required by the IAP of the LPC11xx mcu)
  *      - 13-16 Flash address the data should be programmed to
  *      - 16-19 The CRC of the data downloaded via the UPD_SEND_DATA commands. If the CRC does not match the
  *              programming, error is returned
@@ -67,7 +67,7 @@
 #include <sblib/internal/iap.h>
 #include "boot_descriptor_block.h"
 
-#define UID_LENGTH_USED (12)            //!< Length of the mcu's UID (guid) used by the PC Updater Tool
+#define UID_LENGTH_USED (12)            //!< Length of the mcu's UID (guid) used by the Selfbus Updater Tool
 
 static_assert(UID_LENGTH_USED > 0, "UID_LENGTH_USED must be greater then 0");
 static_assert(UID_LENGTH_USED <= IAP_UID_LENGTH, "UID_LENGTH_USED must be less than or equal to IAP_UID_LENGTH");
@@ -95,8 +95,8 @@ enum UPD_Code : uint8_t
     UPD_RESPONSE_STATISTIC = 0xde,          //!< Response for @ref UPD_STATISTIC_RESPONSE containing the statistic data
     UPD_SEND_LAST_ERROR = 0xdc,             //!< Response containing the last error
 
-    UPD_UNLOCK_DEVICE = 0xbf,               //!< Unlock the device for operations, which are only allowed on a unlocked device
-    UPD_REQUEST_UID = 0xbe,                 //!< Return the 12 byte shorten UID (GUID) of the mcu @note device must be unlocked
+    UPD_UNLOCK_DEVICE = 0xbf,               //!< Unlock the device for operations, which are only allowed on an unlocked device
+    UPD_REQUEST_UID = 0xbe,                 //!< Return the 12 byte shorten UID (GUID) of the mcu
     UPD_RESPONSE_UID = 0xbd,                //!< Response for @ref UPD_REQUEST_UID containing the first 12 bytes of the UID
     UPD_APP_VERSION_REQUEST = 0xbc,         //!< Return address of AppVersion string
     UPD_APP_VERSION_RESPONSE = 0xbb,        //!< Response for @ref UPD_APP_VERSION_REQUEST containing the application version string
@@ -166,7 +166,7 @@ enum UDP_State : uint8_t
     UDP_IAP_UNKNOWN = 0x73,                                 //!< IAP unknown @ref IAP_Status.
 
     UDP_UNKNOWN_COMMAND = 0x5f,              //!< received command is not defined
-    UDP_CRC_ERROR = 0x5e,                    //!< CRC calculated on the device and by the PC Updater tool don't match
+    UDP_CRC_ERROR = 0x5e,                    //!< CRC calculated on the device and by the Selfbus Updater Tool don't match
     UDP_ADDRESS_NOT_ALLOWED_TO_FLASH = 0x5d, //!< specifed address cannot be programmed
     UDP_SECTOR_NOT_ALLOWED_TO_ERASE = 0x5c,  //!< the specified sector cannot be erased
     UDP_RAM_BUFFER_OVERFLOW = 0x5b,          //!< internal buffer for storing the data would overflow
