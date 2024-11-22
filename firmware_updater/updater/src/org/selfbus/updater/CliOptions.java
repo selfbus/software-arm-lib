@@ -551,19 +551,19 @@ public class CliOptions {
 
             // check IP-secure configuration
             if (!(getKnxSecureUserPassword().isEmpty()) || !(getKnxSecureDevicePassword().isEmpty())) {
-                if (getKnxInterface().isEmpty()) {
+                if (getKnxInterface().isBlank()) {
                     throw new CliInvalidException(String.format("%sNo IP-Interface specified for IP-secure%s",
                             ansi().fg(RED), ansi().reset()));
                 }
-                else if (!getUsbVendorIdAndProductId().isEmpty()) {
+                else if (!getUsbVendorIdAndProductId().isBlank()) {
                     throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
                             ansi().fg(RED), OPT_LONG_USB, ansi().reset()));
                 }
-                else if (!getFt12SerialPort().isEmpty()) {
+                else if (!getFt12SerialPort().isBlank()) {
                     throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
                             ansi().fg(RED), OPT_LONG_FT12, ansi().reset()));
                 }
-                else if (!getTpuartSerialPort().isEmpty()) {
+                else if (!getTpuartSerialPort().isBlank()) {
                     throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
                             ansi().fg(RED), OPT_LONG_TPUART, ansi().reset()));
                 }
@@ -589,11 +589,11 @@ public class CliOptions {
             }
 
             int interfacesSet = 0;
-            if (!getKnxInterface().isEmpty()) interfacesSet++;
+            if (!getKnxInterface().isBlank()) interfacesSet++;
             if (getRoutingIsSet()) interfacesSet++;
-            if (!getFt12SerialPort().isEmpty()) interfacesSet++;
-            if (!getTpuartSerialPort().isEmpty()) interfacesSet++;
-            if (!getUsbVendorIdAndProductId().isEmpty()) interfacesSet++;
+            if (!getFt12SerialPort().isBlank()) interfacesSet++;
+            if (!getTpuartSerialPort().isBlank()) interfacesSet++;
+            if (!getUsbVendorIdAndProductId().isBlank()) interfacesSet++;
 
             if (interfacesSet > 1) {
                 throw new CliInvalidException(String.format("%sOnly one bus interface can be used.%s",
