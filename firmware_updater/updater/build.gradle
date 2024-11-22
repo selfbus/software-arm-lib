@@ -110,6 +110,9 @@ dependencies {
     // calimero serial tx/rx lib for ft1.2 and tpuart support
     implementation 'com.github.calimero:calimero-rxtx:2.6-rc1'
 
+    // calimero usb support
+    implementation 'io.calimero:calimero-usb:2.6-rc1'
+
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.2.2'
 
