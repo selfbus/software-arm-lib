@@ -507,7 +507,7 @@ public class CliOptions {
                 setKnxInterface(cmdLine.getArgs()[0]);
             }
             else {
-                setKnxInterface(null);
+                setKnxInterface("");
             }
             logger.debug("knxInterface={}", getKnxInterface());
 
@@ -646,8 +646,12 @@ public class CliOptions {
         return sw.toString();
     }
 
+    private String nonNullString(String s) {
+        return s != null ? s : "";
+    }
+
     public String getKnxInterface() {
-        return knxInterface;
+        return nonNullString(knxInterface);
     }
 
     private void setKnxInterface(String knxInterface) {
@@ -695,7 +699,7 @@ public class CliOptions {
     }
 
     public String getFt12SerialPort() {
-        return ft12SerialPort;
+        return nonNullString(ft12SerialPort);
     }
 
     private void setFt12SerialPort(String ft12SerialPort) {
@@ -703,7 +707,7 @@ public class CliOptions {
     }
 
     public String getTpuartSerialPort() {
-        return tpuartSerialPort;
+        return nonNullString(tpuartSerialPort);
     }
 
     private void setTpuartSerialPort(String tpuartSerialPort) {
@@ -895,7 +899,7 @@ public class CliOptions {
     }
 
     public String getUsbVendorIdAndProductId() {
-        return usbVendorIdAndProductId;
+        return nonNullString(usbVendorIdAndProductId);
     }
 
     public void setUsbVendorIdAndProductId(String usbVendorIdAndProductId) {
