@@ -10,6 +10,7 @@ import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tuwien.auto.calimero.serial.usb.Device;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -357,9 +358,16 @@ public class GuiMain extends JFrame {
 
         comboBoxIpGateways.addItem(new CalimeroSearchComboItem(getTranslation("selectInterface"), null));
 
-        DiscoverKnxInterfaces.getAllInterfaces().forEach(r ->
+        DiscoverKnxInterfaces.getAllnetIPInterfaces().forEach(r ->
                 comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
                         " (" + r.response().getControlEndpoint().endpoint().getAddress().getHostAddress() + ")", r)));
+
+        Set<Device> usbInterfaces = DiscoverKnxInterfaces.getUsbInterfaces();
+        for (final var d : usbInterfaces) {
+            final String vp = String.format("%04x:%04x", d.vendorId(), d.productId());
+            logger.info("Found USB Interface: {} {} S/N {} VID/PID {}",
+                    d.manufacturer(), d.product(), d.serialNumber(), vp);
+        }
 
         comboBoxIpGateways.addActionListener(comboBoxIpGatewaysActionListener);
         reloadGatewaysButton.setEnabled(true);
