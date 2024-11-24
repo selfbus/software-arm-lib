@@ -29,7 +29,7 @@ import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 /**
  * Provides methods to send firmware update telegrams to the bootloader (MCU)
  */
-public final class DeviceManagement {
+public final class DeviceManagement implements AutoCloseable {
     /**
      * EraseCode for the APCI_MASTER_RESET_PDU (valid from 1..7)
      */
@@ -50,10 +50,6 @@ public final class DeviceManagement {
     private int maxPayload;
     private int updSendDataOffset;
 
-    private DeviceManagement () {
-        setProtocolVersion(UDPProtocolVersion.UDP_V1);
-    }
-
     private final static Logger logger = LoggerFactory.getLogger(DeviceManagement.class);
     /**
      * Calimero device management client
@@ -61,6 +57,10 @@ public final class DeviceManagement {
     private SBManagementClientImpl mc;
     private Destination progDestination;
     private KNXNetworkLink link;
+
+    private DeviceManagement () {
+        setProtocolVersion(UDPProtocolVersion.UDP_V1);
+    }
 
     public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, Priority priority)
             throws KNXLinkClosedException {
@@ -70,6 +70,22 @@ public final class DeviceManagement {
         this.mc = new SBManagementClientImpl(this.link);
         this.mc.setPriority(priority);
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
+    }
+
+    @Override
+    public void close() {
+        if (mc != null) {
+            logger.debug("Releasing mc");
+            mc.detach();
+            mc.close();
+        }
+        if (link != null) {
+            logger.debug("Releasing link");
+            link.close();
+        }
+        progDestination = null;
+        mc = null;
+        link = null;
     }
 
     public void restartProgrammingDevice()

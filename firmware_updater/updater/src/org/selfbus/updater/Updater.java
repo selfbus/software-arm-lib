@@ -242,6 +242,7 @@ public class Updater implements Runnable {
                     dm.restartProgrammingDevice();
                 }
                 // to get here `uid == null` must be true, so it's fine to exit with no-error
+                dm.close();
                 link.close();
                 System.exit(0);
             }
@@ -339,6 +340,7 @@ public class Updater implements Runnable {
                     ansi().fgBright(YELLOW), shortenPath(cliOptions.getFileName(), 1), ansi().reset());
             logger.info("{}Firmware Update done, Restarting device{}", ansi().bg(GREEN).fg(BLACK), ansi().reset());
             dm.restartProgrammingDevice();
+            dm.close();
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
                 logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job{}",
@@ -382,6 +384,7 @@ public class Updater implements Runnable {
             if (cliOptions.getDevicePhysicalAddress() != null) {
                 dm.restartProgrammingDevice();
             }
+            dm.close();
             link.close();
             return uid;
 
