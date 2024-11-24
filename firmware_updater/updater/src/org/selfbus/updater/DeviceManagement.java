@@ -300,7 +300,7 @@ public final class DeviceManagement implements AutoCloseable {
                 restartProgrammingDevice();
                 throw new UpdaterException("doFlash failed.");
             }
-            updateProgressInfo(progressInfo, txBuffer.length);
+            updateProgressInfo(progressInfo, txBuffer.length - updSendDataOffset);
             nIndex += txBuffer.length - updSendDataOffset;
 
             if (delay > 0) {
