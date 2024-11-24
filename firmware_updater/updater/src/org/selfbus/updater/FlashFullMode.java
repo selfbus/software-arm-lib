@@ -89,7 +89,7 @@ public class FlashFullMode {
             if (txBuffer.length != dm.getBlockSize()) {
                 debugInfo = String.format("%s (%d bytes)", debugInfo, txBuffer.length);
             }
-            logger.debug("{} with crc32 {}", debugInfo, String.format("crc32 0x%08X", crc32));
+            logger.debug("{} with crc32 {}", debugInfo, String.format("0x%08X", crc32));
 
             resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, dm.getMaxUpdCommandRetry());
 
