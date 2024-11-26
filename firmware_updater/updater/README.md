@@ -3,17 +3,17 @@
 ## Requirements
 
 * JDK 17+
-* gradle >=8.5
+* gradle >=8.9
 * Selfbus device with flashed [bootloader](../bootloader) version 1.00 or higher
 
 ## Build
 ```
-gradle fatJar
+gradle shadowJar
 ```
 *or*
 ```
-linux: gradlew fatJar
-windows: gradlew.bat fatJar
+linux: gradlew shadowJar
+windows: gradlew.bat shadowJar
 ```
 *SB_updater-x.xx-all.jar* file is created in [build/libs](build/libs) directory.
 
@@ -83,17 +83,13 @@ Read UID of the device:
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
 ```
-Recommended for new firmware versions if UID is unknown (requires active programming mode to unlock the device):
+Recommended for new firmware versions if UID is unknown:
 ```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -nat
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1.hex"
 ```
 Recommended for new firmware versions with known UID:
 ```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
-```
-Manual specification of parameters if the App-Version pointer is not found/integrated in the firmware file:
-```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
 ```
 ## Development
 
