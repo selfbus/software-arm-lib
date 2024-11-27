@@ -46,7 +46,7 @@
 								</option>
 								<option id="com.crt.advproject.cpp.fpu.1339910498" name="Floating point" superClass="com.crt.advproject.cpp.fpu" useByScannerDiscovery="true"/>
 								<option id="gnu.cpp.compiler.option.warnings.extrawarn.1773206053" name="Extra warnings (-Wextra)" superClass="gnu.cpp.compiler.option.warnings.extrawarn" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.cpp.exe.debug.option.optimization.level.869964225" superClass="com.crt.advproject.cpp.exe.debug.option.optimization.level"/>
+								<option id="com.crt.advproject.cpp.exe.debug.option.optimization.level.869964225" superClass="com.crt.advproject.cpp.exe.debug.option.optimization.level" useByScannerDiscovery="true"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.219899728" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.debug.614891290" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">
@@ -316,7 +316,7 @@
 								</option>
 								<option id="com.crt.advproject.cpp.fpu.685216689" name="Floating point" superClass="com.crt.advproject.cpp.fpu" useByScannerDiscovery="true"/>
 								<option id="gnu.cpp.compiler.option.warnings.extrawarn.1541849937" name="Extra warnings (-Wextra)" superClass="gnu.cpp.compiler.option.warnings.extrawarn" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.cpp.exe.debug.option.optimization.level.1299353164" superClass="com.crt.advproject.cpp.exe.debug.option.optimization.level"/>
+								<option id="com.crt.advproject.cpp.exe.debug.option.optimization.level.1299353164" superClass="com.crt.advproject.cpp.exe.debug.option.optimization.level" useByScannerDiscovery="true"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.1002928337" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.debug.749798477" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">
@@ -450,7 +450,7 @@
 								</option>
 								<option id="com.crt.advproject.cpp.fpu.520387458" name="Floating point" superClass="com.crt.advproject.cpp.fpu" useByScannerDiscovery="true"/>
 								<option id="gnu.cpp.compiler.option.warnings.extrawarn.1369253710" name="Extra warnings (-Wextra)" superClass="gnu.cpp.compiler.option.warnings.extrawarn" useByScannerDiscovery="false" value="true" valueType="boolean"/>
-								<option id="com.crt.advproject.cpp.exe.debug.option.optimization.level.951693029" superClass="com.crt.advproject.cpp.exe.debug.option.optimization.level"/>
+								<option id="com.crt.advproject.cpp.exe.debug.option.optimization.level.951693029" superClass="com.crt.advproject.cpp.exe.debug.option.optimization.level" useByScannerDiscovery="true"/>
 								<inputType id="com.crt.advproject.compiler.cpp.input.831790154" superClass="com.crt.advproject.compiler.cpp.input"/>
 							</tool>
 							<tool id="com.crt.advproject.gcc.exe.debug.387296668" name="MCU C Compiler" superClass="com.crt.advproject.gcc.exe.debug">

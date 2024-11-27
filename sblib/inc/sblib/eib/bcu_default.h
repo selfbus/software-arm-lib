@@ -3,6 +3,13 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ *  last update 2024 Horst Rauch
+ *       added bus voltage monitoring for
+ *       - start up phase in 2 steps: 21V > bus voltage >18V and Bus voltage >21V
+ *       - normal operation: bus voltage is >=20V
+ *       - power down in 2 phase: 18V< bus voltage is <20V Bus failure -> inform APP, stop KNX TX/RX
+ *       - if Bus voltage < (18V or) SPMS-min++-Voltage stop all SW and put in reset state
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -17,6 +24,8 @@
 #include <sblib/eib/userEeprom.h>
 #include <sblib/timer.h>
 #include <sblib/eib/bcu_base.h>
+#include <sblib/eib/bus_voltage.h>
+
 
 class Bus;
 
@@ -57,6 +66,9 @@ public:
     /**
      * The BCU's main processing loop. This is like the application's loop() function,
      * and is called automatically by main() when the BCU is activated with bcu.begin().
+     *
+     * We do the bus voltage monitoring here and trigger respective actions if necessary
+     *
      */
     virtual void loop() override;
     
@@ -153,9 +165,14 @@ public:
 
 
     /**
-     * Set a callback class to notify the user program of some events
-     */
-    void setUsrCallback(UsrCallback *callback);
+      * Set a callback class to notify the user program of some events
+      */
+     void setUsrCallback(UsrCallback *callback);
+
+    /**
+      * Set a callback class to get the user supplied adc count value
+      */
+    void setADCCallback(ADCCallback *bcu_adcCallback);
 
     /**
      * Enable/Disable sending of group write or group response telegrams.
@@ -178,10 +195,14 @@ public:
 protected:
     /*
      * Special initialization for the BCU
+     * e.g. Physical Layer init, Data Layer init,
+     * TLayer init,...
      */
     virtual void _begin() override;
+
     /**
      * Begin using the EIB bus coupling unit, and set the manufacturer-ID, device type, program version
+     * KNX phy address, BCU data in usrRam and usrEprom
      *
      * @param manufacturer - the manufacturer ID (16 bit)
      * @param deviceType - the device type (16 bit)
@@ -219,13 +240,20 @@ protected:
 
     MemMapper *memMapper;
     UsrCallback *usrCallback;
+    ADCCallback *bcu_adcCallback;
     bool sendGrpTelEnabled;        //!< Sending of group telegrams is enabled. Usually set, but can be disabled.
     unsigned int groupTelWaitMillis;
     unsigned int groupTelSent;
+    // for any ADC read from bus or app the BCU has only the bus voltage channel implemented
+
 
 private:
 };
 
+
+#define  THRESHOLD_VOLTAGE_FAILED_mV 20000
+#define  THRESHOLD_VOLTAGE_RETURN_mV 21000
+#define  THRESHOLD_VOLTAGE_IDLE_mV 18000
 #define  MAX_GROUP_TEL_PER_SECOND  28
 #define  DEFAULT_GROUP_TEL_WAIT_MILLIS  1000/MAX_GROUP_TEL_PER_SECOND
 

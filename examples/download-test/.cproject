@@ -102,6 +102,7 @@
 								<option id="com.crt.advproject.link.cpp.multicore.slave.1575392898" name="Multicore configuration" superClass="com.crt.advproject.link.cpp.multicore.slave" useByScannerDiscovery="false"/>
 								<option id="com.crt.advproject.link.cpp.lto.262215615" name="Enable Link-time optimization (-flto)" superClass="com.crt.advproject.link.cpp.lto" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<option id="com.crt.advproject.link.cpp.lto.optmization.level.598358393" name="Link-time optimization level" superClass="com.crt.advproject.link.cpp.lto.optmization.level" useByScannerDiscovery="false" value="link.cpp.optimization.level.size" valueType="enumerated"/>
+								<option id="com.crt.advproject.link.cpp.multicore.master.393516678" superClass="com.crt.advproject.link.cpp.multicore.master"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.346892149" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>

@@ -38,8 +38,11 @@ BcuBase* setup()
 
     // Enable the serial port with 115200 baud, no parity, 1 stop bit
     // 4TE Tx: PIO1.7, Rx: PIO1.6
-    serial.setRxPin(PIO1_6);
-    serial.setTxPin(PIO1_7);
+    //serial.setRxPin(PIO1_6);
+    //serial.setTxPin(PIO1_7);
+// OM1387 board
+    serial.setRxPin(PIO2_7);
+    serial.setTxPin(PIO2_8);
     // TS_ARM Tx: PIO3.0, Rx: PIO3.1
     // serial.setRxPin(PIO3_1);
     // serial.setTxPin(PIO3_0);
@@ -56,7 +59,17 @@ void loop_noapp()
 {
     int value = analogRead(AD0);
 
-    serial.println(value);
+    serial.println( " adc PIO0_11 cnt:",value);
+    serial.println( " adc PIO0_11 mV :",(value * ADC_LSB_MV));
+
+    // check bus voltage
+	enum BusVoltage::OPERATION_STATE OpState;
+	int BVmV;
+		OpState =  busVoltageMonitor.CheckBusVoltage();  // read Bus voltage and check level
+		value = busVoltageMonitor.valueBusVoltagemV();
+
+		serial.println( " analog value PIO1_11 mV:",value);
+
 
     delay(500);
 }

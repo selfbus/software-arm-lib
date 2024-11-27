@@ -60,4 +60,19 @@
 #define PIN_LT8     PIO0_11
 #define PIN_LT9     PIO2_3
 
+//definitions of 8 ADC ports
+#define PIN_AD0	    PIO0_11
+#define PIN_AD1	    PIO1_0
+#define PIN_AD2	    PIO1_1
+#define PIN_AD3	    PIO1_2
+#define PIN_AD4	    PIO1_3
+#define PIN_AD5	    PIO1_4
+#define PIN_AD6	    PIO1_11
+#define PIN_AD7	    PIO1_11
+
+#define PIN_VBUS_AD PIN_AD7
+
+
+
+
 #endif /* SBLIB_GPIO_LPC11XX_H_ */

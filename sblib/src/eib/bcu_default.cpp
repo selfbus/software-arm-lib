@@ -3,6 +3,13 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ * last changes: Nov. 2024  Horst Rauch
+ *                Bus voltage monitoring function for BCU phase
+ *                - power up
+ *                - power down
+ *                - normal operation added
+ *
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -12,16 +19,21 @@
 #include <sblib/eib/bcu_default.h>
 #include <string.h>
 #include <sblib/eib/bus.h>
+#include <sblib/eib/bus_voltage.h>
 
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
 #endif
+
+BusVoltage Busvoltage;   //declare class
+
 
 BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables) :
         BcuBase(userRam, addrTables),
         userEeprom(userEeprom),
         memMapper(nullptr),
         usrCallback(nullptr),
+        bcu_adcCallback(nullptr),
         sendGrpTelEnabled(false),
         groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
         groupTelSent(millis())
@@ -37,6 +49,9 @@ void BcuDefault::_begin()
         setOwnAddress(PHY_ADDR_DEFAULT); //set default address 15.15.255
     }
 #endif
+
+    //todo check Vbus state and wait till Vbus>=21V to do remaining init of BCU and App and start normal operation
+
     BcuBase::_begin();
 
 #ifdef DUMP_PROPERTIES ///\todo move to BCU2::begin(...)
@@ -84,41 +99,58 @@ void BcuDefault::_begin()
 
 void BcuDefault::begin(int manufacturer, int deviceType, int version)
 {
-    setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
-    userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
-    userRam->deviceControl() = 0;
-    userRam->runState() = 1;
 
-    ///\todo why we touch runError here ? KNX spec 2.1 9/4/1 4.1.10.3.13 p.31 states "They shall be explicitly cleared by a management-tool."
-    userEeprom->runError() = 0xff;
-    userEeprom->portADDR() = 0;
+	// setup BusVoltage, maybe the user App has set the callback
+	busVoltageMonitor.setup( PIN_VBUS_AD, THRESHOLD_VOLTAGE_FAILED_mV, THRESHOLD_VOLTAGE_RETURN_mV, THRESHOLD_VOLTAGE_IDLE_mV,  bcu_adcCallback);
 
-    userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
-    userEeprom->manufacturerL() = lowByte(manufacturer);
+	//todo check for BusVoltage state, and wait till  Vbus>=18v  before continuing init process
+	enum BusVoltage::OPERATION_STATE OpState;
+	int BVmV;
 
-    userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
-    userEeprom->deviceTypeL() = lowByte(deviceType);
+	do
+	{
+		OpState =  busVoltageMonitor.CheckBusVoltage();  // read Bus voltage and check level
+		BVmV = busVoltageMonitor.valueBusVoltagemV();
+	}
+	while (BVmV <= THRESHOLD_VOLTAGE_IDLE_mV);
 
-    userEeprom->version() = version;
+	setOwnAddress(makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]));
+	userRam->status() = BCU_STATUS_LINK_LAYER | BCU_STATUS_TRANSPORT_LAYER | BCU_STATUS_APPLICATION_LAYER | BCU_STATUS_USER_MODE;
+	userRam->deviceControl() = 0;
+	userRam->runState() = 1;
 
-    userEeprom->modified(false);
+	///\todo why we touch runError here ? KNX spec 2.1 9/4/1 4.1.10.3.13 p.31 states "They shall be explicitly cleared by a management-tool."
+	userEeprom->runError() = 0xff;
+	userEeprom->portADDR() = 0;
+
+	userEeprom->manufacturerH() = HIGH_BYTE(manufacturer);
+	userEeprom->manufacturerL() = lowByte(manufacturer);
+
+	userEeprom->deviceTypeH() = HIGH_BYTE(deviceType);
+	userEeprom->deviceTypeL() = lowByte(deviceType);
+
+	userEeprom->version() = version;
+
+	userEeprom->modified(false);
 }
 
 void BcuDefault::setOwnAddress(uint16_t addr)
 {
-    if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
-    {
-        userEeprom->addrTab()[0] = HIGH_BYTE(addr);
-        userEeprom->addrTab()[1] = lowByte(addr);
-        userEeprom->modified(true);
-    }
-    BcuBase::setOwnAddress(addr);
+	if (addr != makeWord(userEeprom->addrTab()[0], userEeprom->addrTab()[1]))
+	{
+		userEeprom->addrTab()[0] = HIGH_BYTE(addr);
+		userEeprom->addrTab()[1] = lowByte(addr);
+		userEeprom->modified(true);
+	}
+	BcuBase::setOwnAddress(addr);
 }
 
 void BcuDefault::loop()
 {
-    if (!enabled)
-        return;
+	if (!enabled)
+		return;
+
+    // todo check if bus voltag OK, if failed inform app and start power down phase
 
     BcuBase::loop(); // check processTelegram and programming button state
 
@@ -186,6 +218,11 @@ MemMapper* BcuDefault::getMemMapper()
 void BcuDefault::setUsrCallback(UsrCallback *callback)
 {
     usrCallback = callback;
+}
+
+void BcuDefault::setADCCallback(ADCCallback *callback)
+{
+    bcu_adcCallback = callback;
 }
 
 void BcuDefault::enableGroupTelSend(bool enable)

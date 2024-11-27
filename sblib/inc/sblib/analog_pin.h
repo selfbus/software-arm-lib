@@ -3,6 +3,9 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
+ *  last changes: Nov. 2024  Horst Rauch
+ *                mapping of analog pins and adc channel added
+ *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -11,7 +14,17 @@
 #define sblib_analog_pin_h
 
 #include <sblib/ioports.h>
+#include <sblib/io_pin_names.h>
 #include <sblib/types.h>
+
+
+/**
+ * channel mapping KNX analog channel to adc channel
+ * adc channel to PIO pin number
+ */
+int KNXtoADC (int channel);
+int ADCtoPIO (int channel);
+
 
 /**
  * Enable the AD converter. This function must be called before analogRead()
