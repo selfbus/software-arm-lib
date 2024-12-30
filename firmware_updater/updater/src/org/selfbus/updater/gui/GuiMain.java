@@ -190,6 +190,10 @@ public class GuiMain extends JFrame {
         //Locale.setDefault(Locale.ENGLISH); // for tests
         //Locale.setDefault(Locale.ROOT);    // default language for tests
         $$$setupUI$$$();
+
+        // Set uncaught exception handler to show a dialog
+        Thread.setDefaultUncaughtExceptionHandler(new GuiUncaughtExceptionHandler(this));
+
         buttonLoadFile.addActionListener(actionEvent -> handleLoadFileAction());
         buttonStartStopFlash.addActionListener(actionEvent -> handleStartStopFlashAction());
         buttonRequestUid.addActionListener(actionEvent -> handleRequestUidAction());
