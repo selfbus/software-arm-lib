@@ -435,17 +435,17 @@ public final class ConColorsToStyledDoc {
 
         // Calculate the new caret position
         int newCaretPosition = lineStartOffset + columnIndex;
-        logger.debug("lineStartOffset={}", lineStartOffset);
-        logger.debug("newCaretPosition={}", newCaretPosition);
+        logger.trace("lineStartOffset={}", lineStartOffset);
+        logger.trace("newCaretPosition={}", newCaretPosition);
 
         if (newCaretPosition < 0) {
-            logger.debug("newCaretPosition set to 0");
+            logger.trace("newCaretPosition set to 0");
             newCaretPosition = 0;
         }
 
         if (newCaretPosition > doc.getLength()) {
             newCaretPosition = doc.getLength();
-            logger.debug("newCaretPosition set to {}", newCaretPosition);
+            logger.trace("newCaretPosition set to {}", newCaretPosition);
         }
 
         int currentLength = doc.getLength();
