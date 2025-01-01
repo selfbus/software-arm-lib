@@ -172,7 +172,7 @@ public class Updater implements Runnable {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
                     logger.error("{}File '{}' does not exist!{}", ansi().fg(RED), cliOptions.getFileName(), ansi().reset());
-                    throw new UpdaterException("Selfbus update failed.");
+                    throw new UpdaterException(String.format("File '%s' does not exist!", cliOptions.getFileName()));
                 }
                 // Load Firmware hex file
                 logger.info("Loading file '{}'", hexFileName);

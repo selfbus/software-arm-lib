@@ -148,10 +148,11 @@ public final class DeviceManagement implements AutoCloseable {
             return UPDProtocol.byteArrayToHex(uid);
         } else {
             uid = Arrays.copyOfRange(result, DATA_POSITION, result.length - DATA_POSITION);
-            logger.error("Request UID failed {} result.length={}, UID_LENGTH_USED={}, UID_LENGTH_MAX={}",
-                    UPDProtocol.byteArrayToHex(uid),uid.length, UPDProtocol.UID_LENGTH_USED, UPDProtocol.UID_LENGTH_MAX);
+            String errorMsg = String.format("Request UID failed %s result.length=%d, UID_LENGTH_USED=%d, UID_LENGTH_MAX=%d",
+                    UPDProtocol.byteArrayToHex(uid), uid.length, UPDProtocol.UID_LENGTH_USED, UPDProtocol.UID_LENGTH_MAX);
+            logger.error(errorMsg);
             restartProgrammingDevice();
-            throw new UpdaterException("Selfbus update failed.");
+            throw new UpdaterException(errorMsg);
         }
     }
 
@@ -223,7 +224,7 @@ public final class DeviceManagement implements AutoCloseable {
         byte[] result = sendWithRetry(UPDCommand.UNLOCK_DEVICE, UPDProtocol.uidToByteArray(uid), getMaxUpdCommandRetry()).data();
         if (UPDProtocol.checkResult(result) != UDPResult.IAP_SUCCESS) {
             restartProgrammingDevice();
-            throw new UpdaterException("Selfbus update failed.");
+            throw new UpdaterException(String.format("Unlocking device %s failed.", progDestination.getAddress()));
         }
     }
 

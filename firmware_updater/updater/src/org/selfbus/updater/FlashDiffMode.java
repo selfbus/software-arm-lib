@@ -122,7 +122,7 @@ public final class FlashDiffMode {
                 //\todo switch to full flash mode on a NOT_IMPLEMENTED instead of exiting
                 if (UPDProtocol.checkResult(result.get().data(), false) != UDPResult.IAP_SUCCESS) {
                     dm.restartProgrammingDevice();
-                    throw new UpdaterException("Selfbus update failed.");
+                    throw new UpdaterException("DiffMode SEND_DATA_TO_DECOMPRESS failed.");
                 }
                 dm.updateProgressInfo(progressInfo, txBuf.length);
             }
@@ -133,7 +133,7 @@ public final class FlashDiffMode {
             logger.debug("Program device next page diff, crc32 0x{}", String.format("%08X", crc32));
             result.set(dm.sendWithRetry(UPDCommand.PROGRAM_DECOMPRESSED_DATA, progPars, dm.getMaxUpdCommandRetry()));
             if (UPDProtocol.checkResult(result.get().data()) != UDPResult.IAP_SUCCESS) {
-                throw new UpdaterException("Selfbus update failed.");
+                throw new UpdaterException("DiffMode PROGRAM_DECOMPRESSED_DATA failed.");
             }
         });
         dm.finalProgressInfo(progressInfo);
