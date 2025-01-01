@@ -1,12 +1,12 @@
 package org.selfbus.updater.gui;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.classic.spi.IThrowableProxy;
+import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.AppenderBase;
 
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
-
-import static javax.swing.SwingUtilities.invokeLater;
 
 public class TextAppender extends AppenderBase<ILoggingEvent> {
     private JTextPane textPane;
@@ -25,22 +25,58 @@ public class TextAppender extends AppenderBase<ILoggingEvent> {
 
     @Override
     protected void append(ILoggingEvent event) {
-        String eventMessage = event.getFormattedMessage();
-        // Make sure, that every eventMessage ends with a line separator
-        if (eventMessage.lastIndexOf(System.lineSeparator()) != eventMessage.length() - System.lineSeparator().length()) {
-            eventMessage += System.lineSeparator();
+        if (getTextPane() == null) {
+            return;
         }
 
-        final String finalMessage = eventMessage;
-        invokeLater(() -> {
+        StringBuilder eventMessage = new StringBuilder(event.getFormattedMessage());
+
+        // Check for ThrowableProxy to retrieve the stack trace
+        IThrowableProxy throwableProxy = event.getThrowableProxy();
+        if (throwableProxy != null) {
+            // Append the stack trace to the log message
+            eventMessage.append(System.lineSeparator());
+            appendStackTrace(throwableProxy, eventMessage);
+        }
+
+        String logMessage = eventMessage.toString();
+
+        // Ensure the message ends with a line separator
+        if (!logMessage.endsWith(System.lineSeparator())) {
+            logMessage += System.lineSeparator();
+        }
+
+        String finalLogMessage = logMessage;
+        SwingUtilities.invokeLater(() -> {
             try {
-                // Append formatted message to text area using the Thread.
-                updateTextPane(finalMessage);
+                // Append formatted message to text area using the Thread
+                updateTextPane(finalLogMessage);
             }
-            catch (Throwable e) {
+            catch (BadLocationException e) {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private void appendStackTrace(IThrowableProxy throwableProxy, StringBuilder builder) {
+        builder.append(throwableProxy.getClassName())
+                .append(": ")
+                .append(throwableProxy.getMessage())
+                .append(System.lineSeparator());
+
+        // Loop through each stack trace element and append it
+        for (StackTraceElementProxy elementProxy : throwableProxy.getStackTraceElementProxyArray()) {
+            builder.append("\t ")
+                    .append(elementProxy.toString())
+                    .append(System.lineSeparator());
+        }
+
+        // If there are any nested causes, recursively append them
+        IThrowableProxy cause = throwableProxy.getCause();
+        if (cause != null) {
+            builder.append("Caused by: ");
+            appendStackTrace(cause, builder);
+        }
     }
 
     public JTextPane getTextPane() {
