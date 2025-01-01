@@ -94,17 +94,16 @@ public final class DeviceManagement implements AutoCloseable {
         mc.restart(progDestination);
     }
 
-    private void waitRestartTime(int restartTimeSeconds) {
-        try {
-            while (restartTimeSeconds > 0) {
-                Thread.sleep(1000);
+    private void waitRestartTime(int restartTimeSeconds) throws InterruptedException {
+        while (restartTimeSeconds > 0) {
+            Thread.sleep(1000);
+            if (LoggingManager.isConsoleActive()) {
                 System.out.printf("%s.%s", ansi().fgBright(GREEN), ansi().reset());
-                restartTimeSeconds--;
             }
-            System.out.println();
+            restartTimeSeconds--;
         }
-        catch (final InterruptedException e) {
-            logger.error("InterruptedException ", e);
+        if (LoggingManager.isConsoleActive()) {
+            System.out.println();
         }
     }
 
@@ -113,7 +112,7 @@ public final class DeviceManagement implements AutoCloseable {
      *
      * @param device the IndividualAddress of the device to restart
      */
-    public void restartDeviceToBootloader(IndividualAddress device) {
+    public void restartDeviceToBootloader(IndividualAddress device) throws InterruptedException {
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try (Destination dest = this.mc.createDestination(device, true, false, false)) {
             logger.info("Restarting device {} into bootloader", device);
@@ -121,10 +120,10 @@ public final class DeviceManagement implements AutoCloseable {
             logger.info("Device {} reported {}{}{} second(s) for restarting",
                     device, ansi().fgBright(GREEN), restartProcessTime, ansi().reset());
             waitRestartTime(restartProcessTime);
-        } catch (final KNXException | InterruptedException e) {
+        } catch (final KNXException e) {
             logger.info("{}Restart state of device {} unknown. {}{}",
                     ansi().fgBright(RED), device, e.getMessage(), ansi().reset());
-            logger.debug("KNXException ", e);
+            logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
             logger.info("Waiting {}{}{} seconds for device {} to restart",
                     ansi().fgBright(GREEN), restartProcessTime, ansi().reset(), device);
             waitRestartTime(restartProcessTime);
@@ -208,7 +207,8 @@ public final class DeviceManagement implements AutoCloseable {
         return bootDescriptor;
     }
 
-    public String requestAppVersionString() throws UpdaterException {
+    public String requestAppVersionString() throws UpdaterException, KNXLinkClosedException,
+            InterruptedException {
         byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[0], getMaxUpdCommandRetry()).data();
         UPDCommand command = UPDCommand.tryFromByteArray(result);
         if (command != UPDCommand.APP_VERSION_RESPONSE) {
@@ -324,14 +324,17 @@ public final class DeviceManagement implements AutoCloseable {
         }
 
         progressInfo.update(bytesDone);
-        // console output
+
         String logText = String.format("%s%s%s%s",
                 AnsiCursor.off(),
                 ansi().cursorToColumn(1).fgBright(GREEN).a(SpinningCursor.getNext()).reset(),
                 progressInfo,
                 AnsiCursor.on());
-        System.out.print(logText);
 
+        // console output
+        if (LoggingManager.isConsoleActive()) {
+            System.out.print(logText);
+        }
         // gui JTextPane output
         logText = ansi().cursorUpLine().toString() + logText; // need this CursorUp in gui
         ListTextAppenders.appendEvent(Level.INFO, logText);
@@ -379,7 +382,8 @@ public final class DeviceManagement implements AutoCloseable {
         }
     }
 
-    public BootloaderStatistic requestBootLoaderStatistic() throws UpdaterException {
+    public BootloaderStatistic requestBootLoaderStatistic() throws UpdaterException, KNXLinkClosedException,
+            InterruptedException {
         logger.debug("Requesting Bootloader statistic");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
         UPDCommand command = UPDCommand.tryFromByteArray(result);
@@ -394,7 +398,7 @@ public final class DeviceManagement implements AutoCloseable {
     }
 
     public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
-            throws UpdaterException {
+            throws UpdaterException, InterruptedException, KNXLinkClosedException {
         ResponseResult result = new ResponseResult();
         while (true) {
             try {
@@ -407,13 +411,14 @@ public final class DeviceManagement implements AutoCloseable {
                         e.getClass().getSimpleName(), ansi().reset());
                 result.incTimeoutCount();
             }
-            catch (KNXDisconnectException | KNXRemoteException e) { ///\todo check causes of KNXRemoteException, if think they are unrecoverable
+            catch (KNXDisconnectException e) { ///\todo check causes of KNXRemoteException, if think they are unrecoverable
                 logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
                         e.getClass().getSimpleName(), ansi().reset());
                 result.incDropCount();
             }
-            catch (Throwable e) {
-                throw new UpdaterException(String.format("%s failed.", command), e);
+            catch (KNXInvalidResponseException e) {
+                logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
+                        e.getClass().getSimpleName(), ansi().reset());
             }
 
             if (maxRetry > 0) {
@@ -427,7 +432,8 @@ public final class DeviceManagement implements AutoCloseable {
         }
     }
 
-    public void checkDeviceInProgrammingMode(IndividualAddress progDeviceAddr) throws UpdaterException {
+    public void checkDeviceInProgrammingMode(IndividualAddress progDeviceAddr) throws UpdaterException,
+            InterruptedException {
         try {
             ManagementProcedures mgmt = new ManagementProceduresImpl(link);
             IndividualAddress[] devices = mgmt.readAddress();
@@ -447,8 +453,8 @@ public final class DeviceManagement implements AutoCloseable {
             else {
                 throw new UpdaterException(String.format("%d wrong device(s) %s are already in programming mode.", devices.length, Arrays.toString(devices)));
             }
-        } catch (KNXException | InterruptedException e ) {
-            throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()));
+        } catch (KNXException e ) {
+            throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()), e);
         }
     }
 

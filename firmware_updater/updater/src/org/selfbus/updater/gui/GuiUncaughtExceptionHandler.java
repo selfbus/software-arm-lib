@@ -30,17 +30,18 @@ public class GuiUncaughtExceptionHandler implements Thread.UncaughtExceptionHand
         logger.error("{}Uncaught exception in thread {} {}{}",
                 ansi().fg(RED) , thread.getName(), throwable.toString(), ansi().reset(), throwable);
 
+        // todo see logback issue #876
+        // https://github.com/qos-ch/logback/issues/876
+        // Don´t delete .toString()
         // Show exception details in a dialog
-        SwingUtilities.invokeLater(() -> {
-            JOptionPane.showMessageDialog(
-                    parentFrame,
-                    "An unexpected error occurred:" + System.lineSeparator() +
-                            throwable.toString() + System.lineSeparator() +
-                            getLimitedStackTrace(throwable, 7),
-                    "Exception",
-                    JOptionPane.ERROR_MESSAGE
-            );
-        });
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(
+                parentFrame,
+                "An unexpected error occurred:" + System.lineSeparator() +
+                        throwable.toString() + System.lineSeparator() +
+                        getLimitedStackTrace(throwable, 7),
+                "Exception",
+                JOptionPane.ERROR_MESSAGE
+        ));
     }
 
     /**

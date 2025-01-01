@@ -76,4 +76,8 @@ public final class ToolInfo
                                       minMinorVersionBootloader(),
                         0, 0, 0, 0).getVersion();
     }
+
+    public static String getToolJarName() {
+        return String.format("SB_updater-%s-all.jar", ToolInfo.getVersion());
+    }
 }

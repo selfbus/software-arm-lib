@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.knxnetip.KNXnetIPRouting;
 import tuwien.auto.calimero.knxnetip.SecureConnection;
 import tuwien.auto.calimero.knxnetip.TcpConnection;
@@ -29,8 +28,13 @@ public class SBKNXLink {
     private static final Logger logger = LoggerFactory.getLogger(SBKNXLink.class);
     private CliOptions cliOptions;
 
-    public SBKNXLink() {
+    @SuppressWarnings("unused")
+    private SBKNXLink() {
 
+    }
+
+    public SBKNXLink(CliOptions cliOptions) {
+        this.cliOptions = cliOptions;
     }
 
     private KNXNetworkLink createSecureTunnelingLink(InetSocketAddress local, InetSocketAddress remote,
@@ -76,25 +80,23 @@ public class SBKNXLink {
         }
     }
 
-    private static KNXMediumSettings getMedium(final String id, IndividualAddress ownAddress) {
-        if (id.equals("tp1")) {
+    private static KNXMediumSettings getMedium(final String id, IndividualAddress ownAddress)
+            throws UpdaterException {
+        if (id.equalsIgnoreCase(KNXMediumSettings.getMediumString(KNXMediumSettings.MEDIUM_TP1))) {
             return new TPSettings(ownAddress);
-        } else if (id.equals("rf")) {
-            throw new KNXIllegalArgumentException("medium 'rf' not implemented");
+        }
+        else if (id.equalsIgnoreCase(KNXMediumSettings.getMediumString(KNXMediumSettings.MEDIUM_RF))) {
+            throw new UpdaterException(String.format("medium '%s' not implemented", id));
             //return new RFSettings(ownAddress);
         }
-        //else if (id.equals("tp0"))
+        //else if (id.equalsIgnoreCase("tp0"))
         //	return TPSettings.TP0;
-        //else if (id.equals("p110"))
+        //else if (id.equalsIgnoreCase("p110"))
         //	return new PLSettings(false);
-        //else if (id.equals("p132"))
+        //else if (id.equalsIgnoreCase("p132"))
         //	return new PLSettings(true);
         else
-            throw new KNXIllegalArgumentException("unknown medium");
-    }
-
-    public void setCliOptions(CliOptions cliOptions) {
-        this.cliOptions = cliOptions;
+            throw new UpdaterException("unknown medium");
     }
 
     private InetAddress resolveHost(final String host) throws UnknownHostException {
@@ -112,14 +114,15 @@ public class SBKNXLink {
      * @throws KNXException         on problems on link creation
      * @throws InterruptedException on interrupted thread
      */
-    public KNXNetworkLink openLink() throws KNXException, InterruptedException, UnknownHostException {
+    public KNXNetworkLink openLink() throws KNXException, InterruptedException,
+            UnknownHostException, UpdaterException {
         KNXNetworkLink newLink = doOpenLink();
         logger.info("KNX connection: {}", newLink);
         return newLink;
     }
 
     private KNXNetworkLink doOpenLink() throws KNXException,
-            InterruptedException, UnknownHostException {
+            InterruptedException, UnknownHostException, UpdaterException {
         final KNXMediumSettings medium = getMedium(cliOptions.getMedium(), cliOptions.getOwnPhysicalAddress());
         logger.debug("Creating KNX network link {}", medium);
         if (!cliOptions.getFt12SerialPort().isEmpty()) {
@@ -160,14 +163,14 @@ public class SBKNXLink {
         // try unsecure TCP tunneling v2 connection
         try {
             return createTunnelingLinkV2(local, remote, medium);
-        } catch (final KNXException | InterruptedException e) {
+        } catch (final KNXException e) {
             logger.info("failed with {}", e.toString());
         }
 
         // try unsecure UDP tunneling v1 connection with nat option set on cli
         try {
             return createTunnelingLinkV1(local, remote, cliOptions.getNatIsSet(), medium);
-        } catch (final KNXException | InterruptedException e) {
+        } catch (final KNXException e) {
             logger.info("{}failed with {}{}", ansi().fg(YELLOW), e, ansi().reset());
         }
 

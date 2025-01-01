@@ -1,5 +1,7 @@
 package org.selfbus.updater;
 
+import ch.qos.logback.classic.Level;
+import org.apache.commons.cli.ParseException;
 import org.fusesource.jansi.AnsiConsole;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
 import tuwien.auto.calimero.*;
@@ -11,11 +13,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.link.KNXNetworkLink;
 
-import java.io.IOException;
 import java.net.UnknownHostException;
 
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.LoggingManager.CONSOLE_APPENDER_NAME;
 import static org.selfbus.updater.Utils.shortenPath;
 
 import org.selfbus.updater.gui.GuiMain;
@@ -38,7 +40,6 @@ public class Updater implements Runnable {
 
     private final static Logger logger = LoggerFactory.getLogger(Updater.class);
     private CliOptions cliOptions = null;
-    private SBKNXLink sbKNXLink = null;
 
     /**
      * Constructs an instance of the {@link #Updater} class.
@@ -49,8 +50,6 @@ public class Updater implements Runnable {
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
         this.cliOptions = cliOptions;
-        this.sbKNXLink = new SBKNXLink();
-        this.sbKNXLink.setCliOptions(cliOptions);
     }
 
     public static void initJansi() {
@@ -63,57 +62,55 @@ public class Updater implements Runnable {
     }
 
     public static void main(final String[] args) {
+        // turn off info level message
+        //  "SLF4J(I): Connected with provider of type [ch.qos.logback.classic.spi.LogbackServiceProvider]"
+        // see https://github.com/qos-ch/slf4j/issues/422
+        // todo test end delete with logback-classic (SLF4J) version >= 2.0.16
+        // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+        // https://github.com/qos-ch/slf4j/issues/422#issuecomment-2280712623
+        System.setProperty("slf4j.internal.verbosity", "WARN");
+
         initJansi();
 
         if (args.length == 0) {
+            logger.info("GUI start => console output set to log level {}", Level.WARN);
+            LoggingManager.setAppenderLogLevel(CONSOLE_APPENDER_NAME, Level.WARN);
             GuiMain.startSwingGui();
             finalizeJansi();
             return;
         }
 
-        // read in user-supplied command line options
-        CliOptions options = new CliOptions(args, String.format("SB_updater-%s-all.jar", ToolInfo.getVersion()) ,
-                "Selfbus KNX-Firmware update tool options", "", PHYS_ADDRESS_BOOTLOADER, PHYS_ADDRESS_OWN);
-        if (options.getVersionIsSet()) {
-            logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), Credits.getAsciiLogo(), ansi().reset());
-            logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), Credits.getAuthors(), ansi().reset());
-            ToolInfo.showVersion();
-            finalizeJansi();
-            return;
-        }
-
-        logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), ToolInfo.getToolAndVersion(), ansi().reset());
-        if (options.getHelpIsSet()) {
-            logger.info(options.helpToString());
-            finalizeJansi();
-            return;
-        }
-
         try {
+            logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), ToolInfo.getToolAndVersion(), ansi().reset());
+            // read in user-supplied command line options
+            CliOptions options = new CliOptions(args, ToolInfo.getToolJarName() ,
+                    "Selfbus KNX-Firmware update tool options", "");
+            if (options.getVersionIsSet()) {
+                logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), Credits.getAsciiLogo(), ansi().reset());
+                logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), Credits.getAuthors(), ansi().reset());
+                ToolInfo.showVersion();
+                finalizeJansi();
+                return;
+            }
+
+            if (options.getHelpIsSet()) {
+                logger.info(options.helpToString());
+                finalizeJansi();
+                return;
+            }
+
+
             final Updater updater = new Updater(options);
             final ShutdownHandler shutDownHandler = new ShutdownHandler().register();
             updater.run();
             shutDownHandler.unregister();
-        } finally {
+        }
+        catch (KNXFormatException | ParseException e) {
+            logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+        }
+        finally {
             finalizeJansi();
             logger.debug("main exit");
-        }
-    }
-
-    /**
-     * Called by this tool on completion.
-     *
-     * @param thrown
-     *            the thrown exception if operation completed due to a raised
-     *            exception, <code>null</code> otherwise
-     * @param canceled
-     *            whether the operation got canceled before its planned end
-     */
-    protected void onCompletion(final Exception thrown, final boolean canceled) {
-        if (canceled)
-            logger.info("reading device info canceled");
-        if (thrown != null) {
-            logger.error("Operation did not finish.", thrown);
         }
     }
 
@@ -143,10 +140,6 @@ public class Updater implements Runnable {
      */
     public static final int DELAY_MAX = 500;
     /**
-     * Default delay between two UPDCommand.SEND_DATA telegrams in milliseconds
-     */
-    public static final int DELAY_DEFAULT = 100;
-    /**
      *  Physical address the bootloader is using
      */
     public static final IndividualAddress PHYS_ADDRESS_BOOTLOADER = new IndividualAddress(15, 15,192);
@@ -161,8 +154,6 @@ public class Updater implements Runnable {
      * @see java.lang.Runnable#run()
      */
     public void run() {
-        Exception thrown = null;
-        boolean canceled = false;
         KNXNetworkLink link = null;
         try {
             final String hexFileName = cliOptions.getFileName();
@@ -191,7 +182,7 @@ public class Updater implements Runnable {
                 System.out.println();
             }
 
-            link = sbKNXLink.openLink();
+            link = new SBKNXLink(cliOptions).openLink();
 
             DeviceManagement dm = new DeviceManagement(link, cliOptions.getProgDevicePhysicalAddress(), cliOptions.getPriority());
 
@@ -349,26 +340,28 @@ public class Updater implements Runnable {
                         ansi().reset());
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
             }
-        } catch (final KNXException | UpdaterException | RuntimeException e) {
-            thrown = e;
-        } catch (final InterruptedException e) {
-            canceled = true;
+
+            logger.info("Operation finished successfully.");
+        }
+        catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
-        } catch (IOException e) {
-            logger.error("IOException ", e);
-        } catch (Throwable e) {
-            logger.error("Throwable ", e);
-        } finally {
-            if (link != null)
+            logger.info("Operation canceled.");
+        }
+        catch (Throwable e) {
+            logger.error("", e);  // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            logger.error("Operation did not finish.");
+        }
+        finally {
+            if (link != null) {
                 link.close();
-            onCompletion(thrown, canceled);
+            }
         }
     }
 
-    public String requestUid(){
+    public String requestUid() throws KNXException, UpdaterException, UnknownHostException {
         KNXNetworkLink link;
         try {
-            link = this.sbKNXLink.openLink();
+            link = new SBKNXLink(cliOptions).openLink();
             DeviceManagement dm = new DeviceManagement(link, cliOptions.getProgDevicePhysicalAddress(), cliOptions.getPriority());
 
             //for option --device restart the device in bootloader mode
@@ -381,15 +374,32 @@ public class Updater implements Runnable {
 
             String uid = dm.requestUIDFromDevice();
 
+            dm.unlockDeviceWithUID(uid);
+            dm.requestBootloaderIdentity();
+            dm.requestBootDescriptor();
+            String appVersion = dm.requestAppVersionString();
+            if (appVersion.isEmpty()) {
+                logger.info("APP_VERSION: {}invalid{} ", ansi().fgBright(RED), ansi().reset());
+            } else {
+                logger.info("APP_VERSION: {}{}{}", ansi().fgBright(GREEN), appVersion, ansi().reset());
+            }
+
             if (cliOptions.getDevicePhysicalAddress() != null) {
                 dm.restartProgrammingDevice();
             }
             dm.close();
             link.close();
             return uid;
-
-        } catch (InterruptedException | UpdaterException | KNXException | UnknownHostException e) {
-            throw new RuntimeException(e);
+        }
+        catch (final InterruptedException e) {
+            logger.info("Operation requestUid canceled.");
+            Thread.currentThread().interrupt();
+            return "";
+        }
+        catch (UpdaterException | KNXException | UnknownHostException e) {
+            logger.error("{}An error occurred while retrieving the UID. {}{}{}",
+                    ansi().fg(RED), System.lineSeparator(), e, ansi().reset());
+            throw e;
         }
     }
 }

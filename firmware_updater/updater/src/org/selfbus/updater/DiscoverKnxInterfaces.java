@@ -19,21 +19,22 @@ import java.util.concurrent.ExecutionException;
 public class DiscoverKnxInterfaces {
     private final static Logger logger = LoggerFactory.getLogger(DiscoverKnxInterfaces.class);
 
-    public static List<Discoverer.Result<SearchResponse>> getAllnetIPInterfaces() {
+    public static List<Discoverer.Result<SearchResponse>> getAllnetIPInterfaces() throws InterruptedException {
 
         List<Discoverer.Result<SearchResponse>> interfacesResult = null;
         try {
             // set true to be aware of Network Address Translation (NAT) during discovery
             final boolean useNAT = false;
             interfacesResult = Discoverer.udp(useNAT).timeout(Duration.ofSeconds(3)).search().get();
-        }catch (InterruptedException | ExecutionException e) {
+        }
+        catch (ExecutionException e) {
             logger.warn("Error during KNXnet/IP discovery: {}", e.getMessage());
         }
 
         return interfacesResult;
     }
 
-    public static Set<Device> getUsbInterfaces() {
+    public static Set<Device> getUsbInterfaces() throws InterruptedException {
         Set<Device> knxUsbDevices = UsbConnectionFactory.attachedKnxUsbDevices();
         Iterator<Device> iterator = knxUsbDevices.iterator();
         while (iterator.hasNext()) {
@@ -43,10 +44,9 @@ public class DiscoverKnxInterfaces {
                 try (UsbConnection c = UsbConnectionFactory.open(d)) {
                     if (c.deviceDescriptor().medium().getMedium() != KNXMediumSettings.MEDIUM_TP1) {
                         iterator.remove();
-                        continue;
-                    };
+                    }
                 }
-                catch (KNXException | InterruptedException | RuntimeException e) {
+                catch (KNXException e) {
                     iterator.remove();
                     logger.error("error: reading KNX device descriptor of {} ({})", d,  e.getMessage());
                 }

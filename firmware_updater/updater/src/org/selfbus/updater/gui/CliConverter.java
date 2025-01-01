@@ -2,7 +2,6 @@ package org.selfbus.updater.gui;
 
 import javax.swing.JTextField;
 import javax.swing.JComboBox;
-import java.util.ArrayList;
 import java.util.Objects;
 
 public final class CliConverter {
@@ -19,16 +18,6 @@ public final class CliConverter {
 
     public static String argument(String cliLongOption) {
         return argument(cliLongOption, "", false);
-    }
-
-    public static String toString(ArrayList<String> list) {
-        StringBuilder result = new StringBuilder();
-        for (String s : list) {
-            if (!s.isEmpty()) {
-                result.append(" ").append(s);
-            }
-        }
-        return result.toString().trim();
     }
 
     public static String argument(String cliLongOption, String argValue, boolean argValueRequired) {

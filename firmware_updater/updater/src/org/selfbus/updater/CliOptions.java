@@ -19,12 +19,15 @@ import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 import tuwien.auto.calimero.Priority;
 import tuwien.auto.calimero.knxnetip.KNXnetIPConnection;
+import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.link.medium.TPSettings;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
@@ -115,15 +118,16 @@ public class CliOptions {
 
     private static final int PRINT_WIDTH = 100;
     private final static List<String> VALID_LOG_LEVELS = Arrays.asList("TRACE", "DEBUG", "INFO");
+    private final static int INVALID_SECURE_USER_ID = -1;
 
     private final Options cliOptions = new Options();
     // define parser
     CommandLine cmdLine;
     final HelpFormatter helper = new HelpFormatter();
 
-    private final String helpHeader;
-    private final String helpFooter;
-    private final String helpApplicationName;
+    private String helpHeader = "";
+    private String helpFooter = "";
+    private String helpApplicationName = "";
 
     private String knxInterface ="";
     private String fileName = "";
@@ -137,15 +141,14 @@ public class CliOptions {
     private boolean tunnelingV2isSet = false;
     private boolean tunnelingV1isSet = false;
     private boolean routingIsSet = false;
-    private String medium = "tp1";
+    private String medium = KNXMediumSettings.getMediumString(KNXMediumSettings.MEDIUM_TP1);
 
-    private int knxSecureUserId = 1;
+    private int knxSecureUserId = INVALID_SECURE_USER_ID;
     private String knxSecureUserPassword = "";
     private String knxSecureDevicePassword = "";
 
-
-    private IndividualAddress progDevicePhysicalAddress;
-    private IndividualAddress ownPhysicalAddress;
+    private IndividualAddress progDevicePhysicalAddress = Updater.PHYS_ADDRESS_BOOTLOADER;
+    private IndividualAddress ownPhysicalAddress = Updater.PHYS_ADDRESS_OWN;
     private IndividualAddress devicePhysicalAddress = null;
     private String uid = "";
     private boolean flashingFullModeIsSet = false;
@@ -161,13 +164,10 @@ public class CliOptions {
     private boolean logStatisticsIsSet = false;
     private int blockSize = Mcu.UPD_PROGRAM_SIZE;
 
-    public CliOptions(final String[] args, String helpApplicationName, String helpHeader, String helpFooter,
-                      IndividualAddress progDevicePhysicalAddress, IndividualAddress ownAddress) {
-        this.helpApplicationName = helpApplicationName;
-        this.helpHeader = helpHeader;
-        this.helpFooter = helpFooter;
-        setProgDevicePhysicalAddress(progDevicePhysicalAddress); //todo check why we have this as a method parameter and why is it set here?
-        setOwnPhysicalAddress(ownAddress); //todo check why we have this as a method parameter and why is it set here?
+    private final Level defaultLogLevel;
+
+    private CliOptions() {
+        defaultLogLevel = getLogLevel();
 
         Option tunnelingV2 = new Option(OPT_SHORT_TUNNEL_V2, OPT_LONG_TUNNEL_V2, false, "use KNXnet/IP tunneling v2 (TCP) (experimental)");
         Option tunnelingV1 = new Option(OPT_SHORT_TUNNEL_V1, OPT_LONG_TUNNEL_V1, false, "use KNXnet/IP tunneling v1 (UDP)");
@@ -266,7 +266,7 @@ public class CliOptions {
                 .numberOfArgs(1)
                 .required(false)
                 .type(String.class)
-                .desc(String.format("Logfile logging level [TRACE|DEBUG|INFO] (default %s)", getLogLevel().toString())).build();
+                .desc(String.format("Logfile logging level [TRACE|DEBUG|INFO] (default %s)", defaultLogLevel.toString())).build();
 
         Option userId = Option.builder(null).longOpt(OPT_LONG_USER_ID)
                 .argName("id")
@@ -309,7 +309,7 @@ public class CliOptions {
 
         cliOptions.addOption(medium);
 
-        // usb, ft12 or tpuart, not both
+        // usb, ft12 or tpuart
         OptionGroup grpBusAccess = new OptionGroup();
         grpBusAccess.addOption(ft12);
         grpBusAccess.addOption(tpuart);
@@ -353,285 +353,335 @@ public class CliOptions {
         cliOptions.addOption(dumpFlash);
         cliOptions.addOption(NO_FLASH);
         cliOptions.addOption(logStatistic);
+    }
 
-
+    public CliOptions(final String[] args, String helpApplicationName, String helpHeader, String helpFooter)
+            throws KNXFormatException, ParseException {
+        this();
+        this.helpApplicationName = helpApplicationName;
+        this.helpHeader = helpHeader;
+        this.helpFooter = helpFooter;
         parse(args);
     }
 
-    private void parse(final String[] args) {
+    public CliOptions(final ArrayList<String> argsList) throws KNXFormatException, ParseException {
+        this();
+        this.helpApplicationName = "";
+        this.helpHeader = "";
+        this.helpFooter = "";
+        String[] args = new String[argsList.size()];
+        args = argsList.toArray(args);
+        parse(args);
+    }
+
+    private void parse(final String[] args) throws ParseException, KNXFormatException {
         CommandLineParser parser = new DefaultParser();
-        try {
-            cmdLine = parser.parse(cliOptions, args);
-            if (cmdLine.hasOption(OPT_SHORT_LOGLEVEL)) {
-                String cliLogLevel = cmdLine.getOptionValue(OPT_SHORT_LOGLEVEL).toUpperCase();
-                if (VALID_LOG_LEVELS.contains(cliLogLevel)) {
-                    setLogLevel(Level.toLevel(cliLogLevel));
-                }
-                else {
-                    logger.warn("{}invalid {} {}, using {}{}", ansi().fg(RED), OPT_LONG_LOGLEVEL, cliLogLevel,
-                            getLogLevel().toString(), ansi().reset());
-                }
-            }
-            logger.debug("logLevel={}", getLogLevel());
+        cmdLine = parser.parse(cliOptions, args);
 
-            if (cmdLine.hasOption(OPT_LONG_PRIORITY)) {
-                try {
-                    setPriority(Priority.get(cmdLine.getOptionValue(OPT_LONG_PRIORITY))); //todo simplify
-                }
-                catch (KNXIllegalArgumentException e) {
-                    logger.warn("{}invalid --{} {}, using {}{}",ansi().fg(RED),  OPT_LONG_PRIORITY,
-                            cmdLine.getOptionValue(OPT_LONG_PRIORITY), getPriority(), ansi().reset());
-                }
-            }
-            logger.debug("priority={}", getPriority().toString());
+        if (cmdLine.hasOption(OPT_LONG_LOGLEVEL))
+            setLogLevel(cmdLine.getOptionValue(OPT_LONG_LOGLEVEL).toUpperCase());
+        else
+            setLogLevel(defaultLogLevel);
 
-            if (getHelpIsSet()) {
-                logger.debug("help={}", getHelpIsSet());
-                return;
-            }
+        if (cmdLine.hasOption(OPT_LONG_PRIORITY))
+            setPriority(cmdLine.getOptionValue(OPT_LONG_PRIORITY));
+        else
+            setPriority("LOW");
 
-            if (getVersionIsSet()) {
-                logger.debug("version={}", getVersionIsSet());
-                return;
-            }
+        if (getHelpIsSet()) {
+            logger.debug("{}={}", OPT_LONG_HELP, getHelpIsSet());
+            return;
+        }
 
-            setNoFlashIsSet(cmdLine.hasOption(OPT_SHORT_NO_FLASH));
-            logger.debug("NO_FLASH={}", getNoFlashIsSet());
+        if (getVersionIsSet()) {
+            logger.debug("{}={}", OPT_LONG_VERSION, getVersionIsSet());
+            return;
+        }
 
-            setEraseFullFlashIsSet(cmdLine.hasOption(OPT_LONG_ERASEFLASH));
-            logger.debug("eraseFlash={}", getEraseFullFlashIsSet());
+        setNoFlashIsSet(cmdLine.hasOption(OPT_LONG_NO_FLASH));
+        setEraseFullFlashIsSet(cmdLine.hasOption(OPT_LONG_ERASEFLASH));
 
-            if (cmdLine.hasOption(OPT_LONG_DUMPFLASH)) {
-                String[] optArgs = cmdLine.getOptionValues(OPT_LONG_DUMPFLASH);
-                setDumpFlashStartAddress(Long.decode(optArgs[0]));
-                setDumpFlashEndAddress(Long.decode(optArgs[1]));
-            }
-            logger.debug("dumpFlashStartAddress={}", getDumpFlashStartAddress());
-            logger.debug("dumpFlashEndAddress={}", getDumpFlashEndAddress());
+        if (cmdLine.hasOption(OPT_LONG_DUMPFLASH)) {
+            String[] optArgs = cmdLine.getOptionValues(OPT_LONG_DUMPFLASH);
+            setDumpFlashStartAddress(Long.decode(optArgs[0]));
+            setDumpFlashEndAddress(Long.decode(optArgs[1]));
+        }
 
-            setFlashingFullModeIsSet(cmdLine.hasOption(OPT_SHORT_FULL));
-            logger.debug("full={}", getFlashingFullModeIsSet());
+        setFlashingFullModeIsSet(cmdLine.hasOption(OPT_LONG_FULL));
+        setTunnelingV2isSet(cmdLine.hasOption(OPT_LONG_TUNNEL_V2));
+        setTunnelingV1isSet(cmdLine.hasOption(OPT_LONG_TUNNEL_V1));
+        setRoutingIsSet(cmdLine.hasOption(OPT_LONG_ROUTING));
+        setNatIsSet(cmdLine.hasOption(OPT_LONG_NAT));
 
-            setTunnelingV2isSet(cmdLine.hasOption(OPT_SHORT_TUNNEL_V2));
-            logger.debug("tunnelingV2={}", getTunnelingV2isSet());
+        if (cmdLine.hasOption(OPT_LONG_FILENAME))
+            setFileName(cmdLine.getOptionValue(OPT_LONG_FILENAME));
+        else
+            setFileName("");
 
-            setTunnelingV1isSet(cmdLine.hasOption(OPT_SHORT_TUNNEL_V1));
-            logger.debug("tunneling={}", getTunnelingV2isSet());
 
-            setRoutingIsSet(cmdLine.hasOption(OPT_SHORT_ROUTING));
-            logger.debug("routing={}", getRoutingIsSet());
+        if (cmdLine.hasOption(OPT_LONG_LOCALHOST))
+            setLocalhost(cmdLine.getOptionValue(OPT_LONG_LOCALHOST));
+        else
+            setLocalhost("");
 
-            setNatIsSet(cmdLine.hasOption(OPT_SHORT_NAT));
-            logger.debug("nat={}", getNatIsSet());
+        if (cmdLine.hasOption(OPT_LONG_LOCALPORT))
+            setLocalPort(cmdLine.getOptionValue(OPT_LONG_LOCALPORT));
+        else
+            setLocalPort(0);
 
-            if (cmdLine.hasOption(OPT_SHORT_FILENAME)) {
-                setFileName(cmdLine.getOptionValue(OPT_SHORT_FILENAME));
-            }
-            logger.debug("fileName={}", getFileName());
+        if (cmdLine.hasOption(OPT_LONG_PORT))
+            setPort(cmdLine.getOptionValue(OPT_LONG_PORT));
+        else
+            setPort(KNXnetIPConnection.DEFAULT_PORT);
 
-            if (cmdLine.hasOption(OPT_SHORT_LOCALHOST)) {
-                setLocalhost(cmdLine.getOptionValue(OPT_SHORT_LOCALHOST));
-            }
-            logger.debug("localhost={}", getLocalhost());
+        if (cmdLine.hasOption(OPT_LONG_MEDIUM))
+            setMedium(cmdLine.getOptionValue(OPT_LONG_MEDIUM));
+        else
+            setMedium(KNXMediumSettings.getMediumString(KNXMediumSettings.MEDIUM_TP1));
 
-            if (cmdLine.hasOption(OPT_SHORT_LOCALPORT)) {
-                setLocalPort(((Number)cmdLine.getParsedOptionValue(OPT_SHORT_LOCALPORT)).intValue());
-            }
-            logger.debug("localport={}", getLocalPort());
+        if (cmdLine.hasOption(OPT_LONG_DELAY))
+            setDelayMs(cmdLine.getOptionValue(OPT_LONG_DELAY));
+        else
+            setDelayMs(Updater.DELAY_MIN);
 
-            if (cmdLine.hasOption(OPT_SHORT_PORT)) {
-                setPort(((Number)cmdLine.getParsedOptionValue(OPT_SHORT_PORT)).intValue());
-            }
-            logger.debug("port={}", getPort());
+        if (cmdLine.hasOption(OPT_LONG_BLOCKSIZE))
+            setBlockSize(cmdLine.getOptionValue(OPT_LONG_BLOCKSIZE));
+        else
+            setBlockSize(Mcu.UPD_PROGRAM_SIZE);
 
-            if (cmdLine.hasOption(OPT_SHORT_MEDIUM)) {
-                setMedium(cmdLine.getOptionValue(OPT_SHORT_MEDIUM));
-            }
-            logger.debug("medium={}", getMedium());
+        if (cmdLine.hasOption(OPT_LONG_UID))
+            setUid(cmdLine.getOptionValue(OPT_LONG_UID));
+        else
+            setUid("");
 
-            if (cmdLine.hasOption(OPT_LONG_DELAY)) {
-                setDelayMs(((Number)cmdLine.getParsedOptionValue(OPT_LONG_DELAY)).intValue());
-            }
-            logger.debug("delay={}", getDelayMs());
+        if (cmdLine.hasOption(OPT_LONG_DEVICE))
+            setDevicePhysicalAddress(cmdLine.getOptionValue(OPT_LONG_DEVICE));
+        else
+            setDevicePhysicalAddress(null);
 
-            if (cmdLine.hasOption(OPT_SHORT_BLOCKSIZE)) {
-                int newBlockSize = ((Number)cmdLine.getParsedOptionValue(OPT_LONG_BLOCKSIZE)).intValue();
-                if (VALID_BLOCKSIZES.contains(newBlockSize)) {
-                    setBlockSize(newBlockSize);
-                }
-                else {
-                    logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ansi().fg(YELLOW),
-                            OPT_LONG_BLOCKSIZE, newBlockSize, OPT_LONG_BLOCKSIZE, getBlockSize(), ansi().reset());
-                }
-            }
-            logger.debug("{}={}", OPT_LONG_BLOCKSIZE, getBlockSize());
+        if (cmdLine.hasOption(OPT_LONG_PROG_DEVICE))
+            setProgDevicePhysicalAddress(cmdLine.getOptionValue(OPT_LONG_PROG_DEVICE));
+        else
+            setProgDevicePhysicalAddress(Updater.PHYS_ADDRESS_BOOTLOADER.toString());
 
-            if (cmdLine.hasOption(OPT_SHORT_UID)) {
-               setUid(cmdLine.getOptionValue(OPT_SHORT_UID));
-            }
-            logger.debug("uid={}", getUid());
+        if (cmdLine.hasOption(OPT_LONG_OWN_ADDRESS))
+            setOwnPhysicalAddress(cmdLine.getOptionValue(OPT_LONG_OWN_ADDRESS));
+        else
+            setOwnPhysicalAddress(Updater.PHYS_ADDRESS_OWN.toString());
 
-            if (cmdLine.hasOption(OPT_SHORT_DEVICE)) {
-                setDevicePhysicalAddress(new IndividualAddress(cmdLine.getOptionValue(OPT_SHORT_DEVICE)));
-            } else {
-                setDevicePhysicalAddress(null);
-            }
-            logger.debug("device={}", getDevicePhysicalAddress());
+        if (cmdLine.hasOption(OPT_LONG_FT12))
+            setFt12SerialPort(cmdLine.getOptionValue(OPT_LONG_FT12));
+        else
+            setFt12SerialPort("");
 
-            if (cmdLine.hasOption(OPT_SHORT_PROG_DEVICE)) {
-                setProgDevicePhysicalAddress(new IndividualAddress(cmdLine.getOptionValue(OPT_SHORT_PROG_DEVICE)));
-            }
-            logger.debug("progDevice={}", getProgDevicePhysicalAddress());
+        if (cmdLine.hasOption(OPT_LONG_TPUART))
+            setTpuartSerialPort(cmdLine.getOptionValue(OPT_LONG_TPUART));
+        else
+            setTpuartSerialPort("");
 
-            if (cmdLine.hasOption(OPT_SHORT_OWN_ADDRESS)) {
-                setOwnPhysicalAddress(new IndividualAddress(cmdLine.getOptionValue(OPT_SHORT_OWN_ADDRESS)));
-            }
-            logger.debug("ownAddress={}", getOwnPhysicalAddress());
+        if (cmdLine.hasOption(OPT_LONG_USB))
+            setUsbVendorIdAndProductId(cmdLine.getOptionValue(OPT_LONG_USB));
+        else
+            setUsbVendorIdAndProductId("");
 
-            if (cmdLine.hasOption(OPT_SHORT_FT12)) {
-               setFt12SerialPort(cmdLine.getOptionValue(OPT_SHORT_FT12));
-            }
-            logger.debug("ft12={}", getFt12SerialPort());
+        if (cmdLine.getArgs().length > 0)
+            setKnxInterface(cmdLine.getArgs()[0]);
+        else
+            setKnxInterface("");
 
-            if (cmdLine.hasOption(OPT_SHORT_TPUART)) {
-                setTpuartSerialPort(cmdLine.getOptionValue(OPT_SHORT_TPUART));
-            }
-            logger.debug("tpuart={}", getTpuartSerialPort());
+        if (cmdLine.hasOption(OPT_LONG_USER_ID))
+            setKnxSecureUserId(cmdLine.getOptionValue(OPT_LONG_USER_ID));
+        else
+            setKnxSecureUserId(INVALID_SECURE_USER_ID);
 
-            if (cmdLine.hasOption(OPT_LONG_USB)) {
-                setUsbVendorIdAndProductId(cmdLine.getOptionValue(OPT_LONG_USB));
-            }
-            logger.debug("usb={}", getUsbVendorIdAndProductId());
+        if (cmdLine.hasOption(OPT_LONG_USER_PASSWORD))
+            setKnxSecureUserPassword(cmdLine.getOptionValue(OPT_LONG_USER_PASSWORD));
+        else
+            setKnxSecureUserPassword("");
 
-            if (cmdLine.getArgs().length > 0) {
-                setKnxInterface(cmdLine.getArgs()[0]);
-            }
-            else {
-                setKnxInterface("");
-            }
-            logger.debug("knxInterface={}", getKnxInterface());
+        if (cmdLine.hasOption(OPT_LONG_DEVICE_PASSWORD))
+            setKnxSecureDevicePassword(cmdLine.getOptionValue(OPT_LONG_DEVICE_PASSWORD));
+        else
+            setKnxSecureDevicePassword("");
 
-            if (cmdLine.hasOption(OPT_LONG_USER_ID)) {
-                logger.debug("KNX IP Secure --{} is set", OPT_LONG_USER_ID); // log only that it´s, but not the actual value
-                setKnxSecureUserId(((Number)cmdLine.getParsedOptionValue(OPT_LONG_USER_ID)).intValue());
-            }
+        setLogStatisticsIsSet(cmdLine.hasOption(OPT_LONG_LOGSTATISTIC));
 
-            if (cmdLine.hasOption(OPT_LONG_USER_PASSWORD)) {
-                logger.debug("KNX IP Secure --{} is set", OPT_LONG_USER_PASSWORD); // log only that it´s, but not the actual value
-                setKnxSecureUserPassword(cmdLine.getOptionValue(OPT_LONG_USER_PASSWORD));
-            }
+        validateCliParameters();
+    }
 
-            if (cmdLine.hasOption(OPT_LONG_DEVICE_PASSWORD)) {
-                logger.debug("KNX IP Secure --{} is set", OPT_LONG_DEVICE_PASSWORD); // log only that it´s, but not the actual value
-                setKnxSecureDevicePassword(cmdLine.getOptionValue(OPT_LONG_DEVICE_PASSWORD));
-            }
+    private void validateCliParameters() throws CliInvalidException {
+        // some logical checks for options which exclude each other
+        // differential mode and eraseflash makes no sense
+        if (getEraseFullFlashIsSet() && (!getFlashingFullModeIsSet())) {
+            setFlashingFullModeIsSet(true);
+            logger.info("{}--{} is set. --> switching to full flash mode{}", ansi().fg(RED),
+                    OPT_LONG_ERASEFLASH, ansi().reset());
+        }
 
-            setLogStatisticsIsSet(cmdLine.hasOption(OPT_LONG_LOGSTATISTIC));
-            logger.debug("logStatistics={}", getLogStatisticsIsSet());
+        // nat only possible with tunneling v1
+        if (getNatIsSet() && (!getTunnelingV1isSet())) {
+            throw new CliInvalidException(String.format("%sOption --%s can only be used together with --%s%s",
+                    ansi().fg(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ansi().reset()));
+        }
 
-            // some logical checks for options which exclude each other
-            // differential mode and eraseflash makes no sense
-            if (getEraseFullFlashIsSet() && (!getFlashingFullModeIsSet())) {
-                setFlashingFullModeIsSet(true);
-                logger.info("{}--{} is set. --> switching to full flash mode{}", ansi().fg(RED),
-                        OPT_LONG_ERASEFLASH, ansi().reset());
-            }
+        // nat not allowed with tunneling v2
+        if (getNatIsSet() && (getTunnelingV2isSet())) {
+            throw new CliInvalidException(String.format("%sOption --%s can not be used together with --%s%s",
+                    ansi().fg(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V2, ansi().reset()));
+        }
 
-            // nat only possible with tunneling v1
-            if (getNatIsSet() && (!getTunnelingV1isSet())) {
-                throw new CliInvalidException(String.format("%sOption --%s can only be used together with --%s%s",
-                        ansi().fg(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ansi().reset()));
-            }
-
-            // nat not allowed with tunneling v2
-            if (getNatIsSet() && (getTunnelingV2isSet())) {
-                throw new CliInvalidException(String.format("%sOption --%s can not be used together with --%s%s",
-                        ansi().fg(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V2, ansi().reset()));
-            }
-
-            // check IP-secure configuration
-            if (!(getKnxSecureUserPassword().isEmpty()) || !(getKnxSecureDevicePassword().isEmpty())) {
-                if (getKnxInterface().isBlank()) {
-                    throw new CliInvalidException(String.format("%sNo IP-Interface specified for IP-secure%s",
-                            ansi().fg(RED), ansi().reset()));
-                }
-                else if (!getUsbVendorIdAndProductId().isBlank()) {
-                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                            ansi().fg(RED), OPT_LONG_USB, ansi().reset()));
-                }
-                else if (!getFt12SerialPort().isBlank()) {
-                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                            ansi().fg(RED), OPT_LONG_FT12, ansi().reset()));
-                }
-                else if (!getTpuartSerialPort().isBlank()) {
-                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                            ansi().fg(RED), OPT_LONG_TPUART, ansi().reset()));
-                }
-                else if (getNatIsSet()) {
-                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                            ansi().fg(RED), OPT_LONG_NAT, ansi().reset()));
-                }
-                else if (getTunnelingV1isSet()) {
-                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                            ansi().fg(RED), OPT_LONG_TUNNEL_V1, ansi().reset()));
-                }
-                else if (getTunnelingV2isSet()) {
-                    throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                            ansi().fg(RED), OPT_LONG_TUNNEL_V2, ansi().reset()));
-                }
-
-                // ensure that all three IP-Secure arguments are set
-                if ((getKnxSecureUserPassword().isEmpty()) || (getKnxSecureDevicePassword().isEmpty())) {
-                    throw new CliInvalidException(String.format("%sFor IP-secure --%s, --%s and --%s must be set%s",
-                            ansi().fg(RED), OPT_LONG_USER_ID, OPT_LONG_USER_PASSWORD, OPT_LONG_DEVICE_PASSWORD,
-                            ansi().reset()));
-                }
-            }
-
-            int interfacesSet = 0;
-            if (!getKnxInterface().isBlank()) interfacesSet++;
-            if (getRoutingIsSet()) interfacesSet++;
-            if (!getFt12SerialPort().isBlank()) interfacesSet++;
-            if (!getTpuartSerialPort().isBlank()) interfacesSet++;
-            if (!getUsbVendorIdAndProductId().isBlank()) interfacesSet++;
-
-            if (interfacesSet > 1) {
-                throw new CliInvalidException(String.format("%sOnly one bus interface can be used.%s",
+        // check IP-secure configuration
+        if (!(getKnxSecureUserPassword().isEmpty()) || !(getKnxSecureDevicePassword().isEmpty())) {
+            if (getKnxInterface().isBlank()) {
+                throw new CliInvalidException(String.format("%sNo IP-Interface specified for IP-secure%s",
                         ansi().fg(RED), ansi().reset()));
             }
-            else if (interfacesSet == 0) {
-                throw new CliInvalidException(String.format("%sNo bus interface specified.%s",
-                        ansi().fg(RED), ansi().reset()));
+            else if (!getUsbVendorIdAndProductId().isBlank()) {
+                throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                        ansi().fg(RED), OPT_LONG_USB, ansi().reset()));
+            }
+            else if (!getFt12SerialPort().isBlank()) {
+                throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                        ansi().fg(RED), OPT_LONG_FT12, ansi().reset()));
+            }
+            else if (!getTpuartSerialPort().isBlank()) {
+                throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                        ansi().fg(RED), OPT_LONG_TPUART, ansi().reset()));
+            }
+            else if (getNatIsSet()) {
+                throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                        ansi().fg(RED), OPT_LONG_NAT, ansi().reset()));
+            }
+            else if (getTunnelingV1isSet()) {
+                throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                        ansi().fg(RED), OPT_LONG_TUNNEL_V1, ansi().reset()));
+            }
+            else if (getTunnelingV2isSet()) {
+                throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
+                        ansi().fg(RED), OPT_LONG_TUNNEL_V2, ansi().reset()));
+            }
+
+            // ensure that all three IP-Secure arguments are set
+            if ((getKnxSecureUserPassword().isEmpty()) || (getKnxSecureDevicePassword().isEmpty())) {
+                throw new CliInvalidException(String.format("%sFor IP-secure --%s, --%s and --%s must be set%s",
+                        ansi().fg(RED), OPT_LONG_USER_ID, OPT_LONG_USER_PASSWORD, OPT_LONG_DEVICE_PASSWORD,
+                        ansi().reset()));
             }
         }
-        catch (CliInvalidException e) {
-            logCliException(e, args, false);
-            System.exit(0);
+
+        int interfacesSet = 0;
+        if (!getKnxInterface().isBlank()) interfacesSet++;
+        if (getRoutingIsSet()) interfacesSet++;
+        if (!getFt12SerialPort().isBlank()) interfacesSet++;
+        if (!getTpuartSerialPort().isBlank()) interfacesSet++;
+        if (!getUsbVendorIdAndProductId().isBlank()) interfacesSet++;
+
+        if (interfacesSet > 1) {
+            throw new CliInvalidException("Only one bus interface can be used.");
         }
-        catch (ParseException | KNXFormatException e) {
-            logCliException(e, args, true);
-            System.exit(0);
+        else if (interfacesSet == 0) {
+            throw new CliInvalidException("No bus interface specified.");
         }
     }
 
-    private void logCliException(Exception e, String[] args, boolean verbose) {
-        String cliParsed = argsToString(args);
-        System.out.printf("Invalid command line parameters: '%s'%s", cliParsed,
-                System.lineSeparator()); // don't log possible IP-secure parameters
-        logger.debug("Invalid command line parameters:");
-        logger.error("{}{}{}", ansi().fg(RED), e.getMessage(), ansi().reset());
-        logger.error("For more information about the usage start with --{}", OPT_LONG_HELP);
-        if (verbose) {
-            logger.error("", e);
-        }
-    }
+    public String reconstructCommandLine() {
+        String builder = "";
 
-    private String argsToString(final String[] args) {
-        StringBuilder result = new StringBuilder();
-        for (String arg : args) {
-            result.append(String.format("%s ", arg));
-        }
-        return result.toString().trim();
+        if (!getKnxInterface().isBlank())
+            builder += getKnxInterface();
+
+        if (!getFileName().isBlank())
+            builder += String.format(" --%s %s", OPT_LONG_FILENAME, getFileName());
+
+        if (!getLocalhost().isBlank())
+            builder += String.format(" --%s %s", OPT_LONG_LOCALHOST, getLocalhost());
+
+        if (getLocalPort() != 0)
+            builder += String.format(" --%s %s", OPT_LONG_LOCALPORT, getLocalPort());
+
+        if (getPort() != KNXnetIPConnection.DEFAULT_PORT)
+            builder += String.format(" --%s %s", OPT_LONG_PORT, getPort());
+
+        if (!getFt12SerialPort().isBlank())
+            builder += String.format(" --%s %s", OPT_LONG_FT12, getFt12SerialPort());
+
+        if (!getTpuartSerialPort().isBlank())
+            builder += String.format(" --%s %s", OPT_LONG_TPUART, getTpuartSerialPort());
+
+        if (!getUsbVendorIdAndProductId().isBlank())
+            builder += String.format(" --%s %s", OPT_LONG_USB, getUsbVendorIdAndProductId());
+
+        if (!Objects.equals(getMedium(), KNXMediumSettings.getMediumString(KNXMediumSettings.MEDIUM_TP1)) && (!getMedium().isBlank()))
+            builder += String.format(" --%s %s", OPT_LONG_MEDIUM, getMedium());
+
+        if (getKnxSecureUserId() >= 0)
+            builder += String.format(" --%s ***", OPT_LONG_USER_ID);
+
+        if (!getKnxSecureUserPassword().isBlank())
+            builder += String.format(" --%s ***", OPT_LONG_USER_PASSWORD);
+
+        if (!getKnxSecureDevicePassword().isBlank())
+            builder += String.format(" --%s ***", OPT_LONG_DEVICE_PASSWORD);
+
+        if (!getProgDevicePhysicalAddress().toString().equals(Updater.PHYS_ADDRESS_BOOTLOADER.toString()))
+            builder += String.format(" --%s %s", OPT_LONG_PROG_DEVICE, getProgDevicePhysicalAddress());
+
+        if (getDevicePhysicalAddress() != null)
+            builder += String.format(" --%s %s", OPT_LONG_DEVICE, getDevicePhysicalAddress());
+
+        if (!getOwnPhysicalAddress().toString().equals(Updater.PHYS_ADDRESS_OWN.toString()))
+            builder += String.format(" --%s %s", OPT_LONG_OWN_ADDRESS, getOwnPhysicalAddress());
+
+        if (!getUid().isBlank())
+            builder += String.format(" --%s %s", OPT_LONG_UID, getUid());
+
+        if (getDelayMs() > 0)
+            builder += String.format(" --%s %d", OPT_LONG_DELAY, getDelayMs());
+
+        if (getTunnelingV2isSet())
+            builder += String.format(" --%s", OPT_LONG_TUNNEL_V2);
+
+        if (getTunnelingV1isSet())
+            builder += String.format(" --%s", OPT_LONG_TUNNEL_V1);
+
+        if (getNatIsSet())
+            builder += String.format(" --%s", OPT_LONG_NAT);
+
+        if (getRoutingIsSet())
+            builder += String.format(" --%s", OPT_LONG_ROUTING);
+
+        if (getFlashingFullModeIsSet())
+            builder += String.format(" --%s", OPT_LONG_FULL);
+
+        if (getHelpIsSet())
+            builder += String.format(" --%s", OPT_LONG_HELP);
+
+        if (getVersionIsSet())
+            builder += String.format(" --%s", OPT_LONG_VERSION);
+
+        if (getNoFlashIsSet())
+            builder += String.format(" --%s", OPT_LONG_NO_FLASH);
+
+        if (getLogLevel() != defaultLogLevel)
+            builder += String.format(" --%s %s", OPT_LONG_LOGLEVEL, getLogLevel());
+
+        if (getPriority() != Priority.LOW)
+            builder += String.format(" --%s %s", OPT_LONG_PRIORITY, getPriority());
+
+        if (getEraseFullFlashIsSet())
+            builder += String.format(" --%s", OPT_LONG_ERASEFLASH);
+
+        if (getDumpFlashStartAddress() >= 0)
+            builder += String.format(" --%s 0x%08X 0x%08X", OPT_LONG_DUMPFLASH,
+                    getDumpFlashStartAddress(), getDumpFlashEndAddress());
+
+        if (getLogStatisticsIsSet())
+            builder += String.format(" --%s", OPT_LONG_LOGSTATISTIC);
+
+        if (getBlockSize() != Mcu.UPD_PROGRAM_SIZE)
+            builder += String.format(" --%s %s", OPT_LONG_BLOCKSIZE, getBlockSize());
+
+        return builder.trim();
     }
 
     public String helpToString() {
@@ -656,14 +706,16 @@ public class CliOptions {
 
     private void setKnxInterface(String knxInterface) {
         this.knxInterface = knxInterface;
+        logger.debug("knxInterface={}", getKnxInterface());
     }
 
     public String getFileName() {
         return fileName;
     }
 
-    private void setFileName(String fileName) {
+    public void setFileName(String fileName) {
         this.fileName = fileName;
+        logger.debug("{}={}", OPT_LONG_FILENAME, getFileName());
     }
 
     public String getLocalhost() {
@@ -672,6 +724,7 @@ public class CliOptions {
 
     private void setLocalhost(String localhost) {
         this.localhost = localhost;
+        logger.debug("{}={}", OPT_LONG_LOCALHOST, getLocalhost());
     }
 
     public int getLocalPort() {
@@ -679,7 +732,29 @@ public class CliOptions {
     }
 
     private void setLocalPort(int localPort) {
-        this.localPort = localPort;
+        if ((localPort >= 0) && (localPort <= 65535)) {
+            this.localPort = localPort;
+            logger.debug("{}={}", OPT_LONG_LOCALPORT, getLocalPort());
+        }
+        else {
+            this.localPort = 0;
+            logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
+                    ansi().fg(RED), OPT_LONG_LOCALPORT, localPort, 0, 65535, this.localPort, ansi().reset());
+        }
+    }
+
+    private void setLocalPort(String localPort) {
+        try {
+            if (localPort == null || localPort.isBlank())
+                setLocalPort(KNXnetIPConnection.DEFAULT_PORT);
+            else
+                setLocalPort(Integer.parseInt(localPort));
+        }
+        catch (NumberFormatException e) {
+            setLocalPort(0);
+            logger.warn("{}option --{} {} is invalid => set to default {}{}",
+                    ansi().fg(RED), OPT_LONG_LOCALPORT, localPort, getLocalPort(), ansi().reset());
+        }
     }
 
     public int getPort() {
@@ -687,7 +762,29 @@ public class CliOptions {
     }
 
     private void setPort(int port) {
-        this.port = port;
+        if ((port >= 1) && (port <= 65535)) {
+            this.port = port;
+            logger.debug("{}={}", OPT_LONG_PORT, getPort());
+        }
+        else {
+            this.port = KNXnetIPConnection.DEFAULT_PORT;
+            logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
+                    ansi().fg(RED), OPT_LONG_PORT, port, 1, 65535, this.port, ansi().reset());
+        }
+    }
+
+    private void setPort(String port) {
+        try {
+            if (port == null || port.isBlank())
+                setPort(KNXnetIPConnection.DEFAULT_PORT);
+            else
+                setPort(Integer.parseInt(port));
+        }
+        catch (NumberFormatException e) {
+            setPort(KNXnetIPConnection.DEFAULT_PORT);
+            logger.warn("{}option --{} {} is invalid => set to default {}{}",
+                    ansi().fg(RED), OPT_LONG_PORT, port, getPort(), ansi().reset());
+        }
     }
 
     public boolean getNatIsSet() {
@@ -696,6 +793,7 @@ public class CliOptions {
 
     private void setNatIsSet(boolean natIsSet) {
         this.natIsSet = natIsSet;
+        logger.debug("{}={}", OPT_LONG_NAT, getNatIsSet());
     }
 
     public String getFt12SerialPort() {
@@ -704,6 +802,7 @@ public class CliOptions {
 
     private void setFt12SerialPort(String ft12SerialPort) {
         this.ft12SerialPort = ft12SerialPort;
+        logger.debug("{}={}", OPT_LONG_FT12, getFt12SerialPort());
     }
 
     public String getTpuartSerialPort() {
@@ -712,6 +811,7 @@ public class CliOptions {
 
     private void setTpuartSerialPort(String tpuartSerialPort) {
         this.tpuartSerialPort = tpuartSerialPort;
+        logger.debug("{}={}", OPT_LONG_TPUART, getTpuartSerialPort());
     }
 
     public boolean getTunnelingV2isSet() {
@@ -720,6 +820,7 @@ public class CliOptions {
 
     private void setTunnelingV2isSet(boolean tunnelingV2isSet) {
         this.tunnelingV2isSet = tunnelingV2isSet;
+        logger.debug("{}={}", OPT_LONG_TUNNEL_V2, getTunnelingV2isSet());
     }
 
     public boolean getTunnelingV1isSet() {
@@ -728,6 +829,7 @@ public class CliOptions {
 
     private void setTunnelingV1isSet(boolean tunnelingV1isSet) {
         this.tunnelingV1isSet = tunnelingV1isSet;
+        logger.debug("{}={}", OPT_LONG_TUNNEL_V1, getTunnelingV2isSet());
     }
 
     public boolean getRoutingIsSet() {
@@ -736,6 +838,7 @@ public class CliOptions {
 
     private void setRoutingIsSet(boolean routingIsSet) {
         this.routingIsSet = routingIsSet;
+        logger.debug("{}={}", OPT_LONG_ROUTING, getRoutingIsSet());
     }
 
     public String getMedium() {
@@ -744,38 +847,58 @@ public class CliOptions {
 
     private void setMedium(String medium) {
         this.medium = medium;
+        logger.debug("{}={}", OPT_LONG_MEDIUM, getMedium());
     }
 
     public IndividualAddress getProgDevicePhysicalAddress() {
         return progDevicePhysicalAddress;
     }
 
-    private void setProgDevicePhysicalAddress(IndividualAddress progDevicePhysicalAddress){
-        this.progDevicePhysicalAddress = progDevicePhysicalAddress;
+    private void setProgDevicePhysicalAddress(String progDevicePhysicalAddress) throws KNXFormatException {
+        if ((progDevicePhysicalAddress != null) && (!progDevicePhysicalAddress.isBlank())) {
+            this.progDevicePhysicalAddress = new IndividualAddress(progDevicePhysicalAddress);
+        }
+        else {
+            this.progDevicePhysicalAddress = Updater.PHYS_ADDRESS_BOOTLOADER;
+        }
+        logger.debug("{}={}", OPT_LONG_PROG_DEVICE, getProgDevicePhysicalAddress());
     }
 
     public IndividualAddress getDevicePhysicalAddress() {
         return devicePhysicalAddress;
     }
 
-    private void setDevicePhysicalAddress(IndividualAddress devicePhysicalAddress) {
-        this.devicePhysicalAddress = devicePhysicalAddress;
+    private void setDevicePhysicalAddress(String devicePhysicalAddress) throws KNXFormatException {
+        if ((devicePhysicalAddress != null) && (!devicePhysicalAddress.isBlank())) {
+            this.devicePhysicalAddress = new IndividualAddress(devicePhysicalAddress);
+        }
+        else {
+            this.devicePhysicalAddress = null;
+        }
+        logger.debug("{}={}", OPT_LONG_DEVICE, getDevicePhysicalAddress());
     }
 
     public IndividualAddress getOwnPhysicalAddress() {
         return ownPhysicalAddress;
     }
 
-    private void setOwnPhysicalAddress(IndividualAddress ownPhysicalAddress) {
-        this.ownPhysicalAddress = ownPhysicalAddress;
+    private void setOwnPhysicalAddress(String ownPhysicalAddress) throws KNXFormatException {
+        if ((ownPhysicalAddress != null) && (!ownPhysicalAddress.isBlank())) {
+            this.ownPhysicalAddress = new IndividualAddress(ownPhysicalAddress);
+        }
+        else {
+            this.ownPhysicalAddress = Updater.PHYS_ADDRESS_OWN;
+        }
+        logger.debug("{}={}", OPT_LONG_OWN_ADDRESS, getOwnPhysicalAddress());
     }
 
     public String getUid() {
         return uid;
     }
 
-    private void setUid(String uidString) {
+    public void setUid(String uidString) {
         this.uid = uidString;
+        logger.debug("{}={}", OPT_LONG_UID, getUid());
     }
 
     public boolean getFlashingFullModeIsSet() {
@@ -784,6 +907,7 @@ public class CliOptions {
 
     private void setFlashingFullModeIsSet(boolean flashingFullModeIsSet) {
         this.flashingFullModeIsSet = flashingFullModeIsSet;
+        logger.debug("{}={}", OPT_LONG_FULL, getFlashingFullModeIsSet());
     }
 
     public int getDelayMs() {
@@ -794,10 +918,25 @@ public class CliOptions {
         if ((delayMs < Updater.DELAY_MIN) || (delayMs > Updater.DELAY_MAX)) {
             logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
                     ansi().fg(RED), OPT_LONG_DELAY, delayMs, Updater.DELAY_MIN,
-                    Updater.DELAY_MAX, Updater.DELAY_DEFAULT, ansi().reset());
-            delayMs = Updater.DELAY_DEFAULT;    // set to DELAY_DEFAULT in case of invalid waiting time
+                    Updater.DELAY_MAX, Updater.DELAY_MIN, ansi().reset());
+            delayMs = Updater.DELAY_MIN; // set to DELAY_MIN in case of invalid waiting time
         }
         this.delayMs = delayMs;
+        logger.debug("{}={}", OPT_LONG_DELAY, getDelayMs());
+    }
+
+    private void setDelayMs(String delayMs) {
+        try {
+            if (delayMs == null || delayMs.isBlank())
+                setDelayMs(Updater.DELAY_MIN);
+            else
+                setDelayMs(Integer.parseInt(delayMs));
+        }
+        catch (NumberFormatException e) {
+            setDelayMs(Updater.DELAY_MIN);
+            logger.warn("{}option --{} {} is invalid => set to default {}{}",
+                    ansi().fg(RED), OPT_LONG_DELAY, delayMs, getDelayMs(), ansi().reset());
+        }
     }
 
     public boolean getNoFlashIsSet() {
@@ -806,6 +945,7 @@ public class CliOptions {
 
     private void setNoFlashIsSet(boolean noFlashIsSet) {
         this.noFlashIsSet = noFlashIsSet;
+        logger.debug("{}={}", OPT_LONG_NO_FLASH, getNoFlashIsSet());
     }
 
     public boolean getEraseFullFlashIsSet() {
@@ -814,6 +954,7 @@ public class CliOptions {
 
     private void setEraseFullFlashIsSet(boolean eraseFullFlashIsSet) {
         this.eraseFullFlashIsSet = eraseFullFlashIsSet;
+        logger.debug("{}={}", OPT_LONG_ERASEFLASH, getEraseFullFlashIsSet());
     }
 
     public long getDumpFlashStartAddress() {
@@ -822,6 +963,7 @@ public class CliOptions {
 
     private void setDumpFlashStartAddress(long dumpFlashStartAddress) {
         this.dumpFlashStartAddress = dumpFlashStartAddress;
+        logger.debug("dumpFlashStartAddress={}", getDumpFlashStartAddress());
     }
 
     public long getDumpFlashEndAddress() {
@@ -830,14 +972,21 @@ public class CliOptions {
 
     private void setDumpFlashEndAddress(long dumpFlashEndAddress) {
         this.dumpFlashEndAddress = dumpFlashEndAddress;
+        logger.debug("dumpFlashEndAddress={}", getDumpFlashEndAddress());
     }
 
     public boolean getHelpIsSet() {
-        return cmdLine.hasOption(OPT_SHORT_HELP);
+        if (cmdLine == null)
+            return false;
+        else
+            return cmdLine.hasOption(OPT_LONG_HELP);
     }
 
     public boolean getVersionIsSet() {
-        return cmdLine.hasOption(OPT_SHORT_VERSION);
+        if (cmdLine == null)
+            return false;
+        else
+            return cmdLine.hasOption(OPT_LONG_VERSION);
     }
 
     public Level getLogLevel() {
@@ -845,9 +994,21 @@ public class CliOptions {
         return root.getLevel();
     }
 
-    private void setLogLevel(Level newLevel) {
+    private void setLogLevel(Level logLevel) {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(newLevel);
+        root.setLevel(logLevel);
+        logger.debug("{}={}", OPT_LONG_LOGLEVEL, getLogLevel());
+    }
+
+    private void setLogLevel(String newLevel) {
+        newLevel = newLevel.toUpperCase();
+        if (VALID_LOG_LEVELS.contains(newLevel)) {
+            setLogLevel(Level.toLevel(newLevel));
+        }
+        else {
+            logger.warn("{}invalid {} {}, using {}{}", ansi().fg(RED), OPT_LONG_LOGLEVEL, newLevel,
+                    getLogLevel().toString(), ansi().reset());
+        }
     }
 
     public int getKnxSecureUserId() {
@@ -855,7 +1016,36 @@ public class CliOptions {
     }
 
     private void setKnxSecureUserId(int knxSecureUserId) {
-        this.knxSecureUserId = knxSecureUserId;
+        if (knxSecureUserId == INVALID_SECURE_USER_ID) {
+            this.knxSecureUserId = INVALID_SECURE_USER_ID;
+            logger.debug("{}=", OPT_LONG_USER_ID);
+            return;
+        }
+
+        if (knxSecureUserId >= 1 && knxSecureUserId <= 127) {
+            logger.debug("{}=***", OPT_LONG_USER_ID); // log only that it´s, but not the actual value
+            this.knxSecureUserId = knxSecureUserId;
+        }
+        else {
+            logger.warn("{}option --{} *** is invalid => set to default{}",
+                    ansi().fg(RED), OPT_LONG_USER_ID, ansi().reset());
+            this.knxSecureUserId = INVALID_SECURE_USER_ID;
+            logger.debug("{}=", OPT_LONG_USER_ID);
+        }
+    }
+
+    private void setKnxSecureUserId(String knxSecureUserId) {
+        try {
+            if (knxSecureUserId == null || knxSecureUserId.isBlank())
+                setKnxSecureUserId(INVALID_SECURE_USER_ID);
+            else
+                setKnxSecureUserId(Integer.parseInt(knxSecureUserId));
+        }
+        catch (NumberFormatException e) {
+            setKnxSecureUserId(INVALID_SECURE_USER_ID);
+            logger.warn("{}option --{} *** is invalid => set to default{}",
+                    ansi().fg(RED), OPT_LONG_USER_ID, ansi().reset());
+        }
     }
 
     public String getKnxSecureUserPassword() {
@@ -864,6 +1054,10 @@ public class CliOptions {
 
     private void setKnxSecureUserPassword(String knxSecureUserPassword) {
         this.knxSecureUserPassword = knxSecureUserPassword;
+        if (!nonNullString(this.knxSecureUserPassword).isBlank())
+            logger.debug("{}=****", OPT_LONG_USER_PASSWORD); // log only that it´s, but not the actual value
+        else
+            logger.debug("{}=", OPT_LONG_USER_PASSWORD);
     }
 
     public String getKnxSecureDevicePassword() {
@@ -872,14 +1066,25 @@ public class CliOptions {
 
     private void setKnxSecureDevicePassword(String knxSecureDevicePassword) {
         this.knxSecureDevicePassword = knxSecureDevicePassword;
+        if (!nonNullString(this.knxSecureDevicePassword).isBlank())
+            logger.debug("{}=*****", OPT_LONG_DEVICE_PASSWORD); // log only that it´s, but not the actual value
+        else
+            logger.debug("{}=", OPT_LONG_DEVICE_PASSWORD);
     }
 
     public Priority getPriority() {
         return priority;
     }
 
-    private void setPriority(Priority priority) {
-        this.priority = priority;
+    private void setPriority(String priority) {
+        try {
+            this.priority = Priority.get(priority);
+            logger.debug("{}={}", OPT_LONG_PRIORITY, getPriority().toString());
+        }
+        catch (KNXIllegalArgumentException e) {
+            logger.warn("{}invalid --{} {}, using {}{}",ansi().fg(RED),  OPT_LONG_PRIORITY,
+                    priority, getPriority(), ansi().reset());
+        }
     }
 
     public boolean getLogStatisticsIsSet() {
@@ -888,6 +1093,7 @@ public class CliOptions {
 
     private void setLogStatisticsIsSet(boolean logStatisticsIsSet) {
         this.logStatisticsIsSet = logStatisticsIsSet;
+        logger.debug("{}={}", OPT_LONG_LOGSTATISTIC , getLogStatisticsIsSet());
     }
 
     public int getBlockSize() {
@@ -895,14 +1101,37 @@ public class CliOptions {
     }
 
     private void setBlockSize(int blockSize) {
-        this.blockSize = blockSize;
+        if (VALID_BLOCKSIZES.contains(blockSize)) {
+            this.blockSize = blockSize;
+        }
+        else {
+            this.blockSize = Mcu.UPD_PROGRAM_SIZE;
+            logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ansi().fg(YELLOW),
+                    OPT_LONG_BLOCKSIZE, blockSize, OPT_LONG_BLOCKSIZE, getBlockSize(), ansi().reset());
+        }
+        logger.debug("{}={}", OPT_LONG_BLOCKSIZE, getBlockSize());
+    }
+
+    private void setBlockSize(String blockSize) {
+        try {
+            if (blockSize == null || blockSize.isBlank())
+                setBlockSize(Mcu.UPD_PROGRAM_SIZE);
+            else
+                setBlockSize(Integer.parseInt(blockSize));
+        }
+        catch (NumberFormatException e) {
+            setBlockSize(Mcu.UPD_PROGRAM_SIZE);
+            logger.warn("{}option --{} {} is invalid => set to default {}{}",
+                    ansi().fg(RED), OPT_LONG_BLOCKSIZE, blockSize, getBlockSize(), ansi().reset());
+        }
     }
 
     public String getUsbVendorIdAndProductId() {
         return nonNullString(usbVendorIdAndProductId);
     }
 
-    public void setUsbVendorIdAndProductId(String usbVendorIdAndProductId) {
+    private void setUsbVendorIdAndProductId(String usbVendorIdAndProductId) {
         this.usbVendorIdAndProductId = usbVendorIdAndProductId;
+        logger.debug("{}={}", OPT_LONG_USB, getUsbVendorIdAndProductId());
     }
 }

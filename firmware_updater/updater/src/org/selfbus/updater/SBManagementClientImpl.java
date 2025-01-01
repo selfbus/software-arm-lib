@@ -40,13 +40,14 @@ public class SBManagementClientImpl extends ManagementClientImpl {
 
     // for Selfbus updater
     public byte[] sendUpdateData(final Destination dst, final int cmd, final byte[] data)
-            throws KNXTimeoutException, KNXLinkClosedException, KNXInvalidResponseException, KNXDisconnectException, InterruptedException, UpdaterException {
+            throws KNXTimeoutException, KNXLinkClosedException, KNXInvalidResponseException, KNXDisconnectException,
+            InterruptedException, UpdaterException {
         final byte[] asdu = prepareAsdu(cmd, data);
 
         byte[] send;
         if (asdu.length > MAX_ASDU_LENGTH) {
             // prevent creation of long frames, sblib doesn't support them yet
-            throw new UpdaterException(String.format("asdu.length (%d) exceeds MAX_ASDU_LENGTH(%d)",
+            throw new UpdaterException(String.format("asdu.length (%d) exceeds MAX_ASDU_LENGTH (%d)",
                     asdu.length, MAX_ASDU_LENGTH));
         }
         send = DataUnitBuilder.createAPDU(apciWrite, asdu);

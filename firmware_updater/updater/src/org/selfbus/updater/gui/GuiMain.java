@@ -3,14 +3,16 @@ package org.selfbus.updater.gui;
 import com.intellij.uiDesigner.core.GridConstraints;
 import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
+import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.*;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
+import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
+import tuwien.auto.calimero.link.medium.KNXMediumSettings;
+import tuwien.auto.calimero.serial.usb.Device;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.serial.usb.Device;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -24,10 +26,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.List;
 
 import static java.awt.Font.PLAIN;
+import static org.fusesource.jansi.Ansi.Color.*;
+import static org.fusesource.jansi.Ansi.ansi;
 import static org.selfbus.updater.CliOptions.*;
 import static org.selfbus.updater.gui.CliConverter.argument;
 import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultBackgroundColor;
@@ -89,7 +94,6 @@ public class GuiMain extends JFrame {
     private JScrollPane mainScrollPane;
     private JButton reloadGatewaysButton;
 
-    private CliOptions cliOptions;
     private Thread updaterThread;
     private final static Logger logger = LoggerFactory.getLogger(GuiMain.class);
     private final GuiSettings guiSettings = new GuiSettings(this);
@@ -108,19 +112,33 @@ public class GuiMain extends JFrame {
     }
 
     private void handleStartStopFlashAction() {
-        if (getUpdaterIsRunning()) {
-            updaterThread.interrupt();
+        if (getUpdaterIsRunning() && (updaterThread != null)) {
+            while (updaterThread.getState() != Thread.State.TERMINATED) {
+                updaterThread.interrupt();
+            }
+            updaterThread = null;
             updaterFinished();
-            logger.info(getTranslation("logMessageCanceledFlashing"));
             return;
         }
 
         jLoggingPane.setText("");
         updaterThread = new Thread(() -> {
-            setCliOptions();
-            final Updater updater = new Updater(cliOptions);
-            updater.run();
-            SwingUtilities.invokeLater(this::updaterFinished); //todo implement callback in Updater when done
+            try {
+                Thread.currentThread().setName("guiUpdater");
+                CliOptions cliOptions = getCliOptions();
+                displayCommandLine(cliOptions);
+                final Updater updater = new Updater(cliOptions);
+                updater.run();
+            } catch (KNXFormatException | ParseException e) {
+                logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+                String message = String.format(getTranslation("Exception.handleStartStopFlashAction.Message"),
+                        e.getMessage());
+                JOptionPane.showMessageDialog(this,
+                        message, getTranslation("Error"), JOptionPane.ERROR_MESSAGE);
+            } finally {
+                SwingUtilities.invokeLater(this::updaterFinished);
+            }
+
         });
         updaterThread.start();
         buttonStartStopFlash.setText(getTranslation("stopFlash"));
@@ -162,22 +180,46 @@ public class GuiMain extends JFrame {
     }
 
     private void handleRequestUidAction() {
-        String oldTextFieldFileName = textFieldFileName.getText();
-        String oldTextFieldUid = textFieldUid.getText();
-        textFieldFileName.setText("");
-        textFieldUid.setText("");
-        try {
-            setCliOptions();
-        } finally {
-            textFieldFileName.setText(oldTextFieldFileName);
-            textFieldUid.setText(oldTextFieldUid);
-        }
+        jLoggingPane.setText("");
         updaterThread = new Thread(() -> {
-            final Updater upd = new Updater(cliOptions);
-            String uid = upd.requestUid();
-            SwingUtilities.invokeLater(() -> this.textFieldUid.setText(uid));
+            Thread.currentThread().setName("uidRequest");
+            String uid = "";
+            try {
+                CliOptions cliOptions = getCliOptions();
+                cliOptions.setFileName("");
+                cliOptions.setUid("");
+                displayCommandLine(cliOptions);
+                final Updater upd = new Updater(cliOptions);
+                SwingUtilities.invokeLater(this::beforeUidRequest);
+                uid = upd.requestUid();
+            } catch (ParseException | UnknownHostException | UpdaterException | KNXException e) {
+                logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+                JOptionPane.showMessageDialog(this,
+                        String.format(getTranslation("Exception.requestUidAction.Message"), e),
+                        getTranslation("Error"), JOptionPane.ERROR_MESSAGE);
+            } finally {
+                String finalUid = uid;
+                SwingUtilities.invokeLater(() -> onRequestUidFinished(finalUid));
+            }
         });
         updaterThread.start();
+    }
+
+    private void setUIDComponentsEnabled(boolean enabled) {
+        comboBoxScenario.setEnabled(enabled);
+        buttonRequestUid.setEnabled(enabled);
+        buttonStartStopFlash.setEnabled(enabled);
+        textFieldUid.setEnabled(enabled);
+    }
+
+    private void beforeUidRequest() {
+        textFieldUid.setText("");
+        setUIDComponentsEnabled(false);
+    }
+
+    private void onRequestUidFinished(String uid) {
+        textFieldUid.setText(uid);
+        setUIDComponentsEnabled(true);
     }
 
     private void handleReloadGatewaysAction() {
@@ -210,8 +252,9 @@ public class GuiMain extends JFrame {
         @Override
         public void actionPerformed(ActionEvent e) {
             if (comboBoxIpGateways.getSelectedItem() == null) return;
-            if (((CalimeroSearchComboItem) comboBoxIpGateways.getSelectedItem()).value == null) return;
-            InetSocketAddress addr = ((CalimeroSearchComboItem) comboBoxIpGateways.getSelectedItem()).value.remoteEndpoint();
+            Discoverer.Result<SearchResponse> value = ((CalimeroSearchComboItem) comboBoxIpGateways.getSelectedItem()).value;
+            if (value == null) return;
+            InetSocketAddress addr = value.remoteEndpoint();
             textBoxKnxGatewayIpAddr.setText(addr.getAddress().getHostAddress());
             textFieldPort.setText(String.valueOf(addr.getPort()));
         }
@@ -248,6 +291,7 @@ public class GuiMain extends JFrame {
         try {
             guiSettings.writeComponentSettings(fileName);
         } catch (IOException e) {
+            logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
             JOptionPane.showMessageDialog(this,
                     String.format(getTranslation("IOException.savingSettings.Message"), fileName, e.getMessage()),
                     this.getTranslation("Warning"), JOptionPane.WARNING_MESSAGE);
@@ -260,6 +304,7 @@ public class GuiMain extends JFrame {
             setComponentNames();
             guiSettings.readComponentsSettings(fileName);
         } catch (IOException e) {
+            logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
             JOptionPane.showMessageDialog(this,
                     String.format(getTranslation("IOException.loadingSettings.Message"), fileName, e.getMessage()),
                     this.getTranslation("Warning"), JOptionPane.WARNING_MESSAGE);
@@ -269,43 +314,74 @@ public class GuiMain extends JFrame {
         return true;
     }
 
-    private void setCliOptions() {
+    private CliOptions getCliOptions() throws KNXFormatException, ParseException {
         ArrayList<String> argsList = new ArrayList<>();
 
         argsList.add(argument("", textBoxKnxGatewayIpAddr));
         argsList.add(argument(OPT_LONG_FILENAME, textFieldFileName));
+        //argsList.add(argument(OPT_LONG_LOCALHOST, textField*)); // todo add gui textfield --localhost
+        //argsList.add(argument(OPT_LONG_LOCALPORT, textField*)); // todo add gui textfield --localport
         argsList.add(argument(OPT_LONG_PORT, textFieldPort));
-        argsList.add(argument(OPT_LONG_UID, textFieldUid));
-        if (comboBoxMedium.isVisible())
-            argsList.add(argument(OPT_LONG_MEDIUM, comboBoxMedium));
+
         argsList.add(argument(OPT_LONG_FT12, textFieldSerial));
         argsList.add(argument(OPT_LONG_TPUART, textFieldTpuart));
-        argsList.add(argument(OPT_LONG_DEVICE, textFieldDeviceAddress));
+        //argsList.add(argument(OPT_LONG_USB, textField*)); // todo add gui textfield --usb
+
+        argsList.add(argument(OPT_LONG_MEDIUM, comboBoxMedium));
+
+        argsList.add(argument(OPT_LONG_USER_ID, textFieldKnxSecureUser));
+        argsList.add(argument(OPT_LONG_USER_PASSWORD, textFieldKnxSecureUserPwd));
+        argsList.add(argument(OPT_LONG_DEVICE_PASSWORD, textFieldKnxSecureDevicePwd));
+
         argsList.add(argument(OPT_LONG_PROG_DEVICE, textFieldBootloaderDeviceAddress));
-        argsList.add(argument(OPT_LONG_OWN_ADDRESS, textFieldOwnAddress));
-        if ((CheckBoxDiffFlash.isVisible() && !CheckBoxDiffFlash.isSelected()) || !CheckBoxDiffFlash.isVisible())
-            argsList.add(argument(OPT_LONG_FULL));
+
+        if (textFieldDeviceAddress.isVisible())
+            argsList.add(argument(OPT_LONG_DEVICE, textFieldDeviceAddress));
+
+        if (textFieldOwnAddress.isVisible())
+            argsList.add(argument(OPT_LONG_OWN_ADDRESS, textFieldOwnAddress));
+
+        if (textFieldUid.isVisible())
+            argsList.add(argument(OPT_LONG_UID, textFieldUid));
+
+        argsList.add(argument(OPT_LONG_DELAY, textFieldDelay));
+/*
+        if (checkBox*.isVisible() && checkBox*.isSelected()) // todo add gui checkbox --tunnelingv2
+            argsList.add(argument(OPT_LONG_TUNNEL_V2));
+        if (checkBox*.isVisible() && checkBox*.isSelected()) // todo add gui checkbox --tunneling
+            argsList.add(argument(OPT_LONG_TUNNEL_V1));
+*/
         if (natCheckBox.isVisible() && natCheckBox.isSelected())
             argsList.add(argument(OPT_LONG_NAT));
-        argsList.add(argument(OPT_LONG_DELAY, textFieldDelay));
-        if (eraseCompleteFlashCheckBox.isVisible() && eraseCompleteFlashCheckBox.isSelected())
-            argsList.add(argument(OPT_LONG_ERASEFLASH));
+
+        // todo add gui OPT_LONG_ROUTING (--routing)
+
+        if ((CheckBoxDiffFlash.isVisible() && !CheckBoxDiffFlash.isSelected()) || !CheckBoxDiffFlash.isVisible())
+            argsList.add(argument(OPT_LONG_FULL));
+
         if (noFlashCheckBox.isVisible() && noFlashCheckBox.isSelected())
             argsList.add(argument(OPT_LONG_NO_FLASH));
 
-        String updaterFileName = String.format("SB_updater-%s-all.jar", ToolInfo.getVersion());
-        String[] args = new String[argsList.size()];
-        args = argsList.toArray(args);
-        logger.info("java -jar {} {}", updaterFileName, CliConverter.toString(argsList));
-        try {
-            // read in user-supplied command line options
-            this.cliOptions = new CliOptions(args, updaterFileName,
-                    "Selfbus KNX-Firmware update tool options", "", Updater.PHYS_ADDRESS_BOOTLOADER, Updater.PHYS_ADDRESS_OWN);
-        } catch (final KNXIllegalArgumentException e) {
-            throw e;
-        } catch (final RuntimeException e) {
-            throw new KNXIllegalArgumentException(e.getMessage(), e);
-        }
+        // argsList.add(argument(OPT_LONG_LOGLEVEL, comboBox*)); // todo add gui combobox --logLevel
+
+        argsList.add(argument(OPT_LONG_PRIORITY, comboBoxKnxTelegramPriority));
+
+        if (eraseCompleteFlashCheckBox.isVisible() && eraseCompleteFlashCheckBox.isSelected())
+            argsList.add(argument(OPT_LONG_ERASEFLASH));
+
+        // argsList.add(argument(OPT_LONG_DUMPFLASH, textField*)); // todo add gui textfield --DUMPFLASH startaddress endaddress
+/*
+        if (checkBox*.isVisible() && checkBox*.isSelected()) // todo add gui checkbox --statistic
+            argsList.add(argument(OPT_LONG_LOGSTATISTIC));
+*/
+        // argsList.add(argument(OPT_LONG_BLOCKSIZE, comboBox*)); // todo add gui combobox --blocksize 256, 512, 1024
+
+        return new CliOptions(argsList);
+    }
+
+    private void displayCommandLine(CliOptions cliOptions) {
+        logger.info("{}java -jar {} {}{}", ansi().fg(YELLOW), ToolInfo.getToolJarName(),
+                cliOptions.reconstructCommandLine(), ansi().reset());
     }
 
     public static void startSwingGui() {
@@ -362,11 +438,41 @@ public class GuiMain extends JFrame {
 
         comboBoxIpGateways.addItem(new CalimeroSearchComboItem(getTranslation("selectInterface"), null));
 
-        DiscoverKnxInterfaces.getAllnetIPInterfaces().forEach(r ->
-                comboBoxIpGateways.addItem(new CalimeroSearchComboItem(r.response().getDevice().getName() +
-                        " (" + r.response().getControlEndpoint().endpoint().getAddress().getHostAddress() + ")", r)));
+        List<Discoverer.Result<SearchResponse>> result;
+        try {
+            result = DiscoverKnxInterfaces.getAllnetIPInterfaces();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Restore interrupt status
+            logger.info("Interrupted while discovering IP interfaces", e);  // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            return;
+        }
 
-        Set<Device> usbInterfaces = DiscoverKnxInterfaces.getUsbInterfaces();
+        for (Discoverer.Result<SearchResponse> r : result) {
+            SearchResponse sr = r.response();
+            String ifName = sr.getDevice().getName();
+            String ifHostAddress = sr.getControlEndpoint().endpoint().getAddress().getHostAddress();
+            IndividualAddress ifPhysAddress = sr.getDevice().getAddress();
+            int ifPort = sr.getControlEndpoint().endpoint().getPort();
+            int ifTunnelVersion;
+            if (sr.v2())
+                ifTunnelVersion = 2;
+            else
+                ifTunnelVersion = 1;
+
+            CalimeroSearchComboItem comboBoxItem = new CalimeroSearchComboItem(
+                    String.format("%s (%s:%d) v%d %s", ifName, ifHostAddress, ifPort, ifTunnelVersion,
+                            ifPhysAddress.toString()), r);
+            comboBoxIpGateways.addItem(comboBoxItem);
+        }
+
+        Set<Device> usbInterfaces;
+        try {
+            usbInterfaces = DiscoverKnxInterfaces.getUsbInterfaces();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Restore interrupt status
+            logger.info("Interrupted while discovering USB interfaces", e);  // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            return;
+        }
         for (final var d : usbInterfaces) {
             final String vp = String.format("%04x:%04x", d.vendorId(), d.productId());
             logger.info("Found USB Interface: {} {} S/N {} VID/PID {}",
@@ -385,22 +491,22 @@ public class GuiMain extends JFrame {
     }
 
     private void fillMediumComboBox() {
-        comboBoxMedium.addItem("tp1");
-        comboBoxMedium.addItem("rf");
+        comboBoxMedium.addItem(KNXMediumSettings.getMediumString(KNXMediumSettings.MEDIUM_TP1));
+        comboBoxMedium.addItem(KNXMediumSettings.getMediumString(KNXMediumSettings.MEDIUM_RF));
     }
 
     private void fillTelegramPriorityComboBox() {
         if (comboBoxKnxTelegramPriority == null) return;
 
-        comboBoxKnxTelegramPriority.addItem("LOW");
-        comboBoxKnxTelegramPriority.addItem("URGENT");
-        comboBoxKnxTelegramPriority.addItem("NORMAL");
-        comboBoxKnxTelegramPriority.addItem("SYSTEM");
+        comboBoxKnxTelegramPriority.addItem(Priority.LOW.toString());
+        comboBoxKnxTelegramPriority.addItem(Priority.NORMAL.toString());
+        comboBoxKnxTelegramPriority.addItem(Priority.URGENT.toString());
+        comboBoxKnxTelegramPriority.addItem(Priority.SYSTEM.toString());
     }
 
     private void setFrameImages() {
         String resourceTemplate = "/frame_images/selfbus_logo_%sx%s.png";
-        String[] resolutions = {"16"}; // "24", "32", "48", "256"}; //todo enable also these resolutions
+        String[] resolutions = {"16", "24", "32", "48", "256"};
         List<Image> frameImageList = new ArrayList<>();
 
         for (String resolution : resolutions) {
@@ -459,7 +565,7 @@ public class GuiMain extends JFrame {
 
     public static class CalimeroSearchComboItem {
         private final String key;
-        Discoverer.Result<SearchResponse> value;
+        final Discoverer.Result<SearchResponse> value;
 
         public CalimeroSearchComboItem(String key, Discoverer.Result<SearchResponse> value) {
             this.key = key;
