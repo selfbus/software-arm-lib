@@ -4,8 +4,8 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         mavenCentral()
-        maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-        maven { url 'https://jitpack.io' } // jitpack builds if needed java-intelhex-parser for us
+        maven { (url = 'https://s01.oss.sonatype.org/content/repositories/snapshots')}
+        maven { (url = 'https://jitpack.io')} // jitpack builds if needed java-intelhex-parser for us
     }
 /*
     sourceControl {
