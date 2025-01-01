@@ -114,7 +114,7 @@ dependencies {
     implementation 'io.calimero:calimero-usb:2.6-rc1'
 
     // find specific directories under linux and windows
-    implementation 'net.harawata:appdirs:1.2.2'
+    implementation 'net.harawata:appdirs:1.3.0'
 
     // For search in byte array
     implementation 'com.google.guava:guava:33.2.1-jre'
