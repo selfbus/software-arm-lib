@@ -401,22 +401,26 @@ public final class DeviceManagement implements AutoCloseable {
             throws UpdaterException, InterruptedException, KNXLinkClosedException {
         ResponseResult result = new ResponseResult();
         while (true) {
+            KNXException lastCaughtException;
             try {
                 byte[] data2 = mc.sendUpdateData(progDestination, command.toByte(), data);
                 result.copyFromArray(data2);
                 return result;
             }
             catch (KNXTimeoutException e) {
+                lastCaughtException = e;
                 logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
                         e.getClass().getSimpleName(), ansi().reset());
                 result.incTimeoutCount();
             }
             catch (KNXDisconnectException e) { ///\todo check causes of KNXRemoteException, if think they are unrecoverable
+                lastCaughtException = e;
                 logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
                         e.getClass().getSimpleName(), ansi().reset());
                 result.incDropCount();
             }
             catch (KNXInvalidResponseException e) {
+                lastCaughtException = e;
                 logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
                         e.getClass().getSimpleName(), ansi().reset());
             }
@@ -424,10 +428,8 @@ public final class DeviceManagement implements AutoCloseable {
             if (maxRetry > 0) {
                 maxRetry--;
             }
-
-            if (maxRetry == 0)
-            {
-                throw new UpdaterException(String.format("%s failed.", command));
+            else {
+                throw new UpdaterException(String.format("%s failed.", command), lastCaughtException);
             }
         }
     }
