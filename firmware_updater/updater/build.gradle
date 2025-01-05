@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'org.selfbus'
-version = '1.20' ///\todo also change in ../README.md and ToolInfo.java (String version)
+version = '1.21' ///\todo also change in ../README.md and ToolInfo.java (String version)
 description = 'Selfbus Updater, a tool to update the firmware of Selfbus devices via the KNX Bus.'
 
 java {
