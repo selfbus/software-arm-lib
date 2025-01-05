@@ -58,7 +58,7 @@
     </appender>
 
     <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
-    <root level="DEBUG">
+    <root level="TRACE">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="list" />
         <!--
