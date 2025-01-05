@@ -459,9 +459,10 @@ public class GuiMain extends JFrame {
             else
                 ifTunnelVersion = 1;
 
-            CalimeroSearchComboItem comboBoxItem = new CalimeroSearchComboItem(
-                    String.format("%s (%s:%d) v%d %s", ifName, ifHostAddress, ifPort, ifTunnelVersion,
-                            ifPhysAddress.toString()), r);
+            String ipInterfaceText = String.format("%s (%s:%d) v%d %s", ifName, ifHostAddress, ifPort, ifTunnelVersion,
+                    ifPhysAddress.toString());
+            logger.debug("Found IP interface: {}", ipInterfaceText);
+            CalimeroSearchComboItem comboBoxItem = new CalimeroSearchComboItem(ipInterfaceText, r);
             comboBoxIpGateways.addItem(comboBoxItem);
         }
 
