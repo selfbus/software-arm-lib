@@ -24,15 +24,13 @@
         </filter>
     </appender>
 
-<!--
     <appender name="logFile" class="ch.qos.logback.core.FileAppender">
         <file>${application.home:-.}/log/updater-${appStartTimestamp}.log</file>
         <append>false</append>
         <encoder>
-            <pattern>%-40(%d{HH:mm:ss.SSS} [%thread]) %-5level [%logger{36}] %method \(%line\) - %message%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method \(%line\) %message%n</pattern>
         </encoder>
     </appender>
--->
 
     <appender name="htmlAppender" class="ch.qos.logback.core.FileAppender">
         <file>${application.home:-.}/log/updater-${appStartTimestamp}.html</file>
@@ -61,9 +59,7 @@
     <root level="TRACE">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="list" />
-        <!--
         <appender-ref ref="logFile" />
-        -->
         <appender-ref ref="htmlAppender" />
         <appender-ref ref="htmlWarnAppender" />
     </root>
