@@ -274,7 +274,7 @@ public class Updater implements Runnable {
                     diffMode = FlashDiffMode.setupDifferentialMode(bootDescriptor);
                 }
                 else {
-                    logger.error("{}  BootDescriptor is not valid -> switching to full mode{}",
+                    logger.warn("{}  BootDescriptor is not valid -> switching to full mode{}",
                             ansi().fgBright(RED), ansi().reset());
                 }
             }

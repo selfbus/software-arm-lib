@@ -25,7 +25,7 @@ public final class LoggingManager {
         Appender<ILoggingEvent> appender = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).getAppender(appenderName);
 
         if (appender == null) {
-            logger.error("disableAppender: appender {} not found.", appenderName);
+            logger.warn("disableAppender: appender {} not found.", appenderName);
             return;
         }
 
@@ -40,7 +40,7 @@ public final class LoggingManager {
         Appender<ILoggingEvent> appender = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).getAppender(appenderName);
 
         if (appender == null) {
-            logger.error("setAppenderLogLevel: appender {} not found.", appenderName);
+            logger.warn("setAppenderLogLevel: appender {} not found.", appenderName);
             return;
         }
 

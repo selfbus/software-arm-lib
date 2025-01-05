@@ -514,7 +514,7 @@ public class GuiMain extends JFrame {
             String resourceName = String.format(resourceTemplate, resolution, resolution);
             InputStream imageStream = this.getClass().getResourceAsStream(resourceName);
             if (imageStream == null) {
-                logger.error("getResourceAsStream({}) failed", resourceName);
+                logger.warn("getResourceAsStream({}) failed", resourceName);
                 continue;
             }
 
@@ -523,7 +523,7 @@ public class GuiMain extends JFrame {
                 frameImageList.add(image);
                 logger.debug("Added {} to frameImageList", resourceName);
             } catch (IOException e) {
-                logger.error("Could not add {} to frameImageList {}", resourceName, Arrays.toString(e.getStackTrace()));
+                logger.warn("Could not add {} to frameImageList {}", resourceName, Arrays.toString(e.getStackTrace()));
             }
         }
 
