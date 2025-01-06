@@ -376,6 +376,11 @@ public class GuiMain extends JFrame {
 */
         // argsList.add(argument(OPT_LONG_BLOCKSIZE, comboBox*)); // todo add gui combobox --blocksize 256, 512, 1024
 
+/*
+        if (checkBox*.isVisible() && checkBox*.isSelected()) // todo add gui checkbox --discover
+        argsList.add(argument(OPT_LONG_DISCOVER));
+ */
+
         return new CliOptions(argsList);
     }
 

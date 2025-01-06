@@ -114,6 +114,9 @@ public class CliOptions {
 
     public static final String OPT_SHORT_BLOCKSIZE = "bs";
     public static final String OPT_LONG_BLOCKSIZE = "blocksize";
+
+    public static final String OPT_LONG_DISCOVER = "discover";
+
     private final static List<Integer> VALID_BLOCKSIZES = Arrays.asList(256, 512, 1024);
 
     private static final int PRINT_WIDTH = 100;
@@ -166,6 +169,8 @@ public class CliOptions {
 
     private final Level defaultLogLevel;
 
+    private boolean discoverIsSet = false;
+
     private CliOptions() {
         defaultLogLevel = getLogLevel();
 
@@ -178,6 +183,8 @@ public class CliOptions {
         Option version = new Option(OPT_SHORT_VERSION, OPT_LONG_VERSION, false, "show tool/library version");
         Option NO_FLASH = new Option(OPT_SHORT_NO_FLASH, OPT_LONG_NO_FLASH, false, "for debugging use only, disable flashing firmware!");
         Option eraseFlash = new Option(null, OPT_LONG_ERASEFLASH, false, "USE WITH CAUTION! Erases the complete flash memory including the physical KNX address and all settings of the device. Only the bootloader is not deleted.");
+        Option discover = new Option(null, OPT_LONG_DISCOVER, false, "List available KNXnet/IP interfaces and USB-Interfaces");
+
 
         Option dumpFlash = Option.builder(null).longOpt(OPT_LONG_DUMPFLASH)
                 .argName("start> <end")
@@ -353,6 +360,7 @@ public class CliOptions {
         cliOptions.addOption(dumpFlash);
         cliOptions.addOption(NO_FLASH);
         cliOptions.addOption(logStatistic);
+        cliOptions.addOption(discover);
     }
 
     public CliOptions(final String[] args, String helpApplicationName, String helpHeader, String helpFooter)
@@ -412,6 +420,7 @@ public class CliOptions {
         setTunnelingV1isSet(cmdLine.hasOption(OPT_LONG_TUNNEL_V1));
         setRoutingIsSet(cmdLine.hasOption(OPT_LONG_ROUTING));
         setNatIsSet(cmdLine.hasOption(OPT_LONG_NAT));
+        setDiscoverIsSet(cmdLine.hasOption(OPT_LONG_DISCOVER));
 
         if (cmdLine.hasOption(OPT_LONG_FILENAME))
             setFileName(cmdLine.getOptionValue(OPT_LONG_FILENAME));
@@ -579,7 +588,7 @@ public class CliOptions {
         if (interfacesSet > 1) {
             throw new CliInvalidException("Only one bus interface can be used.");
         }
-        else if (interfacesSet == 0) {
+        else if ((interfacesSet == 0) && (!getDiscoverIsSet())) {
             throw new CliInvalidException("No bus interface specified.");
         }
     }
@@ -1133,5 +1142,14 @@ public class CliOptions {
     private void setUsbVendorIdAndProductId(String usbVendorIdAndProductId) {
         this.usbVendorIdAndProductId = usbVendorIdAndProductId;
         logger.debug("{}={}", OPT_LONG_USB, getUsbVendorIdAndProductId());
+    }
+
+    public boolean getDiscoverIsSet() {
+        return discoverIsSet;
+    }
+
+    public void setDiscoverIsSet(boolean discoverIsSet) {
+        this.discoverIsSet = discoverIsSet;
+        logger.debug("{}={}", OPT_LONG_DISCOVER, this.discoverIsSet);
     }
 }

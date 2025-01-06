@@ -2,6 +2,7 @@ package org.selfbus.updater;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tuwien.auto.calimero.IndividualAddress;
 import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
@@ -58,5 +59,33 @@ public class DiscoverKnxInterfaces {
             }
         }
         return knxUsbDevices;
+    }
+
+    public static void toText(List<Discoverer.Result<SearchResponse>> ifaceList) {
+        for (Discoverer.Result<SearchResponse> r : ifaceList) {
+            SearchResponse sr = r.response();
+            String ifName = sr.getDevice().getName();
+            String ifHostAddress = sr.getControlEndpoint().endpoint().getAddress().getHostAddress();
+            IndividualAddress ifPhysAddress = sr.getDevice().getAddress();
+            int ifPort = sr.getControlEndpoint().endpoint().getPort();
+            int ifTunnelVersion;
+            if (sr.v2())
+                ifTunnelVersion = 2;
+            else
+                ifTunnelVersion = 1;
+
+            String ipInterfaceText = String.format("%s (%s:%d) v%d %s", ifName, ifHostAddress, ifPort, ifTunnelVersion,
+                    ifPhysAddress.toString());
+            logger.info("Found IP interface: {}", ipInterfaceText);
+            logger.info("\t{}", sr.toString());
+        }
+    }
+
+    public static void toText(Set<Device> usbInterfaces) {
+        for (final var d : usbInterfaces) {
+            final String vp = String.format("%04x:%04x", d.vendorId(), d.productId());
+            logger.info("Found USB Interface: {} {} S/N {} VID/PID {}",
+                    d.manufacturer(), d.product(), d.serialNumber(), vp);
+        }
     }
 }

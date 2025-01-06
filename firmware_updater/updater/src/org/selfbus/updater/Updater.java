@@ -99,13 +99,20 @@ public class Updater implements Runnable {
                 return;
             }
 
+            if (options.getDiscoverIsSet()) {
+                logger.info("Discovering KNX network...");
+                DiscoverKnxInterfaces.toText(DiscoverKnxInterfaces.getAllnetIPInterfaces());
+                DiscoverKnxInterfaces.toText(DiscoverKnxInterfaces.getUsbInterfaces());
+                finalizeJansi();
+                return;
+            }
 
             final Updater updater = new Updater(options);
             final ShutdownHandler shutDownHandler = new ShutdownHandler().register();
             updater.run();
             shutDownHandler.unregister();
         }
-        catch (KNXFormatException | ParseException e) {
+        catch (KNXFormatException | ParseException | InterruptedException e) {
             logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
         }
         finally {

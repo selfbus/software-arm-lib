@@ -24,11 +24,11 @@ java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf>] 
        <SYSTEM|URGENT|NORMAL|LOW>] [-bs <256|512|1024>] [--user <id>] [--user-pwd <password>]
        [--device-pwd <password>] [-u <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-t2
        | -t1 | -r]   [-n] [-h | -v]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH]
-       [--DUMPFLASH <start> <end>] [-f0] [--statistic]
+       [--DUMPFLASH <start> <end>] [-f0] [--statistic] [--discover]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
- -m,--medium <tp1|rf>                       KNX medium [tp1|rf] (default tp1)
+ -m,--medium <tp1|rf>                       KNX medium [tp1|rf] (default TP1)
  -s,--serial <COM-port>                     use FT1.2 serial communication
  -t,--tpuart <COM-port>                     use TPUART serial communication (experimental, needs
                                             serialcom or rxtx library in java.library.path)
@@ -42,7 +42,7 @@ Selfbus KNX-Firmware update tool options:
     --priority <SYSTEM|URGENT|NORMAL|LOW>   KNX telegram priority (default LOW)
  -bs,--blocksize <256|512|1024>             Block size to program (default 1024 bytes)
     --user <id>                             KNX IP Secure tunneling user identifier (1..127)
-                                            (default 1)
+                                            (default -1)
     --user-pwd <password>                   KNX IP Secure tunneling user password (Commissioning
                                             password/Inbetriebnahmepasswort), quotation marks (") in
                                             password may not work
@@ -64,7 +64,7 @@ Selfbus KNX-Firmware update tool options:
  -v,--version                               show tool/library version
     --delay <ms>                            delay telegrams during data transmission to reduce bus
                                             load, valid 0-500ms, default 0
- -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default DEBUG)
+ -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default TRACE)
     --ERASEFLASH                            USE WITH CAUTION! Erases the complete flash memory
                                             including the physical KNX address and all settings of
                                             the device. Only the bootloader is not deleted.
@@ -73,6 +73,7 @@ Selfbus KNX-Firmware update tool options:
                                             bootloader.
  -f0,--NO_FLASH                             for debugging use only, disable flashing firmware!
     --statistic                             show more statistic data
+    --discover                              List available KNXnet/IP interfaces and USB-Interfaces
 ```
 ## Common use cases:
 Updater with graphical user interface (**experimental**)
