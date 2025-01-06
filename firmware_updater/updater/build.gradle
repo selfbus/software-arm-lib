@@ -104,6 +104,10 @@ tasks.named('check') {
 // We need it to add java-intelhex-parser as an dependency, instead of copy/pasting the source.
 //
 dependencies {
+    // Use this implementation for debugging with local calimero-core
+    // Set location of local calimero-core in settings.gradle
+    //implementation 'com.github.calimero:calimero-core'
+
     // calimero knx bus access library
     implementation 'com.github.calimero:calimero-core:2.6-rc1'
 

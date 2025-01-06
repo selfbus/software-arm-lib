@@ -1,5 +1,9 @@
 rootProject.name = 'SB_updater'
 
+// Use this to build with local calimero-core
+// Change also dependency in build.gradle
+//includeBuild('..//..//..//calimero//calimero-core')
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
