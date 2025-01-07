@@ -112,14 +112,15 @@ public class SBManagementClientImpl extends ManagementClientImpl {
                 if (dst instanceof GroupAddress)
                     // check for broadcast or group
                     if (dst.getRawAddress() == 0) {
-                        linkLogger.debug("broadcast");
+                        linkLogger.debug("broadcast {} -> {}", cemilData.getSource(), dst);
                     }
                     else {
-                        linkLogger.debug("group");
+                        // linkLogger.debug("group");
                     }
-                else
+                else {
                     // individual
-                    linkLogger.debug("individual");
+                    // linkLogger.debug("individual");
+                }
             }
         }
 
