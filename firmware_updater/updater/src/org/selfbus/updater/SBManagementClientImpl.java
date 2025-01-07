@@ -96,14 +96,17 @@ public class SBManagementClientImpl extends ManagementClientImpl {
                         linkLogger.debug("indication {} -> {} T_Nack #{}", cemilData.getSource(), cemilData.getDestination(), sequenceNumber);
                         break;
 
+                    case 0x40:
+                    case 0x41:
                     case 0x42:
+                    case 0x43:
                         linkLogger.debug("indication {} -> {} T_Data_Connected #{}", cemilData.getSource(), cemilData.getDestination(), sequenceNumber);
                         break;
 
                     default:
                         // This should never happen
-                        linkLogger.warn("indication {} -> {} conControl == {} #{}", cemilData.getSource(), cemilData.getDestination(),
-                                String.format("0x%X", conControl), sequenceNumber);
+                        linkLogger.warn("indication {} -> {} conControl == {} tpdu == {} #{}", cemilData.getSource(), cemilData.getDestination(),
+                                String.format("0x%X", conControl), String.format("0x%X", tpdu), sequenceNumber);
                         break;
                 }
             }
