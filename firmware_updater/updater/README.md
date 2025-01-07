@@ -1,4 +1,4 @@
-# Selfbus-Updater 1.21
+# Selfbus-Updater 1.22
 
 ## Requirements
 
