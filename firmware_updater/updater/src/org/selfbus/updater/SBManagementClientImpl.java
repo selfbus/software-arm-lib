@@ -40,19 +40,17 @@ public class SBManagementClientImpl extends ManagementClientImpl {
      * @param message     A descriptive message to include in the log.
      * @param e           The {@link FrameEvent} containing the frame to be logged.
      * @param eventLogger The logger to use for logging the frame details.
-     * @return The {@link CEMILData} instance if the frame is valid; {@code null} otherwise.
      */
-    private CEMILData logEvent(String message, final FrameEvent e, final Logger eventLogger) {
+    private void logEvent(String message, final FrameEvent e, final Logger eventLogger) {
         CEMILData linkData = getCEMILData(e, eventLogger);
         if (linkData == null) {
-            return null;
+            return;
         }
 
         eventLogger.debug("{} : {}", message, linkData);
         if (linkData.getSource().equals(link.getKNXMedium().getDeviceAddress())) {
             eventLogger.debug("source == device address!");
         }
-        return linkData;
     }
 
     private class SBLinkListener implements NetworkLinkListener
@@ -65,7 +63,7 @@ public class SBManagementClientImpl extends ManagementClientImpl {
 
         public void indication(final FrameEvent e)
         {
-            CEMILData cemilData = logEvent("indication", e, linkLogger);
+            CEMILData cemilData = getCEMILData(e, linkLogger);
             if (cemilData == null) {
                 return;
             }
@@ -140,19 +138,19 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         @Override
         public void broadcast(final FrameEvent e)
         {
-            logEvent("broadcast", e, transportLogger);
+            // logEvent("broadcast", e, transportLogger);
         }
 
         @Override
         public void dataConnected(final FrameEvent e)
         {
-            logEvent("dataConnected", e, transportLogger);
+            // logEvent("dataConnected", e, transportLogger);
         }
 
         @Override
         public void dataIndividual(final FrameEvent e)
         {
-            logEvent("dataIndividual", e, transportLogger);
+            // logEvent("dataIndividual", e, transportLogger);
         }
 
         @Override
@@ -162,7 +160,7 @@ public class SBManagementClientImpl extends ManagementClientImpl {
 
         @Override
         public void group(final FrameEvent e) {
-            transportLogger.debug("group {}", e);
+            // transportLogger.debug("group {}", e);
         }
 
         @Override
