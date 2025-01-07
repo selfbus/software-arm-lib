@@ -73,33 +73,21 @@ public class SBManagementClientImpl extends ManagementClientImpl {
                 return;
             }
 
-            int ctrl = cemilData.getPayload()[0] & 0xfc;
-            if (ctrl == 0) {
-                final KNXAddress dst = cemilData.getDestination();
-                if (dst instanceof GroupAddress)
-                    // check for broadcast or group
-                    if (dst.getRawAddress() == 0) {
-                        linkLogger.debug("broadcast");
-                    }
-                    else {
-                        linkLogger.debug("group");
-                    }
-                else
-                    // individual
-                    linkLogger.debug("individual");
+            final int tpdu = cemilData.getPayload()[0] & 0xff;
+            if (tpdu == 0x80) {
+                linkLogger.debug("indication {} -> {} T_Connect", cemilData.getSource(), cemilData.getDestination());
+                return;
             }
-            else {
-                int conControl = cemilData.getPayload()[0] & 0xc3;
-                int sequenceNumber = (cemilData.getPayload()[0] & 0x3c) >> 2;
+            else if (tpdu == 0x81) {
+                linkLogger.debug("indication {} -> {} T_Disconnect", cemilData.getSource(), cemilData.getDestination());
+                return;
+            }
+
+            final int ctrl = tpdu & 0xc0; // is it connection oriented? (1100 0000)
+            if (ctrl != 0) {
+                final int conControl = tpdu & 0xc3; // clear sequence number bits (1100 0011)
+                final int sequenceNumber = (tpdu & 0x3c) >> 2; // get sequence number and shift right by 2 (0011 1100)
                 switch (conControl) {
-                    case 0x80:
-                        linkLogger.debug("indication {} -> {} T_Connect", cemilData.getSource(), cemilData.getDestination());
-                        break;
-
-                    case 0x81:
-                        linkLogger.debug("indication {} -> {} T_Disconnect", cemilData.getSource(), cemilData.getDestination());
-                        break;
-
                     case 0xC2:
                         linkLogger.debug("indication {} -> {} T_Ack #{}", cemilData.getSource(), cemilData.getDestination(), sequenceNumber);
                         break;
@@ -113,10 +101,25 @@ public class SBManagementClientImpl extends ManagementClientImpl {
                         break;
 
                     default:
-                        linkLogger.debug("indication {} -> {} conControl == 0x{} #{}", cemilData.getSource(), cemilData.getDestination(),
-                                String.format("%X", conControl), sequenceNumber);
+                        // This should never happen
+                        linkLogger.warn("indication {} -> {} conControl == {} #{}", cemilData.getSource(), cemilData.getDestination(),
+                                String.format("0x%X", conControl), sequenceNumber);
                         break;
                 }
+            }
+            else {
+                final KNXAddress dst = cemilData.getDestination();
+                if (dst instanceof GroupAddress)
+                    // check for broadcast or group
+                    if (dst.getRawAddress() == 0) {
+                        linkLogger.debug("broadcast");
+                    }
+                    else {
+                        linkLogger.debug("group");
+                    }
+                else
+                    // individual
+                    linkLogger.debug("individual");
             }
         }
 
