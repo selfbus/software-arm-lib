@@ -800,7 +800,7 @@ public class CliOptions {
         return natIsSet;
     }
 
-    private void setNatIsSet(boolean natIsSet) {
+    public void setNatIsSet(boolean natIsSet) {
         this.natIsSet = natIsSet;
         logger.debug("{}={}", OPT_LONG_NAT, getNatIsSet());
     }
@@ -827,7 +827,7 @@ public class CliOptions {
         return tunnelingV2isSet;
     }
 
-    private void setTunnelingV2isSet(boolean tunnelingV2isSet) {
+    public void setTunnelingV2isSet(boolean tunnelingV2isSet) {
         this.tunnelingV2isSet = tunnelingV2isSet;
         logger.debug("{}={}", OPT_LONG_TUNNEL_V2, getTunnelingV2isSet());
     }
@@ -836,7 +836,7 @@ public class CliOptions {
         return tunnelingV1isSet;
     }
 
-    private void setTunnelingV1isSet(boolean tunnelingV1isSet) {
+    public void setTunnelingV1isSet(boolean tunnelingV1isSet) {
         this.tunnelingV1isSet = tunnelingV1isSet;
         logger.debug("{}={}", OPT_LONG_TUNNEL_V1, getTunnelingV2isSet());
     }

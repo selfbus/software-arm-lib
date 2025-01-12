@@ -162,19 +162,27 @@ public class SBKNXLink {
 
         // try unsecure TCP tunneling v2 connection
         try {
-            return createTunnelingLinkV2(local, remote, medium);
+            KNXNetworkLink testLink = createTunnelingLinkV2(local, remote, medium);
+            cliOptions.setTunnelingV2isSet(true);
+            return testLink;
         } catch (final KNXException e) {
             logger.info("failed with {}", e.toString());
+            cliOptions.setTunnelingV2isSet(false);
         }
 
         // try unsecure UDP tunneling v1 connection with nat option set on cli
         try {
-            return createTunnelingLinkV1(local, remote, cliOptions.getNatIsSet(), medium);
+            KNXNetworkLink testLink = createTunnelingLinkV1(local, remote, cliOptions.getNatIsSet(), medium);
+            cliOptions.setTunnelingV1isSet(true);
+            return testLink;
         } catch (final KNXException e) {
+            cliOptions.setTunnelingV1isSet(false);
             logger.info("{}failed with {}{}", ansi().fg(YELLOW), e, ansi().reset());
         }
 
         // last chance try unsecure UDP tunneling v1 connection with INVERTED nat option set on cli
-        return createTunnelingLinkV1(local, remote, !cliOptions.getNatIsSet(), medium);
+        KNXNetworkLink testLink = createTunnelingLinkV1(local, remote, !cliOptions.getNatIsSet(), medium);
+        cliOptions.setNatIsSet(!cliOptions.getNatIsSet());
+        return testLink;
     }
 }
