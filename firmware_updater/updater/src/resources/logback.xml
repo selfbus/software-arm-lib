@@ -46,25 +46,26 @@
         </encoder>
     </appender>
 
-    <appender name="htmlWarnAppender" class="ch.qos.logback.core.FileAppender">
-        <file>${application.home:-.}/log/updater-${appStartTimestamp}-warn.html</file>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>WARN</level>
-        </filter>
-        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="ch.qos.logback.classic.html.HTMLLayout">
-                <pattern>%thread%level%logger%msg</pattern>
-                <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
-            </layout>
-        </encoder>
-    </appender>
-
-    <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
+<!--
+        <appender name="htmlWarnAppender" class="ch.qos.logback.core.FileAppender">
+            <file>${application.home:-.}/log/updater-${appStartTimestamp}-warn.html</file>
+            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+                <level>WARN</level>
+            </filter>
+            <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+                <layout class="ch.qos.logback.classic.html.HTMLLayout">
+                    <pattern>%thread%level%logger%msg</pattern>
+                    <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
+                </layout>
+            </encoder>
+        </appender>
+-->
+        <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
     <root level="TRACE">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="list" />
         <appender-ref ref="logFile" />
         <appender-ref ref="htmlAppender" />
-        <appender-ref ref="htmlWarnAppender" />
+        <!-- <appender-ref ref="htmlWarnAppender" />  -->
     </root>
 </configuration>
