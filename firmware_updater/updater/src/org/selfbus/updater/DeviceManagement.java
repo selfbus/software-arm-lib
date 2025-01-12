@@ -18,6 +18,7 @@ import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementProcedures;
 import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
 
@@ -58,32 +59,45 @@ public final class DeviceManagement implements AutoCloseable {
     private Destination progDestination;
     private KNXNetworkLink link;
 
+    private IndividualAddress progDevice;
+
+    private CliOptions cliOptions;
+
     private DeviceManagement () {
         setProtocolVersion(UDPProtocolVersion.UDP_V1);
     }
 
-    public DeviceManagement(KNXNetworkLink link, IndividualAddress progDevice, Priority priority)
-            throws KNXLinkClosedException {
+    public DeviceManagement(CliOptions cliOptions) throws KNXException, UpdaterException, UnknownHostException,
+            InterruptedException {
         this();
-        this.link = link;
-        logger.debug("Creating SBManagementClientImpl");
+        this.cliOptions = cliOptions;
+    }
+    public void open() throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
+        close();
+        this.link = new SBKNXLink(this.cliOptions).openLink();
+        this.progDevice = cliOptions.getProgDevicePhysicalAddress();
         this.mc = new SBManagementClientImpl(this.link);
-        this.mc.setPriority(priority);
+        this.mc.setPriority(cliOptions.getPriority());
         this.progDestination = this.mc.createDestination(progDevice, true, false, false);
     }
 
     @Override
     public void close() {
+        if (progDestination != null) {
+            logger.debug("Releasing progDestination {}", progDestination);
+            progDestination.close();
+        }
+
         if (mc != null) {
-            logger.debug("Releasing mc");
-            mc.detach();
-            mc.close();
+            logger.debug("Releasing mc {}", mc);
+            mc.close(); // mc.close calls already mc.detach()
         }
         if (link != null) {
-            logger.debug("Releasing link");
+            logger.debug("Releasing link {}", link);
             link.close();
         }
         progDestination = null;
+        progDevice = null;
         mc = null;
         link = null;
     }

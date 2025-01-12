@@ -11,7 +11,6 @@ import org.selfbus.updater.bootloader.BootloaderUpdater;
 import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tuwien.auto.calimero.link.KNXNetworkLink;
 
 import java.net.UnknownHostException;
 
@@ -153,7 +152,6 @@ public class Updater implements Runnable {
      * @see java.lang.Runnable#run()
      */
     public void run() {
-        KNXNetworkLink link = null;
         try {
             final String hexFileName = cliOptions.getFileName();
             BinImage newFirmware = null;
@@ -181,11 +179,10 @@ public class Updater implements Runnable {
                 System.out.println();
             }
 
-            link = new SBKNXLink(cliOptions).openLink();
-
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.getProgDevicePhysicalAddress(), cliOptions.getPriority());
+            DeviceManagement dm = new DeviceManagement(cliOptions);
 
             logger.debug("Telegram priority: {}", cliOptions.getPriority());
+            dm.open();
 
             //for option --device restart the device in bootloader mode
             if (cliOptions.getDevicePhysicalAddress() != null) { // phys. knx address of the device in normal operation
@@ -233,8 +230,7 @@ public class Updater implements Runnable {
                 }
                 // to get here `uid == null` must be true, so it's fine to exit with no-error
                 dm.close();
-                link.close();
-                System.exit(0);
+                return;
             }
 
             // store new firmware bin file in cache directory
@@ -350,18 +346,11 @@ public class Updater implements Runnable {
             logger.error("", e);  // todo see logback issue https://github.com/qos-ch/logback/issues/876
             logger.error("Operation did not finish.");
         }
-        finally {
-            if (link != null) {
-                link.close();
-            }
-        }
     }
 
     public String requestUid() throws KNXException, UpdaterException, UnknownHostException {
-        KNXNetworkLink link;
         try {
-            link = new SBKNXLink(cliOptions).openLink();
-            DeviceManagement dm = new DeviceManagement(link, cliOptions.getProgDevicePhysicalAddress(), cliOptions.getPriority());
+            DeviceManagement dm = new DeviceManagement(cliOptions);
 
             //for option --device restart the device in bootloader mode
             if (cliOptions.getDevicePhysicalAddress() != null) { // phys. knx address of the device in normal operation
@@ -387,7 +376,6 @@ public class Updater implements Runnable {
                 dm.restartProgrammingDevice();
             }
             dm.close();
-            link.close();
             return uid;
         }
         catch (final InterruptedException e) {
