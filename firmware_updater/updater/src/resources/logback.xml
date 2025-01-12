@@ -29,6 +29,10 @@
         <append>false</append>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method \(%line\) %message%n</pattern>
+            <!--
+               LogMx parser pattern:
+               %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method (%line) %message%n
+            -->
         </encoder>
     </appender>
 
