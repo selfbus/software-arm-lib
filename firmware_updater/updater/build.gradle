@@ -137,7 +137,6 @@ dependencies {
 
     // GUI settings
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
-    //implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.0'
 
     // Intel hex parser
     // commit 9dec823 of 2023/02/27
