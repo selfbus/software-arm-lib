@@ -39,6 +39,7 @@ public class Updater implements Runnable {
 
     private final static Logger logger = LoggerFactory.getLogger(Updater.class);
     private CliOptions cliOptions = null;
+    private static DeviceManagement dm = null;
 
     /**
      * Constructs an instance of the {@link #Updater} class.
@@ -99,14 +100,18 @@ public class Updater implements Runnable {
             }
 
             final Updater updater = new Updater(options);
-            final ShutdownHandler shutDownHandler = new ShutdownHandler().register();
+            final ShutdownHandler shutdownHandler = new ShutdownHandler().register();
             updater.run();
-            shutDownHandler.unregister();
+            shutdownHandler.unregister();
         }
         catch (KNXFormatException | ParseException | InterruptedException e) {
             logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
         }
         finally {
+            if (dm != null) {
+                logger.debug("Closing DeviceManagement in main()");
+                dm.close();
+            }
             finalizeJansi();
             logger.debug("main exit");
         }
@@ -117,15 +122,33 @@ public class Updater implements Runnable {
 
         ShutdownHandler register() {
             Runtime.getRuntime().addShutdownHook(this);
+            logger.trace("ShutdownHandler registered");
             return this;
         }
 
         void unregister() {
-            Runtime.getRuntime().removeShutdownHook(this);
+            try {
+                Runtime.getRuntime().removeShutdownHook(this);
+                logger.trace("ShutdownHandler unregistered");
+            }
+            catch (IllegalStateException ignored) {
+                // Shutdown is currently in progress
+            }
         }
 
         public void run() {
-            t.interrupt();
+            try {
+                t.interrupt();
+                logger.trace("ShutdownHandler called");
+                if (dm != null) {
+                    logger.trace("Closing DeviceManagement");
+                    dm.close();
+                    dm = null;
+                }
+            }
+            catch (Exception e) {
+                logger.error("Error while shutting down", e);
+            }
         }
     }
 
@@ -179,7 +202,7 @@ public class Updater implements Runnable {
                 System.out.println();
             }
 
-            DeviceManagement dm = new DeviceManagement(cliOptions);
+            dm = new DeviceManagement(cliOptions);
 
             logger.debug("Telegram priority: {}", cliOptions.getPriority());
             dm.open();
@@ -338,13 +361,21 @@ public class Updater implements Runnable {
 
             logger.info("Operation finished successfully.");
         }
-        catch (final InterruptedException e) {
+        catch (final InterruptedException | IllegalStateException e) {
             Thread.currentThread().interrupt();
-            logger.info("Operation canceled.");
+            logger.info("{}Operation canceled.", System.lineSeparator());
+            logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
         }
         catch (Throwable e) {
-            logger.error("", e);  // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
             logger.error("Operation did not finish.");
+        }
+        finally {
+            if (dm != null) {
+                logger.debug("Closing DeviceManagement");
+                dm.close();
+                finalizeJansi();
+            }
         }
     }
 
