@@ -127,7 +127,7 @@ dependencies {
     implementation 'commons-cli:commons-cli:1.9.0'
 
     // console and file logging
-    implementation 'ch.qos.logback:logback-classic:1.5.15'
+    implementation 'ch.qos.logback:logback-classic:1.5.16'
 
     // Console ansi color support
     implementation 'org.jline:jline-terminal-jansi:3.28.0'
