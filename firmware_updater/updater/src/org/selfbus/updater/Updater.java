@@ -109,7 +109,6 @@ public class Updater implements Runnable {
         }
         finally {
             if (dm != null) {
-                logger.debug("Closing DeviceManagement in main()");
                 dm.close();
             }
             finalizeJansi();
@@ -141,7 +140,6 @@ public class Updater implements Runnable {
                 t.interrupt();
                 logger.trace("ShutdownHandler called");
                 if (dm != null) {
-                    logger.trace("Closing DeviceManagement");
                     dm.close();
                     dm = null;
                 }
@@ -372,7 +370,6 @@ public class Updater implements Runnable {
         }
         finally {
             if (dm != null) {
-                logger.debug("Closing DeviceManagement");
                 dm.close();
                 finalizeJansi();
             }

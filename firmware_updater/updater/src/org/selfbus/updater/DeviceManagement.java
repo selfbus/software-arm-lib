@@ -83,6 +83,7 @@ public final class DeviceManagement implements AutoCloseable {
 
     @Override
     public void close() {
+        logger.debug("Closing {}", this.getClass().getSimpleName());
         if (progDestination != null) {
             logger.debug("Releasing progDestination {}", progDestination);
             progDestination.close();
