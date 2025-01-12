@@ -371,7 +371,6 @@ public class Updater implements Runnable {
         finally {
             if (dm != null) {
                 dm.close();
-                finalizeJansi();
             }
         }
     }
