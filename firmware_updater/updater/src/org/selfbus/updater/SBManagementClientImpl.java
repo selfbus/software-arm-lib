@@ -11,7 +11,10 @@ import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementClientImpl;
 import tuwien.auto.calimero.mgmt.TransportListener;
 
+import java.time.Duration;
+
 import static org.selfbus.updater.Mcu.MAX_ASDU_LENGTH;
+import static tuwien.auto.calimero.mgmt.Destination.State.OpenIdle;
 
 /**
  * Extends the calimero-core class {@link ManagementClientImpl}
@@ -186,17 +189,17 @@ public class SBManagementClientImpl extends ManagementClientImpl {
     private static final int USERMSG_MANUFACTURER_6_RESPONSE = 0x2FE;
     private static final int apciWrite = USERMSG_MANUFACTURER_0_WRITE;
     private static final int apciResponse = USERMSG_MANUFACTURER_6_RESPONSE;
-    //private final Logger logger; // uncomment when needed
+    private final Logger logger;
 
     KNXNetworkLink link;
 
     public SBManagementClientImpl(KNXNetworkLink link)
             throws KNXLinkClosedException {
         super(link);
+        logger = (Logger) LoggerFactory.getLogger(SBManagementClientImpl.class.getName() + " " + link.getName());
         this.link = link;
         SBLinkListener linkListener = new SBLinkListener();
         this.link.addLinkListener(linkListener);
-        //logger = (Logger) LoggerFactory.getLogger(SBManagementClientImpl.class.getName() + " " + link.getName());
         SBTransportListener transportListener = new SBTransportListener();
         this.transportLayer().addTransportListener(transportListener);
     }
@@ -224,5 +227,23 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         send = DataUnitBuilder.createAPDU(apciWrite, asdu);
 
         return this.sendWait(dst, getPriority(), send, apciResponse, 2, MAX_ASDU_LENGTH, responseTimeout());
+    }
+
+    @Override
+    protected byte[] sendWait(final Destination d, final Priority p, final byte[] apdu, final int responseServiceType,
+                              final int minAsduLen, final int maxAsduLen, final Duration timeout) throws KNXDisconnectException,
+            KNXTimeoutException, KNXInvalidResponseException, KNXLinkClosedException, InterruptedException {
+        byte[] received;
+        try {
+            received = super.sendWait(d, p, apdu, responseServiceType, minAsduLen, maxAsduLen, timeout);
+        }
+        catch (KNXTimeoutException e) {
+            if (d.getState() != OpenIdle)
+            {
+                logger.warn("Critical destination state: {}", d);
+            }
+            throw e;
+        }
+        return received;
     }
 }
