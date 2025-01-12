@@ -453,7 +453,6 @@ public final class DeviceManagement implements AutoCloseable {
         try {
             ManagementProcedures mgmt = new ManagementProceduresImpl(link);
             IndividualAddress[] devices = mgmt.readAddress();
-            mgmt.detach();
             mgmt.close();
             if ((devices.length == 0) && (progDeviceAddr == null)) { // no device in prog mode
             	return;
