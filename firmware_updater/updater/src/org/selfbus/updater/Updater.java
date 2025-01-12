@@ -62,14 +62,6 @@ public class Updater implements Runnable {
     }
 
     public static void main(final String[] args) {
-        // turn off info level message
-        //  "SLF4J(I): Connected with provider of type [ch.qos.logback.classic.spi.LogbackServiceProvider]"
-        // see https://github.com/qos-ch/slf4j/issues/422
-        // todo test end delete with logback-classic (SLF4J) version >= 2.0.16
-        // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
-        // https://github.com/qos-ch/slf4j/issues/422#issuecomment-2280712623
-        System.setProperty("slf4j.internal.verbosity", "WARN");
-
         initJansi();
 
         if (args.length == 0) {
