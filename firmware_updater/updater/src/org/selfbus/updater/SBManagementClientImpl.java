@@ -33,29 +33,6 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         return linkData;
     }
 
-    /**
-     * Logs details about a frame event.
-     * <p>
-     * This method checks if the frame retrieved from the {@link FrameEvent} is of type {@link CEMILData}.
-     * If the frame is valid, it logs the provided message along with the frame data.
-     * </p>
-     *
-     * @param message     A descriptive message to include in the log.
-     * @param e           The {@link FrameEvent} containing the frame to be logged.
-     * @param eventLogger The logger to use for logging the frame details.
-     */
-    private void logEvent(String message, final FrameEvent e, final Logger eventLogger) {
-        CEMILData linkData = getCEMILData(e, eventLogger);
-        if (linkData == null) {
-            return;
-        }
-
-        eventLogger.debug("{} : {}", message, linkData);
-        if (linkData.getSource().equals(link.getKNXMedium().getDeviceAddress())) {
-            eventLogger.debug("source == device address!");
-        }
-    }
-
     private class SBLinkListener implements NetworkLinkListener
     {
         private final Logger linkLogger;
@@ -146,22 +123,13 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         }
 
         @Override
-        public void broadcast(final FrameEvent e)
-        {
-            // logEvent("broadcast", e, transportLogger);
-        }
+        public void broadcast(final FrameEvent e) {}
 
         @Override
-        public void dataConnected(final FrameEvent e)
-        {
-            // logEvent("dataConnected", e, transportLogger);
-        }
+        public void dataConnected(final FrameEvent e) {}
 
         @Override
-        public void dataIndividual(final FrameEvent e)
-        {
-            // logEvent("dataIndividual", e, transportLogger);
-        }
+        public void dataIndividual(final FrameEvent e) {}
 
         @Override
         public void disconnected(final Destination d) {
@@ -169,9 +137,7 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         }
 
         @Override
-        public void group(final FrameEvent e) {
-            // transportLogger.debug("group {}", e);
-        }
+        public void group(final FrameEvent e) {}
 
         @Override
         public void detached(final DetachEvent e) {
