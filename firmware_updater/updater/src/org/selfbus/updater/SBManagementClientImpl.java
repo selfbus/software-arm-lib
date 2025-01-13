@@ -92,17 +92,9 @@ public class SBManagementClientImpl extends ManagementClientImpl {
             }
             else {
                 final KNXAddress dst = cemilData.getDestination();
-                if (dst instanceof GroupAddress)
-                    // check for broadcast or group
-                    if (dst.getRawAddress() == 0) {
-                        linkLogger.debug("broadcast {} -> {}", cemilData.getSource(), dst);
-                    }
-                    else {
-                        // linkLogger.debug("group");
-                    }
-                else {
-                    // individual
-                    // linkLogger.debug("individual");
+                // check for broadcast or group
+                if ((dst instanceof GroupAddress) && (dst.getRawAddress() == 0)) {
+                    linkLogger.debug("broadcast {} -> {}", cemilData.getSource(), dst);
                 }
             }
         }
