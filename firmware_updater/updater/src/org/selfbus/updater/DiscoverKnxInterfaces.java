@@ -64,20 +64,8 @@ public class DiscoverKnxInterfaces {
     public static void toText(List<Discoverer.Result<SearchResponse>> ifaceList) {
         for (Discoverer.Result<SearchResponse> r : ifaceList) {
             SearchResponse sr = r.response();
-            String ifName = sr.getDevice().getName();
-            String ifHostAddress = sr.getControlEndpoint().endpoint().getAddress().getHostAddress();
-            IndividualAddress ifPhysAddress = sr.getDevice().getAddress();
-            int ifPort = sr.getControlEndpoint().endpoint().getPort();
-            int ifTunnelVersion;
-            if (sr.v2())
-                ifTunnelVersion = 2;
-            else
-                ifTunnelVersion = 1;
-
-            String ipInterfaceText = String.format("%s (%s:%d) v%d %s", ifName, ifHostAddress, ifPort, ifTunnelVersion,
-                    ifPhysAddress.toString());
-            logger.info("Found IP interface: {}", ipInterfaceText);
-            logger.info("\t{}", sr.toString());
+            logger.info("Found IP interface: {}", sr.getDevice().getName());
+            logger.info("\t{}", sr.toString().replace(", ", "\n\t"));
         }
     }
 
