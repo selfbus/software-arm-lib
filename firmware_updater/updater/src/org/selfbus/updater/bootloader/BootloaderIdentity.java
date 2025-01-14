@@ -40,7 +40,7 @@ public record BootloaderIdentity(long versionMajor,
     public static BootloaderIdentity fromArray(byte[] parse) {
         long vMajor = parse[0] & 0xff;
         long vMinor = parse[1] & 0xff;
-        long features = Utils.streamToShort(parse, 2);
+        long features = Utils.streamToShort(parse, 2) & 0xffff;
         long versionSBLibMajor = parse[4] & 0xff;
         long versionSBLibMinor = parse[5] & 0xff;
         long applicationFirstAddress = Utils.streamToLong(parse, 6);
