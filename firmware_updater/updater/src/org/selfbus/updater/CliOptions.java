@@ -644,7 +644,7 @@ public class CliOptions {
         if (!getUid().isBlank())
             builder += String.format(" --%s %s", OPT_LONG_UID, getUid());
 
-        if (getDelayMs() > 0)
+        if (getDelayMs() != Updater.DELAY_MIN)
             builder += String.format(" --%s %d", OPT_LONG_DELAY, getDelayMs());
 
         if (getTunnelingV2isSet())
