@@ -12,8 +12,6 @@ import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.UnknownHostException;
-
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.selfbus.updater.LoggingManager.CONSOLE_APPENDER_NAME;

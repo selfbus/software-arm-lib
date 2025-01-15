@@ -229,7 +229,7 @@ public final class DeviceManagement implements AutoCloseable {
         return bootDescriptor;
     }
 
-    public String requestAppVersionString() throws UpdaterException, KNXLinkClosedException,
+    public String requestAppVersionString() throws UpdaterException,
             InterruptedException {
         byte[] result = sendWithRetry(UPDCommand.APP_VERSION_REQUEST, new byte[0], getMaxUpdCommandRetry()).data();
         UPDCommand command = UPDCommand.tryFromByteArray(result);
@@ -404,7 +404,7 @@ public final class DeviceManagement implements AutoCloseable {
         }
     }
 
-    public BootloaderStatistic requestBootLoaderStatistic() throws UpdaterException, KNXLinkClosedException,
+    public BootloaderStatistic requestBootLoaderStatistic() throws UpdaterException,
             InterruptedException {
         logger.debug("Requesting Bootloader statistic");
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
