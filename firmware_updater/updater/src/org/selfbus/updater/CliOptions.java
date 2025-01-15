@@ -1182,7 +1182,7 @@ public class CliOptions {
         if ((reconnectMs < RECONNECT_MIN_MS) || (reconnectMs > RECONNECT_MAX_MS)) {
             logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
                     ansi().fg(RED), OPT_LONG_RECONNECT, reconnectMs, RECONNECT_MIN_MS,
-                    RECONNECT_MAX_MS, RECONNECT_MAX_MS, ansi().reset());
+                    RECONNECT_MAX_MS, RECONNECT_MIN_MS, ansi().reset());
             reconnectMs = RECONNECT_MIN_MS; // set to RECONNECT_MIN_MS in case of invalid time
         }
         this.reconnectMs = reconnectMs;
