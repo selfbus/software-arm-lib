@@ -79,6 +79,7 @@ public class CliOptions {
     public static final String OPT_LONG_UID = "uid";
 
     public static final String OPT_LONG_DELAY = "delay";
+    public static final String OPT_LONG_RECONNECT = "reconnect";
 
     private static final String OPT_SHORT_TUNNEL_V2 = "t2";
     public static final String OPT_LONG_TUNNEL_V2 = "tunnelingv2";
@@ -156,6 +157,7 @@ public class CliOptions {
     private String uid = "";
     private boolean flashingFullModeIsSet = false;
     private int delayMs = 0;
+    private int reconnectMs = 0;
 
     private boolean noFlashIsSet = false;
     private boolean eraseFullFlashIsSet = false;
@@ -170,6 +172,9 @@ public class CliOptions {
     private final Level defaultLogLevel;
 
     private boolean discoverIsSet = false;
+
+    private static final int RECONNECT_MIN_MS = 0;
+    private static final int RECONNECT_MAX_MS = 6000;
 
     private CliOptions() {
         defaultLogLevel = getLogLevel();
@@ -268,6 +273,13 @@ public class CliOptions {
                 .required(false)
                 .type(Number.class)
                 .desc(String.format("delay telegrams during data transmission to reduce bus load, valid 0-500ms, default %d", Updater.DELAY_MIN)).build();
+        Option reconnect = Option.builder(null).longOpt(OPT_LONG_RECONNECT)
+                .argName("ms")
+                .numberOfArgs(1)
+                .required(false)
+                .type(Number.class)
+                .desc(String.format("pause between a KNX connection reconnect, valid %d-%dms, default %d", RECONNECT_MIN_MS,
+                        RECONNECT_MAX_MS, RECONNECT_MIN_MS)).build();
         Option logLevel = Option.builder(OPT_SHORT_LOGLEVEL).longOpt(OPT_LONG_LOGLEVEL)
                 .argName("TRACE|DEBUG|INFO")
                 .numberOfArgs(1)
@@ -356,6 +368,7 @@ public class CliOptions {
 
         cliOptions.addOption(delay);
         cliOptions.addOption(logLevel);
+        cliOptions.addOption(reconnect);
         cliOptions.addOption(eraseFlash);
         cliOptions.addOption(dumpFlash);
         cliOptions.addOption(NO_FLASH);
@@ -452,6 +465,11 @@ public class CliOptions {
             setDelayMs(cmdLine.getOptionValue(OPT_LONG_DELAY));
         else
             setDelayMs(Updater.DELAY_MIN);
+
+        if (cmdLine.hasOption(OPT_LONG_RECONNECT))
+            setReconnectMs(cmdLine.getOptionValue(OPT_LONG_RECONNECT));
+        else
+            setReconnectMs(RECONNECT_MIN_MS);
 
         if (cmdLine.hasOption(OPT_LONG_BLOCKSIZE))
             setBlockSize(cmdLine.getOptionValue(OPT_LONG_BLOCKSIZE));
@@ -646,6 +664,9 @@ public class CliOptions {
 
         if (getDelayMs() != Updater.DELAY_MIN)
             builder += String.format(" --%s %d", OPT_LONG_DELAY, getDelayMs());
+
+        if (getReconnectMs() != RECONNECT_MIN_MS)
+            builder += String.format(" --%s %d", OPT_LONG_RECONNECT, getReconnectMs());
 
         if (getTunnelingV2isSet())
             builder += String.format(" --%s", OPT_LONG_TUNNEL_V2);
@@ -1151,5 +1172,34 @@ public class CliOptions {
     public void setDiscoverIsSet(boolean discoverIsSet) {
         this.discoverIsSet = discoverIsSet;
         logger.debug("{}={}", OPT_LONG_DISCOVER, this.discoverIsSet);
+    }
+
+    public int getReconnectMs() {
+        return reconnectMs;
+    }
+
+    private void setReconnectMs(int reconnectMs) {
+        if ((reconnectMs < RECONNECT_MIN_MS) || (reconnectMs > RECONNECT_MAX_MS)) {
+            logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
+                    ansi().fg(RED), OPT_LONG_RECONNECT, reconnectMs, RECONNECT_MIN_MS,
+                    RECONNECT_MAX_MS, RECONNECT_MAX_MS, ansi().reset());
+            reconnectMs = RECONNECT_MIN_MS; // set to RECONNECT_MIN_MS in case of invalid time
+        }
+        this.reconnectMs = reconnectMs;
+        logger.debug("{}={}", OPT_LONG_RECONNECT, getReconnectMs());
+    }
+
+    private void setReconnectMs(String reconnectMs) {
+        try {
+            if (reconnectMs == null || reconnectMs.isBlank())
+                setReconnectMs(RECONNECT_MIN_MS);
+            else
+                setReconnectMs(Integer.parseInt(reconnectMs));
+        }
+        catch (NumberFormatException e) {
+            setReconnectMs(RECONNECT_MIN_MS);
+            logger.warn("{}option --{} {} is invalid => set to default {}{}",
+                    ansi().fg(RED), OPT_LONG_RECONNECT, reconnectMs, getReconnectMs(), ansi().reset());
+        }
     }
 }

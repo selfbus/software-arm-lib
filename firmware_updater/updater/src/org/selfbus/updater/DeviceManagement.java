@@ -75,7 +75,7 @@ public final class DeviceManagement implements AutoCloseable {
     public void reconnect() throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
         close();
         //todo 2500ms works quite fine, test with lower delays
-        Thread.sleep(2500);
+        Thread.sleep(cliOptions.getReconnectMs());
         open();
     }
 

@@ -23,8 +23,8 @@ java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf>] 
        <COM-port> | --usb <vendorId:productId>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority
        <SYSTEM|URGENT|NORMAL|LOW>] [-bs <256|512|1024>] [--user <id>] [--user-pwd <password>]
        [--device-pwd <password>] [-u <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-t2
-       | -t1 | -r]   [-n] [-h | -v]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH]
-       [--DUMPFLASH <start> <end>] [-f0] [--statistic] [--discover]
+       | -t1 | -r]   [-n] [-h | -v]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--reconnect <ms>]
+       [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0] [--statistic] [--discover]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
@@ -65,6 +65,8 @@ Selfbus KNX-Firmware update tool options:
     --delay <ms>                            delay telegrams during data transmission to reduce bus
                                             load, valid 0-500ms, default 0
  -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default TRACE)
+    --reconnect <ms>                        pause between a KNX connection reconnect, valid
+                                            0-6000ms, default 0
     --ERASEFLASH                            USE WITH CAUTION! Erases the complete flash memory
                                             including the physical KNX address and all settings of
                                             the device. Only the bootloader is not deleted.
