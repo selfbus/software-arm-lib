@@ -116,9 +116,7 @@ public class SBKNXLink {
      */
     public KNXNetworkLink openLink() throws KNXException, InterruptedException,
             UnknownHostException, UpdaterException {
-        KNXNetworkLink newLink = doOpenLink();
-        logger.info("KNX connection: {}", newLink);
-        return newLink;
+        return doOpenLink();
     }
 
     private KNXNetworkLink doOpenLink() throws KNXException,

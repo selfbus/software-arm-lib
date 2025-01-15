@@ -204,6 +204,7 @@ public class Updater implements Runnable {
 
             logger.debug("Telegram priority: {}", cliOptions.getPriority());
             dm.open();
+            logger.info("KNX connection: {}", dm.getLinkInfo());
 
             //for option --device restart the device in bootloader mode
             if (cliOptions.getDevicePhysicalAddress() != null) { // phys. knx address of the device in normal operation
@@ -375,7 +376,7 @@ public class Updater implements Runnable {
         }
     }
 
-    public String requestUid() throws KNXException, UpdaterException, UnknownHostException {
+    public String requestUid() throws KNXException, UpdaterException {
         try {
             DeviceManagement dm = new DeviceManagement(cliOptions);
 
@@ -410,7 +411,7 @@ public class Updater implements Runnable {
             Thread.currentThread().interrupt();
             return "";
         }
-        catch (UpdaterException | KNXException | UnknownHostException e) {
+        catch (UpdaterException | KNXException e) {
             logger.error("{}An error occurred while retrieving the UID. {}{}{}",
                     ansi().fg(RED), System.lineSeparator(), e, ansi().reset());
             throw e;

@@ -67,11 +67,18 @@ public final class DeviceManagement implements AutoCloseable {
         setProtocolVersion(UDPProtocolVersion.UDP_V1);
     }
 
-    public DeviceManagement(CliOptions cliOptions) throws KNXException, UpdaterException, UnknownHostException,
-            InterruptedException {
+    public DeviceManagement(CliOptions cliOptions) {
         this();
         this.cliOptions = cliOptions;
     }
+
+    public void reconnect() throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
+        close();
+        //todo 2500ms works quite fine, test with lower delays
+        Thread.sleep(2500);
+        open();
+    }
+
     public void open() throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
         close();
         this.link = new SBKNXLink(this.cliOptions).openLink();
@@ -412,8 +419,42 @@ public final class DeviceManagement implements AutoCloseable {
         return blStatistic;
     }
 
-    public ResponseResult sendWithRetry(UPDCommand command, byte[] data, int maxRetry)
-            throws UpdaterException, InterruptedException, KNXLinkClosedException {
+    private boolean isLinkAlive() {
+        if (link == null) {
+            return false;
+        }
+        return link.isOpen();
+    }
+
+    private void handleKNXException(final UPDCommand command, final KNXException e, final boolean reconnect) throws
+            UpdaterException, InterruptedException {
+        if (LoggingManager.isConsoleActive()) {
+            System.out.println();
+        }
+
+        if (e instanceof KNXAckTimeoutException) {
+            // This exception is on missing/faulty ack at linklayer level thrown, but we never see it here
+            // todo check public void send(final CEMI frame, final BlockingMode mode) in ConnectionBase
+            logger.warn("{}Unexpected: never seen before {}{}", ansi().fg(RED), e.getClass().getSimpleName(),ansi().reset());
+        }
+
+        logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
+                e.getClass().getSimpleName(), ansi().reset());
+
+        if (!reconnect) {
+            return;
+        }
+
+        try {
+            reconnect();
+        }
+        catch (KNXException | UnknownHostException e2) {
+            throw new UpdaterException(String.format("%s failed.", command), e);
+        }
+    }
+
+    public ResponseResult sendWithRetry(final UPDCommand command, final byte[] data, int maxRetry)
+            throws UpdaterException, InterruptedException {
         ResponseResult result = new ResponseResult();
         while (true) {
             KNXException lastCaughtException;
@@ -422,22 +463,26 @@ public final class DeviceManagement implements AutoCloseable {
                 result.copyFromArray(data2);
                 return result;
             }
-            catch (KNXTimeoutException e) {
+            ///\todo check causes of KNXRemoteException, i think they are unrecoverable
+            catch (KNXDisconnectException | KNXLinkClosedException e) {
                 lastCaughtException = e;
-                logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
-                        e.getClass().getSimpleName(), ansi().reset());
-                result.incTimeoutCount();
-            }
-            catch (KNXDisconnectException e) { ///\todo check causes of KNXRemoteException, if think they are unrecoverable
-                lastCaughtException = e;
-                logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
-                        e.getClass().getSimpleName(), ansi().reset());
                 result.incDropCount();
+                handleKNXException(command, e, true);
+            }
+            catch (KNXTimeoutException e) {
+                // Can happen on a L2 tunnel request ACK timeout or a TL4 ACK timeout
+                lastCaughtException = e;
+                result.incTimeoutCount();
+                handleKNXException(command, e, true);
             }
             catch (KNXInvalidResponseException e) {
                 lastCaughtException = e;
-                logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
-                        e.getClass().getSimpleName(), ansi().reset());
+                handleKNXException(command, e, true);
+            }
+            finally {
+                if (!isLinkAlive()) {
+                    maxRetry = 0; // exit while
+                }
             }
 
             if (maxRetry > 0) {
@@ -509,5 +554,13 @@ public final class DeviceManagement implements AutoCloseable {
 
     public int getMaxUpdCommandRetry() {
         return MAX_UPD_COMMAND_RETRY;
+    }
+
+    public String getLinkInfo() {
+        if (this.link == null) {
+            return "No link available.";
+        }
+
+        return link.toString();
     }
 }
