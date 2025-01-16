@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.List;
 
@@ -191,7 +192,7 @@ public class GuiMain extends JFrame {
                 final Updater upd = new Updater(cliOptions);
                 SwingUtilities.invokeLater(this::beforeUidRequest);
                 uid = upd.requestUid();
-            } catch (ParseException | UpdaterException | KNXException e) {
+            } catch (ParseException | UpdaterException | KNXException | UnknownHostException e) {
                 logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
                 JOptionPane.showMessageDialog(this,
                         String.format(getTranslation("Exception.requestUidAction.Message"), e),

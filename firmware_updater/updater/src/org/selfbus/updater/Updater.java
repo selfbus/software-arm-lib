@@ -19,6 +19,8 @@ import static org.selfbus.updater.Utils.shortenPath;
 
 import org.selfbus.updater.gui.GuiMain;
 
+import java.net.UnknownHostException;
+
 /**
  * A Tool for updating the firmware of a Selfbus device in a KNX network.
  * <p>
@@ -380,9 +382,10 @@ public class Updater implements Runnable {
         }
     }
 
-    public String requestUid() throws KNXException, UpdaterException {
+    public String requestUid() throws KNXException, UpdaterException, UnknownHostException {
         try {
             DeviceManagement dm = new DeviceManagement(cliOptions);
+            dm.open();
 
             //for option --device restart the device in bootloader mode
             if (cliOptions.getDevicePhysicalAddress() != null) { // phys. knx address of the device in normal operation
