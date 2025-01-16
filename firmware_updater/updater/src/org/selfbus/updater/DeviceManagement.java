@@ -356,6 +356,11 @@ public final class DeviceManagement implements AutoCloseable {
         // console output
         if (LoggingManager.isConsoleActive()) {
             System.out.print(logText);
+            if (LoggingManager.isRunningInIntelliJ()) {
+                // if running in idea debug-console we need to add a newline,
+                // because the idea debug-console doesn´t support ansi cursor movements
+                System.out.println();
+            }
         }
         // gui JTextPane output
         logText = ansi().cursorUpLine().toString() + logText; // need this CursorUp in gui

@@ -11,6 +11,7 @@ import ch.qos.logback.core.spi.FilterReply;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.management.ManagementFactory;
 
 public final class LoggingManager {
     private final static Logger logger = LoggerFactory.getLogger(LoggingManager.class);
@@ -82,5 +83,11 @@ public final class LoggingManager {
 
     public static boolean isConsoleActive() {
         return (LoggingManager.getAppenderLogLevel(CONSOLE_APPENDER_NAME) == Level.INFO);
+    }
+
+    public static boolean isRunningInIntelliJ() {
+        // Check for IntelliJ debugging JVM arguments
+        return ManagementFactory.getRuntimeMXBean().getInputArguments().stream()
+                .anyMatch(arg -> arg.contains("javaagent") || arg.contains("agentlib"));
     }
 }
