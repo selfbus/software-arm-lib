@@ -164,7 +164,7 @@ public class SBKNXLink {
             cliOptions.setTunnelingV2isSet(true);
             return testLink;
         } catch (final KNXException e) {
-            logger.info("failed with {}", e.toString());
+            logger.info("failed with {}: {}", e.getClass().getSimpleName(), e.getMessage());
             cliOptions.setTunnelingV2isSet(false);
         }
 
@@ -175,7 +175,8 @@ public class SBKNXLink {
             return testLink;
         } catch (final KNXException e) {
             cliOptions.setTunnelingV1isSet(false);
-            logger.info("{}failed with {}{}", ansi().fg(YELLOW), e, ansi().reset());
+            logger.info("{}failed with {}: {}{}", ansi().fg(YELLOW), e.getClass().getSimpleName(), e.getMessage(),
+                    ansi().reset());
         }
 
         // last chance try unsecure UDP tunneling v1 connection with INVERTED nat option set on cli
