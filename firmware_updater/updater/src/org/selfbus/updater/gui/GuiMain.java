@@ -379,6 +379,8 @@ public class GuiMain extends JFrame {
         if (checkBox*.isVisible() && checkBox*.isSelected()) // todo add gui checkbox --discover
         argsList.add(argument(OPT_LONG_DISCOVER));
  */
+        // argsList.add(argument(OPT_LONG_RECONNECT, textFieldReconnect)); // todo add gui textfield --reconnect
+        // todo add gui button for --discover
 
         return new CliOptions(argsList);
     }
