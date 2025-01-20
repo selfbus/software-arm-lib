@@ -1,6 +1,18 @@
 
 last review:
 
+***
+H. Rauch Jan2025
+ Bus voltage monitoring added to lib
+
+ usable compile time defines:
+ 	 DEBUG_BUS_VOLTAGE 	- for serial output of some ADC measurments in the bus voltage functions
+ 	 VREF_LT8 			- ADC Pin for ext Vref: LT8 or if not defined IO9
+ 	 SERIAL_ON_SWD		- use serial ports PIO1_6,PIO1_7
+ 	 SERIAL_ON_SV2		- use serial ports PIO3_0,PIO3_1 or if not defined use PIO2_7, PIO2_8
+ 	 
+***
+ 
  com_objects.cpp:
             - added sending buffer free check before new data is loaded 
             - fixed possible loop when app was writing an object and lib was searching to update local object in same group  

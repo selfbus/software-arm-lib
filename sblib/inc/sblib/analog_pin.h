@@ -3,9 +3,6 @@
  *
  *  Copyright (c) 2014 Stefan Taferner <stefan.taferner@gmx.at>
  *
- *  last changes: Nov. 2024  Horst Rauch
- *                mapping of analog pins and adc channel added
- *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License version 3 as
  *  published by the Free Software Foundation.
@@ -14,16 +11,50 @@
 #define sblib_analog_pin_h
 
 #include <sblib/ioports.h>
-#include <sblib/io_pin_names.h>
 #include <sblib/types.h>
 
+/*
+ * Calculations and defines based on the LPC1115 4TE mid controller V1.02 based on micro volt
+ * allows for integer calculations only
+ * MCU ADC and Vref accuracy is about +-4LSB, remaining accuracy is about 6bit
+ * Based on Resistors with 1% accuracy Vref on BD9G101 is about +-2% -> Vddmax ~3,52V, Vddin ~3,278, Vddnom ~3,397V
+ * the Vref of the ADC is about 3,397V +-120mV (+-3,5%), leads to LSB of 3,317mV +-0,117mV
+
+ */
+
+#define ADC_RESOLUTION 1024  //10bit -> LSB = Vref / 2^N
+#define ADC_ACCURACY_BITS 6
+#define ADC_ACCURACY_MASK 0xfffffff0
+#define ADC_REF_VOLTAGE 3397   // Vdd nom mV
+#define ADC_MAX_VOLTAGE  (ADC_REF_VOLTAGE * (ADC_RESOLUTION - 1) / ADC_RESOLUTION)  // = LSB *(2^N -1)
+//#define ADC_LSB_MV  (ADC_REF_VOLTAGE / ADC_RESOLUTION)      // 3,3174mV
+#define ADC_LSB_UV  ((ADC_REF_VOLTAGE *1000) / ADC_RESOLUTION)  // 3317uV - could be used for integer based calculations
+
+
+
+//for HW version v2  with ext Vref LM4040 2.5 we use the variable for the calculation
+extern int adc_LSB_uV ;
+extern int KNXChannelToADCChannel [];
+extern int ADCChannelToPIO [];
 
 /**
- * channel mapping KNX analog channel to adc channel
- * adc channel to PIO pin number
+ * channel mapping MCU ADC analog channel to PIO port pin
+ *
+ * @param channel - the analog channel to read from: AD0, AD1, ... AD7
+ *   including range checking
+ * @return  the mapping of the MCU-ADC channel to the PIO port Pin
+ *
+ */
+int ADCtoPIO (int channel);
+
+/**
+ * channel mapping KNX analog channel to MCU-ADC channel
+ *
+ * @param channel - the analog KNX channel 1...8 including range checking
+ * @return  the mapping of the KNX channel to the MCU-ADC channel AD0..AD7, -1 on error
+ *
  */
 int KNXtoADC (int channel);
-int ADCtoPIO (int channel);
 
 
 /**

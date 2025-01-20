@@ -14,7 +14,7 @@
 #define PIN_EIB_TX  PIO1_9
 #define PIN_EIB_RX  PIO1_8
 #define PIN_PROG    PIO2_0
-#define PIN_VBUS    PIO1_11
+#define PIN_VBUS    PIO0_11
 #define PIN_INFO    PIO2_6
 #define PIN_RUN     PIO3_3
 
@@ -30,8 +30,8 @@
 #define PIN_IO6     PIO0_8
 #define PIN_IO7     PIO0_9
 #define PIN_IO8     PIO2_11
-#define PIN_TX      PIO3_0  // at header SV2
-#define PIN_RX      PIO3_1  // at header SV2
+//#define PIN_TX      PIO3_0
+//#define PIN_RX      PIO3_1
 #define PIN_IO9     PIO1_0
 #define PIN_IO10    PIO1_1
 #define PIN_IO11    PIO1_2
@@ -73,23 +73,16 @@
 //special use for HW version detection and external Vref of 2.5v 0.1% eg LM4040A 2.5
 #define PIN_ID1		PIO2_7
 #define PIN_ID2		PIO2_8
-
-//define ext Vref vaslue in uV
+#define PIN_VREF	PIO1_3
 #define EXT_VREF_UV 2500000
+#define PIN_VBUS_AD 	PIN_AD0
+#define PIN_EXT_VREF_AD PIN_AD1
+#define EXTVREF_ADC	AD1
+#define VBUS_ADC 	AD0
 
-// possible use of ADC channel  0 on  pin LT8 or 1 on pin IO9  for ext VREF measurement
-// we use LT8 for development
-#define PIN_EXT_VREF_AD0 PIN_AD0
-#define EXTVREF_ADC0	AD0
-#define PIN_EXT_VREF_AD1 PIN_AD1
-#define EXTVREF_ADC1	AD1
-
-//Vbus ADC channel/pin definitions
-#define VBUS_ADC 	AD7
-#define PIN_VBUS_AD PIN_AD7
 
 #define VBUS_VOLTAGEDIVIDER_HWV1 103 //  R9+R2+R3 / R12 !!!with factor 10 to allow for integer calculations
-#define VBUS_VOLTAGEDIVIDER_DEFAULT 114  // R9+R2+R3 / R12  plus leakage current zender diode D3
+#define VBUS_VOLTAGEDIVIDER_DEFAULT 114 // R9+R2+R3 / R12  plus leakage current zender diode D3
 
 // definitions for serial ports
 #define PIN_TX      PIO3_0  // at header SV2
@@ -98,7 +91,6 @@
 #define PIN_RX_JTAG PIO1_6  // at header JTAG/SV2
 #define PIN_TX_ID   PIO2_8  // at header ID SEL
 #define PIN_RX_ID   PIO2_7  // at header ID SEL
-
 
 
 #endif /* SBLIB_GPIO_LPC11XX_H_ */

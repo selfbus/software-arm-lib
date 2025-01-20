@@ -89,8 +89,6 @@ public:
 protected:
     /**
      * Special initialization for the BCU
-     * e.g physical layer/bus, TLayer,..
-     *
      */
     virtual void _begin() override;
 

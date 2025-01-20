@@ -4,111 +4,60 @@
  *  Copyright (c) 2020 Darthyson <darth@maptrack.de>
  *
  *  last changes: Nov. 2024  Horst Rauch
- *                Bus voltage measurement in polling mode, can be overridden by a user class usrADC
- *                and callback function
- *                check for possible HW change on the analog part by ID2 level
- *                Bus voltage monitoring function for BCU phase
+ *
+ *  @brief:  Bus voltage measurement and level check
+ *           Is implemented as subclass of class BcuDefault
+ *           Bus voltage measurement in polling mode, can be overridden by a user class AppADCReadCallback
+ *           and callback function.
+ *           Check for possible HW change on the analog part by ID1/2 level should be implemented in main()
+ *           and set the LSB, threshold and resistor division ratio.
+ *           Bus voltage monitoring function for BCU phase
  *                - power up
  *                - power down
  *                - normal operation added
  *
  *
+ *      In case your application is using the MCU ADC you need to implement a class of AppADCReadCallback in you App.
+ *      The BCU will call that function with an interval of 20ms to check the bus voltage. Your function should return
+ *      as fast as possible the raw ADCcount value. In case of failure return a negative value.
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License version 3 as
- *  published by the Free Software Foundation.
+ *      In case you application requires a notification on a bus voltage failure you need to implement a class of AppUserSaveCallback.
  *
- *  Don't create instances of class BusVoltage, use variable busVoltageMonitor instead
+ *      Set the callback pointers in the BCU in the application setup function
  *
- *  Notes:
- *      in the KNX-specification a bus fail is defined as a bus voltage drop below 20V with a hysteresis of 1V.
- *      for 4TE-ARM & TS_ARM the voltage divider on the AD-Pin is R3 (91K0) and R12 (10K0).
- *      Use resistors with 1% tolerance or better for these.
- *
- *  Usage:
- *
- *      Try to not use functions from sblib/analog_pin.h, because they will not work well together without changes to analog_pin.h
- *      In case you need these functions, a restart of the monitoring with
- *      busVoltageMonitor.enable();
- *      is mandatory, or otherwise monitoring will stop.
- *
- *      implement a sub-class of BusVoltageCallback in your app_main.h or app_main.cpp to get notifications of bus voltage fail/return. e.g.:
+ *      e.g.:
  *      -------------------------------------------------------------------------------------------------------------------------------------
 
-        include "bus_voltage.h"
+ #include <sblib/eib/bus_voltage.h>
+ class AppADCReadCallback appadcreadcallback;
+ class AppUserSaveCallback appusersavecallback;
 
-        class MySubBusVoltageCallback public BusVoltageCallback {
-        public:
-            virtual void BusVoltageFail();
-            virtual void BusVoltageReturn();
-            virtual int convertADmV(int valueAD);
-            virtual int convertmVAD(int valuemV);
-        };
+ // read the adc value at ADCchannel
+ int AppADCReadCallback::ReadADCCount(unsigned int ADCchannel)
+ {
+ analogBegin();
+ int adccount = analogValidRead(ADCchannel);
+ analogEnd();
+ return adccount;
+ }
 
-        void MySubBusVoltageCallback::BusVoltageFail()
-        {
-            // return as fast as possible from this method, because its called directly from the ADC interrupt service routine
-            // and avoid calling other functions which depend on interrupts
-            e.g.
-            .... your actions on bus voltage fail ....
-            bcu.end();
-        }
+ void AppUserSaveCallback::Notify(UsrCallbackType type)
+ {
+ // do wahever your app need to do in case of bus voltage failure and return as fast as possible
 
-        void MySubBusVoltageCallback::BusVoltageReturn()
-        {
-            // return as fast as possible from this method, because its called directly from the ADC interrupt service routine
-            // and avoid calling other functions which depend on interrupts
-            .... your actions on bus voltage return ....
-            e.g.
-            bcu.begin(...);
-        }
+ return;
+ }
 
-        int MySubBusVoltageCallback::convertADmV(int valueAD)
-        {
-            // provide a function or polynomial 2th degree (or better) to convert AD values to millivoltages of the bus voltage
-            return valueAD;
-        }
 
-        int MySubBusVoltageCallback::convertmVAD(int valuemV)
-        {
-            // provide a function or polynomial 2th degree (or better) to convert millivoltages of the bus voltage to AD values
-            return valuemV;
-        }
+ //Initialize the application.
 
-        MySubBusVoltageCallback callback; // instance of MySubBusVoltageCallback a sub-class of class BusVoltageCallback to receive notifications
+ BcuBase* setup()
+ {
+ ... your code ....
 
- *
- *
- *      start bus voltage monitoring in your app_main.cpp, e.g.:
- *
- *
-        void setup()
-        {
-            .... your code ....
-            if (busVoltageMonitor.setup(VBUS_AD_PIN, VBUS_AD_CHANNEL, VBUS_ADC_SAMPLE_FREQ,
-                                VBUS_THRESHOLD_FAILED, VBUS_THRESHOLD_RETURN,
-                                VBUS_VOLTAGE_FAILTIME_MS, VBUS_VOLTAGE_RETURNTIME_MS,
-                                &timer32_0, 0, &callback)
-            // setup & enable bus voltage monitoring
-            if (busVoltageMonitor.setup(PIN_VBUS,   // IO-Pin used for bus voltage monitoring
-                                        AD7,        // AD-Channel correspondending to the IO-Pin
-                                        10000,      // AD-conversion frequency in Hz
-                                        20000,      // Threshold for bus failing in milli-voltage
-                                        21000,      // Threshold for bus returning in milli-voltage
-                                        20,         // time (milliseconds) bus voltage (milli-voltage) must stay below, to trigger bus failing notification
-                                        1500,       // time (milliseconds) bus voltage (milli-voltage) must stay above, to trigger bus returning notification
-                                        &timer32_0, // timer used for AD-conversion. Can be timer16_0 or timer32_0 from sblib/timer.h, timer can't be used otherwise!!
-                                        0,          // timer match channel used for AD-conversion. Can be 0 or 1
-                                        &callback)) // instance of a sub-class of class BusVoltageCallback
-            {
-                busVoltageMonitor.enable();
-                while (busVoltageMonitor.busFailed())
-                {
-                  delay(1);
-                }
-            }
-            .... your code ....
-        }
+ bcu.setAppUserSaveCallback(( AppUserSaveCallback *) &appusersavecallback);
+ bcu.setAppADCReadCallback(( AppADCReadCallback *) &appadcreadcallback);
+ }
  */
 
 #ifndef BUS_VOLTAGE_H_
@@ -119,130 +68,144 @@
 #include <sblib/io_pin_names.h>
 #include <sblib/timer.h>
 #include <sblib/analog_pin.h>
+#include <sblib/usr_callback.h>
+#include <sblib/eib/bus_voltage_level.h>
 
 /*
  * MCU ADC and Vref accuracy is about +-4LSB, remaining accuracy is about 6bit
  * Based on Resistors with 1% accuracy Vref on BD9G101 is about +-2% -> Vddmax ~3,52V, Vddin ~3,278, Vddnom ~3,397V
- *  the Vref of the ADC is about 3,397V +-120mV, leads to LSB of 3,317mV +-0,117mV
+ * the Vref of the ADC is about 3,397V +-120mV, leads to LSB of 3,317mV +-0,117mV
+ * Bus voltage measurement: Voltage divider on the AD7 channel for Bus voltage measurement: 10/103 = 0,097
+ * For the default HW with the nonlinear leakage current of the Z-diode ( ~50uA @20VVbus/18000mV Vz) we need to  adapt the value based on measurements
+ * from Darthyson which resume in a ratio of 11,9 (at Vbus ~17V to 11,54 (at Vbus ~22v) _> we use 11,9 as mean value
+ * plus D1 forward voltage of 600mV and loss of 1,1V of L2
  */
-
-#define ADC_RESOLUTION 1024  //10bit -> LSB = Vref / 2^N
-#define ADC_ACCURACY_BITS 6
-#define ADC_ACCURACY_MASK 0xfffffff0
-#define ADC_REF_VOLTAGE 3397   // Vdd nom mV
-#define ADC_MAX_VOLTAGE  (ADC_REF_VOLTAGE * (ADC_RESOLUTION - 1) / ADC_RESOLUTION)  // = LSB *(2^N -1)
-#define ADC_LSB_MV  (ADC_REF_VOLTAGE / ADC_RESOLUTION)      // 3,3174mV
-#define ADC_LSB_UV  ADC_REF_VOLTAGE *1000 / ADC_RESOLUTION  // 3317uV - could be used for integer based calculations
-
 
 /*
- * implement a subclass of ADCCallback in your application
+ * Implement a subclass of ADCCallback in your application wich will be used by the bus voltage monitoring function
+ * The ADC value should be update at an interval shorter than 20ms
+ *
  */
-class ADCCallback
-{
+class AppADCReadCallback {
 public:
-    virtual int ReadADCCount(unsigned int ADCChannel) = 0;   // interface to read the adc in a user function, for bus voltage we need a samling rate of >=100
+	virtual int ReadADCCount(unsigned int ADCChannel); // interface to read the adc in a user function, for bus voltage we need a sampling rate of >=100
 };
 
-class BusVoltage
-{
+class AppUserSaveCallback: public UsrCallback {
+public:
+	virtual void Notify(UsrCallbackType type);
+};
+
+class BusVoltage {
 public:
 
-	enum STATE  : unsigned int {FAILED = 0x00, OK = 0x01, FALLING = 0x10, RISING = 0x11,UNKNOWN = 0xFF
+	enum STATE : unsigned int {
+		FAILED = 0x00, OK = 0x01, FALLING = 0x10, RISING = 0x11, UNKNOWN = 0xFF
 	};
 	enum STATE State;
 
-	enum OPERATION_STATE  : unsigned int {POWER_UP_IDLE     = 0x0100,   // Vbus <18V
-		POWER_UP_START_UP    = 0x0101,  // 18V < Vbus < 21V
-		POWER_UP_OPERATION   = 0x0110,  // Vbus >=21V
-		//POWER_DOWN_OPERATION = 0x1010,  // Vbus >=20V
-		POWER_DOWN_HOLD_UP   = 0x1001,  // Vbus < 20V
-		POWER_DOWN_IDLE      = 0x1000	// Vbus < SMPS above min. operation voltage
+	enum OPERATION_STATE : unsigned int {
+		POWER_UP_IDLE = 0x0100,   // Vbus <18V
+		POWER_UP_START_UP = 0x0101,  // 18V < Vbus < 21V
+		POWER_UP_OPERATION = 0x0110,  // Vbus >=21V
+		POWER_DOWN_OPERATION = 0x1010,  // 21V > Vbus >=20V
+		POWER_DOWN_HOLD_UP = 0x1001,  // Vbus < 20V
+		POWER_DOWN_IDLE = 0x1000, // Vbus < SMPS above min. operation voltage-> No Vcc, useless as MCU stopped operation, so we can not detect
+		ADC_ERROR = 0xffff
 	};
 	enum OPERATION_STATE operationState;
 
+	int bus_measurement_interval; // could be used on App level for bus measurements
 
 	BusVoltage();
 
-    /**
-     * setup Bus Voltage Monitoring.
-     *
-     * @param ADChannel AD-Channel correspondending to the IO-Pin
-     * @param thresholdVoltageFailed Threshold for bus failing in milli-voltage
-     * @param thresholdVoltageReturn Threshold for bus returning in milli-voltage
-     * @param callback instance of a sub-class of class BusVoltageCallback
-     *
-     * @return non-zero if successful.
-     *
-     * or with overload function without parameter as we know all these in gerneral
-     */
-    unsigned int setup( unsigned int ADChannel,
-                       unsigned int thresholdVoltageFailedmV, unsigned int thresholdVoltageReturnmV,
-                       unsigned int thresholdVoltageIdlemV, ADCCallback *adcCallback);
+	/**
+	 * setup Bus Voltage Monitoring.
+	 *
+	 *
+	 * @return non-zero if successful.
+	 *
+	 * or with overload function without parameter as we know all these in gerneral
+	 */
+	unsigned int setup();
 
-    unsigned int setup(void);
+	/**
+	 * ADC LBS value in uV
+	 *
+	 * @return ADC LSB value in uV
+	 */
+	int valueLSBuV();
 
+	/**
+	 * Bus Voltage in mV
+	 *
+	 * @return Bus Voltage, -1 on error
+	 */
+	int valueBusVoltagemV(); // returns measured bus voltage in mV (-1 if measurement is invalid)
 
-    bool busFailed();
-  //  enum STATE ValidBusVoltage(unsigned int);
-    int valueBusVoltagemV(); // returns measured bus voltage in mV (-1 if measurement is invalid)
-    int valueBusVoltageADCCount(); // returns measured bus voltage in AD (-1 if measurement is invalid)
-    int lastADCCount(); // returns only onces the measured bus voltage in ADC counts ( (-1 if measurement is invalid or already read)
-    int filteredADCCount(); // returns measured bus voltage in ADC counts ( (-1 if measurement is invalid)
-//    enum OPERATION_STATE CheckBusVoltage(void);
-    enum OPERATION_STATE ValidBusVoltage(unsigned int );
-    int measureBusVoltage(unsigned int ADCchannel);
-    enum OPERATION_STATE CheckBusVoltage(void);
+	int measureBusVoltage(unsigned int ADCchannel);
+
+	int lastADCCount(); // returns last the measured bus voltage in ADC counts ( (-1 if measurement is invalid or already read)
+
+	bool busFailed();
+
+	enum OPERATION_STATE CheckBusVoltage(void);
+	enum OPERATION_STATE ValidBusVoltage(unsigned int);
+
+	AppADCReadCallback *ptr_appadcreadCallback = nullptr;
+
+	/**
+	 * Set a callback class to read the adc channel in the app SW
+	 */
+	void setAppADCReadCallback(AppADCReadCallback *callback);
+
+#if defined(DEBUG_BUS_VOLTAGE)
+#	define BUS_VOLTAGE_MEASUREMENT_INTERVAL 3000
+#	define BUS_VOLTAGE_MEASUREMENT_INTERVAL_HWV1 3000
+#else
+#	define BUS_VOLTAGE_MEASUREMENT_INTERVAL 10
+#	define BUS_VOLTAGE_MEASUREMENT_INTERVAL_HWV1 40
+#endif
 
 protected:
 
 private:
 
-    /**
-      * The size of our filter. We specify it in bits
-      */
-     #define FILTER_SIZE_IN_BITS (2)
-     #define FILTER_SIZE ( 1 << (FILTER_SIZE_IN_BITS) )
+#if defined (FILTER)
+	/**
+	 * The size of our filter. We specify it in bits
+	 */
+#define FILTER_SIZE_IN_BITS (2)
+#define FILTER_SIZE ( 1 << (FILTER_SIZE_IN_BITS) )
 
-     /**
-      *
-      */
-     unsigned int filter_buffer[FILTER_SIZE];
+	/**
+	 * The filter buffer for old values
+	 */
+	unsigned int filter_buffer[FILTER_SIZE];
 
-     /**
-      * Here we store the sum of all history values
-      */
-     unsigned int filter_sum;
+	/**
+	 * Here we store the sum of all history values
+	 */
+	unsigned int filter_sum;
 
-     /**
-      * This is the actual position of the ring buffer.
-      */
+	/**
+	 * This is the actual position of the ring buffer.
+	 */
+	unsigned int *filter_position;
 
-    unsigned int *filter_position;
+	void filter_init(void);
+	unsigned int filter(unsigned int);
+#endif
 
-    void filter_init(void);
-    unsigned int filter (unsigned int );
+	int _ADChannel;
+	int _thresholdVoltageFailedmV;
+	int _thresholdVoltageReturnmV;
+	int _thresholdVoltageIdlemV;
+	int _thresholdADCCountFailed;
+	int _thresholdADCCountReturn;
+	int _thresholdADCCountIdle;
+	volatile int adccount;
 
-    unsigned int _ADChannel;
-    unsigned int _thresholdVoltageFailedmV;
-    unsigned int _thresholdVoltageReturnmV;
-    unsigned int _thresholdVoltageIdlemV;
-    unsigned int _thresholdADCCountFailed;
-    unsigned int _thresholdADCCountReturn;
-    unsigned int _thresholdADCCountIdle;
-
-    ADCCallback*_adcCallback =(nullptr);
-
-
-    // careful, variables can be changed any time by the Isr ADC_IRQHandler
-    volatile int VoltagethresholdFailedmV;      // AD-value threshold below which a bus failure should be reported
-    volatile int VoltagethresholdReturnmV;      // AD-value threshold above which a bus return should be reported
-    volatile unsigned int ADCCountthresholdFailed;      // AD-value threshold below which a bus failure should be reported
-    volatile unsigned int ADCCountthresholdReturn;      // AD-value threshold above which a bus return should be reported
-    volatile unsigned int ADCCountthresholdIdle;      // AD-value threshold above which the BCU should start init process
-    volatile enum STATE isrBusVoltageState;
-    volatile int adccount;
 };
-extern BusVoltage busVoltageMonitor; // declared in bus_voltage.cpp, use only this instance for access
 
 #endif /* BUS_VOLTAGE_H_ */

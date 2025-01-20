@@ -121,6 +121,12 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash);
 #   define DB_TELEGRAM(x)
 #endif
 
+#if defined(DEBUG_BUS_VOLTAGE)
+# 	define DB_BUSVOLTAGE(x) x
+#else
+#	define DB_BUSVOLTAGE(x)
+#endif
+
 // Informational bus debug statements
 #if defined (DEBUG_BUS) || defined (DEBUG_BUS_BITLEVEL) || defined(DUMP_TELEGRAMS)
 #   define DB_BUS(x) x

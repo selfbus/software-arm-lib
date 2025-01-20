@@ -98,7 +98,7 @@ protected:
 	enum STATE { STOPPED  = 0};
 };
 
-#if 0
+#if 1
 class Periodic_Timeout : public Timeout
 {
 public:

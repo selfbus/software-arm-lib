@@ -3,7 +3,7 @@
  * @defgroup SBLIB_CORE CORE
  * @ingroup SBLIB
  * @brief    set pre-processor symbols which apply to all sblib build-configs
- * @note     for serial debugging output it is recommended to use
+ * @note     for serial debugging output it is recommended to use e.g. ID1/2 PINs
  *           PIO2_7 and PIO2_8 at high baud rate e.g 1.5MB
  *           define below SERIAL_RX_PIN and SERIAL_TX_PIN
  *           or set it in your application
@@ -16,7 +16,7 @@
  *
  * @file   libconfig.h
  * @author Darthyson <darth@maptrack.de> Copyright (c) 2021
- * @author Horst Rauch Copyright (c) 2021
+ * @author Horst Rauch Copyright (c) 2021, 2025
  * @bug No known bugs.
  ******************************************************************************/
 
@@ -34,14 +34,16 @@
  ******************************************************************************/
 
 #if defined (__LPC11XX__)
-// #   define SERIAL_RX_PIN PIO1_6 //!< @ swd/jtag connector
-// #   define SERIAL_TX_PIN PIO1_7 //!< @ swd/jtag connector
-
-// #   define SERIAL_RX_PIN PIO3_1 //!< on a TS_ARM Controller
-// #   define SERIAL_TX_PIN PIO3_0 //!< on a TS_ARM Controller
-
+#if defined ( SERIAL_ON_SWD)
+#   define SERIAL_RX_PIN PIO1_6 //!< @ swd/jtag connector
+#   define SERIAL_TX_PIN PIO1_7 //!< @ swd/jtag connector
+#elif defined (SERIAL_ON_SV2)
+#   define SERIAL_RX_PIN PIO3_1 //!< on a TS_ARM Controller
+#   define SERIAL_TX_PIN PIO3_0 //!< on a TS_ARM Controller
+#else
 #   define SERIAL_RX_PIN PIO2_7 //!< on a 4TE-ARM Controller pin 1 on connector SV3 (ID_SEL)
 #   define SERIAL_TX_PIN PIO2_8 //!< on a 4TE-ARM Controller pin 2 on connector SV3 (ID_SEL)
+#endif
 #endif
 
 /** @def SERIAL_SPEED baudrate e.g. 115200, 230400, 576000 serial port should run for debugging */
@@ -54,7 +56,20 @@
 
 //#define ROUTER /// \todo create a new class derived from BcuDefault to build a ROUTER
 
-
+/******************************************************************************
+ * Things for some HW modifications on theTE4 BCU board for ADC conversion
+ * and Bus voltage monitoring.
+ *  - Pin for ext Vref e.g. LM4040 2.5 - AD0/LT8 or AD1/IO9
+ *  - replacement of D2 (3V6) by diode (Bat41 or 1n4148, Vf ~0.5V @If 100uA) to Vcc/+3V3
+ *
+ */
+#if defined (VREF_LT8)
+# 	define	PIN_EXT_VREF_AD PIN_EXT_VREF_AD0
+# 	define	EXTVREF_ADC EXTVREF_ADC0
+#else
+# 	define	PIN_EXT_VREF_AD PIN_EXT_VREF_AD1
+# 	define	EXTVREF_ADC EXTVREF_ADC1
+#endif
 
 
 /**************************************************************************//**
@@ -66,6 +81,9 @@
 
 /** @def DEBUG_BUS enable dumping of state machine interrupt data e.g timer values, mapping of ports in serial.cpp */
 //#define DEBUG_BUS
+
+/** @def DEBUG_BUS_VOLTAGE  enable dumping of bus voltage monitoring and measurements at start up (in main) and run level (in bcu_default) */
+//#define DEBUG_BUS_VOLTAGE
 
 /** @def DEBUG_BUS_BITLEVEL extension used with DEBUG_BUS to dump interrupt of each bit - use with care due to easy overflow of the trace buffer*/
 //#define DEBUG_BUS_BITLEVEL
@@ -113,6 +131,7 @@
 // remove any debugging and dumping stuff from release versions
 #ifndef DEBUG
 #   undef DEBUG_BUS
+#	undef DEBUG_BUS_VOLTAGE
 #   undef DEBUG_BUS_BITLEVEL
 #   undef BUSMONITOR
 #   undef DUMP_TELEGRAMS
@@ -146,7 +165,7 @@
 
 // list here all defines which need the serial port
 #if defined(DEBUG_BUS) || defined(DEBUG_BUS_BITLEVEL) || defined(DUMP_TELEGRAMS) || defined(DUMP_COM_OBJ) || \
-    defined(DUMP_MEM_OPS) || defined(DUMP_PROPERTIES) || defined(DUMP_TL4)
+    defined(DUMP_MEM_OPS) || defined(DUMP_PROPERTIES) || defined(DUMP_TL4) || defined (DEBUG_BUS_VOLTAGE)
 #   define INCLUDE_SERIAL
 #endif
 
