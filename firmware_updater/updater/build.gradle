@@ -129,6 +129,9 @@ dependencies {
     // console and file logging
     implementation 'ch.qos.logback:logback-classic:1.5.16'
 
+    // Redirect System.Logger (used by calimero >=3.0) to slf4J (logback)
+    implementation 'org.slf4j:slf4j-jdk-platform-logging:2.0.16'
+
     // Console ansi color support
     implementation 'org.jline:jline-terminal-jansi:3.28.0'
 
