@@ -48,7 +48,9 @@ public class DiscoverKnxInterfaces {
                 }
                 catch (KNXException e) {
                     iterator.remove();
-                    logger.warn("error: reading KNX device descriptor of {} ({})", d,  e.getMessage());
+                    logger.warn("Reading KNX device descriptor of {} failed. ({}: {})",
+                            d,  e.getClass().getSimpleName(), e.getMessage());
+                    logger.debug("", e);
                 }
 
             }
