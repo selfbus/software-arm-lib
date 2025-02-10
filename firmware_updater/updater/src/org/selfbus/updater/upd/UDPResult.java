@@ -52,7 +52,7 @@ public enum UDPResult {
     /** The programmed application is not startable */
     APPLICATION_NOT_STARTABLE((byte)0x59, "Application not startable", true),
     /** The device is locked */
-    DEVICE_LOCKED((byte)0x58, "Device locked. Programming mode on device must be active!", true),
+    DEVICE_LOCKED((byte)0x58, "Device locked. Device must first be unlocked with UPDCommand::UNLOCK_DEVICE!", true),
     /** UID sent to unlock the device is invalid */
     UID_MISMATCH((byte)0x57, "UID mismatch", true),
     /** Flash page erase failed */
