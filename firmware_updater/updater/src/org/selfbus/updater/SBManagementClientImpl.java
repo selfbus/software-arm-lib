@@ -198,7 +198,7 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         catch (KNXTimeoutException e) {
             if (d.getState() != OpenIdle)
             {
-                logger.warn("Critical destination state: {}", d);
+                logger.debug("Critical destination state: {}", d);
             }
             throw e;
         }
