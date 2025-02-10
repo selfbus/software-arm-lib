@@ -320,7 +320,6 @@ public final class DeviceManagement implements AutoCloseable {
             result.addCounters(tmp);
 
             if (UPDProtocol.checkResult(tmp.data(), false) != UDPResult.IAP_SUCCESS) {
-                restartProgrammingDevice();
                 throw new UpdaterException("doFlash failed.");
             }
             updateProgressInfo(progressInfo, txBuffer.length - updSendDataOffset);
