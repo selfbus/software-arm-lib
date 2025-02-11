@@ -21,6 +21,7 @@ public final class LoggingManager {
     // change also CONSOLE appender name in src/resources/logback.xml
     public static final String CONSOLE_APPENDER_NAME = "CONSOLE";
 
+    @SuppressWarnings("unused")
     public static void disableAppender(String appenderName) {
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
         Appender<ILoggingEvent> appender = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).getAppender(appenderName);

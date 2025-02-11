@@ -303,7 +303,7 @@ public final class DeviceManagement implements AutoCloseable {
     }
 
     public ResponseResult doFlash(byte[] data, int maxRetry, int delay, ProgressInfo progressInfo)
-            throws UpdaterException, KNXLinkClosedException, InterruptedException, KNXTimeoutException {
+            throws UpdaterException, InterruptedException {
         int nIndex = 0;
         ResponseResult result = new ResponseResult();
         while (nIndex < data.length)

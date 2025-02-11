@@ -42,7 +42,7 @@ public class ThrowableEvaluator extends LevelEventEvaluator {
      * a list of specific error messages (value). If an exception of a matching type
      * and message is encountered during evaluation, the event may be filtered out.
      */
-    Map<Class<? extends Throwable>, List<String>> exceptionFilterMap = Map.of(
+    final Map<Class<? extends Throwable>, List<String>> exceptionFilterMap = Map.of(
             KNXAckTimeoutException.class, List.of(
                     "maximum send attempts, no service acknowledgment received"
             ),
