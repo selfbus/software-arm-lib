@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import org.apache.commons.cli.ParseException;
 import org.fusesource.jansi.AnsiConsole;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.devicemgnt.DeviceManagement;
 import org.selfbus.updater.devicemgnt.DeviceManagementFactory;
 import org.selfbus.updater.logging.LoggingManager;
 import tuwien.auto.calimero.*;

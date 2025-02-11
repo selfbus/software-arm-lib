@@ -1,7 +1,6 @@
 package org.selfbus.updater.devicemgnt;
 
 import org.selfbus.updater.CliOptions;
-import org.selfbus.updater.DeviceManagement;
 
 final public class DeviceManagementFactory {
     @SuppressWarnings("unused")

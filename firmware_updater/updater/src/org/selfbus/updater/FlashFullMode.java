@@ -1,6 +1,7 @@
 package org.selfbus.updater;
 
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.devicemgnt.DeviceManagement;
 import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
 import org.selfbus.updater.upd.UPDProtocol;

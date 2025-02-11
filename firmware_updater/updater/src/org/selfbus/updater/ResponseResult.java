@@ -8,14 +8,14 @@ public class ResponseResult {
     private long dropCount;
     private long written;
 
-    ResponseResult() {
+    public ResponseResult() {
         this.timeoutCount = 0;
         this.dropCount = 0;
         this.data = null;
         this.written = 0;
     }
 
-    byte[] data() {
+    public byte[] data() {
         return data;
     }
 
