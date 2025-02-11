@@ -4,6 +4,9 @@
 
     <timestamp key="appStartTimestamp" datePattern="yyyy-MM-dd'_'HH-mm-ss.SSS"/>
 
+    <evaluator name="ExceptionEvaluator" class="org.selfbus.updater.logging.ThrowableEvaluator" />
+    <evaluator name="MessageEvaluator" class="org.selfbus.updater.logging.MessageEvaluator" />
+
     <!--
         In case the name of the appender (CONSOLE) is changed, it also must be changed in LoggingManager.java
         org.selfbus.updater.LoggingManager.CONSOLE_APPENDER_NAME = "CONSOLE"
@@ -12,6 +15,22 @@
         <withJansi>true</withJansi>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
+        </filter>
+        <!-- Custom logging for calimero-core exceptions -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="org.selfbus.updater.logging.ThrowableEvaluator">
+                <level>WARN</level>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
+        </filter>
+        <!-- Custom logging for calimero-core messages -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="org.selfbus.updater.logging.MessageEvaluator">
+                <level>WARN</level>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
         </filter>
         <encoder>
             <pattern>%message%n</pattern>
