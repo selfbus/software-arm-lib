@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.Settings;
 
+import java.io.IOException;
+
 /**
  * Provides information about the application
  */
@@ -56,11 +58,11 @@ public final class ToolInfo
 
     public static String getFullInfo() {
         return getToolAndVersion() + String.format("%s%s%s%s", System.lineSeparator(), desc,
-                System.lineSeparator(),author);
+                System.lineSeparator(), author);
     }
 
     public static String getToolAndVersion() {
-        return String.format("%s %s", getTool(), getVersion());
+        return String.format("%s %s (build %s)", getTool(), getVersion(), getManifestInfo());
     }
 
     public static void showVersion() {
@@ -79,5 +81,22 @@ public final class ToolInfo
 
     public static String getToolJarName() {
         return String.format("SB_updater-%s-all.jar", ToolInfo.getVersion());
+    }
+
+    private static String getManifestInfo() {
+        try (final var metaInf = ToolInfo.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
+            if (metaInf == null) {
+                return "";
+            }
+
+            final var manifest = new java.util.jar.Manifest(metaInf);
+            final var attributes = manifest.getMainAttributes();
+            return String.format("%s sha %s",
+                    attributes.getValue("Build-Date"), attributes.getValue("Revision"));
+        }
+        catch (IOException ignore) {
+
+        }
+        return "";
     }
 }
