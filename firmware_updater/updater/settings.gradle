@@ -1,8 +1,11 @@
 rootProject.name = 'SB_updater'
 
+//todo use maven repo again when it contains commit b4114ab (probably with release candidate 2?)
+//     https://github.com/calimero-project/calimero-core/commit/b4114abe79bc9448e0e0c5b02c480229f4de6953
+
 // Use this to build with local calimero-core
 // Change also dependency in build.gradle
-//includeBuild('../../../calimero/calimero-core')
+includeBuild('../../../calimero/calimero-core')
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)

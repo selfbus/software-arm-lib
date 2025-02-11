@@ -106,10 +106,12 @@ tasks.named('check') {
 dependencies {
     // Use this implementation for debugging with local calimero-core
     // Set location of local calimero-core in settings.gradle
-    //implementation 'com.github.calimero:calimero-core'
+    implementation 'com.github.calimero:calimero-core'
 
+    //todo use maven repo again when it contains commit b4114ab (probably with release candidate 2?)
+    //     https://github.com/calimero-project/calimero-core/commit/b4114abe79bc9448e0e0c5b02c480229f4de6953
     // calimero knx bus access library
-    implementation 'com.github.calimero:calimero-core:2.6-rc1'
+    //implementation 'com.github.calimero:calimero-core:2.6-rc1'
 
     // calimero serial tx/rx lib for ft1.2 and tpuart support
     implementation 'com.github.calimero:calimero-rxtx:2.6-rc1'
