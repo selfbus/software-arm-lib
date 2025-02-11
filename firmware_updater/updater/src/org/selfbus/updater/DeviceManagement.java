@@ -354,6 +354,7 @@ public final class DeviceManagement implements AutoCloseable {
                 ansi().cursorToColumn(1).fgBright(GREEN).a(SpinningCursor.getNext()).reset(),
                 progressInfo,
                 AnsiCursor.on());
+        logText += " "; // append one space, just in case an exception message may come up
 
         // console output
         if (LoggingManager.isConsoleActive()) {
@@ -435,10 +436,6 @@ public final class DeviceManagement implements AutoCloseable {
 
     private void handleKNXException(final UPDCommand command, final KNXException e, final boolean reconnect) throws
             UpdaterException, InterruptedException {
-        if (LoggingManager.isConsoleActive()) {
-            System.out.println();
-        }
-
         if (e instanceof KNXAckTimeoutException) {
             // This exception is on missing/faulty ack at linklayer level thrown, but we never see it here
             // todo check public void send(final CEMI frame, final BlockingMode mode) in ConnectionBase
