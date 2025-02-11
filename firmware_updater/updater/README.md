@@ -24,7 +24,8 @@ java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf>] 
        <SYSTEM|URGENT|NORMAL|LOW>] [-bs <256|512|1024>] [--user <id>] [--user-pwd <password>]
        [--device-pwd <password>] [-u <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-t2
        | -t1 | -r]   [-n] [-h | -v]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--reconnect <ms>]
-       [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0] [--statistic] [--discover]
+       [--ip-tunnel-reconnect <#sequence>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
+       [--statistic] [--discover]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
@@ -38,7 +39,10 @@ Selfbus KNX-Firmware update tool options:
                                             none)
  -D,--progDevice <x.x.x>                    KNX device address in bootloader mode (default
                                             15.15.192)
- -o,--own <x.x.x>                           own physical KNX address (default 0.0.0)
+ -o,--own <x.x.x>                           own physical KNX tunnel address (default 0.0.0).
+                                            Required for some IP interfaces that also use their own
+                                            address as the tunnel address, e.g. Loxone Miniserver
+                                            Gen 1.
     --priority <SYSTEM|URGENT|NORMAL|LOW>   KNX telegram priority (default LOW)
  -bs,--blocksize <256|512|1024>             Block size to program (default 1024 bytes)
     --user <id>                             KNX IP Secure tunneling user identifier (1..127)
@@ -65,8 +69,11 @@ Selfbus KNX-Firmware update tool options:
     --delay <ms>                            delay telegrams during data transmission to reduce bus
                                             load, valid 0-500ms, default 0
  -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default TRACE)
-    --reconnect <ms>                        pause between a KNX connection reconnect, valid
-                                            100 - 12500ms, default 100
+    --reconnect <ms>                        pause between a KNX connection reconnect, valid 100 -
+                                            12500ms, default 100
+    --ip-tunnel-reconnect <#sequence>       Reconnect KNX IP tunnel on sequence number, valid 100 -
+                                            247, default -1. May help with some IP-Interfaces e.g.
+                                            for Loxone Miniserver Gen 1. set to 245
     --ERASEFLASH                            USE WITH CAUTION! Erases the complete flash memory
                                             including the physical KNX address and all settings of
                                             the device. Only the bootloader is not deleted.

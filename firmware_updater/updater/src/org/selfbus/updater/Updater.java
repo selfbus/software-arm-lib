@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import org.apache.commons.cli.ParseException;
 import org.fusesource.jansi.AnsiConsole;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.devicemgnt.DeviceManagementFactory;
 import org.selfbus.updater.logging.LoggingManager;
 import tuwien.auto.calimero.*;
 import org.selfbus.updater.bootloader.BootDescriptor;
@@ -209,7 +210,7 @@ public class Updater implements Runnable {
                 System.out.println();
             }
 
-            dm = new DeviceManagement(cliOptions);
+            dm = DeviceManagementFactory.getDeviceManagement(cliOptions);
 
             logger.debug("Telegram priority: {}", cliOptions.getPriority());
             dm.open();

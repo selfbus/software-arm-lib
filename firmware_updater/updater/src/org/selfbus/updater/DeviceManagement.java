@@ -32,7 +32,7 @@ import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 /**
  * Provides methods to send firmware update telegrams to the bootloader (MCU)
  */
-public final class DeviceManagement implements AutoCloseable {
+public class DeviceManagement implements AutoCloseable {
     /**
      * EraseCode for the APCI_MASTER_RESET_PDU (valid from 1..7)
      */
@@ -59,11 +59,11 @@ public final class DeviceManagement implements AutoCloseable {
      */
     private SBManagementClientImpl mc;
     private Destination progDestination;
-    private KNXNetworkLink link;
+    protected KNXNetworkLink link;
 
     private IndividualAddress progDevice;
 
-    private CliOptions cliOptions;
+    protected CliOptions cliOptions;
 
     private DeviceManagement () {
         setProtocolVersion(UDPProtocolVersion.UDP_V1);

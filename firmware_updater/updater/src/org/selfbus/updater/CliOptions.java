@@ -80,6 +80,7 @@ public class CliOptions {
 
     public static final String OPT_LONG_DELAY = "delay";
     public static final String OPT_LONG_RECONNECT = "reconnect";
+    public static final String OPT_LONG_RECONNECT_SEQ_NUMBER = "ip-tunnel-reconnect";
 
     private static final String OPT_SHORT_TUNNEL_V2 = "t2";
     public static final String OPT_LONG_TUNNEL_V2 = "tunnelingv2";
@@ -158,6 +159,7 @@ public class CliOptions {
     private boolean flashingFullModeIsSet = false;
     private int delayMs = 0;
     private int reconnectMs = RECONNECT_MIN_MS;
+    private int reconnectSeqNumber = RECONNECT_INVALID_SEQ_NUMBER;
 
     private boolean noFlashIsSet = false;
     private boolean eraseFullFlashIsSet = false;
@@ -175,6 +177,10 @@ public class CliOptions {
 
     private static final int RECONNECT_MIN_MS = 100;
     private static final int RECONNECT_MAX_MS = 12500;
+
+    private static final int RECONNECT_MIN_SEQ_NUMBER = 100;
+    private static final int RECONNECT_MAX_SEQ_NUMBER = 255 - (4*2); // reserve up to 4 repeats on transport layer with up 2 telegrams
+    private static final int RECONNECT_INVALID_SEQ_NUMBER = -1;
 
     private CliOptions() {
         defaultLogLevel = getLogLevel();
@@ -261,7 +267,8 @@ public class CliOptions {
                 .numberOfArgs(1)
                 .required(false)
                 .type(IndividualAddress.class)
-                .desc(String.format("own physical KNX address (default %s)", getOwnPhysicalAddress().toString())).build();
+                .desc(String.format("own physical KNX tunnel address (default %s). Required for some IP interfaces that also use their own address as the tunnel address, e.g. Loxone Miniserver Gen 1.",
+                        getOwnPhysicalAddress().toString())).build();
         Option uid = Option.builder(OPT_SHORT_UID).longOpt(OPT_LONG_UID)
                 .argName("uid")
                 .numberOfArgs(1)
@@ -280,6 +287,13 @@ public class CliOptions {
                 .type(Number.class)
                 .desc(String.format("pause between a KNX connection reconnect, valid %d - %dms, default %d", RECONNECT_MIN_MS,
                         RECONNECT_MAX_MS, RECONNECT_MIN_MS)).build();
+        Option reconnectSeqNumber = Option.builder(null).longOpt(OPT_LONG_RECONNECT_SEQ_NUMBER)
+                .argName("#sequence")
+                .numberOfArgs(1)
+                .required(false)
+                .type(Number.class)
+                .desc(String.format("Reconnect KNX IP tunnel on sequence number, valid %d - %d, default %d. May help with some IP-Interfaces e.g. for Loxone Miniserver Gen 1. set to 245",
+                        RECONNECT_MIN_SEQ_NUMBER, RECONNECT_MAX_SEQ_NUMBER, getReconnectSeqNumber())).build();
         Option logLevel = Option.builder(OPT_SHORT_LOGLEVEL).longOpt(OPT_LONG_LOGLEVEL)
                 .argName("TRACE|DEBUG|INFO")
                 .numberOfArgs(1)
@@ -369,6 +383,7 @@ public class CliOptions {
         cliOptions.addOption(delay);
         cliOptions.addOption(logLevel);
         cliOptions.addOption(reconnect);
+        cliOptions.addOption(reconnectSeqNumber);
         cliOptions.addOption(eraseFlash);
         cliOptions.addOption(dumpFlash);
         cliOptions.addOption(NO_FLASH);
@@ -470,6 +485,11 @@ public class CliOptions {
             setReconnectMs(cmdLine.getOptionValue(OPT_LONG_RECONNECT));
         else
             setReconnectMs(RECONNECT_MIN_MS);
+
+        if (cmdLine.hasOption(OPT_LONG_RECONNECT_SEQ_NUMBER))
+            setReconnectSeqNumber(cmdLine.getOptionValue(OPT_LONG_RECONNECT_SEQ_NUMBER));
+        else
+            setReconnectSeqNumber(RECONNECT_INVALID_SEQ_NUMBER);
 
         if (cmdLine.hasOption(OPT_LONG_BLOCKSIZE))
             setBlockSize(cmdLine.getOptionValue(OPT_LONG_BLOCKSIZE));
@@ -1201,5 +1221,44 @@ public class CliOptions {
             logger.warn("{}option --{} {} is invalid => set to default {}{}",
                     ansi().fg(RED), OPT_LONG_RECONNECT, reconnectMs, getReconnectMs(), ansi().reset());
         }
+    }
+
+    public int getReconnectSeqNumber() {
+        return reconnectSeqNumber;
+    }
+
+    private void setReconnectSeqNumber(int reconnectSeqNumber) {
+        if (((reconnectSeqNumber < RECONNECT_MIN_SEQ_NUMBER) || (reconnectSeqNumber > RECONNECT_MAX_SEQ_NUMBER)) &&
+            (reconnectSeqNumber != RECONNECT_INVALID_SEQ_NUMBER)) {
+            logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
+                    ansi().fg(RED), OPT_LONG_RECONNECT_SEQ_NUMBER, reconnectSeqNumber, RECONNECT_MIN_SEQ_NUMBER,
+                    RECONNECT_MAX_SEQ_NUMBER, RECONNECT_INVALID_SEQ_NUMBER, ansi().reset());
+            reconnectSeqNumber = RECONNECT_INVALID_SEQ_NUMBER; // set to invalid
+        }
+        this.reconnectSeqNumber = reconnectSeqNumber;
+        logger.debug("{}={}", OPT_LONG_RECONNECT_SEQ_NUMBER, getReconnectSeqNumber());
+    }
+
+    private void setReconnectSeqNumber(String reconnectSeqNumber) {
+        try {
+            if (reconnectSeqNumber == null || reconnectSeqNumber.isBlank())
+                setReconnectSeqNumber(RECONNECT_INVALID_SEQ_NUMBER);
+            else
+                setReconnectSeqNumber(Integer.parseInt(reconnectSeqNumber));
+        }
+        catch (NumberFormatException e) {
+            setReconnectSeqNumber(RECONNECT_INVALID_SEQ_NUMBER);
+            logger.warn("{}option --{} {} is invalid => set to default {}{}",
+                    ansi().fg(RED), OPT_LONG_RECONNECT_SEQ_NUMBER, reconnectSeqNumber, getReconnectMs(), ansi().reset());
+        }
+    }
+
+    public boolean isValidReconnectSeqNumber() {
+        if (getReconnectSeqNumber() == RECONNECT_INVALID_SEQ_NUMBER) {
+            return false;
+        }
+
+        return ((getReconnectSeqNumber() >= RECONNECT_MIN_SEQ_NUMBER) &&
+                (getReconnectSeqNumber() <= RECONNECT_MAX_SEQ_NUMBER));
     }
 }
