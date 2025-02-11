@@ -52,7 +52,7 @@
         <!-- Custom filter for messages -->
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator class="org.selfbus.updater.logging.MessageEvaluator">
-                <level>WARN</level>
+                <level>INFO</level>
             </evaluator>
             <OnMismatch>DENY</OnMismatch>
             <OnMatch>NEUTRAL</OnMatch>
