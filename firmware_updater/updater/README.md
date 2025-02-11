@@ -95,11 +95,11 @@ java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
 ```
 Recommended for new firmware versions if UID is unknown:
 ```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1.hex"
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1_flashstart_*.hex"
 ```
 Recommended for new firmware versions with known UID:
 ```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1_flashstart_*.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
 ```
 Important for Loxone Miniserver Gen 1:
 ```
