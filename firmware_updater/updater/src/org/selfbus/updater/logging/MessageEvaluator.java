@@ -20,6 +20,7 @@ public class MessageEvaluator extends LevelEventEvaluator {
      * the event will be excluded from logging.
      */
     private static final List<String> FILTERED_MESSAGES = List.of(
+            // Loxone Miniserver Gen1 returns always status 0x04 on KNX tunnel requests with sequence number 255
             "received service acknowledgment status sequence number out of order",
             // from calimero-core KNXnetIPTunnel.java:
             // we could get a .con with its hop count already decremented by 1 (eibd does that)

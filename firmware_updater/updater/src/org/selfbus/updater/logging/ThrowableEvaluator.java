@@ -44,10 +44,14 @@ public class ThrowableEvaluator extends LevelEventEvaluator {
      */
     final Map<Class<? extends Throwable>, List<String>> exceptionFilterMap = Map.of(
             KNXAckTimeoutException.class, List.of(
+                    // Loxone Miniserver Gen1 returns always status 0x04 on KNX tunnel requests with sequence number 255
                     "maximum send attempts, no service acknowledgment received"
             ),
             KNXTimeoutException.class, List.of(
                     "no confirmation reply received for DM prop-read.req objtype 8 instance 1 pid 51 start 1 elements 1"
+                    // Loxone Miniserver Gen1 does not respond to
+                    // tuwien.auto.calimero.link.KNXNetworkLinkIP.configureWithServerSettings(..) which sends
+                    // M_PropRead.req OT=8 (cEMI Server), PID=51 (PID_MEDIUM_TYPE)
             )
     );
 
