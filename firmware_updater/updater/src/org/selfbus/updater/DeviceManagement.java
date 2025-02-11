@@ -4,6 +4,8 @@ import ch.qos.logback.classic.Level;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.logging.ListTextAppenders;
+import org.selfbus.updater.logging.LoggingManager;
 import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;

@@ -4,6 +4,7 @@ import ch.qos.logback.classic.Level;
 import org.apache.commons.cli.ParseException;
 import org.fusesource.jansi.AnsiConsole;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
+import org.selfbus.updater.logging.LoggingManager;
 import tuwien.auto.calimero.*;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
@@ -14,7 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
-import static org.selfbus.updater.LoggingManager.CONSOLE_APPENDER_NAME;
+import static org.selfbus.updater.logging.LoggingManager.CONSOLE_APPENDER_NAME;
 import static org.selfbus.updater.Utils.shortenPath;
 
 import org.selfbus.updater.gui.GuiMain;
