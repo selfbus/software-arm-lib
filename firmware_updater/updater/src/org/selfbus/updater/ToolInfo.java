@@ -84,6 +84,8 @@ public final class ToolInfo
     }
 
     private static String getManifestInfo() {
+        // Only works correctly if built with gradle.
+        // This will fail during debugging, e.g. in IDEA, due to a different content of MANIFEST.MF
         try (final var metaInf = ToolInfo.class.getResourceAsStream("/META-INF/MANIFEST.MF")) {
             if (metaInf == null) {
                 return "";
