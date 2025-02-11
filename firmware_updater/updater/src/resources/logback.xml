@@ -16,7 +16,7 @@
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
-        <!-- Custom logging for calimero-core exceptions -->
+        <!-- Custom filter for exceptions -->
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator class="org.selfbus.updater.logging.ThrowableEvaluator">
                 <level>WARN</level>
@@ -24,7 +24,7 @@
             <OnMismatch>DENY</OnMismatch>
             <OnMatch>NEUTRAL</OnMatch>
         </filter>
-        <!-- Custom logging for calimero-core messages -->
+        <!-- Custom filter for messages -->
         <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
             <evaluator class="org.selfbus.updater.logging.MessageEvaluator">
                 <level>WARN</level>
@@ -40,6 +40,22 @@
     <appender name="list" class="org.selfbus.updater.gui.TextAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
+        </filter>
+        <!-- Custom filter for exceptions -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="org.selfbus.updater.logging.ThrowableEvaluator">
+                <level>WARN</level>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
+        </filter>
+        <!-- Custom filter for messages -->
+        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+            <evaluator class="org.selfbus.updater.logging.MessageEvaluator">
+                <level>WARN</level>
+            </evaluator>
+            <OnMismatch>DENY</OnMismatch>
+            <OnMatch>NEUTRAL</OnMatch>
         </filter>
     </appender>
 
