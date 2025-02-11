@@ -101,6 +101,13 @@ Recommended for new firmware versions with known UID:
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
 ```
+Important for Loxone Miniserver Gen 1:
+```
+java -jar SB_updater-x.xx-all.jar <ip address of Loxone GW> --fileName "out8-bcu1_flashstart_*.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 --full --reconnect 500 --ip-tunnel-reconnect 247 --own x.y.z
+```
+**For Loxone Miniserver Gen 1 `--ip-tunnel-reconnect` and `--own x.y.z` are mandatory.**  
+**`--own x.y.z` must match the Loxone Miniserver´s own physical KNX address**
+
 ## Development
 
 ### IDEs:
