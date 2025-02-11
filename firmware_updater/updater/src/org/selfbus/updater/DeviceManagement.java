@@ -72,10 +72,13 @@ public final class DeviceManagement implements AutoCloseable {
         this.cliOptions = cliOptions;
     }
 
-    public void reconnect() throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
+    public void reconnect(int waitMs) throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
         close();
-        //todo 2500ms works quite fine, test with lower delays
-        Thread.sleep(cliOptions.getReconnectMs());
+        if (waitMs <= 0) {
+            waitMs = 100;
+        }
+        logger.info("Reconnecting in {} ms", waitMs);
+        Thread.sleep(waitMs);
         open();
     }
 
@@ -450,7 +453,7 @@ public final class DeviceManagement implements AutoCloseable {
         }
 
         try {
-            reconnect();
+            reconnect(cliOptions.getReconnectMs());
         }
         catch (KNXException | UnknownHostException e2) {
             throw new UpdaterException(String.format("%s failed.", command), e);

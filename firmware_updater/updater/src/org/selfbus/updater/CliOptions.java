@@ -157,7 +157,7 @@ public class CliOptions {
     private String uid = "";
     private boolean flashingFullModeIsSet = false;
     private int delayMs = 0;
-    private int reconnectMs = 0;
+    private int reconnectMs = RECONNECT_MIN_MS;
 
     private boolean noFlashIsSet = false;
     private boolean eraseFullFlashIsSet = false;
@@ -173,8 +173,8 @@ public class CliOptions {
 
     private boolean discoverIsSet = false;
 
-    private static final int RECONNECT_MIN_MS = 0;
-    private static final int RECONNECT_MAX_MS = 6000;
+    private static final int RECONNECT_MIN_MS = 100;
+    private static final int RECONNECT_MAX_MS = 12500;
 
     private CliOptions() {
         defaultLogLevel = getLogLevel();
@@ -278,7 +278,7 @@ public class CliOptions {
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc(String.format("pause between a KNX connection reconnect, valid %d-%dms, default %d", RECONNECT_MIN_MS,
+                .desc(String.format("pause between a KNX connection reconnect, valid %d - %dms, default %d", RECONNECT_MIN_MS,
                         RECONNECT_MAX_MS, RECONNECT_MIN_MS)).build();
         Option logLevel = Option.builder(OPT_SHORT_LOGLEVEL).longOpt(OPT_LONG_LOGLEVEL)
                 .argName("TRACE|DEBUG|INFO")

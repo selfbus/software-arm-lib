@@ -66,7 +66,7 @@ Selfbus KNX-Firmware update tool options:
                                             load, valid 0-500ms, default 0
  -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default TRACE)
     --reconnect <ms>                        pause between a KNX connection reconnect, valid
-                                            0-6000ms, default 0
+                                            100 - 12500ms, default 100
     --ERASEFLASH                            USE WITH CAUTION! Erases the complete flash memory
                                             including the physical KNX address and all settings of
                                             the device. Only the bootloader is not deleted.
