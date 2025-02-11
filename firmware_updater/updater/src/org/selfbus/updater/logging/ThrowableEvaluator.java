@@ -48,10 +48,12 @@ public class ThrowableEvaluator extends LevelEventEvaluator {
                     "maximum send attempts, no service acknowledgment received"
             ),
             KNXTimeoutException.class, List.of(
-                    "no confirmation reply received for DM prop-read.req objtype 8 instance 1 pid 51 start 1 elements 1"
                     // Loxone Miniserver Gen1 does not respond to
                     // tuwien.auto.calimero.link.KNXNetworkLinkIP.configureWithServerSettings(..) which sends
                     // M_PropRead.req OT=8 (cEMI Server), PID=51 (PID_MEDIUM_TYPE)
+                    "no confirmation reply received for DM prop-read.req objtype 8 instance 1 pid 51 start 1 elements 1",
+                    // and M_PropRead.req OT=0 (Device), PID=56 (PID_MAX_APDULENGTH)
+                    "no confirmation reply received for DM prop-read.req objtype 0 instance 1 pid 56 start 1 elements 1"
             )
     );
 
