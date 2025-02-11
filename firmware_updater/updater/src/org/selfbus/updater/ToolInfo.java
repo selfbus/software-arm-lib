@@ -13,7 +13,7 @@ import java.io.IOException;
  */
 public final class ToolInfo
 {
-    private static final long versionMajor = 1; ///\todo change also in ../README.md and build.gradle
+    private static final long versionMajor = 1; ///\todo change also in build.gradle
     private static final long versionMinor = 23;
 
     private static final long minMajorVersionBootloader = 1; ///\todo change also in ../README.md
