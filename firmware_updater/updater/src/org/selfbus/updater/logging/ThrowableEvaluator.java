@@ -37,24 +37,58 @@ import java.util.Objects;
 public class ThrowableEvaluator extends LevelEventEvaluator {
 
     /**
-     * A customizable map that defines the filter configuration for throwable events.
-     * <p>Each entry in the map associates a specific exception class (key) with
-     * a list of specific error messages (value). If an exception of a matching type
-     * and message is encountered during evaluation, the event may be filtered out.
+     * The {@code ConditionalFilter} record represents a pair of conditions used to filter
+     * throwable logging events based on specific log messages and associated exception messages.
+     *
+     * @param logMessage       The log message as a filtering condition.
+     * @param exceptionMessage The message of the exception that serves as a filtering condition.
      */
-    final Map<Class<? extends Throwable>, List<String>> exceptionFilterMap = Map.of(
-            KNXAckTimeoutException.class, List.of(
-                    // Loxone Miniserver Gen1 returns always status 0x04 on KNX tunnel requests with sequence number 255
-                    "maximum send attempts, no service acknowledgment received"
-            ),
-            KNXTimeoutException.class, List.of(
-                    // Loxone Miniserver Gen1 does not respond to
-                    // tuwien.auto.calimero.link.KNXNetworkLinkIP.configureWithServerSettings(..) which sends
-                    // M_PropRead.req OT=8 (cEMI Server), PID=51 (PID_MEDIUM_TYPE)
-                    "no confirmation reply received for DM prop-read.req objtype 8 instance 1 pid 51 start 1 elements 1",
-                    // and M_PropRead.req OT=0 (Device), PID=56 (PID_MAX_APDULENGTH)
-                    "no confirmation reply received for DM prop-read.req objtype 0 instance 1 pid 56 start 1 elements 1"
+    public record ConditionalFilter(String logMessage, String exceptionMessage) {}
+
+    /**
+     * A customizable map that defines configurable filter criteria for throwable events.
+     * <p>
+     * Each entry in the map specifies a throwable class (the key) and a corresponding list
+     * of {@link ConditionalFilter}s (the value). The key represents the type of exception,
+     * while the value contains specific filtering conditions. A filtering condition is
+     * defined by a combination of a log message and an exception message. Only events
+     * containing a throwable that matches the exception type and both of its associated
+     * filter conditions will be excluded.
+     * </p>
+     *
+     * @see ConditionalFilter
+     */
+    public static final Map<Class<? extends Throwable>, List<ConditionalFilter>> EXCEPTION_FILTER_MAP = Map.of(
+        KNXAckTimeoutException.class, List.of(
+            // Loxone Miniserver Gen1 returns always status 0x04 on KNX tunnel requests with sequence number 255
+            new ConditionalFilter(
+                "close connection - maximum send attempts",
+                "maximum send attempts, no service acknowledgment received"
             )
+        ),
+        KNXTimeoutException.class, List.of(
+            // Loxone Miniserver Gen1 does not respond to
+            // tuwien.auto.calimero.link.KNXNetworkLinkIP.configureWithServerSettings(..) which sends
+            // M_PropRead.req OT=8 (cEMI Server), PID=51 (PID_MEDIUM_TYPE)
+            new ConditionalFilter(
+                "response timeout waiting for confirmation",
+                "no confirmation reply received for DM prop-read.req objtype 8 instance 1 pid 51 start 1 elements 1"
+            ),
+            new ConditionalFilter(
+                "skip link configuration (use defaults)",
+                "no confirmation reply received for DM prop-read.req objtype 8 instance 1 pid 51 start 1 elements 1"
+            ),
+
+            // and M_PropRead.req OT=0 (Device), PID=56 (PID_MAX_APDULENGTH)
+            new ConditionalFilter(
+                "response timeout waiting for confirmation",
+                "no confirmation reply received for DM prop-read.req objtype 0 instance 1 pid 56 start 1 elements 1"
+            ),
+            new ConditionalFilter(
+                "skip link configuration (use defaults)",
+                "no confirmation reply received for DM prop-read.req objtype 0 instance 1 pid 56 start 1 elements 1"
+            )
+        )
     );
 
     /**
@@ -77,13 +111,16 @@ public class ThrowableEvaluator extends LevelEventEvaluator {
             return true; // no stacktrace present
         }
 
+        String logMessage = event.getFormattedMessage();
         Throwable throwable = throwableProxy.getThrowable();
         // Check if the current exception is present in the filter map
-        for (Map.Entry<Class<? extends Throwable>, List<String>> exceptionFilter : exceptionFilterMap.entrySet()) {
+        for (Map.Entry<Class<? extends Throwable>, List<ConditionalFilter>> exceptionFilter : EXCEPTION_FILTER_MAP.entrySet()) {
             if (exceptionFilter.getKey().isInstance(throwable)) {
                 // Check if the exception message matches one of the filtered messages
-                for (String filteredMessage : exceptionFilter.getValue()) {
-                    if (Objects.equals(throwable.getMessage(), filteredMessage)) {
+                for (ConditionalFilter f : exceptionFilter.getValue()) {
+                    // Check if logMessage and exception message match the filter
+                    if ((Objects.equals(logMessage, f.logMessage())) &&
+                        (Objects.equals(throwable.getMessage(), f.exceptionMessage()))) {
                         return false; // Filter this event out
                     }
                 }
