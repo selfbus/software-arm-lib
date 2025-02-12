@@ -93,28 +93,31 @@ public class FlashFullMode {
             logger.debug("{} with crc32 {}", debugInfo, String.format("0x%08X", crc32));
 
             resultProgramData = dm.sendWithRetry(UPDCommand.PROGRAM, progPars, dm.getMaxUpdCommandRetry());
+            resultTotal.addCounters(resultProgramData); // keep track of statistic data
 
             UDPResult result = UPDProtocol.checkResult(resultProgramData.data());
-            if ((result == UDPResult.BYTECOUNT_RECEIVED_TOO_LOW) || (result == UDPResult.BYTECOUNT_RECEIVED_TOO_HIGH)) {
-                // do not count failed transfer
-                progressInfo.update(-txBuffer.length);
+            switch (result) {
+                case IAP_SUCCESS:
+                    buffer = null;
+                    progAddress += txBuffer.length;
+                    if (bootloaderStatistic != null) {
+                        bootloaderStatistic = dm.requestBootLoaderStatistic();
+                    }
+                    break;
+
+                case BYTECOUNT_RECEIVED_TOO_LOW:
+                case BYTECOUNT_RECEIVED_TOO_HIGH:
+                    // do not count failed transfer and send buffer again in next while run
+                    progressInfo.update(-txBuffer.length);
+                    break;
+
+                case IAP_COMPARE_ERROR:
+                    throw new UpdaterException(String.format("ProgramData update failed. %sTry again with option '--%s 256'%s",
+                            ansi().fg(RED), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
+                default:
+                    dm.restartProgrammingDevice();
+                    throw new UpdaterException("ProgramData update failed.");
             }
-            else if (result == UDPResult.IAP_COMPARE_ERROR) {
-                throw new UpdaterException(String.format("ProgramData update failed. %sTry again with option '--%s 256'%s",
-                        ansi().fg(RED), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
-            }
-            else if (result == UDPResult.IAP_SUCCESS) {
-                buffer = null;
-                progAddress += txBuffer.length;
-                if (bootloaderStatistic != null) {
-                    bootloaderStatistic = dm.requestBootLoaderStatistic();
-                }
-            }
-            else {
-                dm.restartProgrammingDevice();
-                throw new UpdaterException("ProgramData update failed.");
-            }
-            resultTotal.addCounters(resultProgramData); // keep track of statistic data
         }
         fis.close();
         dm.finalProgressInfo(progressInfo);
