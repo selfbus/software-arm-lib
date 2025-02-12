@@ -38,7 +38,6 @@ public class FlashFullMode {
             dm.eraseAddressRange(newFirmware.startAddress(), totalLength); // erase affected flash range
         }
 
-        byte[] buffer = new byte[dm.getBlockSize()];
         long progAddress = newFirmware.startAddress();
 
         String logMessage = String.format("Start sending application data (%d bytes)", totalLength);
@@ -47,10 +46,7 @@ public class FlashFullMode {
         }
         logger.info(logMessage);
 
-        int nRead = 0;
-        boolean repeat = false;
         SpinningCursor.reset();
-
         ProgressInfo progressInfo;
         BootloaderStatistic bootloaderStatistic;
         if (logStatistics) {
@@ -63,12 +59,16 @@ public class FlashFullMode {
         }
         dm.startProgressInfo(progressInfo);
 
-        while (fis.available() > 0) {
-            if (!repeat) {
+        int nRead = 0;
+        byte[] buffer = null;
+        while ((fis.available() > 0) || (buffer != null)) {
+            if (buffer == null) {
+                // Start or buffer was successfully transferred
+                buffer = new byte[dm.getBlockSize()];
                 nRead = fis.read(buffer);  // Read up to size of buffer
             }
             else {
-                repeat = false;
+                // Failed to transfer buffer, try again
                 System.out.println();
             }
 
@@ -96,7 +96,6 @@ public class FlashFullMode {
 
             UDPResult result = UPDProtocol.checkResult(resultProgramData.data());
             if ((result == UDPResult.BYTECOUNT_RECEIVED_TOO_LOW) || (result == UDPResult.BYTECOUNT_RECEIVED_TOO_HIGH)) {
-                repeat = true;
                 // do not count failed transfer
                 progressInfo.update(-txBuffer.length);
             }
@@ -105,6 +104,7 @@ public class FlashFullMode {
                         ansi().fg(RED), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
             }
             else if (result == UDPResult.IAP_SUCCESS) {
+                buffer = null;
                 progAddress += txBuffer.length;
                 if (bootloaderStatistic != null) {
                     bootloaderStatistic = dm.requestBootLoaderStatistic();
