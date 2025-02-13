@@ -103,4 +103,9 @@
         <appender-ref ref="htmlAppender" />
         <!-- <appender-ref ref="htmlWarnAppender" />  -->
     </root>
+
+    <!-- Suppress logs -->
+    <logger name="sun.awt" level="WARN" />
+    <logger name="java.awt" level="WARN" />
+    <logger name="javax.swing" level="WARN" />
 </configuration>
