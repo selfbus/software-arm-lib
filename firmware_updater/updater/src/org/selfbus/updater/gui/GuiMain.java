@@ -6,6 +6,7 @@ import com.intellij.uiDesigner.core.Spacer;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.*;
 import org.selfbus.updater.logging.ListTextAppenders;
+import org.selfbus.updater.logging.TextAppender;
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
