@@ -4,6 +4,11 @@
 
     <timestamp key="appStartTimestamp" datePattern="yyyy-MM-dd'_'HH-mm-ss.SSS"/>
 
+    <property name="ansiRegEx" value="\033\[(([;\d]*)[A-Hmsu]|(\?25[hl]))"/>
+    <property name="messageNoAnsi" value="replace(%message){'${ansiRegEx}', ''}"/>
+
+    <property name="htmlPattern" value="%d{HH:mm:ss.SSS}%thread%level%logger%method%line%${messageNoAnsi}"/>
+
     <!--
         In case the name of the appender (CONSOLE) is changed, it also must be changed in LoggingManager.java
         org.selfbus.updater.logging.LoggingManager.CONSOLE_APPENDER_NAME = "CONSOLE"
@@ -37,7 +42,7 @@
         <file>${application.home:-.}/log/updater-${appStartTimestamp}.log</file>
         <append>false</append>
         <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method \(%line\) %message%n</pattern>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method \(%line\) %${messageNoAnsi}%n</pattern>
             <!--
                LogMx parser pattern:
                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method (%line) %message%n
@@ -55,7 +60,7 @@
         <file>${application.home:-.}/log/updater-${appStartTimestamp}.html</file>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="ch.qos.logback.classic.html.HTMLLayout">
-                <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
+                <pattern>${htmlPattern}</pattern>
             </layout>
         </encoder>
         <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
@@ -74,7 +79,7 @@
             </filter>
             <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
                 <layout class="ch.qos.logback.classic.html.HTMLLayout">
-                    <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
+                    <pattern>${htmlPattern}</pattern>
                 </layout>
             </encoder>
             <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
