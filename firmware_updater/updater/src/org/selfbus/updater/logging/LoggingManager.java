@@ -42,11 +42,13 @@ public final class LoggingManager {
         Appender<ILoggingEvent> appender = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME).getAppender(appenderName);
 
         if (appender == null) {
-            logger.warn("setAppenderLogLevel: appender {} not found.", appenderName);
+            logger.warn("appender {} not found.", appenderName);
             return;
         }
 
+        //todo this might be quite problematic, we loose all other possible defined filters here
         appender.clearAllFilters();
+        logger.info("Deleted all filters of {}", appender.getName());
 
         ThresholdFilter thresholdFilter = new ThresholdFilter();
         thresholdFilter.setLevel(newLogLevel.toString());
