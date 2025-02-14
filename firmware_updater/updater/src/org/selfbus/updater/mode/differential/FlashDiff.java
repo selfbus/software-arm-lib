@@ -248,7 +248,7 @@ public class FlashDiff {
             logger.trace("Page {}, ", pages);
             flashProgrammer.sendCompressedPage(outputDiffStream, crc32Block.getValue());
             totalBytesTransferred = size;
-            logger.trace("OK! Total diff stream length={}{}{} bytes", ansi().fgBright(GREEN), size, ansi().reset());
+            logger.trace("OK! Total diff stream length={} bytes", size);
         }
         //dumpSideBySide(img1, img2);
     }
