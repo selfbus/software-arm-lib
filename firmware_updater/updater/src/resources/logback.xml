@@ -1,8 +1,10 @@
 <!-- this file goes in src/main/resources/logback.xml -->
 
 <configuration>
-
+    <!-- log filename creation -->
+    <property name="logDirectory" value="${application.home:-.}/log"/>
     <timestamp key="appStartTimestamp" datePattern="yyyy-MM-dd'_'HH-mm-ss.SSS"/>
+    <property name="logFile" value="${logDirectory}/updater-${appStartTimestamp}"/>
 
     <!-- See org.selfbus.updater.gui.ConColorsToStyleDoc.RegExAnsi for explanation -->
     <property name="ansiRegEx" value="\033\[(([;\d]*)[A-Hmsu]|(\?25[hl]))"/>
@@ -40,7 +42,7 @@
     </appender>
 
     <appender name="logFile" class="ch.qos.logback.core.FileAppender">
-        <file>${application.home:-.}/log/updater-${appStartTimestamp}.log</file>
+        <file>${logFile}.log</file>
         <append>false</append>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method \(%line\) %${messageNoAnsi}%n</pattern>
@@ -58,7 +60,7 @@
     </appender>
 
     <appender name="htmlAppender" class="ch.qos.logback.core.FileAppender">
-        <file>${application.home:-.}/log/updater-${appStartTimestamp}.html</file>
+        <file>${logFile}.html</file>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="ch.qos.logback.classic.html.HTMLLayout">
                 <pattern>${htmlPattern}</pattern>
@@ -74,7 +76,7 @@
 
 <!--
         <appender name="htmlWarnAppender" class="ch.qos.logback.core.FileAppender">
-            <file>${application.home:-.}/log/updater-${appStartTimestamp}-warn.html</file>
+            <file>${logFile}-warn.html</file>
             <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
                 <level>WARN</level>
             </filter>
