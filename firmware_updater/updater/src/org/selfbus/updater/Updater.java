@@ -315,13 +315,13 @@ public class Updater implements Runnable {
             if (!cliOptions.getNoFlashIsSet()) { // is flashing firmware disabled? for debugging use only!
                 // Start to flash the new firmware
                 ResponseResult resultTotal;
-                logger.info("{}Starting to send new firmware now:{}", ansi().bg(GREEN).fg(BLACK), ansi().reset());
                 if (diffMode && FlashDiffMode.isInitialized()) {
                     logger.warn("{}Differential mode is EXPERIMENTAL -> Use with caution.{}",
                             ansi().fgBright(RED), ansi().reset());
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
                 }
                 else {
+                    logger.debug("Starting FlashFullMode");
                     resultTotal = FlashFullMode.doFullFlash(dm, newFirmware, cliOptions.getDelayMs(), !cliOptions.getEraseFullFlashIsSet(), cliOptions.getLogStatisticsIsSet());
                 }
                 BootloaderStatistic bootloaderStatistic = dm.requestBootLoaderStatistic();
@@ -350,7 +350,6 @@ public class Updater implements Runnable {
             logger.info("Finished programming device {}{}{} with '{}{}{}'",
                     ansi().fgBright(YELLOW), deviceInfo, ansi().reset(),
                     ansi().fgBright(YELLOW), shortenPath(cliOptions.getFileName(), 1), ansi().reset());
-            logger.info("{}Firmware Update done, Restarting device{}", ansi().bg(GREEN).fg(BLACK), ansi().reset());
             dm.restartProgrammingDevice();
             dm.close();
 
