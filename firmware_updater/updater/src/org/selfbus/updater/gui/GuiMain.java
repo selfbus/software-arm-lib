@@ -305,7 +305,7 @@ public class GuiMain extends JFrame {
             setComponentNames();
             guiSettings.readComponentsSettings(fileName);
         } catch (IOException e) {
-            logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            logger.error("{}:{}", e.getClass().getSimpleName(), e.getMessage());
             JOptionPane.showMessageDialog(this,
                     String.format(getTranslation("IOException.loadingSettings.Message"), fileName, e.getMessage()),
                     this.getTranslation("Warning"), JOptionPane.WARNING_MESSAGE);
