@@ -119,7 +119,7 @@ public enum UDPResult {
 
     @Override
     public String toString() {
-        return String.format("0x%02X %s", this.id, this.description);
+        return String.format("%s (%s)", this.description, super.toString());
     }
 
     /**
@@ -128,6 +128,10 @@ public enum UDPResult {
      */
     public boolean isError() {
         return this.isError;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
 }

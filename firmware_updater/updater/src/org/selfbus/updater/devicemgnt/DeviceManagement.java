@@ -426,8 +426,8 @@ public class DeviceManagement implements AutoCloseable {
             logger.warn("{}Unexpected: never seen before {}{}", ansi().fg(RED), e.getClass().getSimpleName(),ansi().reset());
         }
 
-        logger.warn("{}{} {} : {}{}", ansi().fg(RED), command, e.getMessage(),
-                e.getClass().getSimpleName(), ansi().reset());
+        logger.warn("{}{}{} ({} {})", ansi().fg(RED), e.getMessage(), ansi().reset(),
+                e.getClass().getSimpleName(), command);
 
         if (!reconnect) {
             return;

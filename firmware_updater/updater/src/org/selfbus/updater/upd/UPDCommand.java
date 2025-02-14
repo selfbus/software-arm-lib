@@ -177,6 +177,6 @@ public enum UPDCommand {
 
     @Override
     public String toString() {
-        return String.format("0x%02X %s %s", this.id, this.getClass().getSimpleName(), this.description);
+        return String.format("%s", this.description);
     }
 }

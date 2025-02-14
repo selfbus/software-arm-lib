@@ -40,10 +40,10 @@ public final class UPDProtocol {
 
         UDPResult udpResult = UDPResult.valueOf(result[DATA_POSITION]);
         if (udpResult.isError()) {
-            logger.error("{}UDPResult: {}{}", ansi().fgBright(RED), udpResult, ansi().reset());
+            logger.error("{}{}{} ({})", ansi().fgBright(RED), udpResult.getDescription(), ansi().reset(), udpResult.name());
         } else {
             if (verbose) {
-                logger.trace("{}done ({}){}", ansi().fgBright(GREEN), udpResult, ansi().reset());
+                logger.trace("done ({})", udpResult.name());
             }
         }
         return udpResult;
