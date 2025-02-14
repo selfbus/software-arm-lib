@@ -2,6 +2,8 @@ package org.selfbus.updater.logging;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.ThrowableProxy;
+import ch.qos.logback.core.filter.Filter;
+import ch.qos.logback.core.spi.FilterReply;
 import tuwien.auto.calimero.KNXAckTimeoutException;
 import tuwien.auto.calimero.KNXTimeoutException;
 
@@ -10,7 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The {@code ThrowableEvaluator} class extends {@link LevelEventEvaluator}
+ * The {@code ThrowableFilter} class extends {@code Filter<E>}
  * to provide a custom evaluation of logging events that filters out specific exceptions
  * with matching messages.
  *
@@ -34,7 +36,7 @@ import java.util.Objects;
  * <p>This can be useful in logging systems where specific repetitive or expected exceptions
  * (e.g., timeout exceptions) need to be ignored to reduce log noise.
  */
-public class ThrowableEvaluator extends LevelEventEvaluator {
+public class ThrowableFilter extends Filter<ILoggingEvent> {
 
     /**
      * The {@code ConditionalFilter} record represents a pair of conditions used to filter
@@ -95,20 +97,18 @@ public class ThrowableEvaluator extends LevelEventEvaluator {
      * Evaluates a logging event to determine whether it should be processed or filtered.
      *
      * @param event the {@link ILoggingEvent} instance to be evaluated.
-     * @return {@code true} if the event should be processed; {@code false} if the event
+     * @return {@code FilterReply.NEUTRAL} if the event should be processed; {@code FilterReply.DENY} if the event
      *         should be filtered out.
-     * @throws NullPointerException if a null input is encountered during evaluation.
-     *         This is unlikely since events usually undergo prior validation.
      */
     @Override
-    public boolean evaluate(ILoggingEvent event) throws NullPointerException {
-        if (super.evaluate(event)) {
-            return true; // Ignore log level
+    public FilterReply decide(ILoggingEvent event) {
+        if (!isStarted()) {
+            return FilterReply.NEUTRAL;
         }
 
         ThrowableProxy throwableProxy = (ThrowableProxy) event.getThrowableProxy();
         if (throwableProxy == null) {
-            return true; // no stacktrace present
+            return FilterReply.NEUTRAL; // no stacktrace present
         }
 
         String logMessage = event.getFormattedMessage();
@@ -121,12 +121,11 @@ public class ThrowableEvaluator extends LevelEventEvaluator {
                     // Check if logMessage and exception message match the filter
                     if ((Objects.equals(logMessage, f.logMessage())) &&
                         (Objects.equals(throwable.getMessage(), f.exceptionMessage()))) {
-                        return false; // Filter this event out
+                        return FilterReply.DENY; // Filter this event out
                     }
                 }
             }
         }
-        return true;
+        return FilterReply.NEUTRAL;
     }
-
 }

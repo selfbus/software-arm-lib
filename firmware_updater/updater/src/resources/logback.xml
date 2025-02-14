@@ -4,9 +4,6 @@
 
     <timestamp key="appStartTimestamp" datePattern="yyyy-MM-dd'_'HH-mm-ss.SSS"/>
 
-    <evaluator name="ExceptionEvaluator" class="org.selfbus.updater.logging.ThrowableEvaluator" />
-    <evaluator name="MessageEvaluator" class="org.selfbus.updater.logging.MessageEvaluator" />
-
     <!--
         In case the name of the appender (CONSOLE) is changed, it also must be changed in LoggingManager.java
         org.selfbus.updater.logging.LoggingManager.CONSOLE_APPENDER_NAME = "CONSOLE"
@@ -17,21 +14,10 @@
             <level>INFO</level>
         </filter>
         <!-- Custom filter for exceptions -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="org.selfbus.updater.logging.ThrowableEvaluator">
-                <level>WARN</level>
-            </evaluator>
-            <OnMismatch>DENY</OnMismatch>
-            <OnMatch>NEUTRAL</OnMatch>
-        </filter>
+        <filter class="org.selfbus.updater.logging.ThrowableFilter"/>
         <!-- Custom filter for messages -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="org.selfbus.updater.logging.MessageEvaluator">
-                <level>WARN</level>
-            </evaluator>
-            <OnMismatch>DENY</OnMismatch>
-            <OnMatch>NEUTRAL</OnMatch>
-        </filter>
+        <filter class="org.selfbus.updater.logging.MessageFilter"/>
+
         <encoder class="org.selfbus.updater.logging.ConsoleEncoder">
             <pattern>%message%n</pattern>
         </encoder>
@@ -42,21 +28,9 @@
             <level>INFO</level>
         </filter>
         <!-- Custom filter for exceptions -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="org.selfbus.updater.logging.ThrowableEvaluator">
-                <level>WARN</level>
-            </evaluator>
-            <OnMismatch>DENY</OnMismatch>
-            <OnMatch>NEUTRAL</OnMatch>
-        </filter>
+        <filter class="org.selfbus.updater.logging.ThrowableFilter"/>
         <!-- Custom filter for messages -->
-        <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
-            <evaluator class="org.selfbus.updater.logging.MessageEvaluator">
-                <level>INFO</level>
-            </evaluator>
-            <OnMismatch>DENY</OnMismatch>
-            <OnMatch>NEUTRAL</OnMatch>
-        </filter>
+        <filter class="org.selfbus.updater.logging.MessageFilter"/>
     </appender>
 
     <appender name="logFile" class="ch.qos.logback.core.FileAppender">
