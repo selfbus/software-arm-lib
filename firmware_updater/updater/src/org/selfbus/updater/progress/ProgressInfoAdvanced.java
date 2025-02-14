@@ -1,9 +1,9 @@
-package org.selfbus.updater;
+package org.selfbus.updater.progress;
 
 
 import org.selfbus.updater.bootloader.BootloaderStatistic;
 
-public class ProgressInfoAdvanced extends ProgressInfo{
+public class ProgressInfoAdvanced extends ProgressInfo {
     private final BootloaderStatistic bootloaderStatistic;
 
     public ProgressInfoAdvanced(long totalByteCount, BootloaderStatistic bootloaderStatistic) {

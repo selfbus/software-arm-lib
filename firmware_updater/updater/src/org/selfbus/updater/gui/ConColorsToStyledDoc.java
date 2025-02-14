@@ -1,6 +1,6 @@
 package org.selfbus.updater.gui;
 
-import org.selfbus.updater.AnsiCursor;
+import org.selfbus.updater.progress.AnsiCursor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

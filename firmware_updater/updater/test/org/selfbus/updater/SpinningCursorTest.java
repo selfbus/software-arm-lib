@@ -2,6 +2,7 @@ package org.selfbus.updater;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.selfbus.updater.progress.SpinningCursor;
 
 import static org.junit.jupiter.api.Assertions.*;
 

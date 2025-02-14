@@ -7,6 +7,7 @@ import org.selfbus.updater.bootloader.BootloaderStatistic;
 import org.selfbus.updater.devicemgnt.DeviceManagement;
 import org.selfbus.updater.devicemgnt.DeviceManagementFactory;
 import org.selfbus.updater.logging.LoggingManager;
+import org.selfbus.updater.progress.AnsiCursor;
 import tuwien.auto.calimero.*;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
