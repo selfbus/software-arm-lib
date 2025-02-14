@@ -47,7 +47,7 @@
             <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
         </filter>
     </appender>
-
+<!--
     <appender name="htmlWarnAppender" class="FileAppender">
         <file>${logFile}-warn.html</file>
         <filter class="ThresholdFilter">
@@ -65,4 +65,5 @@
             <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
         </filter>
     </appender>
+-->
 </included>
