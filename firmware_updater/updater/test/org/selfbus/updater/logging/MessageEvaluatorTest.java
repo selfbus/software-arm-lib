@@ -20,7 +20,7 @@ class MessageEvaluatorTest {
     private final static Level[] allLevels = new Level[]{TRACE, DEBUG, INFO, WARN, ERROR};
     private final static Logger logger = (Logger) LoggerFactory.getLogger(MessageEvaluatorTest.class);
     MessageEvaluator evaluator = null;
-    String fqcn = logger.getClass().getName();
+    final String fqcn = logger.getClass().getName();
 
     @BeforeEach
     public void setUp() {
