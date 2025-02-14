@@ -55,7 +55,6 @@
         <file>${application.home:-.}/log/updater-${appStartTimestamp}.html</file>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
             <layout class="ch.qos.logback.classic.html.HTMLLayout">
-                <pattern>%thread%level%logger%msg</pattern>
                 <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
             </layout>
         </encoder>
@@ -75,7 +74,6 @@
             </filter>
             <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
                 <layout class="ch.qos.logback.classic.html.HTMLLayout">
-                    <pattern>%thread%level%logger%msg</pattern>
                     <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
                 </layout>
             </encoder>
