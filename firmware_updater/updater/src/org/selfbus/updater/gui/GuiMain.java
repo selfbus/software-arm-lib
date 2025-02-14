@@ -376,13 +376,9 @@ public class GuiMain extends JFrame {
             argsList.add(argument(OPT_LONG_LOGSTATISTIC));
 */
         // argsList.add(argument(OPT_LONG_BLOCKSIZE, comboBox*)); // todo add gui combobox --blocksize 256, 512, 1024
-
-/*
-        if (checkBox*.isVisible() && checkBox*.isSelected()) // todo add gui checkbox --discover
-        argsList.add(argument(OPT_LONG_DISCOVER));
- */
-        // argsList.add(argument(OPT_LONG_RECONNECT, textFieldReconnect)); // todo add gui textfield --reconnect
-        // todo add gui button for --discover
+        // argsList.add(argument(OPT_LONG_RECONNECT, textFieldReconnect)); // todo add gui textfield --reconnect 100-12500
+        // todo add gui button for OPT_LONG_DISCOVER --discover
+        // argsList.add(argument(OPT_LONG_RECONNECT_SEQ_NUMBER, textFieldSeqNmbReconn)); todo add textfield --ip-tunnel-reconnect 100-247
 
         return new CliOptions(argsList);
     }
