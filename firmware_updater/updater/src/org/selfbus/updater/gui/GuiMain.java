@@ -5,8 +5,8 @@ import com.intellij.uiDesigner.core.GridLayoutManager;
 import com.intellij.uiDesigner.core.Spacer;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.*;
-import org.selfbus.updater.logging.ListTextAppenders;
 import org.selfbus.updater.logging.JTextPaneAppender;
+import org.selfbus.updater.logging.LoggingManager;
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
@@ -39,6 +39,7 @@ import static org.selfbus.updater.CliOptions.*;
 import static org.selfbus.updater.gui.CliConverter.argument;
 import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultBackgroundColor;
 import static org.selfbus.updater.gui.ConColorsToStyledDoc.DefaultForegroundColor;
+import static org.selfbus.updater.logging.LoggingManager.JTEXTPANE_APPENDER_NAME;
 
 public class GuiMain extends JFrame {
     private JButton buttonLoadFile;
@@ -400,7 +401,7 @@ public class GuiMain extends JFrame {
         jLoggingPane.setBackground(DefaultBackgroundColor);
         jLoggingPane.setForeground(DefaultForegroundColor);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        JTextPaneAppender textPaneAppender = ListTextAppenders.searchAppender();
+        JTextPaneAppender textPaneAppender = (JTextPaneAppender) LoggingManager.getAppender(JTEXTPANE_APPENDER_NAME);
         if (textPaneAppender != null) {
             textPaneAppender.setTextPane(this.jLoggingPane);
         }

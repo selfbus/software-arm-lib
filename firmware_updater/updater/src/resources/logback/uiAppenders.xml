@@ -25,6 +25,10 @@
         </encoder>
     </appender>
 
+<!--
+    In case the name of the appender (JTextPane) is changed, it also must be changed in LoggingManager.java
+    org.selfbus.updater.logging.LoggingManager.JTEXTPANE_APPENDER_NAME = "JTextPane"
+-->
     <appender name="JTextPane" class="JTextPaneAppender">
         <filter class="ThresholdFilter">
             <level>INFO</level>
