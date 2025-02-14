@@ -137,7 +137,7 @@ public final class FlashDiffMode {
                 throw new UpdaterException("DiffMode PROGRAM_DECOMPRESSED_DATA failed.");
             }
         });
-        dm.finalProgressInfo(progressInfo);
+        dm.logAndPrintProgressInfo(progressInfo);
         result.get().setWritten(differ.getTotalBytesTransferred());
         return result.get();
     }

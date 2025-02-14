@@ -1,12 +1,9 @@
 package org.selfbus.updater.devicemgnt;
 
-import ch.qos.logback.classic.Level;
 import org.selfbus.updater.*;
 import org.selfbus.updater.bootloader.BootDescriptor;
 import org.selfbus.updater.bootloader.BootloaderIdentity;
 import org.selfbus.updater.bootloader.BootloaderStatistic;
-import org.selfbus.updater.logging.ListTextAppenders;
-import org.selfbus.updater.logging.LoggingManager;
 import org.selfbus.updater.upd.UDPProtocolVersion;
 import org.selfbus.updater.upd.UDPResult;
 import org.selfbus.updater.upd.UPDCommand;
@@ -28,6 +25,8 @@ import java.util.Arrays;
 import static org.fusesource.jansi.Ansi.*;
 import static org.fusesource.jansi.Ansi.Color.*;
 import static org.selfbus.updater.Mcu.MAX_FLASH_ERASE_TIMEOUT;
+import static org.selfbus.updater.logging.Markers.CONSOLE_GUI_ONLY;
+import static org.selfbus.updater.logging.Markers.CONSOLE_GUI_NO_NEWLINE;
 import static org.selfbus.updater.upd.UPDProtocol.DATA_POSITION;
 
 /**
@@ -125,14 +124,10 @@ public class DeviceManagement implements AutoCloseable {
     private void waitRestartTime(int restartTimeSeconds) throws InterruptedException {
         while (restartTimeSeconds > 0) {
             Thread.sleep(1000);
-            if (LoggingManager.isConsoleActive()) {
-                System.out.printf("%s.%s", ansi().fgBright(GREEN), ansi().reset());
-            }
+            logger.info(CONSOLE_GUI_NO_NEWLINE, String.format("%s.%s", ansi().fgBright(GREEN), ansi().reset()));
             restartTimeSeconds--;
         }
-        if (LoggingManager.isConsoleActive()) {
-            System.out.println();
-        }
+        logger.info(CONSOLE_GUI_ONLY, ""); // Just a new line
     }
 
     /**
@@ -340,9 +335,7 @@ public class DeviceManagement implements AutoCloseable {
     }
 
     public void startProgressInfo(ProgressInfo progressInfo) {
-        logger.info(progressInfo.getHeader());
-        // We need one newLine for the gui
-        ListTextAppenders.appendEvent(Level.INFO, System.lineSeparator());
+        logger.info(CONSOLE_GUI_ONLY, progressInfo.getHeader());
     }
 
     public void updateProgressInfo(ProgressInfo progressInfo, long bytesDone) {
@@ -351,39 +344,24 @@ public class DeviceManagement implements AutoCloseable {
         }
 
         progressInfo.update(bytesDone);
+        printProgressInfo(progressInfo);
+    }
 
-        String logText = String.format("%s%s%s%s",
+    private void printProgressInfo(ProgressInfo progressInfo) {
+        // append one space, just in case an exception message may come up
+        String logText = String.format("%s%s%s%s ",
                 AnsiCursor.off(),
                 ansi().cursorToColumn(1).fgBright(GREEN).a(SpinningCursor.getNext()).reset(),
                 progressInfo,
                 AnsiCursor.on());
-        logText += " "; // append one space, just in case an exception message may come up
-
-        // console output
-        if (LoggingManager.isConsoleActive()) {
-            System.out.print(logText);
-            if (LoggingManager.isRunningInIntelliJ()) {
-                // if running in idea debug-console we need to add a newline,
-                // because the idea debug-console doesn´t support ansi cursor movements
-                System.out.println();
-            }
-        }
-        // gui JTextPane output
-        logText = ansi().cursorUpLine().toString() + logText; // need this CursorUp in gui
-        ListTextAppenders.appendEvent(Level.INFO, logText);
+        logger.info(CONSOLE_GUI_NO_NEWLINE, logText);
     }
 
-    public void finalProgressInfo(ProgressInfo progressInfo) {
-        if (progressInfo == null) {
-            return;
-        }
-
-        //todo this is stupid
-        // We need two CursorUp in the gui, because it appends to every logMessage System.lineSeparator()
-        ListTextAppenders.appendEvent(Level.INFO, ansi().cursorUpLine(1).toString());
-
-        // Now normal logging in console and gui
-        logger.info("{} {}", ansi().cursorToColumn(1).toString(), progressInfo);
+    public void logAndPrintProgressInfo(ProgressInfo progressInfo) {
+        logger.debug("{}{}{}", progressInfo.getHeader(), System.lineSeparator(), progressInfo);
+        SpinningCursor.setBlank();
+        printProgressInfo(progressInfo);
+        logger.info(CONSOLE_GUI_ONLY, ""); // Just a new line
     }
 
     public void programBootDescriptor(BootDescriptor bootDescriptor, int delay)

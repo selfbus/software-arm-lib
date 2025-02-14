@@ -32,7 +32,7 @@
             <OnMismatch>DENY</OnMismatch>
             <OnMatch>NEUTRAL</OnMatch>
         </filter>
-        <encoder>
+        <encoder class="org.selfbus.updater.logging.ConsoleEncoder">
             <pattern>%message%n</pattern>
         </encoder>
     </appender>
@@ -69,6 +69,12 @@
                %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method (%line) %message%n
             -->
         </encoder>
+        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_ONLY</Marker>
+        </filter>
+        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
+        </filter>
     </appender>
 
     <appender name="htmlAppender" class="ch.qos.logback.core.FileAppender">
@@ -79,6 +85,12 @@
                 <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
             </layout>
         </encoder>
+        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_ONLY</Marker>
+        </filter>
+        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
+        </filter>
     </appender>
 
 <!--
@@ -93,9 +105,15 @@
                     <pattern>%d{HH:mm:ss.SSS}%thread%level%logger%method%line%message</pattern>
                 </layout>
             </encoder>
+            <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
+                <Marker>CONSOLE_GUI_ONLY</Marker>
+            </filter>
+            <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
+                <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
+            </filter>
         </appender>
 -->
-        <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
+    <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
     <root level="TRACE">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="list" />

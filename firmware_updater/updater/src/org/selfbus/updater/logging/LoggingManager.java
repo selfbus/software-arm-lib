@@ -84,10 +84,6 @@ public final class LoggingManager {
         return null;
     }
 
-    public static boolean isConsoleActive() {
-        return (LoggingManager.getAppenderLogLevel(CONSOLE_APPENDER_NAME) == Level.INFO);
-    }
-
     public static boolean isRunningInIntelliJ() {
         // Check for IntelliJ debugging JVM arguments
         return ManagementFactory.getRuntimeMXBean().getInputArguments().stream()

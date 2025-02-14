@@ -50,12 +50,6 @@ public class Updater implements Runnable {
      * @param cliOptions the command-line options to be used
      */
     public Updater(CliOptions cliOptions) {
-        if (LoggingManager.isRunningInIntelliJ()) {
-            logger.info("IntelliJ detected => adding newline to console progress logging");
-        }
-        else {
-            logger.debug("IntelliJ not detected => normal console logging active");
-        }
         logger.debug(ToolInfo.getFullInfo());
         logger.debug(Settings.getLibraryHeader(false));
         this.cliOptions = cliOptions;

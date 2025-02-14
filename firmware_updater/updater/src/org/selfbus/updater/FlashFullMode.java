@@ -67,10 +67,6 @@ public class FlashFullMode {
                 buffer = new byte[dm.getBlockSize()];
                 nRead = fis.read(buffer);  // Read up to size of buffer
             }
-            else {
-                // Failed to transfer buffer, try again
-                System.out.println();
-            }
 
             byte[] txBuffer = new byte[nRead];
             System.arraycopy(buffer, 0, txBuffer, 0, nRead);
@@ -120,7 +116,7 @@ public class FlashFullMode {
             }
         }
         fis.close();
-        dm.finalProgressInfo(progressInfo);
+        dm.logAndPrintProgressInfo(progressInfo);
         resultTotal.setWritten(progressInfo.getBytesDone());
         return resultTotal;
     }
