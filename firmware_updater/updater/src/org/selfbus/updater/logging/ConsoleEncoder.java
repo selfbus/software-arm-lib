@@ -7,6 +7,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 
 import static org.selfbus.updater.logging.Markers.CONSOLE_GUI_NO_NEWLINE;
 
+@SuppressWarnings("unused")
 public class ConsoleEncoder extends PatternLayoutEncoder {
     @Override
     public void start() {
@@ -42,7 +43,7 @@ public class ConsoleEncoder extends PatternLayoutEncoder {
 
         final byte[] trimmed = Arrays.copyOfRange(superByteArray, 0, superByteArray.length - lineSeparator.length);
         if (LoggingManager.isRunningInIntelliJ()) {
-            // IntelliJs debug console doesn´t support ansi cursor movements
+            // IntelliJs debug console does not support ansi cursor movements
             // so we return the original one from the base pattern decoder
             return superByteArray;
         }

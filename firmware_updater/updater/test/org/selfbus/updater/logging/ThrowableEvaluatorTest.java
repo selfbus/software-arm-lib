@@ -71,7 +71,7 @@ public class ThrowableEvaluatorTest {
                 ThrowableEvaluator.EXCEPTION_FILTER_MAP.entrySet()) {
             Class<? extends Throwable> exceptionClass = entry.getKey();
 
-            // Iterate over all logmessage / exception message
+            // Iterate over all log messages / exception messages
             for (ThrowableEvaluator.ConditionalFilter filter : entry.getValue()) {
                 String logMessage = filter.logMessage();
                 String exceptionMessage = filter.exceptionMessage();
@@ -86,7 +86,7 @@ public class ThrowableEvaluatorTest {
                     // Check matching to EXCEPTION_FILTER_MAP is filtered out
                     assertFalse(callEvaluate(level, logMessage, exception));
 
-                    // Check not matching logmessage to EXCEPTION_FILTER_MAP is NOT filtered
+                    // Check not matching log messages to EXCEPTION_FILTER_MAP is NOT filtered
                     assertTrue(callEvaluate(level, logMessage + "foo", exception));
                 }
 
@@ -95,7 +95,7 @@ public class ThrowableEvaluatorTest {
                     // Check not matching to EXCEPTION_FILTER_MAP is NOT filtered
                     assertTrue(callEvaluate(level, logMessage, exception));
 
-                    // Check not matching logmessage to EXCEPTION_FILTER_MAP is NOT filtered
+                    // Check not matching log messages to EXCEPTION_FILTER_MAP is NOT filtered
                     assertTrue(callEvaluate(level, logMessage + "foo", exception));
                 }
             }
