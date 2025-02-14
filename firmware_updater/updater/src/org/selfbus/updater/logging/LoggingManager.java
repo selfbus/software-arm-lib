@@ -5,6 +5,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.filter.ThresholdFilter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
+import ch.qos.logback.core.spi.ContextAwareBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,43 +42,21 @@ public final class LoggingManager {
         return getLoggerContext().getLogger(Logger.ROOT_LOGGER_NAME).getAppender(appenderName);
     }
 
-    @SuppressWarnings("unused")
-    public static void disableAppender(String appenderName) {
+    public static void setThresholdFilterLogLevel(String appenderName, Level newLogLevel) {
         Appender<ILoggingEvent> appender = getAppender(appenderName);
-
         if (appender == null) {
-            logger.warn("disableAppender: appender {} not found.", appenderName);
+            logger.warn("Appender {} not found", appenderName);
             return;
         }
 
-        logger.trace("Stopping and disabling {} appender.", appenderName);
-        appender.stop();
-        getLoggerContext().getLogger(Logger.ROOT_LOGGER_NAME).detachAppender(appenderName);
-        logger.trace("{} appender has been disabled.", appenderName);
-    }
-
-    public static void setAppenderLogLevel(Appender<ILoggingEvent> appender, Level newLogLevel) {
-        if (appender == null) {
-            logger.warn("appender is null");
-            return;
+        for (ContextAwareBase filter : appender.getCopyOfAttachedFiltersList()) {
+            if (filter instanceof ThresholdFilter thresholdFilter) {
+                logger.debug("Appender {} ThresholdFilter log level set to: {}", appender.getName(), newLogLevel);
+                thresholdFilter.setLevel(newLogLevel.toString());
+                return;
+            }
         }
-
-        //todo this might be quite problematic, we loose all other possible defined filters here
-        appender.clearAllFilters();
-        logger.info("Deleted all filters of {}", appender.getName());
-
-        ThresholdFilter thresholdFilter = new ThresholdFilter();
-        thresholdFilter.setLevel(newLogLevel.toString());
-        thresholdFilter.setContext(getLoggerContext());
-        thresholdFilter.start();
-
-        appender.addFilter(thresholdFilter);
-        logger.trace("{} appender log level set to: {}", appender.getName(), newLogLevel);
-    }
-
-    public static void setAppenderLogLevel(String appenderName, Level newLogLevel) {
-        Appender<ILoggingEvent> appender = getAppender(appenderName);
-        setAppenderLogLevel(appender, newLogLevel);
+        logger.warn("Appender {} has no {}", appenderName, ThresholdFilter.class.getSimpleName());
     }
 
     public static boolean isRunningInIntelliJ() {

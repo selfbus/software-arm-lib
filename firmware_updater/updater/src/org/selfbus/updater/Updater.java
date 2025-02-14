@@ -71,7 +71,7 @@ public class Updater implements Runnable {
         if (args.length == 0) {
             if (!LoggingManager.isRunningInIntelliJ()) {
                 logger.info("GUI start => console output set to log level {}", Level.WARN);
-                LoggingManager.setAppenderLogLevel(CONSOLE_APPENDER_NAME, Level.WARN);
+                LoggingManager.setThresholdFilterLogLevel(CONSOLE_APPENDER_NAME, Level.WARN);
             }
             GuiMain.startSwingGui();
             finalizeJansi();
