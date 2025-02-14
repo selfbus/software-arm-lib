@@ -23,7 +23,7 @@
         </encoder>
     </appender>
 
-    <appender name="list" class="org.selfbus.updater.logging.JTextPaneAppender">
+    <appender name="JTextPane" class="org.selfbus.updater.logging.JTextPaneAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>
@@ -90,7 +90,7 @@
     <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
     <root level="TRACE">
         <appender-ref ref="CONSOLE" />
-        <appender-ref ref="list" />
+        <appender-ref ref="JTextPane" />
         <appender-ref ref="logFile" />
         <appender-ref ref="htmlAppender" />
         <!-- <appender-ref ref="htmlWarnAppender" />  -->
