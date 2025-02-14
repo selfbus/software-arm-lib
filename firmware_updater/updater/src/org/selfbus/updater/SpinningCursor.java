@@ -4,11 +4,11 @@ public final class SpinningCursor {
     @SuppressWarnings("unused")
     private SpinningCursor() {} // avoids instance creation
 
-    private static final char[] cursorPool = {'|', '/', '-', '\\'};
-    private static int index = 0;
+    private static final char[] cursorPool = {' ', '|', '/', '-', '\\'}; // Index 0 is the blank cursor
+    private static int index = 1;
 
     public static void reset() {
-        index = 0;
+        index = 1;
     }
     public static char getNext() {
         if (index > (cursorPool.length - 1)) {
@@ -18,5 +18,9 @@ public final class SpinningCursor {
         index++;
 
         return nextCursor;
+    }
+
+    public static void setBlank() {
+        index = 0;
     }
 }
