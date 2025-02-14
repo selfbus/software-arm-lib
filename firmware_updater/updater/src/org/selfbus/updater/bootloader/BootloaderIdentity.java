@@ -48,7 +48,7 @@ public record BootloaderIdentity(long versionMajor,
     }
 
     public String toString() {
-        return String.format("Version: %s, sbLib Version: %s, Features: 0x%04X, App-start: 0x%04X",
+        return String.format("v%s, sbLib v%s, Features: 0x%04X, App-start: 0x%04X",
                 getVersion(), getVersionSBLib(), features(), applicationFirstAddress());
     }
 
