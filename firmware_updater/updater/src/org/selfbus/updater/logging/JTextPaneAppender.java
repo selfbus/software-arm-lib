@@ -11,11 +11,11 @@ import javax.swing.text.BadLocationException;
 
 import static org.selfbus.updater.logging.Markers.CONSOLE_GUI_NO_NEWLINE;
 
-public class TextAppender extends AppenderBase<ILoggingEvent> {
+public class JTextPaneAppender extends AppenderBase<ILoggingEvent> {
     private JTextPane textPane;
 
     @SuppressWarnings("unused")
-    public TextAppender() {
+    public JTextPaneAppender() {
         this.textPane = null;
     }
 

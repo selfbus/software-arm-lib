@@ -14,10 +14,10 @@ public final class ListTextAppenders {
     @SuppressWarnings("unused")
     private ListTextAppenders() {} // avoids instance creation
 
-    private static TextAppender jTextPaneAppender = null;
+    private static JTextPaneAppender jTextPaneAppender = null;
     private static Logger logger = null;
 
-    public static TextAppender searchAppender() {
+    public static JTextPaneAppender searchAppender() {
         // Get the LoggerContext from the LoggerFactory
         LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
 
@@ -28,9 +28,9 @@ public final class ListTextAppenders {
 
             while (appenderIterator.hasNext()) {
                 Appender<ILoggingEvent> appender = appenderIterator.next();
-                if (appender instanceof TextAppender) {
+                if (appender instanceof JTextPaneAppender) {
                     logger = iterLogger;
-                    jTextPaneAppender = (TextAppender) appender;
+                    jTextPaneAppender = (JTextPaneAppender) appender;
                     return jTextPaneAppender;
                 }
             }
@@ -39,7 +39,7 @@ public final class ListTextAppenders {
         return jTextPaneAppender;
     }
 
-    public static TextAppender getJTextPaneAppender() {
+    public static JTextPaneAppender getJTextPaneAppender() {
         if (jTextPaneAppender != null) {
             return jTextPaneAppender;
         }

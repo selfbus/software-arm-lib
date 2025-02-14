@@ -23,7 +23,7 @@
         </encoder>
     </appender>
 
-    <appender name="list" class="org.selfbus.updater.logging.TextAppender">
+    <appender name="list" class="org.selfbus.updater.logging.JTextPaneAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
             <level>INFO</level>
         </filter>

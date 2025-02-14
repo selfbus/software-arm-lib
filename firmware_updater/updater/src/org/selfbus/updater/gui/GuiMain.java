@@ -6,7 +6,7 @@ import com.intellij.uiDesigner.core.Spacer;
 import org.apache.commons.cli.ParseException;
 import org.selfbus.updater.*;
 import org.selfbus.updater.logging.ListTextAppenders;
-import org.selfbus.updater.logging.TextAppender;
+import org.selfbus.updater.logging.JTextPaneAppender;
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.knxnetip.Discoverer;
 import tuwien.auto.calimero.knxnetip.servicetype.SearchResponse;
@@ -400,9 +400,9 @@ public class GuiMain extends JFrame {
         jLoggingPane.setBackground(DefaultBackgroundColor);
         jLoggingPane.setForeground(DefaultForegroundColor);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        TextAppender textAppender = ListTextAppenders.searchAppender();
-        if (textAppender != null) {
-            textAppender.setTextPane(this.jLoggingPane);
+        JTextPaneAppender textPaneAppender = ListTextAppenders.searchAppender();
+        if (textPaneAppender != null) {
+            textPaneAppender.setTextPane(this.jLoggingPane);
         }
         initGuiElementsVisibility();
         fillScenarios();
