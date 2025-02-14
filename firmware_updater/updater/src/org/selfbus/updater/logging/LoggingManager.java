@@ -18,7 +18,7 @@ public final class LoggingManager {
 
 
     // In case CONSOLE_APPENDER_NAME is changed,
-    // change also CONSOLE appender name in src/resources/logback.xml
+    // change also CONSOLE appender name in src/resources/logback/uiAppenders.xml
     public static final String CONSOLE_APPENDER_NAME = "CONSOLE";
 
     @SuppressWarnings("unused")

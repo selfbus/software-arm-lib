@@ -1,0 +1,68 @@
+<included>
+    <include resource="logback/noAnsi.xml"/>    <!-- Load ${messageNoAnsi} pattern -->
+
+    <import class="ch.qos.logback.core.FileAppender"/>
+    <import class="ch.qos.logback.core.encoder.LayoutWrappingEncoder"/>
+    <import class="ch.qos.logback.classic.html.HTMLLayout"/>
+    <import class="ch.qos.logback.classic.filter.ThresholdFilter"/>
+
+    <import class="org.selfbus.updater.logging.ExcludeMarkerFilter"/>
+
+    <!-- log filename creation -->
+    <property name="logDirectory" value="${application.home:-.}/log"/>
+    <timestamp key="appStartTimestamp" datePattern="yyyy-MM-dd'_'HH-mm-ss.SSS"/>
+    <property name="logFile" value="${logDirectory}/updater-${appStartTimestamp}"/>
+
+    <property name="htmlPattern" value="%d{HH:mm:ss.SSS}%thread%level%logger%method%line%${messageNoAnsi}"/>
+
+    <appender name="logFile" class="FileAppender">
+        <file>${logFile}.log</file>
+        <append>false</append>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method \(%line\) %${messageNoAnsi}%n</pattern>
+            <!--
+               LogMx parser pattern:
+               %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method (%line) %message%n
+            -->
+        </encoder>
+        <filter class="ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_ONLY</Marker>
+        </filter>
+        <filter class="ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
+        </filter>
+    </appender>
+
+    <appender name="htmlAppender" class="FileAppender">
+        <file>${logFile}.html</file>
+        <encoder class="LayoutWrappingEncoder">
+            <layout class="HTMLLayout">
+                <pattern>${htmlPattern}</pattern>
+            </layout>
+        </encoder>
+        <filter class="ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_ONLY</Marker>
+        </filter>
+        <filter class="ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
+        </filter>
+    </appender>
+
+    <appender name="htmlWarnAppender" class="FileAppender">
+        <file>${logFile}-warn.html</file>
+        <filter class="ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <encoder class="LayoutWrappingEncoder">
+            <layout class="HTMLLayout">
+                <pattern>${htmlPattern}</pattern>
+            </layout>
+        </encoder>
+        <filter class="ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_ONLY</Marker>
+        </filter>
+        <filter class="ExcludeMarkerFilter">
+            <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
+        </filter>
+    </appender>
+</included>

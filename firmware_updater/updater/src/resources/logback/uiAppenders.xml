@@ -1,0 +1,36 @@
+<included>
+    <import class="ch.qos.logback.classic.filter.ThresholdFilter"/>
+    <import class="ch.qos.logback.core.ConsoleAppender"/>
+
+    <import class="org.selfbus.updater.logging.ThrowableFilter"/>   <!-- Custom filter for exceptions -->
+    <import class="org.selfbus.updater.logging.MessageFilter"/>     <!-- Custom filter for messages -->
+    <import class="org.selfbus.updater.logging.ConsoleEncoder"/>
+    <import class="org.selfbus.updater.logging.JTextPaneAppender"/>
+
+    <!--
+        In case the name of the appender (CONSOLE) is changed, it also must be changed in LoggingManager.java
+        org.selfbus.updater.logging.LoggingManager.CONSOLE_APPENDER_NAME = "CONSOLE"
+    -->
+    <appender name="CONSOLE" class="ConsoleAppender">
+        <withJansi>true</withJansi>
+        <filter class="ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+
+        <filter class="ThrowableFilter"/>
+        <filter class="MessageFilter"/>
+
+        <encoder class="ConsoleEncoder">
+            <pattern>%message%n</pattern> <!-- Every log message gets a newline at the end (%n) -->
+        </encoder>
+    </appender>
+
+    <appender name="JTextPane" class="JTextPaneAppender">
+        <filter class="ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+
+        <filter class="ThrowableFilter"/>
+        <filter class="MessageFilter"/>
+    </appender>
+</included>

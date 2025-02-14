@@ -1,109 +1,17 @@
-<!-- this file goes in src/main/resources/logback.xml -->
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
 
 <configuration>
-    <!-- log filename creation -->
-    <property name="logDirectory" value="${application.home:-.}/log"/>
-    <timestamp key="appStartTimestamp" datePattern="yyyy-MM-dd'_'HH-mm-ss.SSS"/>
-    <property name="logFile" value="${logDirectory}/updater-${appStartTimestamp}"/>
+    <include resource="logback/uiAppenders.xml"/>   <!-- Console and gui appenders -->
+    <include resource="logback/fileAppenders.xml"/> <!-- *.log and *.html file appenders -->
+    <include resource="logback/vendorLoggers.xml"/> <!-- Set vendor logger levels -->
 
-    <!-- See org.selfbus.updater.gui.ConColorsToStyleDoc.RegExAnsi for explanation -->
-    <property name="ansiRegEx" value="\033\[(([;\d]*)[A-Hmsu]|(\?25[hl]))"/>
-    <property name="messageNoAnsi" value="replace(%message){'${ansiRegEx}', ''}"/>
-
-    <property name="htmlPattern" value="%d{HH:mm:ss.SSS}%thread%level%logger%method%line%${messageNoAnsi}"/>
-
-    <!--
-        In case the name of the appender (CONSOLE) is changed, it also must be changed in LoggingManager.java
-        org.selfbus.updater.logging.LoggingManager.CONSOLE_APPENDER_NAME = "CONSOLE"
-    -->
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <withJansi>true</withJansi>
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
-        </filter>
-        <!-- Custom filter for exceptions -->
-        <filter class="org.selfbus.updater.logging.ThrowableFilter"/>
-        <!-- Custom filter for messages -->
-        <filter class="org.selfbus.updater.logging.MessageFilter"/>
-
-        <encoder class="org.selfbus.updater.logging.ConsoleEncoder">
-            <pattern>%message%n</pattern>
-        </encoder>
-    </appender>
-
-    <appender name="JTextPane" class="org.selfbus.updater.logging.JTextPaneAppender">
-        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>INFO</level>
-        </filter>
-        <!-- Custom filter for exceptions -->
-        <filter class="org.selfbus.updater.logging.ThrowableFilter"/>
-        <!-- Custom filter for messages -->
-        <filter class="org.selfbus.updater.logging.MessageFilter"/>
-    </appender>
-
-    <appender name="logFile" class="ch.qos.logback.core.FileAppender">
-        <file>${logFile}.log</file>
-        <append>false</append>
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method \(%line\) %${messageNoAnsi}%n</pattern>
-            <!--
-               LogMx parser pattern:
-               %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %level [%logger] %method (%line) %message%n
-            -->
-        </encoder>
-        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
-            <Marker>CONSOLE_GUI_ONLY</Marker>
-        </filter>
-        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
-            <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
-        </filter>
-    </appender>
-
-    <appender name="htmlAppender" class="ch.qos.logback.core.FileAppender">
-        <file>${logFile}.html</file>
-        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="ch.qos.logback.classic.html.HTMLLayout">
-                <pattern>${htmlPattern}</pattern>
-            </layout>
-        </encoder>
-        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
-            <Marker>CONSOLE_GUI_ONLY</Marker>
-        </filter>
-        <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
-            <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
-        </filter>
-    </appender>
-
-<!--
-        <appender name="htmlWarnAppender" class="ch.qos.logback.core.FileAppender">
-            <file>${logFile}-warn.html</file>
-            <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-                <level>WARN</level>
-            </filter>
-            <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-                <layout class="ch.qos.logback.classic.html.HTMLLayout">
-                    <pattern>${htmlPattern}</pattern>
-                </layout>
-            </encoder>
-            <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
-                <Marker>CONSOLE_GUI_ONLY</Marker>
-            </filter>
-            <filter class="org.selfbus.updater.logging.ExcludeMarkerFilter">
-                <Marker>CONSOLE_GUI_NO_NEWLINE</Marker>
-            </filter>
-        </appender>
--->
     <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
-    <root level="TRACE">
+    <root level="TRACE"> <!-- just ignore the IDEA warning "Attribute level is not allowed here", it is allowed :) -->
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="JTextPane" />
         <appender-ref ref="logFile" />
         <appender-ref ref="htmlAppender" />
         <!-- <appender-ref ref="htmlWarnAppender" />  -->
     </root>
-
-    <!-- Suppress logs -->
-    <logger name="sun.awt" level="WARN" />
-    <logger name="java.awt" level="WARN" />
-    <logger name="javax.swing" level="WARN" />
 </configuration>
