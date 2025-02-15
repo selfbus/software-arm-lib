@@ -107,7 +107,7 @@ public class ConColorsToStyledDocTests {
         assertStyleForeground(foregroundColor);
 
         testColorCodeToStyle(new String[]{"43"});
-        assertStyleBackground(normalColor(java.awt.Color.orange));
+        assertStyleBackground(normalColor(java.awt.Color.yellow));
         assertStyleForeground(foregroundColor);
     }
 

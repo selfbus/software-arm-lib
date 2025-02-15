@@ -278,8 +278,7 @@ public final class ConColorsToStyledDoc {
                     StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.green));
                     break;
                 case 33: // Foreground color yellow
-                    // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.orange));
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.yellow));
                     break;
                 case 34: // Foreground color blue
                     StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.blue));
@@ -311,8 +310,7 @@ public final class ConColorsToStyledDoc {
                     StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.green));
                     break;
                 case 43: // Background color yellow
-                    // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.orange));
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.yellow));
                     break;
                 case 44: // Background color blue
                     StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.blue));
@@ -348,8 +346,7 @@ public final class ConColorsToStyledDoc {
                     StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.green));
                     break;
                 case 93: // Bright foreground color yellow
-                    // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.orange));
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.yellow));
                     break;
                 case 94: // Bright foreground color blue
                     StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.blue));
@@ -383,8 +380,7 @@ public final class ConColorsToStyledDoc {
                     StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.green));
                     break;
                 case 103: // Bright background color yellow
-                    // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.orange));
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.yellow));
                     break;
                 case 104: // Bright background color blue
                     StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.blue));
