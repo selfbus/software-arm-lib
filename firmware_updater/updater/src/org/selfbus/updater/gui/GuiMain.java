@@ -429,9 +429,26 @@ public class GuiMain extends JFrame {
             }
         });
         setVisible(true);
-        if (textBoxKnxGatewayIpAddr.getText().isEmpty()) {
+        if (!isGatewaySet()) {
             new Thread(this::loadKnxIpInterfacesAndFillComboBox).start();
         }
+    }
+
+    private boolean isGatewaySet() {
+        if (!textBoxKnxGatewayIpAddr.getText().isEmpty()) {
+            return true;
+        }
+        if (!textFieldSerial.getText().isEmpty()) {
+            return true;
+        }
+
+        //todo implement USB check ala
+        /*
+        if (!textFieldUSB.getText().isEmpty()) {
+            return true;
+        }
+        */
+        return !textFieldTpuart.getText().isEmpty();
     }
 
     private void loadKnxIpInterfacesAndFillComboBox() {
