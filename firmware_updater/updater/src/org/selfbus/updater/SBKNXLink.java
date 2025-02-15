@@ -129,7 +129,7 @@ public class SBKNXLink {
         } else if (!cliOptions.getTpuartSerialPort().isEmpty()) {
             // create TPUART network link
             KNXNetworkLinkTpuart linkTpuart = new KNXNetworkLinkTpuart(cliOptions.getTpuartSerialPort(), medium, Collections.emptyList());
-            linkTpuart.addAddress(cliOptions.getOwnPhysicalAddress()); //\todo check if this is rly needed
+            linkTpuart.addAddress(cliOptions.getOwnPhysicalAddress());
             return linkTpuart;
         } else if (!cliOptions.getUsbVendorIdAndProductId().isEmpty()) {
             // create USB network link
