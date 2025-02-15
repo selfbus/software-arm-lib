@@ -89,7 +89,7 @@ public class BootDescriptor {
             res = String.format("%s  valid%s", ansi().fgBright(GREEN), ansi().reset());
         }
         else {
-            res = String.format("%sinvalid%s", ansi().fg(RED), ansi().reset());
+            res = String.format("%sinvalid%s", ansi().fgBright(RED), ansi().reset());
         }
         res = String.format("%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X, APP_VERSION pointer: 0x%04X",
                 res, long2short(startAddress()), long2short(endAddress()), length(), crc32(), long2short(appVersionAddress()));

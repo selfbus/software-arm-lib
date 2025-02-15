@@ -199,7 +199,7 @@ public class DeviceManagement implements AutoCloseable {
                 long minMajorVersion = result[DATA_POSITION] & 0xff;
                 long minMinorVersion = result[DATA_POSITION + 1] & 0xff;
                 logger.error("{}Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.{}",
-                        ansi().fg(RED), ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ansi().reset());
+                        ansi().fgBright(RED), ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ansi().reset());
             }
             restartProgrammingDevice();
             throw new UpdaterException("Requesting Bootloader Identity failed!");
@@ -214,7 +214,7 @@ public class DeviceManagement implements AutoCloseable {
         if (!versionsMatch)
         {
             logger.error("{}Bootloader version {} is not compatible, please update Bootloader to version {} or higher{}",
-                    ansi().fg(RED), bl.getVersion(), ToolInfo.minVersionBootloader(), ansi().reset());
+                    ansi().fgBright(RED), bl.getVersion(), ToolInfo.minVersionBootloader(), ansi().reset());
             throw new UpdaterException("Bootloader version not compatible!");
         }
         return bl;
@@ -404,7 +404,7 @@ public class DeviceManagement implements AutoCloseable {
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
         UPDCommand command = UPDCommand.tryFromByteArray(result);
         if (command != UPDCommand.RESPONSE_STATISTIC) {
-            logger.warn("Requesting Bootloader statistic {}failed!{}", ansi().fg(RED), ansi().reset());
+            logger.warn("Requesting Bootloader statistic {}failed!{}", ansi().fgBright(RED), ansi().reset());
             return null;
         }
         BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
@@ -422,7 +422,7 @@ public class DeviceManagement implements AutoCloseable {
 
     private void handleKNXException(final UPDCommand command, final KNXException e) throws
             UpdaterException, InterruptedException {
-        logger.warn("{}{}{} ({} {})", ansi().fg(RED), e.getMessage(), ansi().reset(),
+        logger.warn("{}{}{} ({} {})", ansi().fgBright(RED), e.getMessage(), ansi().reset(),
                 e.getClass().getSimpleName(), command);
         try {
             reconnect(cliOptions.getReconnectMs());

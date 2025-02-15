@@ -186,7 +186,7 @@ public class Updater implements Runnable {
             if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
-                    logger.error("{}File '{}' does not exist!{}", ansi().fg(RED), cliOptions.getFileName(), ansi().reset());
+                    logger.error("{}File '{}' does not exist!{}", ansi().fgBright(RED), cliOptions.getFileName(), ansi().reset());
                     throw new UpdaterException(String.format("File '%s' does not exist!", cliOptions.getFileName()));
                 }
                 // Load Firmware hex file
@@ -200,7 +200,7 @@ public class Updater implements Runnable {
             }
             else {
                 logger.info("{}No firmware file (*.hex) specified! Specify with --{}{}",
-                        ansi().fg(RED), CliOptions.OPT_LONG_FILENAME, ansi().reset());
+                        ansi().fgBright(RED), CliOptions.OPT_LONG_FILENAME, ansi().reset());
                 logger.info("{}Reading only device information{}", ansi().fgBright(YELLOW), ansi().reset());
             }
 
@@ -309,7 +309,7 @@ public class Updater implements Runnable {
 
             if (!dm.setBlockSize(cliOptions.getBlockSize())) {
                 logger.info("{}Connected bootloader doesn't support block size {}. Using {} bytes.{}",
-                        ansi().fg(YELLOW), cliOptions.getBlockSize(), dm.getBlockSize(), ansi().reset());
+                        ansi().fgBright(YELLOW), cliOptions.getBlockSize(), dm.getBlockSize(), ansi().reset());
             }
 
             if (!cliOptions.getNoFlashIsSet()) { // is flashing firmware disabled? for debugging use only!
@@ -336,7 +336,7 @@ public class Updater implements Runnable {
             }
             else {
                 logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH,
-                        ansi().fg(RED), ansi().reset());
+                        ansi().fgBright(RED), ansi().reset());
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
@@ -355,7 +355,7 @@ public class Updater implements Runnable {
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
                 logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job{}",
-                        ansi().fg(GREEN),
+                        ansi().fgBright(GREEN),
                         String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f),
                         ansi().reset());
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
@@ -417,7 +417,7 @@ public class Updater implements Runnable {
         }
         catch (UpdaterException | KNXException e) {
             logger.error("{}An error occurred while retrieving the UID. {}{}{}",
-                    ansi().fg(RED), System.lineSeparator(), e, ansi().reset());
+                    ansi().fgBright(RED), System.lineSeparator(), e, ansi().reset());
             throw e;
         }
     }

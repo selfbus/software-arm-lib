@@ -386,7 +386,7 @@ public class GuiMain extends JFrame {
     }
 
     private void displayCommandLine(CliOptions cliOptions) {
-        logger.info("{}java -jar {} {}{}", ansi().fg(YELLOW), ToolInfo.getToolJarName(),
+        logger.info("{}java -jar {} {}{}", ansi().fgBright(YELLOW), ToolInfo.getToolJarName(),
                 cliOptions.reconstructCommandLine(), ansi().reset());
     }
 

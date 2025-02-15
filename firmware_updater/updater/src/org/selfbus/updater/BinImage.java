@@ -129,7 +129,7 @@ public class BinImage {
         File binFile = new File(fileName);
         if (!binFile.getParentFile().exists()) {
             if (!binFile.getParentFile().mkdirs()) {
-                logger.warn("{}Could not create bin-file directory {}{}", ansi().fg(RED),
+                logger.warn("{}Could not create bin-file directory {}{}", ansi().fgBright(RED),
                         binFile.getParentFile().toString(), ansi().reset());
             }
             return;
@@ -138,7 +138,7 @@ public class BinImage {
         try (FileOutputStream fos = new FileOutputStream(binFile)) {
             fos.write(binData);
         } catch (IOException e) {
-            logger.warn("{}Could not write bin-file {}{}", ansi().fg(RED), binFile.getPath(), ansi().reset());
+            logger.warn("{}Could not write bin-file {}{}", ansi().fgBright(RED), binFile.getPath(), ansi().reset());
         }
     }
 

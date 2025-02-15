@@ -28,7 +28,7 @@ public class GuiUncaughtExceptionHandler implements Thread.UncaughtExceptionHand
     @Override
     public void uncaughtException(Thread thread, Throwable throwable) {
         logger.error("{}Uncaught exception in thread {} {}{}",
-                ansi().fg(RED) , thread.getName(), throwable.toString(), ansi().reset(), throwable);
+                ansi().fgBright(RED) , thread.getName(), throwable.toString(), ansi().reset(), throwable);
 
         // todo see logback issue #876
         // https://github.com/qos-ch/logback/issues/876

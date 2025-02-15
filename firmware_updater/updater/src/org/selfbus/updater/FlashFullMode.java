@@ -112,7 +112,7 @@ public class FlashFullMode {
 
                 case IAP_COMPARE_ERROR:
                     throw new UpdaterException(String.format("ProgramData update failed. %sTry again with option '--%s 256'%s",
-                            ansi().fg(RED), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
+                            ansi().fgBright(RED), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
                 default:
                     dm.restartProgrammingDevice();
                     throw new UpdaterException("ProgramData update failed.");
