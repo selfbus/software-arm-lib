@@ -182,9 +182,31 @@ public class SBManagementClientImpl extends ManagementClientImpl {
             throw new UpdaterException(String.format("asdu.length (%d) exceeds MAX_ASDU_LENGTH (%d)",
                     asdu.length, MAX_ASDU_LENGTH));
         }
+
         send = DataUnitBuilder.createAPDU(apciWrite, asdu);
 
-        return this.sendWait(dst, getPriority(), send, apciResponse, 2, MAX_ASDU_LENGTH, responseTimeout());
+        byte[] response;
+        try {
+            response = this.sendWait(dst, getPriority(), send, apciResponse, 2, MAX_ASDU_LENGTH, responseTimeout());
+        }
+        // We "try catch" here to catch at least once a KNXAckTimeoutException.
+        // It´s thrown on missing/faulty ack at linklayer level, but we never have seen it.
+        // Check public void send(final CEMI frame, final BlockingMode mode) in ConnectionBase.java
+        catch (KNXAckTimeoutException e) {
+            logger.error("Unexpected: never seen before {}", e);
+            // Delete logger.error, if you don´t get  in line above IDEA warning "Fewer arguments provided (0) than placeholders specified (1)"
+            logger.error("", e);
+            throw e;
+        }
+        catch (KNXException e) {
+            if (e.getCause() instanceof KNXAckTimeoutException) {
+                logger.error("Unexpected: never seen before e.getCause() {}", e.getCause());
+                // Delete logger.error, if you don´t get  in line above IDEA warning "Fewer arguments provided (0) than placeholders specified (1)"
+                logger.error("", e.getCause());
+            }
+            throw e;
+        }
+        return response;
     }
 
     @Override

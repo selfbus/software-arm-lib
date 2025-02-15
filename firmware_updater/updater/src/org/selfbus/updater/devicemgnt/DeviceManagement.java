@@ -418,21 +418,10 @@ public class DeviceManagement implements AutoCloseable {
         return link.isOpen();
     }
 
-    private void handleKNXException(final UPDCommand command, final KNXException e, final boolean reconnect) throws
+    private void handleKNXException(final UPDCommand command, final KNXException e) throws
             UpdaterException, InterruptedException {
-        if (e instanceof KNXAckTimeoutException) {
-            // This exception is on missing/faulty ack at linklayer level thrown, but we never see it here
-            // todo check public void send(final CEMI frame, final BlockingMode mode) in ConnectionBase
-            logger.warn("{}Unexpected: never seen before {}{}", ansi().fg(RED), e.getClass().getSimpleName(),ansi().reset());
-        }
-
         logger.warn("{}{}{} ({} {})", ansi().fg(RED), e.getMessage(), ansi().reset(),
                 e.getClass().getSimpleName(), command);
-
-        if (!reconnect) {
-            return;
-        }
-
         try {
             reconnect(cliOptions.getReconnectMs());
         }
@@ -451,21 +440,20 @@ public class DeviceManagement implements AutoCloseable {
                 result.copyFromArray(data2);
                 return result;
             }
-            ///\todo check causes of KNXRemoteException, i think they are unrecoverable
             catch (KNXDisconnectException | KNXLinkClosedException e) {
                 lastCaughtException = e;
                 result.incDropCount();
-                handleKNXException(command, e, true);
+                handleKNXException(command, e);
             }
             catch (KNXTimeoutException e) {
                 // Can happen on a L2 tunnel request ACK timeout or a TL4 ACK timeout
                 lastCaughtException = e;
                 result.incTimeoutCount();
-                handleKNXException(command, e, true);
+                handleKNXException(command, e);
             }
             catch (KNXInvalidResponseException e) {
                 lastCaughtException = e;
-                handleKNXException(command, e, true);
+                handleKNXException(command, e);
             }
             finally {
                 if (!isLinkAlive()) {
