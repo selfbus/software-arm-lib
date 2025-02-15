@@ -77,13 +77,15 @@ public class DeviceManagement implements AutoCloseable {
         this.cliOptions = cliOptions;
     }
 
-    public void reconnect(int waitMs) throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
+    public void reconnect(final int waitMs) throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
         close();
-        if (waitMs <= 0) {
-            waitMs = 100;
+        if (waitMs > 0) {
+            logger.info("Reconnecting in {}ms", waitMs);
+            Thread.sleep(waitMs);
         }
-        logger.info("Reconnecting in {} ms", waitMs);
-        Thread.sleep(waitMs);
+        else {
+            logger.info("Reconnecting now");
+        }
         open();
     }
 
