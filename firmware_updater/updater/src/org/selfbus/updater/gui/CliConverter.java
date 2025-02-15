@@ -6,26 +6,26 @@ import java.util.Objects;
 
 public final class CliConverter {
     @SuppressWarnings("unused")
-    CliConverter() {}
+    private CliConverter() {}
 
     public static String argument(String cliLongOption, JTextField textField) {
-        return argument(cliLongOption, textField.getText(), true);
+        return buildArgument(cliLongOption, textField.getText(), true);
     }
 
     public static String argument(String cliLongOption, JComboBox<String> comboBox) {
-        return argument(cliLongOption, Objects.requireNonNull(comboBox.getSelectedItem()).toString(), true);
+        return buildArgument(cliLongOption, Objects.requireNonNull(comboBox.getSelectedItem()).toString(), true);
     }
 
     public static String argument(String cliLongOption) {
-        return argument(cliLongOption, "", false);
+        return buildArgument(cliLongOption, "", false);
     }
 
-    public static String argument(String cliLongOption, String argValue, boolean argValueRequired) {
+    private static String buildArgument(String cliLongOption, String argValue, boolean argValueRequired) {
         cliLongOption = cliLongOption.trim();
         argValue = argValue.trim();
 
-        if ((argValueRequired) && (argValue.isEmpty())) {
-            return ""; //todo maybe throw an exception in this case?
+        if (argValueRequired && argValue.isEmpty()) {
+            return ""; // Discard the argument if argValue is required, but not provided
         }
 
         if (argValue.isEmpty()) {
