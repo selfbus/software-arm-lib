@@ -24,6 +24,10 @@ public class GuiSettings {
         this.parent = null;
     }
 
+    private ObjectNode getObjectNode() {
+        return objectMapper.createObjectNode();
+    }
+
     public GuiSettings(JFrame parent) {
         this.parent = parent;
         logger.debug("parent: {} name: {}", this.parent.getClass().getName(), this.parent.getName());
@@ -43,10 +47,10 @@ public class GuiSettings {
 
     private void readComponentData(Component component, JsonNode node) {
         String nodeKey;
-        //todo this is a bad hack, because our GuiMain.MainFrame is saved with json key `ObjectNode`
-        // not sure why
+        // GuiMain.MainFrame is saved with json root key `ObjectNode`s simple class name
+        // this.getObjectNode() ensures that we set the same nodeKey as in writeComponentsData()
         if (component == parent) {
-            nodeKey = "ObjectNode";
+            nodeKey = this.getObjectNode().getClass().getSimpleName();
         }
         else {
             nodeKey = getComponentSettingKey(component);
@@ -76,7 +80,7 @@ public class GuiSettings {
     }
 
     private JsonNode writeComponentsData(Component component) {
-        ObjectNode node = objectMapper.createObjectNode();
+        ObjectNode node = getObjectNode();
         if (component instanceof JCheckBox checkBox) {
             node.put("selected", checkBox.isSelected());
         }
