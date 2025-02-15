@@ -200,7 +200,7 @@ public class Updater implements Runnable {
             }
             else {
                 logger.info("{}No firmware file (*.hex) specified! Specify with --{}{}",
-                        ansi().bg(RED).fg(BLACK), CliOptions.OPT_LONG_FILENAME, ansi().reset());
+                        ansi().fg(RED), CliOptions.OPT_LONG_FILENAME, ansi().reset());
                 logger.info("{}Reading only device information{}", ansi().fgBright(YELLOW), ansi().reset());
             }
 
@@ -355,7 +355,7 @@ public class Updater implements Runnable {
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
                 logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job{}",
-                        ansi().bg(GREEN).fg(BLACK),
+                        ansi().fg(GREEN),
                         String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f),
                         ansi().reset());
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
