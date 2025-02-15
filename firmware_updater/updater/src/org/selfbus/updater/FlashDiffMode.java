@@ -19,7 +19,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 import static org.selfbus.updater.Mcu.MAX_PAYLOAD;
 
 /**
@@ -66,7 +66,7 @@ public final class FlashDiffMode {
         }
         else {
             logger.warn("Current device firmware not found in cache {}", Utils.shortenPath(oldFileName, DEFAULT_DISPLAYED_PATH_DEPTH));
-            logger.warn("{}  --> switching to FULL upload mode{}", ansi().fgBright(RED), ansi().reset());
+            logger.warn("{}  --> switching to FULL upload mode{}", ansi().fgBright(WARN), ansi().reset());
             initialized = false;
         }
         return  initialized;

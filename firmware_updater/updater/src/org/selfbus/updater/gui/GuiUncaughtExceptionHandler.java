@@ -7,7 +7,7 @@ import javax.swing.*;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 
 public class GuiUncaughtExceptionHandler implements Thread.UncaughtExceptionHandler {
@@ -28,7 +28,7 @@ public class GuiUncaughtExceptionHandler implements Thread.UncaughtExceptionHand
     @Override
     public void uncaughtException(Thread thread, Throwable throwable) {
         logger.error("{}Uncaught exception in thread {} {}{}",
-                ansi().fgBright(RED) , thread.getName(), throwable.toString(), ansi().reset(), throwable);
+                ansi().fgBright(WARN) , thread.getName(), throwable.toString(), ansi().reset(), throwable);
 
         // todo see logback issue #876
         // https://github.com/qos-ch/logback/issues/876

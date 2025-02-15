@@ -26,7 +26,7 @@ import java.time.Duration;
 import java.util.Arrays;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 import static org.selfbus.updater.Mcu.MAX_FLASH_ERASE_TIMEOUT;
 import static org.selfbus.updater.logging.Markers.CONSOLE_GUI_ONLY;
 import static org.selfbus.updater.logging.Markers.CONSOLE_GUI_NO_NEWLINE;
@@ -129,7 +129,7 @@ public class DeviceManagement implements AutoCloseable {
     private void waitRestartTime(int restartTimeSeconds) throws InterruptedException {
         while (restartTimeSeconds > 0) {
             Thread.sleep(1000);
-            logger.info(CONSOLE_GUI_NO_NEWLINE, String.format("%s.%s", ansi().fgBright(GREEN), ansi().reset()));
+            logger.info(CONSOLE_GUI_NO_NEWLINE, String.format("%s.%s", ansi().fgBright(OK), ansi().reset()));
             restartTimeSeconds--;
         }
         logger.info(CONSOLE_GUI_ONLY, ""); // Just a new line
@@ -146,14 +146,14 @@ public class DeviceManagement implements AutoCloseable {
             logger.info("Restarting device {} into bootloader", device);
             restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             logger.info("Device {} reported {}{}{} second(s) for restarting",
-                    device, ansi().fgBright(GREEN), restartProcessTime, ansi().reset());
+                    device, ansi().fgBright(OK), restartProcessTime, ansi().reset());
             waitRestartTime(restartProcessTime);
         } catch (final KNXException e) {
             logger.info("{}Restart state of device {} unknown. {}{}",
-                    ansi().fgBright(RED), device, e.getMessage(), ansi().reset());
+                    ansi().fgBright(WARN), device, e.getMessage(), ansi().reset());
             logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
             logger.info("Waiting {}{}{} seconds for device {} to restart",
-                    ansi().fgBright(GREEN), restartProcessTime, ansi().reset(), device);
+                    ansi().fgBright(OK), restartProcessTime, ansi().reset(), device);
             waitRestartTime(restartProcessTime);
         }
     }
@@ -199,14 +199,14 @@ public class DeviceManagement implements AutoCloseable {
                 long minMajorVersion = result[DATA_POSITION] & 0xff;
                 long minMinorVersion = result[DATA_POSITION + 1] & 0xff;
                 logger.error("{}Selfbus Updater version {} is not compatible. Please update to version {}.{} or higher.{}",
-                        ansi().fgBright(RED), ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ansi().reset());
+                        ansi().fgBright(WARN), ToolInfo.getVersion(), minMajorVersion, minMinorVersion, ansi().reset());
             }
             restartProgrammingDevice();
             throw new UpdaterException("Requesting Bootloader Identity failed!");
         }
 
         BootloaderIdentity bl = BootloaderIdentity.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
-        logger.info("Device Bootloader: {}{}{}", ansi().fgBright(YELLOW), bl, ansi().reset());
+        logger.info("Device Bootloader: {}{}{}", ansi().fgBright(INFO), bl, ansi().reset());
 
         boolean versionsMatch = (bl.versionMajor() > ToolInfo.minMajorVersionBootloader()) ||
                 ((bl.versionMajor() == ToolInfo.minMajorVersionBootloader()) && (bl.versionMinor() >= ToolInfo.minMinorVersionBootloader()));
@@ -214,7 +214,7 @@ public class DeviceManagement implements AutoCloseable {
         if (!versionsMatch)
         {
             logger.error("{}Bootloader version {} is not compatible, please update Bootloader to version {} or higher{}",
-                    ansi().fgBright(RED), bl.getVersion(), ToolInfo.minVersionBootloader(), ansi().reset());
+                    ansi().fgBright(WARN), bl.getVersion(), ToolInfo.minVersionBootloader(), ansi().reset());
             throw new UpdaterException("Bootloader version not compatible!");
         }
         return bl;
@@ -356,7 +356,7 @@ public class DeviceManagement implements AutoCloseable {
         // append one space, just in case an exception message may come up
         String logText = String.format("%s%s%s%s ",
                 AnsiCursor.off(),
-                ansi().cursorToColumn(1).fgBright(GREEN).a(SpinningCursor.getNext()).reset(),
+                ansi().cursorToColumn(1).fgBright(OK).a(SpinningCursor.getNext()).reset(),
                 progressInfo,
                 AnsiCursor.on());
         logger.info(CONSOLE_GUI_NO_NEWLINE, logText);
@@ -404,7 +404,7 @@ public class DeviceManagement implements AutoCloseable {
         byte[] result = sendWithRetry(UPDCommand.REQUEST_STATISTIC, new byte[0], getMaxUpdCommandRetry()).data();
         UPDCommand command = UPDCommand.tryFromByteArray(result);
         if (command != UPDCommand.RESPONSE_STATISTIC) {
-            logger.warn("Requesting Bootloader statistic {}failed!{}", ansi().fgBright(RED), ansi().reset());
+            logger.warn("Requesting Bootloader statistic {}failed!{}", ansi().fgBright(WARN), ansi().reset());
             return null;
         }
         BootloaderStatistic blStatistic = BootloaderStatistic.fromArray(Arrays.copyOfRange(result, DATA_POSITION, result.length));
@@ -422,7 +422,7 @@ public class DeviceManagement implements AutoCloseable {
 
     private void handleKNXException(final UPDCommand command, final KNXException e) throws
             UpdaterException, InterruptedException {
-        logger.warn("{}{}{} ({} {})", ansi().fgBright(RED), e.getMessage(), ansi().reset(),
+        logger.warn("{}{}{} ({} {})", ansi().fgBright(WARN), e.getMessage(), ansi().reset(),
                 e.getClass().getSimpleName(), command);
         try {
             reconnect(cliOptions.getReconnectMs());
@@ -485,7 +485,7 @@ public class DeviceManagement implements AutoCloseable {
             	return;
             }
             logger.warn("{}{} Device(s) in bootloader/programming mode: {}{}",
-                    ansi().fgBright(RED), devices.length, Arrays.stream(devices).toArray(), ansi().reset());
+                    ansi().fgBright(WARN), devices.length, Arrays.stream(devices).toArray(), ansi().reset());
             if (devices.length == 0) {
                 throw new UpdaterException("No device in programming mode.");
             }

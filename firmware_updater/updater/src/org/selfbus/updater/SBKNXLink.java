@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Objects;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 
 public class SBKNXLink {
     private static final Logger logger = LoggerFactory.getLogger(SBKNXLink.class);
@@ -59,13 +59,13 @@ public class SBKNXLink {
 
     private KNXNetworkLink createTunnelingLinkV1(InetSocketAddress local, InetSocketAddress remote, boolean useNat,
                                          KNXMediumSettings medium) throws KNXException, InterruptedException {
-        logger.info("{}Connect using UDP tunneling v1 (nat:{}){}", ansi().fgBright(YELLOW), useNat, ansi().reset());
+        logger.info("{}Connect using UDP tunneling v1 (nat:{}){}", ansi().fgBright(INFO), useNat, ansi().reset());
         return KNXNetworkLinkIP.newTunnelingLink(local, remote, useNat, medium);
     }
 
     private KNXNetworkLink createRoutingLink(InetSocketAddress local, KNXMediumSettings medium) throws KNXException {
         logger.info("{}Connect using routing (multicast:{}){}",
-                ansi().fgBright(YELLOW), KNXnetIPRouting.DefaultMulticast, ansi().reset());
+                ansi().fgBright(INFO), KNXnetIPRouting.DefaultMulticast, ansi().reset());
 
         return KNXNetworkLinkIP.newRoutingLink(local.getAddress(), KNXnetIPRouting.DefaultMulticast, medium);
     }
@@ -175,7 +175,7 @@ public class SBKNXLink {
             return testLink;
         } catch (final KNXException e) {
             cliOptions.setTunnelingV1isSet(false);
-            logger.info("{}failed with {}: {}{}", ansi().fgBright(YELLOW), e.getClass().getSimpleName(), e.getMessage(),
+            logger.info("{}failed with {}: {}{}", ansi().fgBright(INFO), e.getClass().getSimpleName(), e.getMessage(),
                     ansi().reset());
         }
 

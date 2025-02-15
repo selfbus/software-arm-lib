@@ -5,13 +5,14 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+
+import static org.selfbus.updater.logging.Color.*;
 
 public class BootloaderStatisticTest {
     @Test
     public void testToString() {
-        String colorOK = ansi().fgBright(GREEN).toString();
-        String colorWarn = ansi().fgBright(YELLOW).toString();
+        String colorOK = ansi().fgBright(OK).toString();
+        String colorWarn = ansi().fgBright(INFO).toString();
         String colorReset = ansi().reset().toString();
         String info1 = "";
         String info2 = " ";

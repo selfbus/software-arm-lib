@@ -2,9 +2,8 @@ package org.selfbus.updater.progress;
 
 import org.fusesource.jansi.Ansi;
 
-import static org.fusesource.jansi.Ansi.Color.GREEN;
-import static org.fusesource.jansi.Ansi.Color.YELLOW;
 import static org.fusesource.jansi.Ansi.ansi;
+import static org.selfbus.updater.logging.Color.*;
 
 public class ProgressInfo {
     private long startTimeMs;
@@ -60,10 +59,10 @@ public class ProgressInfo {
         }
         Ansi.Color color;
         if (bytesPerSecond >= 50.0) {
-            color = GREEN;
+            color = OK;
         }
         else {
-            color = YELLOW;
+            color = INFO;
         }
         return String.format("%s%5.1f%s", ansi().fgBright(color), bytesPerSecond, ansi().reset());
     }

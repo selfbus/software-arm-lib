@@ -4,7 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 
 /**
  * Implementation of the UPD/UDP protocol handling
@@ -40,7 +40,7 @@ public final class UPDProtocol {
 
         UDPResult udpResult = UDPResult.valueOf(result[DATA_POSITION]);
         if (udpResult.isError()) {
-            logger.error("{}{}{} ({})", ansi().fgBright(RED), udpResult.getDescription(), ansi().reset(), udpResult.name());
+            logger.error("{}{}{} ({})", ansi().fgBright(WARN), udpResult.getDescription(), ansi().reset(), udpResult.name());
         } else {
             if (verbose) {
                 logger.trace("done ({})", udpResult.name());

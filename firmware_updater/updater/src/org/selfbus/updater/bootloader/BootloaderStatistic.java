@@ -3,7 +3,7 @@ package org.selfbus.updater.bootloader;
 import org.selfbus.updater.Utils;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 
 public class BootloaderStatistic {
     public static final int THRESHOLD_DISCONNECT = 1;
@@ -26,9 +26,9 @@ public class BootloaderStatistic {
     private static String toColoredThreshold(int value, int threshold) {
         String ansiColor;
         if (value > threshold) {
-            ansiColor = ansi().fgBright(YELLOW).toString();
+            ansiColor = ansi().fgBright(INFO).toString();
         } else {
-            ansiColor = ansi().fgBright(GREEN).toString();
+            ansiColor = ansi().fgBright(OK).toString();
         }
         return String.format("%s%2d%s", ansiColor, value, ansi().reset());
     }

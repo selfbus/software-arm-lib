@@ -3,7 +3,7 @@ package org.selfbus.updater.bootloader;
 import org.selfbus.updater.Utils;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 
 /**
  *  Holds Application Boot Block Descriptor the MCU's bootloader
@@ -86,10 +86,10 @@ public class BootDescriptor {
     public String toString() {
         String res;
         if (valid()) {
-            res = String.format("%s  valid%s", ansi().fgBright(GREEN), ansi().reset());
+            res = String.format("%s  valid%s", ansi().fgBright(OK), ansi().reset());
         }
         else {
-            res = String.format("%sinvalid%s", ansi().fgBright(RED), ansi().reset());
+            res = String.format("%sinvalid%s", ansi().fgBright(WARN), ansi().reset());
         }
         res = String.format("%s, 0x%04X-0x%04X, %5d byte(s), crc32 0x%08X, APP_VERSION pointer: 0x%04X",
                 res, long2short(startAddress()), long2short(endAddress()), length(), crc32(), long2short(appVersionAddress()));

@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 
 /**
  * Parses command line interface (cli) options for the application
@@ -561,57 +561,57 @@ public class CliOptions {
         // differential mode and eraseflash makes no sense
         if (getEraseFullFlashIsSet() && (!getFlashingFullModeIsSet())) {
             setFlashingFullModeIsSet(true);
-            logger.info("{}--{} is set. --> switching to full flash mode{}", ansi().fgBright(RED),
+            logger.info("{}--{} is set. --> switching to full flash mode{}", ansi().fgBright(WARN),
                     OPT_LONG_ERASEFLASH, ansi().reset());
         }
 
         // nat only possible with tunneling v1
         if (getNatIsSet() && (!getTunnelingV1isSet())) {
             throw new CliInvalidException(String.format("%sOption --%s can only be used together with --%s%s",
-                    ansi().fgBright(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ansi().reset()));
+                    ansi().fgBright(WARN), OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ansi().reset()));
         }
 
         // nat not allowed with tunneling v2
         if (getNatIsSet() && (getTunnelingV2isSet())) {
             throw new CliInvalidException(String.format("%sOption --%s can not be used together with --%s%s",
-                    ansi().fgBright(RED), OPT_LONG_NAT, OPT_LONG_TUNNEL_V2, ansi().reset()));
+                    ansi().fgBright(WARN), OPT_LONG_NAT, OPT_LONG_TUNNEL_V2, ansi().reset()));
         }
 
         // check IP-secure configuration
         if (!(getKnxSecureUserPassword().isEmpty()) || !(getKnxSecureDevicePassword().isEmpty())) {
             if (getKnxInterface().isBlank()) {
                 throw new CliInvalidException(String.format("%sNo IP-Interface specified for IP-secure%s",
-                        ansi().fgBright(RED), ansi().reset()));
+                        ansi().fgBright(WARN), ansi().reset()));
             }
             else if (!getUsbVendorIdAndProductId().isBlank()) {
                 throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                        ansi().fgBright(RED), OPT_LONG_USB, ansi().reset()));
+                        ansi().fgBright(WARN), OPT_LONG_USB, ansi().reset()));
             }
             else if (!getFt12SerialPort().isBlank()) {
                 throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                        ansi().fgBright(RED), OPT_LONG_FT12, ansi().reset()));
+                        ansi().fgBright(WARN), OPT_LONG_FT12, ansi().reset()));
             }
             else if (!getTpuartSerialPort().isBlank()) {
                 throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                        ansi().fgBright(RED), OPT_LONG_TPUART, ansi().reset()));
+                        ansi().fgBright(WARN), OPT_LONG_TPUART, ansi().reset()));
             }
             else if (getNatIsSet()) {
                 throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                        ansi().fgBright(RED), OPT_LONG_NAT, ansi().reset()));
+                        ansi().fgBright(WARN), OPT_LONG_NAT, ansi().reset()));
             }
             else if (getTunnelingV1isSet()) {
                 throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                        ansi().fgBright(RED), OPT_LONG_TUNNEL_V1, ansi().reset()));
+                        ansi().fgBright(WARN), OPT_LONG_TUNNEL_V1, ansi().reset()));
             }
             else if (getTunnelingV2isSet()) {
                 throw new CliInvalidException(String.format("%sIP-secure is not possible with --%s%s",
-                        ansi().fgBright(RED), OPT_LONG_TUNNEL_V2, ansi().reset()));
+                        ansi().fgBright(WARN), OPT_LONG_TUNNEL_V2, ansi().reset()));
             }
 
             // ensure that all three IP-Secure arguments are set
             if ((getKnxSecureUserPassword().isEmpty()) || (getKnxSecureDevicePassword().isEmpty())) {
                 throw new CliInvalidException(String.format("%sFor IP-secure --%s, --%s and --%s must be set%s",
-                        ansi().fgBright(RED), OPT_LONG_USER_ID, OPT_LONG_USER_PASSWORD, OPT_LONG_DEVICE_PASSWORD,
+                        ansi().fgBright(WARN), OPT_LONG_USER_ID, OPT_LONG_USER_PASSWORD, OPT_LONG_DEVICE_PASSWORD,
                         ansi().reset()));
             }
         }
@@ -789,7 +789,7 @@ public class CliOptions {
         else {
             this.localPort = 0;
             logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
-                    ansi().fgBright(RED), OPT_LONG_LOCALPORT, localPort, 0, 65535, this.localPort, ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_LOCALPORT, localPort, 0, 65535, this.localPort, ansi().reset());
         }
     }
 
@@ -803,7 +803,7 @@ public class CliOptions {
         catch (NumberFormatException e) {
             setLocalPort(0);
             logger.warn("{}option --{} {} is invalid => set to default {}{}",
-                    ansi().fgBright(RED), OPT_LONG_LOCALPORT, localPort, getLocalPort(), ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_LOCALPORT, localPort, getLocalPort(), ansi().reset());
         }
     }
 
@@ -819,7 +819,7 @@ public class CliOptions {
         else {
             this.port = KNXnetIPConnection.DEFAULT_PORT;
             logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
-                    ansi().fgBright(RED), OPT_LONG_PORT, port, 1, 65535, this.port, ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_PORT, port, 1, 65535, this.port, ansi().reset());
         }
     }
 
@@ -833,7 +833,7 @@ public class CliOptions {
         catch (NumberFormatException e) {
             setPort(KNXnetIPConnection.DEFAULT_PORT);
             logger.warn("{}option --{} {} is invalid => set to default {}{}",
-                    ansi().fgBright(RED), OPT_LONG_PORT, port, getPort(), ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_PORT, port, getPort(), ansi().reset());
         }
     }
 
@@ -967,7 +967,7 @@ public class CliOptions {
     private void setDelayMs(int delayMs) {
         if ((delayMs < Updater.DELAY_MIN) || (delayMs > Updater.DELAY_MAX)) {
             logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
-                    ansi().fgBright(RED), OPT_LONG_DELAY, delayMs, Updater.DELAY_MIN,
+                    ansi().fgBright(WARN), OPT_LONG_DELAY, delayMs, Updater.DELAY_MIN,
                     Updater.DELAY_MAX, Updater.DELAY_MIN, ansi().reset());
             delayMs = Updater.DELAY_MIN; // set to DELAY_MIN in case of invalid waiting time
         }
@@ -985,7 +985,7 @@ public class CliOptions {
         catch (NumberFormatException e) {
             setDelayMs(Updater.DELAY_MIN);
             logger.warn("{}option --{} {} is invalid => set to default {}{}",
-                    ansi().fgBright(RED), OPT_LONG_DELAY, delayMs, getDelayMs(), ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_DELAY, delayMs, getDelayMs(), ansi().reset());
         }
     }
 
@@ -1056,7 +1056,7 @@ public class CliOptions {
             setLogLevel(Level.toLevel(newLevel));
         }
         else {
-            logger.warn("{}invalid {} {}, using {}{}", ansi().fgBright(RED), OPT_LONG_LOGLEVEL, newLevel,
+            logger.warn("{}invalid {} {}, using {}{}", ansi().fgBright(WARN), OPT_LONG_LOGLEVEL, newLevel,
                     getLogLevel().toString(), ansi().reset());
         }
     }
@@ -1078,7 +1078,7 @@ public class CliOptions {
         }
         else {
             logger.warn("{}option --{} *** is invalid => set to default{}",
-                    ansi().fgBright(RED), OPT_LONG_USER_ID, ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_USER_ID, ansi().reset());
             this.knxSecureUserId = INVALID_SECURE_USER_ID;
             logger.debug("{}=", OPT_LONG_USER_ID);
         }
@@ -1094,7 +1094,7 @@ public class CliOptions {
         catch (NumberFormatException e) {
             setKnxSecureUserId(INVALID_SECURE_USER_ID);
             logger.warn("{}option --{} *** is invalid => set to default{}",
-                    ansi().fgBright(RED), OPT_LONG_USER_ID, ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_USER_ID, ansi().reset());
         }
     }
 
@@ -1132,7 +1132,7 @@ public class CliOptions {
             logger.debug("{}={}", OPT_LONG_PRIORITY, getPriority().toString());
         }
         catch (KNXIllegalArgumentException e) {
-            logger.warn("{}invalid --{} {}, using {}{}",ansi().fgBright(RED),  OPT_LONG_PRIORITY,
+            logger.warn("{}invalid --{} {}, using {}{}",ansi().fgBright(WARN),  OPT_LONG_PRIORITY,
                     priority, getPriority(), ansi().reset());
         }
     }
@@ -1156,7 +1156,7 @@ public class CliOptions {
         }
         else {
             this.blockSize = Mcu.UPD_PROGRAM_SIZE;
-            logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ansi().fgBright(YELLOW),
+            logger.info("{}--{} {} is not supported => Set --{} to default {} bytes{}", ansi().fgBright(INFO),
                     OPT_LONG_BLOCKSIZE, blockSize, OPT_LONG_BLOCKSIZE, getBlockSize(), ansi().reset());
         }
         logger.debug("{}={}", OPT_LONG_BLOCKSIZE, getBlockSize());
@@ -1172,7 +1172,7 @@ public class CliOptions {
         catch (NumberFormatException e) {
             setBlockSize(Mcu.UPD_PROGRAM_SIZE);
             logger.warn("{}option --{} {} is invalid => set to default {}{}",
-                    ansi().fgBright(RED), OPT_LONG_BLOCKSIZE, blockSize, getBlockSize(), ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_BLOCKSIZE, blockSize, getBlockSize(), ansi().reset());
         }
     }
 
@@ -1201,7 +1201,7 @@ public class CliOptions {
     private void setReconnectMs(int reconnectMs) {
         if ((reconnectMs < RECONNECT_MIN_MS) || (reconnectMs > RECONNECT_MAX_MS)) {
             logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
-                    ansi().fgBright(RED), OPT_LONG_RECONNECT, reconnectMs, RECONNECT_MIN_MS,
+                    ansi().fgBright(WARN), OPT_LONG_RECONNECT, reconnectMs, RECONNECT_MIN_MS,
                     RECONNECT_MAX_MS, RECONNECT_MIN_MS, ansi().reset());
             reconnectMs = RECONNECT_MIN_MS; // set to RECONNECT_MIN_MS in case of invalid time
         }
@@ -1219,7 +1219,7 @@ public class CliOptions {
         catch (NumberFormatException e) {
             setReconnectMs(RECONNECT_MIN_MS);
             logger.warn("{}option --{} {} is invalid => set to default {}{}",
-                    ansi().fgBright(RED), OPT_LONG_RECONNECT, reconnectMs, getReconnectMs(), ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_RECONNECT, reconnectMs, getReconnectMs(), ansi().reset());
         }
     }
 
@@ -1231,7 +1231,7 @@ public class CliOptions {
         if (((reconnectSeqNumber < RECONNECT_MIN_SEQ_NUMBER) || (reconnectSeqNumber > RECONNECT_MAX_SEQ_NUMBER)) &&
             (reconnectSeqNumber != RECONNECT_INVALID_SEQ_NUMBER)) {
             logger.warn("{}option --{} {} is invalid (min:{}, max:{}) => set to {}{}",
-                    ansi().fgBright(RED), OPT_LONG_RECONNECT_SEQ_NUMBER, reconnectSeqNumber, RECONNECT_MIN_SEQ_NUMBER,
+                    ansi().fgBright(WARN), OPT_LONG_RECONNECT_SEQ_NUMBER, reconnectSeqNumber, RECONNECT_MIN_SEQ_NUMBER,
                     RECONNECT_MAX_SEQ_NUMBER, RECONNECT_INVALID_SEQ_NUMBER, ansi().reset());
             reconnectSeqNumber = RECONNECT_INVALID_SEQ_NUMBER; // set to invalid
         }
@@ -1249,7 +1249,7 @@ public class CliOptions {
         catch (NumberFormatException e) {
             setReconnectSeqNumber(RECONNECT_INVALID_SEQ_NUMBER);
             logger.warn("{}option --{} {} is invalid => set to default {}{}",
-                    ansi().fgBright(RED), OPT_LONG_RECONNECT_SEQ_NUMBER, reconnectSeqNumber, getReconnectMs(), ansi().reset());
+                    ansi().fgBright(WARN), OPT_LONG_RECONNECT_SEQ_NUMBER, reconnectSeqNumber, getReconnectMs(), ansi().reset());
         }
     }
 

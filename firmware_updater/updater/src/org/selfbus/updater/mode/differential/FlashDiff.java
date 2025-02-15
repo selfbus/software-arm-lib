@@ -11,9 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.CRC32;
 
-import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
-
 public class FlashDiff {
     private final static Logger logger = LoggerFactory.getLogger(FlashDiff.class);
     private static final int MINIMUM_PATTERN_LENGTH = 6; // less that this is not efficient (metadata would be larger than data)

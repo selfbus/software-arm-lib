@@ -16,7 +16,7 @@ import tuwien.auto.calimero.link.KNXLinkClosedException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 
 /**
  * Provides full flash mode for the bootloader (MCU)
@@ -112,7 +112,7 @@ public class FlashFullMode {
 
                 case IAP_COMPARE_ERROR:
                     throw new UpdaterException(String.format("ProgramData update failed. %sTry again with option '--%s 256'%s",
-                            ansi().fgBright(RED), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
+                            ansi().fgBright(WARN), CliOptions.OPT_LONG_BLOCKSIZE, ansi().reset()));
                 default:
                     dm.restartProgrammingDevice();
                     throw new UpdaterException("ProgramData update failed.");

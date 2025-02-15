@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.fusesource.jansi.Ansi.*;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 import static org.selfbus.updater.logging.LoggingManager.CONSOLE_APPENDER_NAME;
 import static org.selfbus.updater.Utils.shortenPath;
 
@@ -79,13 +79,13 @@ public class Updater implements Runnable {
         }
 
         try {
-            logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), ToolInfo.getToolAndVersion(), ansi().reset());
+            logger.info("{}{}{}", ansi().fgBright(OK).bold(), ToolInfo.getToolAndVersion(), ansi().reset());
             // read in user-supplied command line options
             CliOptions options = new CliOptions(args, ToolInfo.getToolJarName() ,
                     "Selfbus KNX-Firmware update tool options", "");
             if (options.getVersionIsSet()) {
-                logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), Credits.getAsciiLogo(), ansi().reset());
-                logger.info("{}{}{}", ansi().fgBright(GREEN).bold(), Credits.getAuthors(), ansi().reset());
+                logger.info("{}{}{}", ansi().fgBright(OK).bold(), Credits.getAsciiLogo(), ansi().reset());
+                logger.info("{}{}{}", ansi().fgBright(OK).bold(), Credits.getAuthors(), ansi().reset());
                 ToolInfo.showVersion();
                 finalizeJansi();
                 return;
@@ -186,7 +186,7 @@ public class Updater implements Runnable {
             if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
-                    logger.error("{}File '{}' does not exist!{}", ansi().fgBright(RED), cliOptions.getFileName(), ansi().reset());
+                    logger.error("{}File '{}' does not exist!{}", ansi().fgBright(WARN), cliOptions.getFileName(), ansi().reset());
                     throw new UpdaterException(String.format("File '%s' does not exist!", cliOptions.getFileName()));
                 }
                 // Load Firmware hex file
@@ -194,14 +194,14 @@ public class Updater implements Runnable {
                 newFirmware = BinImage.readFromHex(hexFileName);
                 // Check for APP_VERSION string in new firmware
                 if (newFirmware.getAppVersion().isEmpty()) {
-                    logger.warn("{}  Missing APP_VERSION string in new firmware!{}", ansi().fgBright(RED), ansi().reset());
+                    logger.warn("{}  Missing APP_VERSION string in new firmware!{}", ansi().fgBright(WARN), ansi().reset());
                     throw new UpdaterException("Missing APP_VERSION string in firmware!");
                 }
             }
             else {
                 logger.info("{}No firmware file (*.hex) specified! Specify with --{}{}",
-                        ansi().fgBright(RED), CliOptions.OPT_LONG_FILENAME, ansi().reset());
-                logger.info("{}Reading only device information{}", ansi().fgBright(YELLOW), ansi().reset());
+                        ansi().fgBright(WARN), CliOptions.OPT_LONG_FILENAME, ansi().reset());
+                logger.info("{}Reading only device information{}", ansi().fgBright(INFO), ansi().reset());
             }
 
             dm = DeviceManagementFactory.getDeviceManagement(cliOptions);
@@ -226,7 +226,7 @@ public class Updater implements Runnable {
 
             if ((cliOptions.getDumpFlashStartAddress() >= 0) && (cliOptions.getDumpFlashEndAddress() >= 0)) {
                 logger.warn("{}Dumping flash content range {} to bootloader's serial port.{}",
-                        ansi().fgBright(GREEN),
+                        ansi().fgBright(OK),
                         String.format("0x%04X-0x%04X", cliOptions.getDumpFlashStartAddress(), cliOptions.getDumpFlashEndAddress()),
                         ansi().reset());
                 dm.dumpFlashRange(cliOptions.getDumpFlashStartAddress(), cliOptions.getDumpFlashEndAddress());
@@ -244,9 +244,9 @@ public class Updater implements Runnable {
             logger.debug("Requesting APP_VERSION");
             String appVersion = dm.requestAppVersionString();
             if (appVersion.isEmpty()) {
-                logger.info("Current APP_VERSION: {}invalid{} ", ansi().fgBright(RED), ansi().reset());
+                logger.info("Current APP_VERSION: {}invalid{} ", ansi().fgBright(WARN), ansi().reset());
             } else {
-                logger.info("Current APP_VERSION: {}{}{}", ansi().fgBright(GREEN), appVersion, ansi().reset());
+                logger.info("Current APP_VERSION: {}{}{}", ansi().fgBright(OK), appVersion, ansi().reset());
             }
 
             //  From here on we need a valid firmware
@@ -264,28 +264,28 @@ public class Updater implements Runnable {
             BinImage imageCache = BinImage.copyFromArray(newFirmware.getBinData(), newFirmware.startAddress());
             imageCache.writeToBinFile(cacheFileName);
 
-            logger.info("File APP_VERSION   : {}{}{}", ansi().fgBright(GREEN), newFirmware.getAppVersion(), ansi().reset());
+            logger.info("File APP_VERSION   : {}{}{}", ansi().fgBright(OK), newFirmware.getAppVersion(), ansi().reset());
 
             // Check if FW image has correct offset for MCUs bootloader size
             if (newFirmware.startAddress() < bootLoaderIdentity.applicationFirstAddress()) {
                 logger.error("{}  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!{}",
-                        ansi().fgBright(RED), ansi().reset());
-                logger.error("{}  Firmware needs to start at or beyond 0x{}{}", ansi().fgBright(RED),
+                        ansi().fgBright(WARN), ansi().reset());
+                logger.error("{}  Firmware needs to start at or beyond 0x{}{}", ansi().fgBright(WARN),
                         String.format("%04X", bootLoaderIdentity.applicationFirstAddress()), ansi().reset());
                 throw new UpdaterException("Firmware offset not correct!");
             }
             else if (newFirmware.startAddress() == bootLoaderIdentity.applicationFirstAddress()) {
-                logger.debug("{}  Firmware starts directly beyond bootloader.{}", ansi().fgBright(GREEN), ansi().reset());
+                logger.debug("{}  Firmware starts directly beyond bootloader.{}", ansi().fgBright(OK), ansi().reset());
             }
             else {
                 logger.debug("{}  Info: There are {} bytes of unused flash between bootloader and firmware.{}",
-                        ansi().fgBright(YELLOW), newFirmware.startAddress() - bootLoaderIdentity.applicationFirstAddress(),
+                        ansi().fgBright(INFO), newFirmware.startAddress() - bootLoaderIdentity.applicationFirstAddress(),
                         ansi().reset());
             }
 
             if (cliOptions.getEraseFullFlashIsSet()) {
                 logger.warn("{}Deleting the entire flash except from the bootloader itself!{}",
-                        ansi().fgBright(RED), ansi().reset());
+                        ansi().fgBright(WARN), ansi().reset());
                 dm.eraseFlash();
             }
 
@@ -296,7 +296,7 @@ public class Updater implements Runnable {
                 }
                 else {
                     logger.warn("{}  BootDescriptor is not valid -> switching to full mode{}",
-                            ansi().fgBright(RED), ansi().reset());
+                            ansi().fgBright(WARN), ansi().reset());
                 }
             }
 
@@ -309,7 +309,7 @@ public class Updater implements Runnable {
 
             if (!dm.setBlockSize(cliOptions.getBlockSize())) {
                 logger.info("{}Connected bootloader doesn't support block size {}. Using {} bytes.{}",
-                        ansi().fgBright(YELLOW), cliOptions.getBlockSize(), dm.getBlockSize(), ansi().reset());
+                        ansi().fgBright(INFO), cliOptions.getBlockSize(), dm.getBlockSize(), ansi().reset());
             }
 
             if (!cliOptions.getNoFlashIsSet()) { // is flashing firmware disabled? for debugging use only!
@@ -317,7 +317,7 @@ public class Updater implements Runnable {
                 ResponseResult resultTotal;
                 if (diffMode && FlashDiffMode.isInitialized()) {
                     logger.warn("{}Differential mode is EXPERIMENTAL -> Use with caution.{}",
-                            ansi().fgBright(RED), ansi().reset());
+                            ansi().fgBright(WARN), ansi().reset());
                     resultTotal = FlashDiffMode.doDifferentialFlash(dm, newFirmware.startAddress(), newFirmware.getBinData());
                 }
                 else {
@@ -336,7 +336,7 @@ public class Updater implements Runnable {
             }
             else {
                 logger.warn("--{} => {}only boot description block will be written{}", CliOptions.OPT_LONG_NO_FLASH,
-                        ansi().fgBright(RED), ansi().reset());
+                        ansi().fgBright(WARN), ansi().reset());
             }
 
             BootDescriptor newBootDescriptor = new BootDescriptor(newFirmware.startAddress(),
@@ -348,14 +348,14 @@ public class Updater implements Runnable {
                 deviceInfo = cliOptions.getDevicePhysicalAddress().toString();
             }
             logger.info("Finished programming device {}{}{} with '{}{}{}'",
-                    ansi().fgBright(YELLOW), deviceInfo, ansi().reset(),
-                    ansi().fgBright(YELLOW), shortenPath(cliOptions.getFileName(), 1), ansi().reset());
+                    ansi().fgBright(INFO), deviceInfo, ansi().reset(),
+                    ansi().fgBright(INFO), shortenPath(cliOptions.getFileName(), 1), ansi().reset());
             dm.restartProgrammingDevice();
             dm.close();
 
             if (newFirmware.getAppVersion().contains(BootloaderUpdater.BOOTLOADER_UPDATER_ID_STRING)) {
                 logger.info("{}Wait {} second(s) for Bootloader Updater to finish its job{}",
-                        ansi().fgBright(GREEN),
+                        ansi().fgBright(OK),
                         String.format("%.2f", BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS / 1000.0f),
                         ansi().reset());
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
@@ -399,9 +399,9 @@ public class Updater implements Runnable {
             dm.requestBootDescriptor();
             String appVersion = dm.requestAppVersionString();
             if (appVersion.isEmpty()) {
-                logger.info("APP_VERSION: {}invalid{} ", ansi().fgBright(RED), ansi().reset());
+                logger.info("APP_VERSION: {}invalid{} ", ansi().fgBright(WARN), ansi().reset());
             } else {
-                logger.info("APP_VERSION: {}{}{}", ansi().fgBright(GREEN), appVersion, ansi().reset());
+                logger.info("APP_VERSION: {}{}{}", ansi().fgBright(OK), appVersion, ansi().reset());
             }
 
             if (cliOptions.getDevicePhysicalAddress() != null) {
@@ -417,7 +417,7 @@ public class Updater implements Runnable {
         }
         catch (UpdaterException | KNXException e) {
             logger.error("{}An error occurred while retrieving the UID. {}{}{}",
-                    ansi().fgBright(RED), System.lineSeparator(), e, ansi().reset());
+                    ansi().fgBright(WARN), System.lineSeparator(), e, ansi().reset());
             throw e;
         }
     }

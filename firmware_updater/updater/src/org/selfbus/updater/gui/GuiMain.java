@@ -33,7 +33,7 @@ import java.util.*;
 import java.util.List;
 
 import static java.awt.Font.PLAIN;
-import static org.fusesource.jansi.Ansi.Color.*;
+import static org.selfbus.updater.logging.Color.*;
 import static org.fusesource.jansi.Ansi.ansi;
 import static org.selfbus.updater.CliOptions.*;
 import static org.selfbus.updater.gui.CliConverter.argument;
@@ -386,7 +386,7 @@ public class GuiMain extends JFrame {
     }
 
     private void displayCommandLine(CliOptions cliOptions) {
-        logger.info("{}java -jar {} {}{}", ansi().fgBright(YELLOW), ToolInfo.getToolJarName(),
+        logger.info("{}java -jar {} {}{}", ansi().fgBright(INFO), ToolInfo.getToolJarName(),
                 cliOptions.reconstructCommandLine(), ansi().reset());
     }
 
