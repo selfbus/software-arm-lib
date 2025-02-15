@@ -146,34 +146,44 @@ public final class ConColorsToStyledDoc {
             }
 
             switch (cursorMovementCode) {
-                //todo implement remaining cursor movements
                 case 65: // A Move up by n rows
+                    moveCursor.y -= number; //todo cursor movement not tested
+                    break;
+
                 case 66: // B Move down by n rows
+                    moveCursor.y += number; //todo cursor movement not tested
+                    break;
+
                 case 67: // C Move right by n columns
+                    moveCursor.x += number; //todo cursor movement not tested
+                    break;
+
                 case 68: // D Move left by n columns
+                    moveCursor.x -= number; //todo cursor movement not tested
+                    break;
+
                 case 72: // H Move cursor to row n and column m
                     throw new IllegalStateException("Not implemented cursorMovement: " + cursorMovement);
 
                 case 69: // E Move cursor to beginning of line and n lines down
                     moveCursor.x = 1;
                     moveCursor.y += number;
-                    setCursorPosition(textPane, moveCursor);
-                    return true;
+                    break;
 
                 case 70: // F Move cursor to beginning of line and n lines up
                     moveCursor.x = 1;
                     moveCursor.y -= number;
-                    setCursorPosition(textPane, moveCursor);
-                    return true;
+                    break;
 
                 case 71: // G Move cursor to column n
                     moveCursor.x = number;
-                    setCursorPosition(textPane, moveCursor);
-                    return true;
+                    break;
 
                 default:
                     throw new IllegalStateException("Unexpected cursorMovement: " + cursorMovement);
             }
+            setCursorPosition(textPane, moveCursor);
+            return true;
         }
         return false;
     }
