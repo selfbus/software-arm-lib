@@ -40,7 +40,7 @@ public enum UDPResult {
     /** Command is not defined */
     UNKNOWN_COMMAND((byte)0x5f, "Command unknown", true),
     /** CRC calculated on the device and by the updater don't match */
-    CRC_ERROR((byte)0x5e, "CRC error, try option -full for a clean and full flash", true),
+    CRC_ERROR((byte)0x5e, "CRC error, try option --full for a clean and full flash", true),
     /** Specified address cannot be programmed */
     ADDRESS_NOT_ALLOWED_TO_FLASH((byte)0x5d, "Address not allowed to flash", true),
     /** The specified sector cannot be erased */
