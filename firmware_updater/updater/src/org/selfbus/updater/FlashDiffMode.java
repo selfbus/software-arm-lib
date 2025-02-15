@@ -84,7 +84,6 @@ public final class FlashDiffMode {
     // Differential update routine
     public static ResponseResult doDifferentialFlash(DeviceManagement dm, long startAddress, byte[] binData)
             throws KNXTimeoutException, KNXLinkClosedException, InterruptedException, UpdaterException {
-        ///\todo add connection reset and sending again on failure, like in full flash mode
         if (!isInitialized()) {
             throw new UpdaterException("Differential mode not initialized!");
         }
