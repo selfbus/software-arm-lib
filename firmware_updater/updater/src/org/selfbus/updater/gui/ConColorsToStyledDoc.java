@@ -21,6 +21,10 @@ public final class ConColorsToStyledDoc {
 
     public static final java.awt.Color DefaultForegroundColor = java.awt.Color.white;
     public static final java.awt.Color DefaultBackgroundColor = java.awt.Color.black;
+
+    private static final double normalScaling = 0.7;
+    private static final double brightnessScaling = 1;
+
     private static final String AnsiEscape = "\033"; // ASCII escape character (ESC)
     private static final String AnsiBracket = "[";   // Ansi second character [
 
@@ -265,69 +269,67 @@ public final class ConColorsToStyledDoc {
                 // Foreground colors
                 //
                 case 30: // Foreground color black
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.black);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.black));
                     break;
                 case 31: // Foreground color red
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.red);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.red));
                     break;
                 case 32: // Foreground color green
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.green);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.green));
                     break;
                 case 33: // Foreground color yellow
                     // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.orange);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.orange));
                     break;
                 case 34: // Foreground color blue
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.blue);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.blue));
                     break;
                 case 35: // Foreground color magenta
-                    //todo check which one looks better: java.awt.Color.magenta or java.awt.Color.pink?
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.pink);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.magenta));
                     break;
                 case 36: // Foreground color cyan
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.cyan);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.cyan));
                     break;
                 case 37: // Foreground color white
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.white);
+                    StyleConstants.setForeground(stringStyle, normalColor(java.awt.Color.white));
                     break;
                 case 38:
                     throw new IllegalStateException("256 color foreground not implemented");
                 case 39: // Foreground color default
-                    StyleConstants.setForeground(stringStyle, DefaultForegroundColor);
+                    StyleConstants.setForeground(stringStyle, normalColor(DefaultForegroundColor));
                     break;
                 //
                 // Background colors
                 //
                 case 40: // Background color black
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.black);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.black));
                     break;
                 case 41: // Background color red
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.red);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.red));
                     break;
                 case 42: // Background color green
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.green);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.green));
                     break;
                 case 43: // Background color yellow
                     // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.orange);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.orange));
                     break;
                 case 44: // Background color blue
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.blue);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.blue));
                     break;
                 case 45: // Background color magenta
-                    //todo check which one looks better: java.awt.Color.magenta or java.awt.Color.pink?
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.pink);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.magenta));
                     break;
                 case 46: // Background color cyan
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.cyan);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.cyan));
                     break;
                 case 47: // Background color white
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.white);
+                    StyleConstants.setBackground(stringStyle, normalColor(java.awt.Color.white));
                     break;
                 case 48:
                     throw new IllegalStateException("256 color background not implemented");
                 case 49: // Background color default
-                    StyleConstants.setBackground(stringStyle, DefaultBackgroundColor);
+                    StyleConstants.setBackground(stringStyle, normalColor(DefaultBackgroundColor));
                     break;
                 //
                 // 50-89 reserved
@@ -336,66 +338,68 @@ public final class ConColorsToStyledDoc {
                 //
                 // Bright foreground colors
                 //
-                //todo find better java.awt.Color values, right now, they are the same as "normal"
                 case 90: // Bright foreground color black
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.black);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.black));
                     break;
                 case 91: // Bright foreground color red
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.red);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.red));
                     break;
                 case 92: // Bright foreground color green
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.green);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.green));
                     break;
                 case 93: // Bright foreground color yellow
                     // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.orange);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.orange));
                     break;
                 case 94: // Bright foreground color blue
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.blue);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.blue));
                     break;
                 case 95: // Bright foreground color magenta
-                    //todo check which one looks better: java.awt.Color.magenta or java.awt.Color.pink?
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.pink);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.magenta));
                     break;
                 case 96: // Bright foreground color cyan
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.cyan);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.cyan));
                     break;
                 case 97: // Bright foreground color white
-                    StyleConstants.setForeground(stringStyle, java.awt.Color.white);
+                    StyleConstants.setForeground(stringStyle, brightColor(java.awt.Color.white));
                     break;
                 //
-                // 98-99 reserved
+                // 98 reserved
                 //
+                case 99: // Bright foreground color default
+                    StyleConstants.setForeground(stringStyle, brightColor(DefaultBackgroundColor));
+                    break;
 
                 //
                 // Bright background colors
                 //
-                //todo find better java.awt.Color values, right now, they are the same as "normal"
                 case 100: // Bright background color black
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.black);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.black));
                     break;
                 case 101: // Bright background color red
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.red);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.red));
                     break;
                 case 102: // Bright background color green
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.green);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.green));
                     break;
                 case 103: // Bright background color yellow
                     // java.awt.Color.yellow would be correct, but java.awt.Color.orange just looks better IMHO
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.orange);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.orange));
                     break;
                 case 104: // Bright background color blue
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.blue);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.blue));
                     break;
                 case 105: // Bright background color magenta
-                    //todo check which one looks better: java.awt.Color.magenta or java.awt.Color.pink?
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.pink);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.magenta));
                     break;
                 case 106: // Bright background color cyan
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.cyan);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.cyan));
                     break;
                 case 107: // Bright background color white
-                    StyleConstants.setBackground(stringStyle, java.awt.Color.white);
+                    StyleConstants.setBackground(stringStyle, brightColor(java.awt.Color.white));
+                    break;
+                case 109: // Bright background color default
+                    StyleConstants.setBackground(stringStyle, brightColor(DefaultBackgroundColor));
                     break;
                 default:
                     throw new IllegalStateException("Unexpected code value: " + Integer.parseInt(code));
@@ -465,6 +469,31 @@ public final class ConColorsToStyledDoc {
         }
 
         textPane.setCaretPosition(doc.getLength());
+    }
+
+    /**
+     * Changes the brightness of a given color.
+     * @param color The original color.
+     * @param factor Brightness factor (e.g., 1.2 for higher brightness, 0.8 for lower brightness).
+     * @return A new color with adjusted brightness.
+     */
+    private static Color changeBrightness(Color color, double factor) {
+        int red = (int) Math.min(255, color.getRed() * factor);
+        int green = (int) Math.min(255, color.getGreen() * factor);
+        int blue = (int) Math.min(255, color.getBlue() * factor);
+
+        red = Math.max(0, red);
+        green = Math.max(0, green);
+        blue = Math.max(0, blue);
+        return new Color(red, green, blue);
+    }
+
+    public static Color brightColor(Color color) {
+        return changeBrightness(color, brightnessScaling);
+    }
+
+    public static Color normalColor(Color color) {
+        return changeBrightness(color, normalScaling);
     }
 
     /**

@@ -79,15 +79,15 @@ public class ConColorsToStyledDocTests {
     public void testForegroundColors() {
         java.awt.Color backgroundColor = StyleConstants.getBackground(testStringStyle());
         testColorCodeToStyle(new String[]{"30"});
-        assertStyleForeground(Color.black);
+        assertStyleForeground(normalColor(Color.black));
         assertStyleBackground(backgroundColor);
 
         testColorCodeToStyle(new String[]{"1", "31"});
-        assertStyleForeground(Color.red);
+        assertStyleForeground(normalColor(Color.red));
         assertStyleBackground(backgroundColor);
 
         testColorCodeToStyle(new String[]{"2", "32", "3"});
-        assertStyleForeground(Color.green);
+        assertStyleForeground(normalColor(Color.green));
         assertStyleBackground(backgroundColor);
     }
 
@@ -95,19 +95,19 @@ public class ConColorsToStyledDocTests {
     public void testBackgroundColors() {
         java.awt.Color foregroundColor = StyleConstants.getForeground(testStringStyle());
         testColorCodeToStyle(new String[]{"1", "40"});
-        assertStyleBackground(java.awt.Color.black);
+        assertStyleBackground(normalColor(java.awt.Color.black));
         assertStyleForeground(foregroundColor);
 
         testColorCodeToStyle(new String[]{"2", "41"});
-        assertStyleBackground(java.awt.Color.red);
+        assertStyleBackground(normalColor(java.awt.Color.red));
         assertStyleForeground(foregroundColor);
 
         testColorCodeToStyle(new String[]{"42", "3"});
-        assertStyleBackground(java.awt.Color.green);
+        assertStyleBackground(normalColor(java.awt.Color.green));
         assertStyleForeground(foregroundColor);
 
         testColorCodeToStyle(new String[]{"43"});
-        assertStyleBackground(java.awt.Color.orange);
+        assertStyleBackground(normalColor(java.awt.Color.orange));
         assertStyleForeground(foregroundColor);
     }
 
