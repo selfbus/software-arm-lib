@@ -862,6 +862,10 @@ public class CliOptions {
     private void setTpuartSerialPort(String tpuartSerialPort) {
         this.tpuartSerialPort = tpuartSerialPort;
         logger.debug("{}={}", OPT_LONG_TPUART, getTpuartSerialPort());
+        if (!tpuartSerialPort.isBlank()) {
+            logger.warn("{}TPUART support is experimental!{} Set TPUARTs own address with --{}",
+                    ansi().fgBright(WARN), ansi().reset(), OPT_LONG_OWN_ADDRESS);
+        }
     }
 
     public boolean getTunnelingV2isSet() {
