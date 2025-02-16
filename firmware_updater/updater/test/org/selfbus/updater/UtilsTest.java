@@ -7,15 +7,14 @@ public class UtilsTest {
 
     @Test
     public void testStreamToLong() {
-        // a full range test takes about 40s, so try to avoid it
-        // for lower two bytes we only check the signed bit range of 126..129
-        ///\todo implement test of offset
+        // In 2025 this full test runs in under 6s.
+        // Let´s meet in the "middle" (~1s).
         byte[] testStream = new byte[]{0, 0, 0, 0};
-        int start0 = 126; // min. 0, max. 255
-        int end0 = 129; // min. 0, max. 255
+        int start0 = 90; // min. 0, max. 255
+        int end0 = 150; // min. 0, max. 255
 
-        int start1 = 126; // min. 0, max. 255
-        int end1 = 129; // min. 0, max. 255
+        int start1 = 30; // min. 0, max. 255
+        int end1 = 220; // min. 0, max. 255
 
         int start2 = 0; // min. 0, max. 255
         int end2 = 255; // min. 0, max. 255
