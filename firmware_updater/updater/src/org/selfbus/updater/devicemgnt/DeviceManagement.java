@@ -145,8 +145,15 @@ public class DeviceManagement implements AutoCloseable {
         try (Destination dest = this.mc.createDestination(device, true, false, false)) {
             logger.info("Restarting device {} into bootloader", device);
             restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
-            logger.info("Device {} reported {}{}{} second(s) for restarting",
-                    device, ansi().fgBright(OK), restartProcessTime, ansi().reset());
+            String timeStr;
+            if (restartProcessTime <= 1) {
+                timeStr = "second";
+            }
+            else {
+                timeStr = "seconds";
+            }
+            logger.info(CONSOLE_GUI_NO_NEWLINE, "Device {} reported {}{}{} {} for restarting",
+                    device, ansi().fgBright(OK), restartProcessTime, ansi().reset(), timeStr);
             waitRestartTime(restartProcessTime);
         } catch (final KNXException e) {
             logger.info("{}Restart state of device {} unknown. {}{}",
