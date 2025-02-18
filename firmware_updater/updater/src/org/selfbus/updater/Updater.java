@@ -361,16 +361,16 @@ public class Updater implements Runnable {
                 Thread.sleep(BootloaderUpdater.BOOTLOADER_UPDATER_MAX_RESTART_TIME_MS);
             }
 
-            logger.info("Operation finished successfully.");
+            logger.info("Update finished successfully.");
         }
         catch (final InterruptedException | IllegalStateException e) {
             Thread.currentThread().interrupt();
-            logger.info("{}Operation canceled.", System.lineSeparator());
+            logger.info("{}Update canceled.", System.lineSeparator());
             logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
         }
         catch (Throwable e) {
             logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
-            logger.error("Operation did not finish.");
+            logger.error("Update did not finish.");
         }
         finally {
             if (dm != null) {
@@ -411,7 +411,7 @@ public class Updater implements Runnable {
             return uid;
         }
         catch (final InterruptedException e) {
-            logger.info("Operation requestUid canceled.");
+            logger.info("requestUid canceled.");
             Thread.currentThread().interrupt();
             return "";
         }
