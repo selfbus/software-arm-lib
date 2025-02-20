@@ -3,7 +3,7 @@
 ## Requirements
 
 * JDK 17+
-* gradle >=8.9
+* gradle >=8.12.1
 * Selfbus device with flashed [bootloader](../bootloader) version 1.00 or higher
 
 ## Build
