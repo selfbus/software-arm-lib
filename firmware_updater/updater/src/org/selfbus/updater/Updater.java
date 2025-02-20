@@ -100,8 +100,9 @@ public class Updater implements Runnable {
 
             if (options.getDiscoverIsSet()) {
                 logger.info("Discovering KNX network...");
-                DiscoverKnxInterfaces.toText(DiscoverKnxInterfaces.getAllnetIPInterfaces());
-                DiscoverKnxInterfaces.toText(DiscoverKnxInterfaces.getUsbInterfaces());
+                DiscoverKnxInterfaces.logIPInterfaces(DiscoverKnxInterfaces.getAllnetIPInterfaces());
+                DiscoverKnxInterfaces.logUSBInterfaces(DiscoverKnxInterfaces.getUsbInterfaces());
+                DiscoverKnxInterfaces.logCOMPorts(DiscoverKnxInterfaces.getCOMPorts());
                 finalizeJansi();
                 return;
             }

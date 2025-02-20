@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static tuwien.auto.calimero.serial.SerialConnectionFactory.portIdentifiers;
+
 public class DiscoverKnxInterfaces {
     private final static Logger logger = LoggerFactory.getLogger(DiscoverKnxInterfaces.class);
 
@@ -62,7 +64,11 @@ public class DiscoverKnxInterfaces {
         return knxUsbDevices;
     }
 
-    public static void toText(List<Discoverer.Result<SearchResponse>> ifaceList) {
+    public static Set<String> getCOMPorts() {
+        return portIdentifiers();
+    }
+
+    public static void logIPInterfaces(List<Discoverer.Result<SearchResponse>> ifaceList) {
         for (Discoverer.Result<SearchResponse> r : ifaceList) {
             SearchResponse sr = r.response();
             logger.info("Found IP interface: {}", sr.getDevice().getName());
@@ -70,11 +76,23 @@ public class DiscoverKnxInterfaces {
         }
     }
 
-    public static void toText(Set<Device> usbInterfaces) {
+    public static void logUSBInterfaces(Set<Device> usbInterfaces) {
         for (final var d : usbInterfaces) {
             final String vp = String.format("%04x:%04x", d.vendorId(), d.productId());
             logger.info("Found USB Interface: {} {} S/N {} VID/PID {}",
                     d.manufacturer(), d.product(), d.serialNumber(), vp);
+        }
+    }
+
+    public static void logCOMPorts(Set<String> comPorts) {
+        if (comPorts.isEmpty()) {
+            logger.info("Found 0 COM ports.");
+        }
+        else if (comPorts.size() == 1) {
+            logger.info("Found COM port: {}", comPorts);
+        }
+        else {
+            logger.info("Found {} COM ports: {}", comPorts.size() , comPorts);
         }
     }
 }
