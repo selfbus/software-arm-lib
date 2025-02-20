@@ -154,13 +154,14 @@ public class DeviceManagement implements AutoCloseable {
             }
             logger.info(CONSOLE_GUI_NO_NEWLINE, "Device {} reported {}{}{} {} for restarting",
                     device, ansi().fgBright(OK), restartProcessTime, ansi().reset(), timeStr);
-            waitRestartTime(restartProcessTime);
         } catch (final KNXException e) {
             logger.info("{}Restart state of device {} unknown. {}{}",
                     ansi().fgBright(WARN), device, e.getMessage(), ansi().reset());
             logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
-            logger.info("Waiting {}{}{} seconds for device {} to restart",
+            logger.info(CONSOLE_GUI_NO_NEWLINE, "Waiting {}{}{} seconds for device {} to restart",
                     ansi().fgBright(OK), restartProcessTime, ansi().reset(), device);
+        }
+        finally {
             waitRestartTime(restartProcessTime);
         }
     }
