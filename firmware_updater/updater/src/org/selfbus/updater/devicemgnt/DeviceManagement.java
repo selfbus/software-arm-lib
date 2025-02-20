@@ -185,7 +185,6 @@ public class DeviceManagement implements AutoCloseable {
             uid = Arrays.copyOfRange(result, DATA_POSITION, result.length - DATA_POSITION);
             String errorMsg = String.format("Request UID failed %s result.length=%d, UID_LENGTH_USED=%d, UID_LENGTH_MAX=%d",
                     UPDProtocol.byteArrayToHex(uid), uid.length, UPDProtocol.UID_LENGTH_USED, UPDProtocol.UID_LENGTH_MAX);
-            logger.error(errorMsg);
             restartProgrammingDevice();
             throw new UpdaterException(errorMsg);
         }
@@ -221,9 +220,8 @@ public class DeviceManagement implements AutoCloseable {
 
         if (!versionsMatch)
         {
-            logger.error("{}Bootloader version {} is not compatible, please update Bootloader to version {} or higher{}",
-                    ansi().fgBright(WARN), bl.getVersion(), ToolInfo.minVersionBootloader(), ansi().reset());
-            throw new UpdaterException("Bootloader version not compatible!");
+            throw new UpdaterException(String.format("Bootloader version %s is not compatible, please update Bootloader to version %s or higher.",
+                    bl.getVersion(), ToolInfo.minVersionBootloader()));
         }
         return bl;
     }
@@ -492,17 +490,35 @@ public class DeviceManagement implements AutoCloseable {
             else if ((devices.length == 1) && (progDeviceAddr != null) && (progDeviceAddr.equals(devices[0]))) { // correct device in prog mode
             	return;
             }
-            logger.warn("{}{} Device(s) in bootloader/programming mode: {}{}",
-                    ansi().fgBright(WARN), devices.length, Arrays.stream(devices).toArray(), ansi().reset());
-            if (devices.length == 0) {
-                throw new UpdaterException("No device in programming mode.");
-            }
-            else {
-                throw new UpdaterException(String.format("%d wrong device(s) %s are already in programming mode.", devices.length, Arrays.toString(devices)));
-            }
+
+            throw new UpdaterException(getExceptionMessage(devices, progDeviceAddr));
         } catch (KNXException e ) {
             throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()), e);
         }
+    }
+
+    private static String getExceptionMessage(IndividualAddress[] devicesInProgMode, IndividualAddress progDeviceAddr) {
+        String exceptionMessage;
+        if (devicesInProgMode.length == 0) {
+            exceptionMessage = "No device in programming mode.";
+        }
+        else if (devicesInProgMode.length == 1) {
+            exceptionMessage = String.format("Device %s is already in bootloader/programming mode.",
+                    Arrays.toString(devicesInProgMode));
+        }
+        else {
+            exceptionMessage = String.format("%d other devices %s are already in bootloader/programming mode.",
+                    devicesInProgMode.length, Arrays.toString(devicesInProgMode));
+        }
+        String expectedDeviceAddr;
+        if (progDeviceAddr == null) {
+            expectedDeviceAddr = "none";
+
+        }
+        else  {
+            expectedDeviceAddr = progDeviceAddr.toString();
+        }
+        return String.format("%s Expected [%s]", exceptionMessage, expectedDeviceAddr);
     }
 
     public UDPProtocolVersion getProtocolVersion() {

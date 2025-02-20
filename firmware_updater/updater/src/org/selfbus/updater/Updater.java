@@ -22,6 +22,7 @@ import static org.selfbus.updater.logging.LoggingManager.CONSOLE_APPENDER_NAME;
 import static org.selfbus.updater.Utils.shortenPath;
 
 import org.selfbus.updater.gui.GuiMain;
+import tuwien.auto.calimero.serial.KNXPortClosedException;
 
 import java.net.UnknownHostException;
 
@@ -186,7 +187,6 @@ public class Updater implements Runnable {
             if (!hexFileName.isEmpty()) {
                 // check if the firmware file exists
                 if (!Utils.fileExists(hexFileName)) {
-                    logger.error("{}File '{}' does not exist!{}", ansi().fgBright(WARN), cliOptions.getFileName(), ansi().reset());
                     throw new UpdaterException(String.format("File '%s' does not exist!", cliOptions.getFileName()));
                 }
                 // Load Firmware hex file
@@ -194,7 +194,6 @@ public class Updater implements Runnable {
                 newFirmware = BinImage.readFromHex(hexFileName);
                 // Check for APP_VERSION string in new firmware
                 if (newFirmware.getAppVersion().isEmpty()) {
-                    logger.warn("{}  Missing APP_VERSION string in new firmware!{}", ansi().fgBright(WARN), ansi().reset());
                     throw new UpdaterException("Missing APP_VERSION string in firmware!");
                 }
             }
@@ -268,19 +267,17 @@ public class Updater implements Runnable {
 
             // Check if FW image has correct offset for MCUs bootloader size
             if (newFirmware.startAddress() < bootLoaderIdentity.applicationFirstAddress()) {
-                logger.error("{}  Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!{}",
+                logger.error("{}Error! The specified firmware image would overwrite parts of the bootloader. Check FW offset setting in the linker!{}",
                         ansi().fgBright(WARN), ansi().reset());
-                logger.error("{}  Firmware needs to start at or beyond 0x{}{}", ansi().fgBright(WARN),
-                        String.format("%04X", bootLoaderIdentity.applicationFirstAddress()), ansi().reset());
-                throw new UpdaterException("Firmware offset not correct!");
+                throw new UpdaterException(String.format("Firmware needs to start at or beyond 0x%04X",
+                    bootLoaderIdentity.applicationFirstAddress()));
             }
             else if (newFirmware.startAddress() == bootLoaderIdentity.applicationFirstAddress()) {
-                logger.debug("{}  Firmware starts directly beyond bootloader.{}", ansi().fgBright(OK), ansi().reset());
+                logger.debug("Firmware starts directly beyond bootloader.");
             }
             else {
-                logger.debug("{}  Info: There are {} bytes of unused flash between bootloader and firmware.{}",
-                        ansi().fgBright(INFO), newFirmware.startAddress() - bootLoaderIdentity.applicationFirstAddress(),
-                        ansi().reset());
+                logger.debug("Info: There are {} bytes of unused flash between bootloader and firmware.",
+                        newFirmware.startAddress() - bootLoaderIdentity.applicationFirstAddress());
             }
 
             if (cliOptions.getEraseFullFlashIsSet()) {
@@ -368,7 +365,22 @@ public class Updater implements Runnable {
             logger.info("{}Update canceled.", System.lineSeparator());
             logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
         }
-        catch (Throwable e) {
+        catch (final KNXPortClosedException e) {
+            logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            logger.error("Update failed.");
+            if (e.getMessage().contains("error sending report over USB") &&
+               (!cliOptions.getUsbVendorIdAndProductId().isBlank()) &&
+                System.getProperty("os.name").startsWith("Windows")) {
+                logger.info("{}Make sure the USB Interface {} uses the WinUSB driver. Checkout https://zadig.akeo.ie{}",
+                        ansi().fgBright(WARN), cliOptions.getUsbVendorIdAndProductId(), ansi().reset() );
+            }
+        }
+        catch (final UpdaterException | KNXException e) {
+            logger.error("{}{}{} ({})", ansi().fgBright(WARN), e.getMessage(), ansi().reset(),
+                    e.getClass().getSimpleName());
+            logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+        }
+        catch (final Throwable e) {
             logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
             logger.error("Update did not finish.");
         }
