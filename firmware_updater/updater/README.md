@@ -1,5 +1,25 @@
 # Selfbus-Updater
 
+<!-- TOC -->
+* [Selfbus-Updater](#selfbus-updater)
+  * [Wiki](#wiki)
+  * [Requirements](#requirements)
+  * [Build](#build)
+  * [Usage](#usage)
+  * [Common use cases:](#common-use-cases)
+  * [Known Issues](#known-issues)
+    * [Error *Assertion failed* with KNX USB-Interface under Windows](#error-assertion-failed-with-knx-usb-interface-under-windows)
+    * [Loxone Miniserver Gen 1](#loxone-miniserver-gen-1)
+  * [Development](#development)
+    * [IDEs:](#ides)
+    * [IntelliJ IDEA Settings for Updater GUI development:](#intellij-idea-settings-for-updater-gui-development)
+    * [gradle:](#gradle)
+<!-- TOC -->
+
+## Wiki
+
+The Updater Wiki article can be found [here](https://selfbus.org/wiki/software/tools/7-selfbus-firmware-updater).
+
 ## Requirements
 
 * JDK 17+
@@ -105,8 +125,31 @@ Important for Loxone Miniserver Gen 1:
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of Loxone GW> --fileName "out8-bcu1_flashstart_*.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 --full --reconnect 500 --ip-tunnel-reconnect 247 --own x.y.z
 ```
-**For Loxone Miniserver Gen 1 `--ip-tunnel-reconnect` and `--own x.y.z` are mandatory.**  
-**`--own x.y.z` must match the Loxone Miniserver´s own physical KNX address**
+**For Loxone Miniserver Gen 1 `--ip-tunnel-reconnect 247` and `--own x.y.z` are mandatory.**  
+**`x.y.z` must match the Loxone Miniserver´s own physical KNX address**
+
+## Known Issues
+
+### Error *Assertion failed* with KNX USB-Interface under Windows
+
+<img alt="Windows error assertion failed" src="images/libusb4java_assertion_error.png" title="Windows error assertion failed" height="80"/>
+  
+For the KNX USB interface to work with the Updater, the interface must use the WinUSB driver under Windows.  
+The WinUSB driver can be installed with e.g. [zadig](https://zadig.akeo.ie).
+- Open zadig and click in the menu *Options->List all devices*
+- In the drop-down select the KNX USB-Interface (e.g. KNX-Interface).  
+<img alt="Zadig KNX USB Interface selected" src="images/zadig_knx_interface_selected.png" title="Zadig KNX USB Interface selected" height="80"/>
+  
+- Make sure that driver *WinUSB* is selected and click on *Replace Driver*.
+
+Note: After replacing the standard *HID* driver, the ETS no longer works with the KNX USB interface.  
+To uninstall the *WinUSB* driver, search for the interface in the Windows Device Manager and uninstall its driver.  
+Windows will reinstall the standard *HID* driver after reconnecting the interface.
+
+### Loxone Miniserver Gen 1
+
+For Loxone Miniserver Gen 1 `--ip-tunnel-reconnect 247` and `--own x.y.z` are mandatory.  
+`x.y.z` must match the Loxone Miniserver´s own physical KNX address.
 
 ## Development
 
