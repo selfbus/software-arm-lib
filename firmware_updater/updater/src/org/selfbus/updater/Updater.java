@@ -42,6 +42,8 @@ public class Updater implements Runnable {
     @SuppressWarnings("unused")
     private Updater() {} // disable default constructor
 
+    private final static String UPDATER_README_LINK = "https://github.com/selfbus/software-arm-lib/blob/main/firmware_updater/updater/README.md";
+
     private final static Logger logger = LoggerFactory.getLogger(Updater.class);
     private CliOptions cliOptions = null;
     private static DeviceManagement dm = null;
@@ -372,8 +374,10 @@ public class Updater implements Runnable {
             if (e.getMessage().contains("error sending report over USB") &&
                (!cliOptions.getUsbVendorIdAndProductId().isBlank()) &&
                 System.getProperty("os.name").startsWith("Windows")) {
-                logger.info("{}Make sure the USB Interface {} uses the WinUSB driver. Checkout https://zadig.akeo.ie{}",
+                logger.info("{}Make sure the USB Interface {} uses the WinUSB driver.{}",
                         ansi().fgBright(WARN), cliOptions.getUsbVendorIdAndProductId(), ansi().reset() );
+                logger.info("Checkout {}{}{} for more info.",
+                        ansi().fgBright(INFO), UPDATER_README_LINK, ansi().reset() );
             }
         }
         catch (final UpdaterException | KNXException e) {
