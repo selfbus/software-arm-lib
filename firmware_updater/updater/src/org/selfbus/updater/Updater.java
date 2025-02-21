@@ -115,7 +115,7 @@ public class Updater implements Runnable {
             shutdownHandler.unregister();
         }
         catch (KNXFormatException | ParseException | InterruptedException e) {
-            logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            logExceptionUserFriendly(e);
         }
         finally {
             if (dm != null) {
@@ -381,9 +381,7 @@ public class Updater implements Runnable {
             }
         }
         catch (final UpdaterException | KNXException e) {
-            logger.error("{}{}{} ({})", ansi().fgBright(WARN), e.getMessage(), ansi().reset(),
-                    e.getClass().getSimpleName());
-            logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
+            logExceptionUserFriendly(e);
         }
         catch (final Throwable e) {
             logger.error("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
@@ -437,5 +435,16 @@ public class Updater implements Runnable {
                     ansi().fgBright(WARN), System.lineSeparator(), e, ansi().reset());
             throw e;
         }
+    }
+
+    private static void logExceptionUserFriendly(Throwable e) {
+        logger.error("{}{}{} ({})", ansi().fgBright(WARN), e.getMessage(), ansi().reset(),
+                e.getClass().getSimpleName());
+        Throwable cause = e.getCause();
+        if (cause != null) {
+            logger.error("{}Caused by: {}{} ({})", ansi().fgBright(WARN), cause.getMessage(), ansi().reset(),
+                    cause.getClass().getSimpleName());
+        }
+        logger.debug("", e); // todo see logback issue https://github.com/qos-ch/logback/issues/876
     }
 }
