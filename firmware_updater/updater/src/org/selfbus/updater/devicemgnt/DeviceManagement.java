@@ -89,6 +89,10 @@ public class DeviceManagement implements AutoCloseable {
         open();
     }
 
+    public void reconnect() throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
+        reconnect(cliOptions.getReconnectMs());
+    }
+
     public void open() throws KNXException, UpdaterException, UnknownHostException, InterruptedException {
         close();
         this.link = new SBKNXLink(this.cliOptions).openLink();
@@ -431,7 +435,7 @@ public class DeviceManagement implements AutoCloseable {
         logger.warn("{}{}{} ({} {})", ansi().fgBright(WARN), e.getMessage(), ansi().reset(),
                 e.getClass().getSimpleName(), command);
         try {
-            reconnect(cliOptions.getReconnectMs());
+            reconnect();
         }
         catch (KNXException | UnknownHostException e2) {
             throw new UpdaterException(String.format("%s failed.", command), e);
@@ -481,6 +485,10 @@ public class DeviceManagement implements AutoCloseable {
     public void checkDeviceInProgrammingMode(IndividualAddress progDeviceAddr) throws UpdaterException,
             InterruptedException {
         try {
+            if (!isLinkAlive()) {
+                reconnect();
+            }
+
             ManagementProcedures mgmt = new ManagementProceduresImpl(link);
             IndividualAddress[] devices = mgmt.readAddress();
             mgmt.close();
@@ -492,7 +500,7 @@ public class DeviceManagement implements AutoCloseable {
             }
 
             throw new UpdaterException(getExceptionMessage(devices, progDeviceAddr));
-        } catch (KNXException e ) {
+        } catch (KNXException | UnknownHostException e ) {
             throw new UpdaterException(String.format("checkDevicesInProgrammingMode failed. %s", e.getMessage()), e);
         }
     }
