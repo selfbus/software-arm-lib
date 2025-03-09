@@ -21,10 +21,7 @@ public class MessageFilter extends Filter<ILoggingEvent> {
      * If an event's formatted message contains any of the strings in this list,
      * the event will be excluded from logging.
      */
-    public static final List<String> FILTERED_MESSAGES = List.of(
-            // Loxone Miniserver Gen1 returns always status 0x04 on KNX tunnel requests with sequence number 255
-            "received service acknowledgment status sequence number out of order"
-    );
+    public static final List<String> FILTERED_MESSAGES = List.of();
 
     /**
      * Evaluates a logging event and determines whether the event should
