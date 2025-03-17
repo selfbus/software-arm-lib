@@ -49,12 +49,12 @@ class Decompressor
         uint8_t cmdBuffer[5] = {0};
         int expectedCmdLength = 0;
         int cmdBufferLength = 0;
-        uint8_t scratchpad[FLASH_PAGE_SIZE] = {0};
+        alignas(FLASH_RAM_BUFFER_ALIGNMENT) uint8_t scratchpad[FLASH_PAGE_SIZE] = {0};
         uint8_t oldPages[FLASH_PAGE_SIZE * REMEMBER_OLD_PAGES_COUNT] = {0};
         int bytesToFlash = 0;
         int rawLength = 0;
         State state = State::EXPECT_COMMAND_BYTE;
-        __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) uint8_t * startAddrOfPageToBeFlashed = 0;
+        alignas(FLASH_RAM_BUFFER_ALIGNMENT) uint8_t * startAddrOfPageToBeFlashed = 0;
         uint8_t * startAddrOfFlash = 0;
 
 	public:
