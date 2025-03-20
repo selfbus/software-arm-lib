@@ -42,6 +42,9 @@ Flashstart*
 # Gradle cache files
 .gradle
 
+# JetBrains version control system settings
+**/.idea/vcs.xml
+
 # Added **/ in front of the .idea entries below, so that these files are also ignored in every subfolder depth.
 # all below is dated 20.03.2025 source:
 # https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
