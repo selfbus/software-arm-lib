@@ -8,7 +8,7 @@
  *  published by the Free Software Foundation.
  */
 
-#include "catch.hpp"
+#include <catch.hpp>
 #include <sblib/eib/datapoint_types.h>
 
 #include <limits.h>

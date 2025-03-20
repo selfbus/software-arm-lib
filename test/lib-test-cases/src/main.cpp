@@ -7,7 +7,7 @@
  */
 
 #define CATCH_CONFIG_MAIN
-#include "catch.hpp"
+#include <catch.hpp>
 
 /* The test framework expects that the application provides a setup function
  * since the lib tests don't have an application we need to provide an
