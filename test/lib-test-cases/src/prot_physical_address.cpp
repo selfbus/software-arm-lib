@@ -9,6 +9,7 @@
  */
 
 #include "protocol.h"
+#include <catch.hpp>
 
 #define MANUFACTURER (0x0004)
 #define DEVICE       (0x2060)

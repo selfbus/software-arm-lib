@@ -12,7 +12,7 @@
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
 
-#include "catch.hpp"
+#include <catch.hpp>
 
 #define private   public
 #define protected public

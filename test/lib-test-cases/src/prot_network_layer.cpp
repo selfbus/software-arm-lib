@@ -20,6 +20,7 @@
  ---------------------------------------------------------------------------*/
 
 #include "protocol.h"
+#include <catch.hpp>
 
 typedef struct
 {

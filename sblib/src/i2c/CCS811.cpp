@@ -52,7 +52,7 @@ bool CCS811Class::begin(uint8_t I2C_ADDR, int WAKE_PIN) {
     readErrorID(status);
     return false;
   }
-  delayMicroseconds(5); //take a little time for Wake recognizing (without this time it fails)
+  delayMicroseconds(20); //take a little time for Wake recognizing (without this time it fails)
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   Chip_I2C_MasterSend(I2C0, _I2C_ADDR, &APP_START, sizeof(APP_START));
@@ -66,10 +66,24 @@ bool CCS811Class::begin(uint8_t I2C_ADDR, int WAKE_PIN) {
     readErrorID(status);
     return false;
   }
-
+  delayMicroseconds(20); //take a little time for Wake recognizing (without this time it fails)
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
-  uint8_t i2cData[2] = {MEAS_MODE, 0x20};
+
+  /* Figure 13 CCS811 datasheet:
+   *
+   * Measure Mode Register
+   * Bit         | 7 | 6 | 5 | 4 | 3 | 2 | 1 | 0 |
+   * Description | - |Drive mode |Int|Thr| - | - |
+   *
+   * Drive Mode
+   * 000: Mode 0 – Idle (Measurements are disabled in this mode)
+   * 001: Mode 1 – Constant power mode, IAQ measurement every second
+   * 010: Mode 2 – Pulse heating mode IAQ measurement every 10 seconds
+   * 011: Mode 3 – Low power pulse heating mode IAQ measurement every 60 seconds
+   * 100: Mode 4 – Constant power mode, sensor measurement every 250ms
+   */
+  uint8_t i2cData[2] = {MEAS_MODE, 0x20}; // Mode 2 – Pulse heating mode IAQ measurement every 10 seconds
   Chip_I2C_MasterSend(I2C0, _I2C_ADDR, i2cData, sizeof(i2cData));
   digitalWrite(_WAKE_PIN, true);
 
@@ -162,6 +176,7 @@ void CCS811Class::setMode(uint8_t modeNumber) {
 
 // get the CO2 and TVOC Data from CSS811
 bool CCS811Class::getData(void) {
+  delayMicroseconds(20); // recommended 20us delay while performing back to back I2C operations
   _digitalWrite(_WAKE_PIN, false);
   delayMicroseconds(50); // recommended 50us delay after asserting WAKE pin
   uint8_t buffer[4];
