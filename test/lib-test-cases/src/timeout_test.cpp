@@ -8,7 +8,7 @@
  *  published by the Free Software Foundation.
  */
 
-#include "catch.hpp"
+#include <catch.hpp>
 #include "protocol.h"
 
 #include "sblib/timeout.h"

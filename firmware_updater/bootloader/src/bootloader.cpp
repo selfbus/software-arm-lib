@@ -22,6 +22,7 @@
 
 #include <sblib/main.h>
 #include <sblib/interrupt.h>
+#include <sblib/io_pin_names.h>
 #include <sblib/digital_pin.h>
 #include <sblib/eib/apci.h>
 #include <sblib/hardware_descriptor.h>

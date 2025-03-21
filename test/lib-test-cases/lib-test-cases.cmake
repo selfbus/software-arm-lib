@@ -1,0 +1,22 @@
+set(SBLIB_LIB_TEST_CASES_SRC
+        src/tc_tlayer4_stepfunction.h
+        src/tc_tlayer4_telegram.h
+        src/test_digital_pin.h
+        src/test_ioports.h
+        src/main.cpp
+        src/prot_device_info.cpp
+        src/prot_group_addresses.cpp
+        src/prot_network_layer.cpp
+        src/prot_parameter.cpp
+        src/prot_physical_address.cpp
+        src/test_datapoint_types.cpp
+        src/test_digital_pin.cpp
+        src/test_eeprom.cpp
+        src/test_ioports.cpp
+        src/test_ioports_get_pin_function_number.cpp
+        src/test_knx_lpdu.cpp
+        src/test_prot_apci.cpp
+        src/test_prot_app_program.cpp
+        src/test_prot_tlayer4.cpp
+        src/timeout_test.cpp
+)
