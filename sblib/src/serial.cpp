@@ -37,8 +37,8 @@
 Serial::Serial(int rxPin, int txPin) :
     enabled_(false)
 {
-	setRxPin(rxPin);
-	setTxPin(txPin);
+    setRxPin(rxPin);
+    setTxPin(txPin);
 }
 
 void Serial::setRxPin(int rxPin)
@@ -69,26 +69,26 @@ void Serial::begin(int baudRate, SerialConfig config)
     LPC_UART->LCR = 0x80 | config;
 
     unsigned int val = SystemCoreClock * LPC_SYSCON->SYSAHBCLKDIV /
-        LPC_SYSCON->UARTCLKDIV / 16 / baudRate;
+                       LPC_SYSCON->UARTCLKDIV / 16 / baudRate;
 
     if (baudRate == 460800) //FIXME works only with SystemCoreClock=48000000 ?
     {
         val = 5;
-        LPC_UART->FDR = ( 0x00a3);  //DIVADDVAL = 3, MULVAL = 10
+        LPC_UART->FDR = (0x00a3); //DIVADDVAL = 3, MULVAL = 10
     }
-    else if( baudRate == 576000) //FIXME works only with SystemCoreClock=48000000 ?
+    else if (baudRate == 576000) //FIXME works only with SystemCoreClock=48000000 ?
     {
         val = 3;
-        LPC_UART->FDR = (0x00fb);  //DIVADDVAL = 11, MULVAL = 15
+        LPC_UART->FDR = (0x00fb); //DIVADDVAL = 11, MULVAL = 15
     }
 
-	LPC_UART->DLM  = val / 256;
-    LPC_UART->DLL  = val % 256;
+    LPC_UART->DLM = val / 256;
+    LPC_UART->DLL = val % 256;
 
-    LPC_UART->LCR = (int) config;  // Configure data bits, parity, stop bits
-    LPC_UART->FCR = 0x07;          // Enable and reset TX and RX FIFO.
-    LPC_UART->MCR = 0;             // Disable modem controls (DTR, DSR, RTS, CTS)
-    LPC_UART->IER |= UART_IE_RBR;  // Enable RX/TX interrupts
+    LPC_UART->LCR = (int)config;  // Configure data bits, parity, stop bits
+    LPC_UART->FCR = 0x07;         // Enable and reset TX and RX FIFO.
+    LPC_UART->MCR = 0;            // Disable modem controls (DTR, DSR, RTS, CTS)
+    LPC_UART->IER |= UART_IE_RBR; // Enable RX/TX interrupts
 
     // Ensure a clean start, no data in either TX or RX FIFO
     clearBuffers();
@@ -99,7 +99,7 @@ void Serial::begin(int baudRate, SerialConfig config)
         val = LPC_UART->RBR;
 
     //added by Hora in order to provide the highest interrupt level to the bus timer of the lib
-    NVIC_SetPriority (UART_IRQn, 3);
+    NVIC_SetPriority(UART_IRQn, 3);
 
     enableInterrupt(UART_IRQn);
     enabled_ = true;
@@ -120,14 +120,13 @@ int Serial::write(byte ch)
         return 0;
     }
 
-#ifdef SERIAL_WRITE_DIRECT
-
+#if  defined(SERIAL_WRITE_DIRECT) && !defined(IAP_EMULATION)
     // wait until the transmitter hold register is free
-   while (!(LPC_UART->LSR & LSR_THRE))
-       ;
-   LPC_UART->THR = ch;
-   return 1;
-#else
+    while (!(LPC_UART->LSR & LSR_THRE))
+        ;
+    LPC_UART->THR = ch;
+    return 1;
+#endif
 
     if (writeHead == writeTail && (LPC_UART->LSR & LSR_THRE))
     {
@@ -147,9 +146,14 @@ int Serial::write(byte ch)
     writeTail = writeTailNext;
     LPC_UART->IER |= UART_IE_THRE;
 
-    return 1;
-
+#ifdef IAP_EMULATION
+    ///\todo This is ok, but better would be to write into a temp-file and then check its content?
+    // Simulate for unit tests, that the byte was sent
+    LPC_UART->LSR |= LSR_THRE; // Set line status register to transmitter hold register empty
+    UART_IRQHandler();
 #endif
+
+    return 1;
 }
 
 void Serial::flush(void)
@@ -159,11 +163,11 @@ void Serial::flush(void)
         return;
     }
 #ifdef SERIAL_WRITE_DIRECT
-    while ((LPC_UART->LSR & (LSR_THRE|LSR_TEMT)) != (LSR_THRE|LSR_TEMT))
+    while ((LPC_UART->LSR & (LSR_THRE | LSR_TEMT)) != (LSR_THRE | LSR_TEMT))
         ;
 #else
     while (writeHead != writeTail)
-    		;
+            ;
 #endif
 }
 
@@ -214,13 +218,15 @@ void Serial::interruptHandler()
 
     while (LPC_UART->LSR & LSR_RDR)
     {
-        if  (!readBufferFull())
+        if (!readBufferFull())
         {
             readBuffer[readTail] = LPC_UART->RBR;
 
             ++readTail;
             readTail &= BufferedStream::BUFFER_SIZE_MASK;
-        } else {
+        }
+        else
+        {
             LPC_UART->RBR; // if the readBuffer ist full, empty UART
         }
     }
