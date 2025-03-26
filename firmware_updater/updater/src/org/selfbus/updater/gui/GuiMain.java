@@ -530,7 +530,7 @@ public class GuiMain extends JFrame {
 
     private void setFrameImages() {
         String resourceTemplate = "/frame_images/selfbus_logo_%sx%s.png";
-        String[] resolutions = {"16", "24", "32", "48", "256"};
+        String[] resolutions = {"16", "32", "60", "72", "96", "256"};
         List<Image> frameImageList = new ArrayList<>();
 
         for (String resolution : resolutions) {
