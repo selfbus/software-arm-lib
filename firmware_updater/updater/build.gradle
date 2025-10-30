@@ -109,13 +109,13 @@ dependencies {
     //implementation 'com.github.calimero:calimero-core'
 
     // calimero knx bus access library
-    implementation 'com.github.calimero:calimero-core:2.6-rc2'
+    implementation 'com.github.calimero:calimero-core:2.6'
 
     // calimero serial tx/rx lib for ft1.2 and tpuart support
-    implementation 'com.github.calimero:calimero-rxtx:2.6-rc1'
+    implementation 'com.github.calimero:calimero-rxtx:2.6'
 
     // calimero usb support
-    implementation 'io.calimero:calimero-usb:2.6-rc1'
+    implementation 'io.calimero:calimero-usb:2.6'
 
     // find specific directories under linux and windows
     implementation 'net.harawata:appdirs:1.3.0'
