@@ -147,7 +147,7 @@ public class DeviceManagement implements AutoCloseable {
     public void restartDeviceToBootloader(IndividualAddress device) throws InterruptedException {
         int restartProcessTime = Mcu.DEFAULT_RESTART_TIME_SECONDS;
         try (Destination dest = this.mc.createDestination(device, true, false, false)) {
-            logger.info("Restarting device {} into bootloader", device);
+            logger.info("Restarting device {}{}{} into bootloader", ansi().fgBright(OK), device, ansi().reset());
             restartProcessTime = this.mc.restart(dest, RESTART_ERASE_CODE, RESTART_CHANNEL);
             String timeStr;
             if (restartProcessTime <= 1) {
