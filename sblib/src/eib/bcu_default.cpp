@@ -209,6 +209,7 @@ bool BcuDefault::processGroupAddressTelegram(ApciCommand apciCmd, uint16_t group
     DB_COM_OBJ(
         serial.println();
         serial.print("BCU grp addr: 0x", (unsigned int)groupAddress, HEX, 4);
+        serial.print(" ");
     );
 
     comObjects->processGroupTelegram(groupAddress, apciCmd & APCI_GROUP_MASK, telegram);
