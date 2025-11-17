@@ -187,16 +187,6 @@
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/bus.h>
 
-#if defined(DUMP_COM_OBJ)
-#   include <sblib/serial.h>
-#endif
-
-#ifdef DUMP_COM_OBJ
-#   define d(x) x
-#else
-#   define d(x)
-#endif
-
 /** The COMFLAG_UPDATE flag, moved to the high nibble */
 #define COMFLAG_UPDATE_HIGH (COMFLAG_UPDATE << 4)
 
