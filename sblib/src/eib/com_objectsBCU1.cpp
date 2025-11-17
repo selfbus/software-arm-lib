@@ -183,3 +183,50 @@ inline const ComConfigBCU1* ComObjectsBCU1::objectConfigBCU1(int objno)
 	}
     return (const ComConfigBCU1*) (objConfigTable + 1 + sizeof(ComConfigBCU1::DataPtrType) + objno * sizeof(ComConfigBCU1) );
 }
+
+void ComObjectsBCU1::printObjectConfigTable()
+{
+#ifdef DUMP_COM_OBJ
+    uint16_t comObjTableAddr = ((BcuDefault*)bcu)->userEeprom->commsTabPtr();
+    comObjTableAddr += ((BcuDefault*)bcu)->userEeprom->startAddr(); // for BCU1 add 0x100
+    serial.println("ObjectConfigTable:");
+    serial.println("   address      : 0x", (unsigned int)comObjTableAddr, HEX, 4);
+    if (comObjTableAddr == 0)
+    {
+        serial.println("invalid address!");
+        return;
+    }
+    byte* currentTablePosition = ((BcuDefault*)bcu)->userMemoryPtr(comObjTableAddr);
+    byte currentSize = *currentTablePosition;
+    serial.println("   #com objects : ", (unsigned int)currentSize, DEC, 3);
+    currentTablePosition++; // 1 byte #com objects
+    uint16_t ramFlagsTablePointer;
+    ramFlagsTablePointer = *currentTablePosition;
+
+    currentTablePosition++; // 1 byte RAM-Flags-Pointer
+    serial.println("   RAM-Flags-Ptr: 0x", (unsigned int)ramFlagsTablePointer, HEX, 4);
+    for (uint8_t i = 0; i < currentSize; i++)
+    {
+        uint8_t data;
+        data = *currentTablePosition;
+        currentTablePosition++; // 1 byte data pointer
+        uint8_t config = *currentTablePosition;
+        if ((config & COMCONF_VALUE_TYPE) == COMCONF_VALUE_TYPE)
+        {
+            data += 0x100; // Segment selector KNX Spec. 3.0 3/5/1 4.18.3.1.2.1
+        }
+
+        currentTablePosition++; // 1 byte config
+        uint8_t type = *currentTablePosition;
+        currentTablePosition++; // 1 byte type
+        serial.print("#", i, DEC, 3);
+        serial.print(": data 0x", data, HEX, 4);
+        serial.print(" config (0x", config, HEX, 2);
+        serial.print("): ");
+        printComObjectConfig(config);
+        serial.print(" type: ");
+        printComObjectType(type);
+        serial.println();
+    }
+#endif
+}
