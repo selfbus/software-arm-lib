@@ -308,6 +308,11 @@ void ComObjects::_objectWrite(int objno, unsigned int value, int flags)
     }
 
     //addObjectFlags(objno, flags);
+    d(
+      serial.print("ComObjects::_objectWrite call setObjectFlags(", objno, DEC, 3);
+      serial.print(", 0x", flags, HEX, 2);
+      serial.println(")");
+    )
     setObjectFlags(objno, flags); //clear any pending ram com object flags and set new flags
 }
 
