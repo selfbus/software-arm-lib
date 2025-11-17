@@ -44,6 +44,7 @@ public:
     ComObjectsBCU2(BcuDefault* bcuInstance) : ComObjectsBCU1(bcuInstance) {}
 	~ComObjectsBCU2() = default;
 
+    void printObjectConfigTable();
 protected:
 	virtual byte* objectValuePtr(int objno) override;
 	virtual byte* objectConfigTable() override;
