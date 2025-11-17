@@ -72,7 +72,7 @@ void ComObjectsBCU1::processGroupTelegram(uint16_t addr, int apci, byte* tel, in
  */
     const byte* assocTab = bcu->addrTables->assocTable();
     const int endAssoc = 1 + (*assocTab) * 2;
-    int objno, objConf;
+    int objno;
 
     DB_COM_OBJ(
             serial.print("grpAddr ", mainGroup(addr));
@@ -112,8 +112,8 @@ void ComObjectsBCU1::processGroupTelegram(uint16_t addr, int apci, byte* tel, in
         }
 
         //DB_COM_OBJ(serial.println("commsTabAddr: 0x", ((UserEepromBCU1*)((BcuDefault*)bcu)->userEeprom)->commsTabAddr(), HEX););
-        objConf = objectConfig(objno).config;
-        DB_COM_OBJ(serial.println("objConf: 0x", objno, HEX, 2););
+        uint8_t objConf = objectConfig(objno).config;
+        DB_COM_OBJ(serial.println("objConf: 0x", objConf, HEX, 2););
 
 
 
