@@ -423,11 +423,11 @@ public class DeviceManagement implements AutoCloseable {
         return blStatistic;
     }
 
-    private boolean isLinkAlive() {
+    private boolean isLinkDead() {
         if (link == null) {
-            return false;
+            return true;
         }
-        return link.isOpen();
+        return !link.isOpen();
     }
 
     private void handleKNXException(final UPDCommand command, final KNXException e) throws
@@ -468,7 +468,7 @@ public class DeviceManagement implements AutoCloseable {
                 handleKNXException(command, e);
             }
             finally {
-                if (!isLinkAlive()) {
+                if (isLinkDead()) {
                     maxRetry = 0; // exit while
                 }
             }
@@ -485,7 +485,7 @@ public class DeviceManagement implements AutoCloseable {
     public void checkDeviceInProgrammingMode(IndividualAddress progDeviceAddr) throws UpdaterException,
             InterruptedException {
         try {
-            if (!isLinkAlive()) {
+            if (isLinkDead()) {
                 reconnect();
             }
 
