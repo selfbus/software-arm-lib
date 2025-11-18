@@ -1,7 +1,7 @@
 plugins {
     id 'java'
     id 'application'
-    id 'com.gradleup.shadow' version '8.3.0'
+    id 'com.gradleup.shadow' version '9.2.2'
     id 'jvm-test-suite'
 }
 
@@ -65,8 +65,8 @@ compileTestJava.options.compilerArgs = [
         '-Xlint:all', // enable all warnings
 ]
 
-artifacts {
-    archives shadowJar
+tasks.assemble {
+    dependsOn(tasks.shadowJar)
 }
 
 testing {

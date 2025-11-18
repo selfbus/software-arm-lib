@@ -23,7 +23,7 @@ The Updater Wiki article can be found [here](https://selfbus.org/wiki/software/t
 ## Requirements
 
 * JDK 17+
-* gradle >=8.12.1
+* gradle >=9.2.1
 * Selfbus device with flashed [bootloader](../bootloader) version 1.00 or higher
 
 ## Build
