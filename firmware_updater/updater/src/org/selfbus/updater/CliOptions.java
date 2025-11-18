@@ -128,7 +128,6 @@ public class CliOptions {
     private final Options cliOptions = new Options();
     // define parser
     CommandLine cmdLine;
-    final HelpFormatter helper = new HelpFormatter();
 
     private String helpHeader = "";
     private String helpFooter = "";
@@ -737,6 +736,22 @@ public class CliOptions {
     public String helpToString() {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
+
+// todo commons-cli 1.11.0 does not yet support setWidth or Printwriter/StringWriter
+//        import org.apache.commons.cli.help.HelpFormatter
+//        final HelpFormatter helper = org.apache.commons.cli.help.HelpFormatter.builder()
+//                //.setWidth(PRINT_WIDTH)
+//                .setShowSince(false)
+//                .setComparator((optionA, optionB) -> 0) // do not sort options
+//                .get();
+//        try {
+//            // printHelp has no pw (PrintWriter) since 1.10.0
+//            helper.printHelp(pw, helpApplicationName + " <KNX Interface>",
+//                    helpHeader + ":", cliOptions, helpFooter, false);
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
+        final HelpFormatter helper = new org.apache.commons.cli.HelpFormatter();
         helper.setWidth(PRINT_WIDTH);
         helper.setOptionComparator(null);
         helper.printHelp(pw, helper.getWidth(), helpApplicationName + " <KNX Interface>",

@@ -124,7 +124,7 @@ dependencies {
     implementation 'com.google.guava:guava:33.5.0-jre'
 
     // command line option
-    implementation 'commons-cli:commons-cli:1.11.0'
+    implementation 'commons-cli:commons-cli:1.11.0' // todo On update check todo in CliOptions::helpToString
 
     // console and file logging
     implementation 'ch.qos.logback:logback-classic:1.5.21'
