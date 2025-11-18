@@ -203,129 +203,129 @@ public class CliOptions {
                 .numberOfArgs(2)
                 .required(false)
                 .type(Number.class)
-                .desc("dump a flash range in intel(R) hex to the serial port of the MCU. Works only with DEBUG version of the bootloader.").build();
+                .desc("dump a flash range in intel(R) hex to the serial port of the MCU. Works only with DEBUG version of the bootloader.").get();
 
         Option fileName = Option.builder(OPT_SHORT_FILENAME).longOpt(OPT_LONG_FILENAME)
                 .argName("filename")
                 .numberOfArgs(1)
                 .required(false)
                 .type(String.class)
-                .desc("Filename of hex file to program").build();
+                .desc("Filename of hex file to program").get();
         Option localhost = Option.builder(OPT_SHORT_LOCALHOST).longOpt(OPT_LONG_LOCALHOST)
                 .argName("localhost")
                 .numberOfArgs(1)
                 .required(false)
                 .type(String.class)
-                .desc("local IP/host name").build();
+                .desc("local IP/host name").get();
         Option localport = Option.builder(OPT_SHORT_LOCALPORT).longOpt(OPT_LONG_LOCALPORT)
                 .argName("localport")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc("local UDP port (default system assigned)").build();
+                .desc("local UDP port (default system assigned)").get();
         Option port = Option.builder(OPT_SHORT_PORT).longOpt(OPT_LONG_PORT)
                 .argName("port")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc(String.format("UDP port on <KNX Interface> (default %d)", KNXnetIPConnection.DEFAULT_PORT)).build();
+                .desc(String.format("UDP port on <KNX Interface> (default %d)", KNXnetIPConnection.DEFAULT_PORT)).get();
         Option ft12 = Option.builder(OPT_SHORT_FT12).longOpt(OPT_LONG_FT12)
                 .argName("COM-port")
                 .numberOfArgs(1)
                 .required(false)
-                .desc("use FT1.2 serial communication").build();
+                .desc("use FT1.2 serial communication").get();
         Option tpuart = Option.builder(OPT_SHORT_TPUART).longOpt(OPT_LONG_TPUART)
                 .argName("COM-port")
                 .numberOfArgs(1)
                 .required(false)
-                .desc("use TPUART serial communication (experimental, needs serialcom or rxtx library in java.library.path)").build();
+                .desc("use TPUART serial communication (experimental, needs serialcom or rxtx library in java.library.path)").get();
         Option usbInterface = Option.builder(null).longOpt(OPT_LONG_USB)
                 .argName("vendorId:productId")
                 .numberOfArgs(1)
                 .required(false)
-                .desc("use USB-Interface. Specify VendorID and ProductID e.g. 147B:5120 for the Selfbus USB-Interface (experimental)").build();
+                .desc("use USB-Interface. Specify VendorID and ProductID e.g. 147B:5120 for the Selfbus USB-Interface (experimental)").get();
         Option medium = Option.builder(OPT_SHORT_MEDIUM).longOpt(OPT_LONG_MEDIUM)
                 .argName("tp1|rf")
                 .numberOfArgs(1)
                 .required(false)
                 .type(TPSettings.class)
-                .desc(String.format("KNX medium [tp1|rf] (default %s)", getMedium())).build(); ///\todo not all implemented missing [tp0|p110|p132]
+                .desc(String.format("KNX medium [tp1|rf] (default %s)", getMedium())).get(); ///\todo not all implemented missing [tp0|p110|p132]
         Option optProgDevice = Option.builder(OPT_SHORT_PROG_DEVICE).longOpt(OPT_LONG_PROG_DEVICE)
                 .argName("x.x.x")
                 .numberOfArgs(1)
                 .required(false)
                 .type(IndividualAddress.class)
-                .desc(String.format("KNX device address in bootloader mode (default %s)", getProgDevicePhysicalAddress().toString())).build();
+                .desc(String.format("KNX device address in bootloader mode (default %s)", getProgDevicePhysicalAddress().toString())).get();
         Option device = Option.builder(OPT_SHORT_DEVICE).longOpt(OPT_LONG_DEVICE)
                 .argName("x.x.x")
                 .numberOfArgs(1)
                 .required(false)
                 .type(IndividualAddress.class)
-                .desc("KNX device address in normal operating mode (default none)").build();
+                .desc("KNX device address in normal operating mode (default none)").get();
         Option ownPhysicalAddress = Option.builder(OPT_SHORT_OWN_ADDRESS).longOpt(OPT_LONG_OWN_ADDRESS)
                 .argName("x.x.x")
                 .numberOfArgs(1)
                 .required(false)
                 .type(IndividualAddress.class)
                 .desc(String.format("own physical KNX tunnel address (default %s). Required for some IP interfaces that also use their own address as the tunnel address, e.g. Loxone Miniserver Gen 1.",
-                        getOwnPhysicalAddress().toString())).build();
+                        getOwnPhysicalAddress().toString())).get();
         Option uid = Option.builder(OPT_SHORT_UID).longOpt(OPT_LONG_UID)
                 .argName("uid")
                 .numberOfArgs(1)
                 .required(false)
-                .desc(String.format("send UID to unlock (default: request UID to unlock). Only the first %d bytes of UID are used", UPDProtocol.UID_LENGTH_USED)).build();
+                .desc(String.format("send UID to unlock (default: request UID to unlock). Only the first %d bytes of UID are used", UPDProtocol.UID_LENGTH_USED)).get();
         Option delay = Option.builder(null).longOpt(OPT_LONG_DELAY)
                 .argName("ms")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc(String.format("delay telegrams during data transmission to reduce bus load, valid 0-500ms, default %d", Updater.DELAY_MIN)).build();
+                .desc(String.format("delay telegrams during data transmission to reduce bus load, valid 0-500ms, default %d", Updater.DELAY_MIN)).get();
         Option reconnect = Option.builder(null).longOpt(OPT_LONG_RECONNECT)
                 .argName("ms")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
                 .desc(String.format("pause between a KNX connection reconnect, valid %d - %dms, default %d", RECONNECT_MIN_MS,
-                        RECONNECT_MAX_MS, RECONNECT_MIN_MS)).build();
+                        RECONNECT_MAX_MS, RECONNECT_MIN_MS)).get();
         Option reconnectSeqNumber = Option.builder(null).longOpt(OPT_LONG_RECONNECT_SEQ_NUMBER)
                 .argName("#sequence")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
                 .desc(String.format("Reconnect KNX IP tunnel on sequence number, valid %d - %d, default %d. May help with some IP-Interfaces e.g. for Loxone Miniserver Gen 1. set to 245",
-                        RECONNECT_MIN_SEQ_NUMBER, RECONNECT_MAX_SEQ_NUMBER, getReconnectSeqNumber())).build();
+                        RECONNECT_MIN_SEQ_NUMBER, RECONNECT_MAX_SEQ_NUMBER, getReconnectSeqNumber())).get();
         Option logLevel = Option.builder(OPT_SHORT_LOGLEVEL).longOpt(OPT_LONG_LOGLEVEL)
                 .argName("TRACE|DEBUG|INFO")
                 .numberOfArgs(1)
                 .required(false)
                 .type(String.class)
-                .desc(String.format("Logfile logging level [TRACE|DEBUG|INFO] (default %s)", defaultLogLevel.toString())).build();
+                .desc(String.format("Logfile logging level [TRACE|DEBUG|INFO] (default %s)", defaultLogLevel.toString())).get();
 
         Option userId = Option.builder(null).longOpt(OPT_LONG_USER_ID)
                 .argName("id")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc(String.format("KNX IP Secure tunneling user identifier (1..127) (default %d)", getKnxSecureUserId())).build();
+                .desc(String.format("KNX IP Secure tunneling user identifier (1..127) (default %d)", getKnxSecureUserId())).get();
         Option userPasswd = Option.builder(null).longOpt(OPT_LONG_USER_PASSWORD)
                 .argName("password")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc("KNX IP Secure tunneling user password (Commissioning password/Inbetriebnahmepasswort), quotation marks (\") in password may not work").build();
+                .desc("KNX IP Secure tunneling user password (Commissioning password/Inbetriebnahmepasswort), quotation marks (\") in password may not work").get();
         Option devicePasswd = Option.builder(null).longOpt(OPT_LONG_DEVICE_PASSWORD)
                 .argName("password")
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) quotation marks(\") in password may not work").build();
+                .desc("KNX IP Secure device authentication code (Authentication Code/Authentifizierungscode) quotation marks(\") in password may not work").get();
 
         Option knxPriority = Option.builder(null).longOpt(OPT_LONG_PRIORITY)
                 .argName("SYSTEM|URGENT|NORMAL|LOW")
                 .numberOfArgs(1)
                 .required(false)
                 .type(String.class)
-                .desc(String.format("KNX telegram priority (default %s)", getPriority().toString().toUpperCase())).build();
+                .desc(String.format("KNX telegram priority (default %s)", getPriority().toString().toUpperCase())).get();
 
         Option blockSizeOption = Option.builder(OPT_SHORT_BLOCKSIZE).longOpt(OPT_LONG_BLOCKSIZE)
                 .argName("256|512|1024")
@@ -333,7 +333,7 @@ public class CliOptions {
                 .numberOfArgs(1)
                 .required(false)
                 .type(Number.class)
-                .desc(String.format("Block size to program (default %d bytes)", getBlockSize())).build();
+                .desc(String.format("Block size to program (default %d bytes)", getBlockSize())).get();
 
         Option logStatistic = new Option(null, OPT_LONG_LOGSTATISTIC, false, "show more statistic data");
 
