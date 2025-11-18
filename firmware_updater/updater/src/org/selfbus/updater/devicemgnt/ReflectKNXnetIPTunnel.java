@@ -3,8 +3,6 @@ package org.selfbus.updater.devicemgnt;
 import com.google.common.collect.Lists;
 import tuwien.auto.calimero.knxnetip.KNXnetIPTunnel;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.List;
 
@@ -66,8 +64,8 @@ public class ReflectKNXnetIPTunnel {
         return null;
     }
 
-    private static Iterable<Field> getFieldsUpTo(@Nonnull Class<?> startClass,
-                                                 @Nullable Class<?> exclusiveParent) {
+    private static Iterable<Field> getFieldsUpTo(Class<?> startClass,
+                                                 Class<?> exclusiveParent) {
         List<Field> currentClassFields = Lists.newArrayList(startClass.getDeclaredFields());
         Class<?> parentClass = startClass.getSuperclass();
 
