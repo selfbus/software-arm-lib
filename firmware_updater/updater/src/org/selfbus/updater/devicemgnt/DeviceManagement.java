@@ -16,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import tuwien.auto.calimero.*;
 import tuwien.auto.calimero.link.KNXLinkClosedException;
 import tuwien.auto.calimero.link.KNXNetworkLink;
+import tuwien.auto.calimero.link.medium.KNXMediumSettings;
 import tuwien.auto.calimero.mgmt.Destination;
 import tuwien.auto.calimero.mgmt.KNXDisconnectException;
 import tuwien.auto.calimero.mgmt.ManagementProcedures;
@@ -24,6 +25,7 @@ import tuwien.auto.calimero.mgmt.ManagementProceduresImpl;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Optional;
 
 import static org.fusesource.jansi.Ansi.*;
 import static org.selfbus.updater.logging.Color.*;
@@ -570,7 +572,12 @@ public class DeviceManagement implements AutoCloseable {
         if (this.link == null) {
             return "No link available.";
         }
-
-        return link.toString();
+        String linkInfo = link.toString();
+        KNXMediumSettings settings = link.getKNXMedium();
+        Optional<IndividualAddress> tunnelAddress = settings.assignedAddress();
+        if (tunnelAddress.isPresent()) {
+            linkInfo += String.format(", tunnel %s", tunnelAddress.get());
+        }
+        return linkInfo;
     }
 }
