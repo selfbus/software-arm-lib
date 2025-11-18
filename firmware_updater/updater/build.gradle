@@ -133,7 +133,7 @@ dependencies {
     implementation 'org.slf4j:slf4j-jdk-platform-logging:2.0.17'
 
     // Console ansi color support
-    implementation 'org.jline:jline-terminal-jansi:3.28.0'
+    implementation 'org.jline:jline-terminal-jansi:3.30.6'
 
     // GUI
     implementation files('libs/forms_rt.jar')
