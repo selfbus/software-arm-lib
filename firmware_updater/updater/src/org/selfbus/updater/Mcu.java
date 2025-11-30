@@ -12,6 +12,13 @@ public final class Mcu {
     public static final int MAX_PAYLOAD = MAX_ASDU_LENGTH - 1;
     /** Selfbus ARM controller flash page size */
     public static final int FLASH_PAGE_SIZE = 256;
+    /** Selfbus ARM controller flash start address */
+    public static final int FLASH_START_ADDRESS = 0;
+    /** Selfbus ARM controller flash size in bytes*/
+    public static final int FLASH_SIZE_BYTES = 0x10000;
+    /** Selfbus ARM controller flash end address */
+    public static final int FLASH_END_ADDRESS = FLASH_START_ADDRESS + FLASH_SIZE_BYTES - 1;
+
     /** Size in bytes to flash with UPD_PROGRAM */
     public static final int UPD_PROGRAM_SIZE = 1024;
     /** Vector table end of the mcu */

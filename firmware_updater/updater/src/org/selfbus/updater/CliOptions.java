@@ -30,6 +30,8 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.fusesource.jansi.Ansi.*;
+import static org.selfbus.updater.Mcu.FLASH_END_ADDRESS;
+import static org.selfbus.updater.Mcu.FLASH_START_ADDRESS;
 import static org.selfbus.updater.logging.Color.*;
 
 /**
@@ -438,8 +440,8 @@ public class CliOptions {
 
         if (cmdLine.hasOption(OPT_LONG_DUMPFLASH)) {
             String[] optArgs = cmdLine.getOptionValues(OPT_LONG_DUMPFLASH);
-            setDumpFlashStartAddress(Long.decode(optArgs[0]));
-            setDumpFlashEndAddress(Long.decode(optArgs[1]));
+            setDumpFlashStartAddress(optArgs[0]);
+            setDumpFlashEndAddress(optArgs[1]);
         }
 
         setFlashingFullModeIsSet(cmdLine.hasOption(OPT_LONG_FULL));
@@ -570,7 +572,7 @@ public class CliOptions {
                     ansi().fgBright(WARN), OPT_LONG_NAT, OPT_LONG_TUNNEL_V1, ansi().reset()));
         }
 
-        // nat not allowed with tunneling v2
+        // nat isn't allowed with tunneling v2
         if (getNatIsSet() && (getTunnelingV2isSet())) {
             throw new CliInvalidException(String.format("%sOption --%s can not be used together with --%s%s",
                     ansi().fgBright(WARN), OPT_LONG_NAT, OPT_LONG_TUNNEL_V2, ansi().reset()));
@@ -1035,6 +1037,18 @@ public class CliOptions {
         logger.debug("dumpFlashStartAddress={}", getDumpFlashStartAddress());
     }
 
+    private void setDumpFlashStartAddress(String dumpFlashStartAddress) {
+        try {
+            setDumpFlashStartAddress(Long.decode(dumpFlashStartAddress));
+        }
+        catch (NumberFormatException e) {
+            setDumpFlashStartAddress(FLASH_START_ADDRESS);
+            logger.warn("{}option --{} start address {} is invalid => set to default 0x{}{}",
+                    ansi().fgBright(WARN), OPT_LONG_DUMPFLASH, dumpFlashStartAddress,
+                    String.format("%08X",getDumpFlashStartAddress()), ansi().reset());
+        }
+    }
+
     public long getDumpFlashEndAddress() {
         return dumpFlashEndAddress;
     }
@@ -1042,6 +1056,18 @@ public class CliOptions {
     private void setDumpFlashEndAddress(long dumpFlashEndAddress) {
         this.dumpFlashEndAddress = dumpFlashEndAddress;
         logger.debug("dumpFlashEndAddress={}", getDumpFlashEndAddress());
+    }
+
+    private void setDumpFlashEndAddress(String dumpFlashEndAddress) {
+        try {
+            setDumpFlashEndAddress(Long.decode(dumpFlashEndAddress));
+        }
+        catch (NumberFormatException e) {
+            setDumpFlashEndAddress(FLASH_END_ADDRESS);
+            logger.warn("{}option --{} end address {} is invalid => set to default 0x{}{}",
+                    ansi().fgBright(WARN), OPT_LONG_DUMPFLASH, dumpFlashEndAddress,
+                    String.format("%08X", getDumpFlashEndAddress()), ansi().reset());
+        }
     }
 
     public boolean getHelpIsSet() {
@@ -1092,7 +1118,7 @@ public class CliOptions {
         }
 
         if (knxSecureUserId >= 1 && knxSecureUserId <= 127) {
-            logger.debug("{}=***", OPT_LONG_USER_ID); // log only that it´s, but not the actual value
+            logger.debug("{}=***", OPT_LONG_USER_ID); // log only that it's, but not the actual value
             this.knxSecureUserId = knxSecureUserId;
         }
         else {
@@ -1124,7 +1150,7 @@ public class CliOptions {
     private void setKnxSecureUserPassword(String knxSecureUserPassword) {
         this.knxSecureUserPassword = knxSecureUserPassword;
         if (!nonNullString(this.knxSecureUserPassword).isBlank())
-            logger.debug("{}=****", OPT_LONG_USER_PASSWORD); // log only that it´s, but not the actual value
+            logger.debug("{}=****", OPT_LONG_USER_PASSWORD); // log only that it's, but not the actual value
         else
             logger.debug("{}=", OPT_LONG_USER_PASSWORD);
     }
@@ -1136,7 +1162,7 @@ public class CliOptions {
     private void setKnxSecureDevicePassword(String knxSecureDevicePassword) {
         this.knxSecureDevicePassword = knxSecureDevicePassword;
         if (!nonNullString(this.knxSecureDevicePassword).isBlank())
-            logger.debug("{}=*****", OPT_LONG_DEVICE_PASSWORD); // log only that it´s, but not the actual value
+            logger.debug("{}=*****", OPT_LONG_DEVICE_PASSWORD); // log only that it's, but not the actual value
         else
             logger.debug("{}=", OPT_LONG_DEVICE_PASSWORD);
     }
