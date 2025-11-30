@@ -33,6 +33,7 @@ public class BootloaderStatistic {
         return String.format("%s%2d%s", ansiColor, value, ansi().reset());
     }
 
+    @Override
     public String toString() {
         String result = getDisconnectCountColored();
         result += " " + getRepeatedT_ACKcountColored();

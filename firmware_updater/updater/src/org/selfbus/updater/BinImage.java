@@ -142,6 +142,7 @@ public class BinImage {
         }
     }
 
+    @Override
     public final String toString() {
         return String.format("0x%04X-0x%04X, %05d byte(s), crc32 0x%08X, APP_VERSION pointer: 0x%04X",
                 startAddress(), endAddress(), binData.length, crc32(), getAppVersionAddress());

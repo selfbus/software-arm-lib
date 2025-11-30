@@ -83,6 +83,7 @@ public class BootDescriptor {
         return (short) (a & 0x0000FFFF);
     }
 
+    @Override
     public String toString() {
         String res;
         if (valid()) {
