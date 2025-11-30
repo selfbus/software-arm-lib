@@ -41,6 +41,7 @@ public class SBManagementClientImpl extends ManagementClientImpl {
             this.linkLogger = (Logger) LoggerFactory.getLogger(SBLinkListener.class.getName() + " " + link.getName());
         }
 
+        @Override
         public void indication(final FrameEvent e)
         {
             CEMILData cemilData = getCEMILData(e, linkLogger);

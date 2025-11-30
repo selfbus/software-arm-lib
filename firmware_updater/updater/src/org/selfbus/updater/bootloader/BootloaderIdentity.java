@@ -47,6 +47,7 @@ public record BootloaderIdentity(long versionMajor,
         return new BootloaderIdentity(vMajor, vMinor, versionSBLibMajor, versionSBLibMinor, features, applicationFirstAddress);
     }
 
+    @Override
     public String toString() {
         return String.format("v%s, sbLib v%s, Features: 0x%04X, App-start: 0x%04X",
                 getVersion(), getVersionSBLib(), features(), applicationFirstAddress());

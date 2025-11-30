@@ -71,6 +71,7 @@ public class ProgressInfo {
         return "   Done Speed   Avg   Min   Max  Time";
     }
 
+    @Override
     public String toString() {
         return String.format("%5.1f%% %s %s %5.1f %5.1f %tM:%<tS", getPercentageDone(), getSpeed(false),
                 getSpeed(true), getMinBytesPerSecond(), getMaxBytesPerSecond(), getTimeElapsedMs());

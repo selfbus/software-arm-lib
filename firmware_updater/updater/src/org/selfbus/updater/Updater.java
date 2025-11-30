@@ -145,6 +145,7 @@ public class Updater implements Runnable {
             }
         }
 
+        @Override
         public void run() {
             try {
                 t.interrupt();
@@ -182,6 +183,7 @@ public class Updater implements Runnable {
      *
      * @see java.lang.Runnable#run()
      */
+    @Override
     public void run() {
         try {
             final String hexFileName = cliOptions.getFileName();
