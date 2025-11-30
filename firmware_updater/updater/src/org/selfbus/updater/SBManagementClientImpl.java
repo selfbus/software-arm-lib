@@ -227,4 +227,21 @@ public class SBManagementClientImpl extends ManagementClientImpl {
         }
         return received;
     }
+
+    @Override
+    public String toString() {
+        String status;
+        if (isOpen()) {
+            status = "is open";
+        }
+        else {
+            status = "closed";
+        }
+
+        if (link == null) {
+            return String.format("%s, link==null, %s", status, super.toString());
+        }
+
+        return String.format("%s, link %s, %s", status, link, super.toString());
+    }
 }
