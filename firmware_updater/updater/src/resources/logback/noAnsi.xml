@@ -1,0 +1,5 @@
+<included>
+    <!-- See org.selfbus.updater.gui.ConColorsToStyleDoc.RegExAnsi for explanation -->
+    <property name="ansiRegEx" value="\033\[(([;\d]*)[A-Hmsu]|(\?25[hl]))"/>
+    <property name="messageNoAnsi" value="replace(%message){'${ansiRegEx}', ''}"/>
+</included>

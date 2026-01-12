@@ -1,8 +1,0 @@
-rootProject.name = 'SB_updater'
-/*
-sourceControl {
-    gitRepository("https://github.com/calimero-project/calimero-core.git") {
-        producesModule('com.github.calimero:calimero-core')
-    }
-}
-*/

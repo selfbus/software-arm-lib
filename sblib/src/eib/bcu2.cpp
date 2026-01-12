@@ -74,6 +74,7 @@ inline void BCU2::begin(int manufacturer, int deviceType, int version, word read
     userEeprom->orderInfo()[userEeprom->orderInfoSize() - 1] = lowByte(SBLIB_VERSION);
 
     BcuDefault::_begin();
+    static_cast<ComObjectsBCU2*>(this->comObjects)->printObjectConfigTable();
 }
 
 void BCU2::begin(int manufacturer, int deviceType, int version)

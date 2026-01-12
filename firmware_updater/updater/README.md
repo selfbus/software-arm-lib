@@ -1,46 +1,72 @@
-# Selfbus-Updater 1.20
+# Selfbus-Updater
+
+<!-- TOC -->
+* [Selfbus-Updater](#selfbus-updater)
+  * [Wiki](#wiki)
+  * [Requirements](#requirements)
+  * [Build](#build)
+  * [Usage](#usage)
+  * [Common use cases:](#common-use-cases)
+  * [Known Issues](#known-issues)
+    * [Error *Assertion failed* with KNX USB-Interface under Windows](#error-assertion-failed-with-knx-usb-interface-under-windows)
+    * [Loxone Miniserver Gen 1](#loxone-miniserver-gen-1)
+  * [Development](#development)
+    * [IDEs:](#ides)
+    * [IntelliJ IDEA Settings for Updater GUI development:](#intellij-idea-settings-for-updater-gui-development)
+    * [gradle:](#gradle)
+<!-- TOC -->
+
+## Wiki
+
+The Updater Wiki article can be found [here](https://selfbus.org/wiki/software/tools/7-selfbus-firmware-updater).
 
 ## Requirements
 
 * JDK 17+
-* gradle >=8.5
+* gradle >=9.2.1
 * Selfbus device with flashed [bootloader](../bootloader) version 1.00 or higher
 
 ## Build
 ```
-gradle fatJar
+gradle shadowJar
 ```
 *or*
 ```
-linux: gradlew fatJar
-windows: gradlew.bat fatJar
+linux: gradlew shadowJar
+windows: gradlew.bat shadowJar
 ```
-*SB_updater-x.xx-all.jar* file is created in [build/libs](source/build/libs) directory.
+*SB_updater-x.xx-all.jar* file is created in [build/libs](build/libs) directory.
 
 ## Usage
 ```
-java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf> | -s <COM-port> | -t
-       <COM-port>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority <SYSTEM|URGENT|NORMAL|LOW>]
-       [-bs <256|512|1024>] [--user <id>] [--user-pwd <password>] [--device-pwd <password>] [-u
-       <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-t2] [-t1] [-n] [-r] [-h | -v]
-       [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
-       [--statistic]
+java -jar SB_updater-x.xx-all.jar <KNX Interface> [-f <filename>] [-m <tp1|rf>] [-s <COM-port> | -t
+       <COM-port> | --usb <vendorId:productId>]   [-d <x.x.x>] [-D <x.x.x>] [-o <x.x.x>] [--priority
+       <SYSTEM|URGENT|NORMAL|LOW>] [-bs <256|512|1024>] [--user <id>] [--user-pwd <password>]
+       [--device-pwd <password>] [-u <uid>] [-f1] [-H <localhost>] [-P <localport>] [-p <port>] [-t2
+       | -t1 | -r]   [-n] [-h | -v]  [--delay <ms>] [-l <TRACE|DEBUG|INFO>] [--reconnect <ms>]
+       [--ip-tunnel-reconnect <#sequence>] [--ERASEFLASH] [--DUMPFLASH <start> <end>] [-f0]
+       [--statistic] [--discover]
 
 Selfbus KNX-Firmware update tool options:
  -f,--fileName <filename>                   Filename of hex file to program
- -m,--medium <tp1|rf>                       KNX medium [tp1|rf] (default tp1)
+ -m,--medium <tp1|rf>                       KNX medium [tp1|rf] (default TP1)
  -s,--serial <COM-port>                     use FT1.2 serial communication
  -t,--tpuart <COM-port>                     use TPUART serial communication (experimental, needs
                                             serialcom or rxtx library in java.library.path)
+    --usb <vendorId:productId>              use USB-Interface. Specify VendorID and ProductID e.g.
+                                            147B:5120 for the Selfbus USB-Interface (experimental)
  -d,--device <x.x.x>                        KNX device address in normal operating mode (default
                                             none)
  -D,--progDevice <x.x.x>                    KNX device address in bootloader mode (default
                                             15.15.192)
- -o,--own <x.x.x>                           own physical KNX address (default 0.0.0)
+ -o,--own <x.x.x>                           own physical KNX tunnel address (default 0.0.0).
+                                            Required for some IP interfaces that also use their own
+                                            address as the tunnel address, e.g. Loxone Miniserver
+                                            Gen 1.
     --priority <SYSTEM|URGENT|NORMAL|LOW>   KNX telegram priority (default LOW)
  -bs,--blocksize <256|512|1024>             Block size to program (default 1024 bytes)
     --user <id>                             KNX IP Secure tunneling user identifier (1..127)
-                                            (default 1)
+                                            (default -1)
     --user-pwd <password>                   KNX IP Secure tunneling user password (Commissioning
                                             password/Inbetriebnahmepasswort), quotation marks (") in
                                             password may not work
@@ -55,14 +81,19 @@ Selfbus KNX-Firmware update tool options:
  -p,--port <port>                           UDP port on <KNX Interface> (default 3671)
  -t2,--tunnelingv2                          use KNXnet/IP tunneling v2 (TCP) (experimental)
  -t1,--tunneling                            use KNXnet/IP tunneling v1 (UDP)
+ -r,--routing                               use KNXnet/IP routing/multicast (experimental)
  -n,--nat                                   enable Network Address Translation (NAT) (only available
                                             with tunneling v1)
- -r,--routing                               use KNXnet/IP routing/multicast (experimental)
  -h,--help                                  show this help message
  -v,--version                               show tool/library version
     --delay <ms>                            delay telegrams during data transmission to reduce bus
                                             load, valid 0-500ms, default 0
- -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default DEBUG)
+ -l,--logLevel <TRACE|DEBUG|INFO>           Logfile logging level [TRACE|DEBUG|INFO] (default TRACE)
+    --reconnect <ms>                        pause between a KNX connection reconnect, valid 100 -
+                                            12500ms, default 100
+    --ip-tunnel-reconnect <#sequence>       Reconnect KNX IP tunnel on sequence number, valid 100 -
+                                            247, default -1. May help with some IP-Interfaces e.g.
+                                            for Loxone Miniserver Gen 1. set to 245
     --ERASEFLASH                            USE WITH CAUTION! Erases the complete flash memory
                                             including the physical KNX address and all settings of
                                             the device. Only the bootloader is not deleted.
@@ -71,6 +102,7 @@ Selfbus KNX-Firmware update tool options:
                                             bootloader.
  -f0,--NO_FLASH                             for debugging use only, disable flashing firmware!
     --statistic                             show more statistic data
+    --discover                              List available KNXnet/IP interfaces and USB-Interfaces
 ```
 ## Common use cases:
 Updater with graphical user interface (**experimental**)
@@ -81,23 +113,59 @@ Read UID of the device:
 ```
 java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW>
 ```
-Recommended for new firmware versions if UID is unknown (requires active programming mode to unlock the device):
+Recommended for new firmware versions if UID is unknown:
 ```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -nat
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1_flashstart_*.hex"
 ```
 Recommended for new firmware versions with known UID:
 ```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "out8-bcu1.hex" -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
+java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> --fileName "out8-bcu1_flashstart_*.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55
 ```
-Manual specification of parameters if the App-Version pointer is not found/integrated in the firmware file:
+Important for Loxone Miniserver Gen 1:
 ```
-java -jar SB_updater-x.xx-all.jar <ip address of KNX/IP GW> -fileName "in16-bim112.hex" -appVersionPtr 0x3263 -uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 -nat 
+java -jar SB_updater-x.xx-all.jar <ip address of Loxone GW> --fileName "out8-bcu1_flashstart_*.hex" --uid 05:B0:01:02:E9:80:AC:AE:E9:07:47:55 --full --reconnect 500 --ip-tunnel-reconnect 247 --own x.y.z
 ```
-## Used IDE's:
-IntelliJ IDEA Community 2023.3.4 (Build -> Build Artifacts)<br>
-eclipse project is currently not maintained
-## gradle:
-update [gradle wrapper](source/gradle/wrapper) to the newest version:
+**For Loxone Miniserver Gen 1 `--ip-tunnel-reconnect 247` and `--own x.y.z` are mandatory.**  
+**`x.y.z` must match the Loxone Miniserver´s own physical KNX address**
+
+## Known Issues
+
+### Error *Assertion failed* with KNX USB-Interface under Windows
+
+<img alt="Windows error assertion failed" src="images/libusb4java_assertion_error.png" title="Windows error assertion failed" height="80"/>
+  
+For the KNX USB interface to work with the Updater, the interface must use the WinUSB driver under Windows.  
+The WinUSB driver can be installed with e.g. [zadig](https://zadig.akeo.ie).
+- Open zadig and click in the menu *Options->List all devices*
+- In the drop-down select the KNX USB-Interface (e.g. KNX-Interface).  
+<img alt="Zadig KNX USB Interface selected" src="images/zadig_knx_interface_selected.png" title="Zadig KNX USB Interface selected" height="80"/>
+  
+- Make sure that driver *WinUSB* is selected and click on *Replace Driver*.
+
+Note: After replacing the standard *HID* driver, the ETS no longer works with the KNX USB interface.  
+To uninstall the *WinUSB* driver, search for the interface in the Windows Device Manager and uninstall its driver.  
+Windows will reinstall the standard *HID* driver after reconnecting the interface.
+
+### Loxone Miniserver Gen 1
+
+For Loxone Miniserver Gen 1 `--ip-tunnel-reconnect 247` and `--own x.y.z` are mandatory.  
+`x.y.z` must match the Loxone Miniserver´s own physical KNX address.
+
+## Development
+
+### IDEs:
+- [IntelliJ IDEA (Community Edition)](https://www.jetbrains.com/idea/download)
+- Eclipse project is currently not maintained
+
+### IntelliJ IDEA Settings for Updater GUI development:
+Change these in [**Settings Dialog**](https://www.jetbrains.com/help/idea/settings-preferences-dialog.html) (Menu File->Settings):
+- Editor->[GUI Designer](https://www.jetbrains.com/help/idea/gui-designer.html)->Generate GUI into: Java source code
+- [Plugins](https://www.jetbrains.com/help/idea/plugins-settings.html)->install "Resource Bundle Editor" [(howto)](https://www.jetbrains.com/help/idea/resource-bundle.html#open-bundle-editor)
+- Build, Execution, Deployment->[Build Tools](https://www.jetbrains.com/help/idea/settings-build-tools.html)->Gradle->Build and run using: Intellij IDEA
+- Build, Execution, Deployment->[Build Tools](https://www.jetbrains.com/help/idea/settings-build-tools.html)->Gradle->Run tests using: Intellij IDEA
+
+### gradle:
+update [gradle wrapper](gradle/wrapper) to the newest version:
 ```
 gradlew wrapper
 ```
