@@ -21,13 +21,22 @@
 
 #include <sblib/eib/bcu_base.h>
 
+#if defined(__SBLIB_TARGET_RP2350__)
+#include "pico/stdlib.h"
+#endif
+
 /**
  * @brief Initializes the library.
- *        - Configures and starts the system timer to call SysTick_Handler once every 1 millisecond.
+ *        - On LPC: Configures and starts the system timer to call SysTick_Handler once every 1 millisecond.
+ *        - On RP2350: Initializes the Pico SDK (stdio, etc.). Time runs via the hardware 64-bit µs counter.
  */
 static inline void lib_setup()
 {
+#if defined(__SBLIB_TARGET_RP2350__)
+    stdio_init_all();
+#else
 	SysTick_Config(SystemCoreClock / 1000);
+#endif
 }
 
 /**

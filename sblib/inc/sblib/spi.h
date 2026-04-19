@@ -214,7 +214,12 @@ public:
     void finalizeBlockTransfer(void);
 
 protected:
+#if defined(__SBLIB_TARGET_RP2350__)
+    void* port;          // spi_inst_t* from Pico SDK (opaque to avoid header dependency)
+    int spiPortNum;
+#else
     LPC_SSP_TypeDef& port;
+#endif
     int clockDiv;
 
     uint16_t * sndData;

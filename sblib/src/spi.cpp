@@ -8,6 +8,8 @@
  *  published by the Free Software Foundation.
  */
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/spi.h>
 #include <sblib/timer.h>
 
@@ -239,3 +241,5 @@ void SSP1_IRQHandler (void)
 }
 
 }
+
+#endif // !defined(__SBLIB_TARGET_RP2350__)

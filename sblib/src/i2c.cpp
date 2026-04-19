@@ -31,6 +31,8 @@
  * this code.
  */
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/i2c.h>
 
 
@@ -679,3 +681,5 @@ int Chip_I2C_IsStateChanged(I2C_ID_T id)
 }
 
 #endif /* !defined(CHIP_LPC110X) */
+
+#endif // !defined(__SBLIB_TARGET_RP2350__)

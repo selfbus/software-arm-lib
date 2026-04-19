@@ -15,14 +15,22 @@ set(SBLIB_TEST_PATH "${CMAKE_SOURCE_DIR}/../sblib" CACHE PATH "Path to the sblib
 
 include(${CATCH_PATH}/catch.cmake)                # add catch.hpp
 include(${CMAKE_SOURCE_DIR}/lib-test-cases.cmake) # add all test cases
+include(${CMAKE_SOURCE_DIR}/lib-test-cases-rp2350.cmake) # RP2350 test cases
 
 set(SBLIB_TEST_CASE_SRC
         ${SBLIB_CATCH_SRC}
         ${SBLIB_LIB_TEST_CASES_SRC}
 )
 
+set(SBLIB_TEST_CASE_RP2350_SRC
+        ${SBLIB_CATCH_SRC}
+        ${SBLIB_LIB_TEST_CASES_RP2350_SRC}
+)
+
 set(TARGET_X86 ${CMAKE_PROJECT_NAME}_x86)
 set(TARGET_X64 ${CMAKE_PROJECT_NAME}_x64)
+set(TARGET_RP2350_X86 ${CMAKE_PROJECT_NAME}_rp2350_x86)
+set(TARGET_RP2350_X64 ${CMAKE_PROJECT_NAME}_rp2350_x64)
 
 set(INCLUDE_DIRECTORIES
         ${CATCH_PATH}/inc          # catch
@@ -56,6 +64,16 @@ set(RELEASE_DEFINES
         NDEBUG
         __LPC11XX__
         IAP_EMULATION
+)
+
+set(RP2350_DEBUG_DEFINES
+        ${DEBUG_DEFINES}
+        USE_MOCK_KNX_BUS
+)
+
+set(RP2350_RELEASE_DEFINES
+        ${RELEASE_DEFINES}
+        USE_MOCK_KNX_BUS
 )
 
 #  todo Warnings to enable in future
@@ -136,4 +154,37 @@ if(COMPILER_SUPPORTS_64BIT)
     target_link_libraries(${TARGET_X86} "sblib-test_x64")
 else()
     message(NOTICE "Looks like the compiler has no 64bit support. (in ${PROJECT_NAME})")
+endif()
+
+
+# --- RP2350 / MockKnxBus test targets ---
+# The sblib-test-rp2350 library targets are already created by add_subdirectory above.
+if(COMPILER_SUPPORTS_32BIT)
+    add_executable(${TARGET_RP2350_X86} ${SBLIB_TEST_CASE_RP2350_SRC})
+    target_include_directories(${TARGET_RP2350_X86} PRIVATE ${INCLUDE_DIRECTORIES})
+    target_compile_definitions(${TARGET_RP2350_X86} PRIVATE
+            $<$<CONFIG:Debug>:${RP2350_DEBUG_DEFINES}>
+            $<$<CONFIG:Release>:${RP2350_RELEASE_DEFINES}>
+    )
+    target_compile_options(${TARGET_RP2350_X86} PRIVATE
+            $<$<CONFIG:Debug>:${DEBUG_X86_FLAGS}>
+            $<$<CONFIG:Release>:${RELEASE_X86_FLAGS}>
+    )
+    target_link_options(${TARGET_RP2350_X86} PRIVATE "-m32")
+    target_link_libraries(${TARGET_RP2350_X86} "sblib-test-rp2350_x86")
+endif()
+
+if(COMPILER_SUPPORTS_64BIT)
+    add_executable(${TARGET_RP2350_X64} ${SBLIB_TEST_CASE_RP2350_SRC})
+    target_include_directories(${TARGET_RP2350_X64} PRIVATE ${INCLUDE_DIRECTORIES})
+    target_compile_definitions(${TARGET_RP2350_X64} PRIVATE
+            $<$<CONFIG:Debug>:${RP2350_DEBUG_DEFINES}>
+            $<$<CONFIG:Release>:${RP2350_RELEASE_DEFINES}>
+    )
+    target_compile_options(${TARGET_RP2350_X64} PRIVATE
+            $<$<CONFIG:Debug>:${DEBUG_X64_FLAGS}>
+            $<$<CONFIG:Release>:${RELEASE_X64_FLAGS}>
+    )
+    target_link_options(${TARGET_RP2350_X64} PRIVATE "-m64")
+    target_link_libraries(${TARGET_RP2350_X64} "sblib-test-rp2350_x64")
 endif()

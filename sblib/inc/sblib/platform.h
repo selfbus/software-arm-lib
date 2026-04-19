@@ -30,11 +30,22 @@
  */
 extern LPC_GPIO_TypeDef* const gpioPorts[4];
 
-#else
-#error "Unsupported platform"
+#elif defined(__SBLIB_TARGET_RP2350__)
+// RP2350 platform — no LPC register definitions needed.
+// Hardware access goes through Pico SDK or HAL abstractions.
+#ifndef SystemCoreClock
+#define SystemCoreClock (150000000UL)  // RP2350 default: 150 MHz
 #endif
-#include <core_cm0.h>
 
+#else
+#error "Unsupported platform: define __LPC11XX__ or __SBLIB_TARGET_RP2350__"
+#endif
+
+#if defined(__LPC11XX__)
+#include <core_cm0.h>
+#endif
+
+#if !defined(__SBLIB_TARGET_RP2350__)
 /**
  * Get a pointer to a low level IO configuration register.
  *
@@ -51,11 +62,15 @@ unsigned int* ioconPointer(int pin);
  * @return a pointer to the IO configuration register.
  */
 unsigned int* ioconPointer(int port, int pinNum);
+#endif // !defined(__SBLIB_TARGET_RP2350__)
 
 
 #ifdef IAP_EMULATION
   extern uint8_t FLASH[];
 # define LPC_FLASH_BASE (FLASH)
+#elif defined(__SBLIB_TARGET_RP2350__)
+  // RP2350 flash is memory-mapped at XIP_BASE (0x10000000)
+# define LPC_FLASH_BASE (0x10000000)
 #else
 #ifndef LPC_FLASH_BASE
   #define LPC_FLASH_BASE 0
@@ -64,8 +79,13 @@ unsigned int* ioconPointer(int port, int pinNum);
 
 #define FLASH_BASE_ADDRESS   ((uint8_t *)LPC_FLASH_BASE) //!< The base address of the flash
 
+#if defined(__SBLIB_TARGET_RP2350__)
+#define FLASH_SECTOR_SIZE    (0x1000)              //!< RP2350: 4KB flash sector
+#define FLASH_PAGE_SIZE      (0x100)               //!< RP2350: 256 byte flash page
+#else
 #define FLASH_SECTOR_SIZE    (0x1000)              //!< The size of a flash sector in bytes
 #define FLASH_PAGE_SIZE      (0x100)               //!< The size of a flash page in bytes
+#endif
 #define FLASH_PAGE_ALIGNMENT (FLASH_PAGE_SIZE - 1) //!< Page alignment which is allowed to flash
 #define FLASH_RAM_BUFFER_ALIGNMENT (4)             //!< MCU's RAM buffer alignment which is allowed to flash
 

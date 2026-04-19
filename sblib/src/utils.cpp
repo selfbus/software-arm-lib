@@ -8,6 +8,8 @@
  *  published by the Free Software Foundation.
  */
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/utils.h>
 
 #include <sblib/digital_pin.h>
@@ -95,3 +97,5 @@ int hashUID(byte* uid, const int len_uid, byte* hash, const int len_hash)
         hash[i] = uint64_t(a >> (8*i)) & 0xFF;
     return 1;
 }
+
+#endif // !defined(__SBLIB_TARGET_RP2350__)

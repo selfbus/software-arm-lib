@@ -1,0 +1,75 @@
+; knx_tp1.pio - PIO programs for KNX TP1 bus communication on RP2350.
+;
+; Two state machines work cooperatively:
+;   SM_TX: Generates precise active-low pulses on the TX pin.
+;   SM_RX: Captures falling edge timestamps on the RX pin.
+;
+; The bit-level protocol logic runs on the CPU (IRQ-driven via FIFO).
+;
+; KNX TP1 timing:
+;   Bit time     = 104 µs (9600 baud)
+;   0-bit pulse  = 35 µs low, 69 µs high
+;   1-bit        = no pulse (line remains high)
+;
+; At 150 MHz system clock: 1 µs = 150 cycles
+; We use a clock divider to get 1 cycle = 1 µs (div = 150)
+;
+; Copyright (c) 2026 Selfbus project. Licensed under GPLv3.
+
+; ============================================================================
+; TX Program: Generate a single active-low pulse on command
+; ============================================================================
+; The CPU pushes two words into the TX FIFO:
+;   Word 1: delay before falling edge (in µs)
+;   Word 2: pulse LOW duration (in µs)
+;
+; After the pulse, an IRQ is raised so the CPU can queue the next bit.
+; Pin output: 1 = idle (bus high), 0 = pulling bus low
+;
+.program knx_tx
+.side_set 1 opt
+
+    pull block      side 1      ; Wait for delay value, keep output HIGH
+    mov x, osr                  ; X = delay (µs)
+delay_loop:
+    jmp x-- delay_loop          ; Wait X µs before edge
+
+    pull block                  ; Get pulse duration
+    mov x, osr                  ; X = pulse time (µs)
+    nop             side 0      ; Drive output LOW (start of 0-bit)
+pulse_loop:
+    jmp x-- pulse_loop          ; Hold LOW for X µs
+
+    nop             side 1      ; Release bus (HIGH)
+    irq wait 0                  ; Signal CPU: pulse done, ready for next
+
+; ============================================================================
+; RX Program: Capture falling edge timestamp
+; ============================================================================
+; Waits for a falling edge on the input pin, then pushes the current
+; timer value (from a free-running counter in Y) into the RX FIFO.
+;
+; Additionally, an IRQ is fired so the CPU processes the edge immediately.
+; The CPU reads the FIFO to get the timestamp.
+;
+; Y register is used as a free-running microsecond counter.
+;
+.program knx_rx
+
+    mov y, null                 ; Y = 0 (counter reset)
+wait_high:
+    jmp pin wait_high_inc       ; If pin is HIGH, increment and continue
+    jmp got_edge                ; Pin is LOW = falling edge detected
+wait_high_inc:
+    jmp y-- wait_high           ; Y-- (counts down, wraps at 0)
+                                ; Note: Y counts *down*, CPU inverts
+
+got_edge:
+    mov isr, y                  ; Capture current count
+    push noblock                ; Push timestamp to FIFO
+    irq nowait 1                ; Signal CPU: edge detected
+
+    ; Wait for pin to go HIGH again (end of LOW pulse)
+wait_low:
+    jmp pin wait_high           ; Pin HIGH -> back to waiting for next edge
+    jmp wait_low                ; Still LOW, keep waiting

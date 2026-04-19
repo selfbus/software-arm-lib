@@ -11,22 +11,35 @@
 #include <sblib/eib/knx_lpdu.h>
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/bus.h>
+#include <string.h>
 
+#if defined(__SBLIB_TARGET_RP2350__)
+#include "pico/stdlib.h"
+#include "hardware/watchdog.h"
+#endif
+
+#if !defined(__SBLIB_TARGET_RP2350__)
 static Bus* timerBusObj;
 // The interrupt handler for the EIB bus access object
 BUS_TIMER_INTERRUPT_HANDLER(TIMER16_1_IRQHandler, (*timerBusObj))
+#endif
 
 #if defined(INCLUDE_SERIAL)
 #   include <sblib/serial.h>
 #endif
 
+// Legacy constructor: creates a Bus object (LPC11xx timer-based)
+#if !defined(__SBLIB_TARGET_RP2350__)
 BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
         TLayer4(maxTelegramSize()),
         bus(new Bus(this, timer16_1, PIN_EIB_RX, PIN_EIB_TX, CAP0, MAT0)),
+        busInterface(nullptr),
         progPin(PIN_PROG),
         userRam(userRam),
         addrTables(addrTables),
         comObjects(nullptr),
+        rxTelegram(new byte[maxTelegramSize()]()),
+        rxTelegramLen(0),
         progButtonDebouncer(),
         restartType(RestartType::None),
         restartSendDisconnect(false),
@@ -35,33 +48,65 @@ BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables) :
     timerBusObj = bus;
     setFatalErrorPin(progPin);
 }
+#endif
+
+// New constructor: uses an abstract KnxBusInterface (PIO, TPUART, etc.)
+BcuBase::BcuBase(UserRam* userRam, AddrTables* addrTables, KnxBusInterface* busIf) :
+        TLayer4(maxTelegramSize()),
+        bus(nullptr),
+        busInterface(busIf),
+        progPin(0),
+        userRam(userRam),
+        addrTables(addrTables),
+        comObjects(nullptr),
+        rxTelegram(new byte[maxTelegramSize()]()),
+        rxTelegramLen(0),
+        progButtonDebouncer(),
+        restartType(RestartType::None),
+        restartSendDisconnect(false),
+        restartTimeout(Timeout())
+{
+}
 
 void BcuBase::_begin()
 {
     TLayer4::_begin();
-    bus->begin();
+    if (busInterface)
+        busInterface->begin(this);
+    else if (bus)
+        bus->begin();
     progButtonDebouncer.init(1);
 }
 
 void BcuBase::loop()
 {
-    bus->loop();
+    // Call the appropriate bus layer's loop
+    if (busInterface)
+        busInterface->loop();
+    else if (bus)
+        bus->loop();
+
     TLayer4::loop();
 
-    // We want to process a received telegram only if there is nothing to send because:
-    //
-    //     1) Processing the telegram can cause a response telegram, e.g. a T_ACK in
-    //        connection-oriented Transport Layer messages, and we need to have an empty
-    //        buffer to be able to store and send such responses.
-    //
-    //     2) When debugging, it's crucial to only stop in safe states, i.e. only when
-    //        there is nothing to send, not even an acknowledge frame. Otherwise, the
-    //        Bus timer is configured to pull the bus low (send a 0 bit) for some time
-    //        and the MCU continues timer operation, even when a breakpoint is active.
-    //
-    if (bus->telegramReceived() && !bus->sendingFrame() && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+    // Determine sending state from whichever bus layer is active
+    bool sending = busInterface ? busInterface->sendingFrame() : (bus ? bus->sendingFrame() : false);
+
+    // Check for received telegram from legacy Bus (new interface uses onTelegramReceived callback)
+    if (bus && !busInterface)
     {
-        processTelegram(bus->telegram, (uint8_t)bus->telegramLen); // if processed successfully, received telegram will be discarded by processTelegram()
+        if (bus->telegramReceived() && !sending && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+        {
+            processTelegram(bus->telegram, (uint8_t)bus->telegramLen);
+        }
+    }
+    else if (busInterface)
+    {
+        // KnxBusInterface path: rxTelegram/rxTelegramLen are set by onTelegramReceived()
+        if (rxTelegramLen > 0 && !sending && (userRam->status() & BCU_STATUS_TRANSPORT_LAYER))
+        {
+            processTelegram(rxTelegram, (uint8_t)rxTelegramLen);
+            rxTelegramLen = 0;
+        }
     }
 
     if (progPin)
@@ -78,7 +123,7 @@ void BcuBase::loop()
     }
 
     // Rest of this function is only relevant if currently able to send another telegram.
-    if (bus->sendingFrame())
+    if (sending)
     {
         return;
     }
@@ -155,7 +200,10 @@ void BcuBase::sendApciIndividualAddressReadResponse()
 void BcuBase::end()
 {
     enabled = false;
-    bus->end();
+    if (busInterface)
+        busInterface->end();
+    else if (bus)
+        bus->end();
 }
 
 bool BcuBase::programmingMode() const
@@ -163,19 +211,25 @@ bool BcuBase::programmingMode() const
     return (userRam->status() & BCU_STATUS_PROGRAMMING_MODE) == BCU_STATUS_PROGRAMMING_MODE;
 }
 
-int BcuBase::maxTelegramSize()
+int BcuBase::maxTelegramSize() const
 {
     return 23;
 }
 
 void BcuBase::discardReceivedTelegram()
 {
-    bus->discardReceivedTelegram();
+    if (busInterface)
+        rxTelegramLen = 0;
+    else if (bus)
+        bus->discardReceivedTelegram();
 }
 
 void BcuBase::send(unsigned char* telegram, unsigned short length)
 {
-    bus->sendTelegram(telegram, length);
+    if (busInterface)
+        busInterface->sendTelegram(telegram, length);
+    else if (bus)
+        bus->sendTelegram(telegram, length);
 }
 
 void BcuBase::scheduleRestart(RestartType type)
@@ -187,8 +241,12 @@ void BcuBase::scheduleRestart(RestartType type)
 
 void BcuBase::softSystemReset()
 {
-    bus->end();
+    if (busInterface)
+        busInterface->end();
+    else if (bus)
+        bus->end();
 
+#if !defined(__SBLIB_TARGET_RP2350__)
     // Set magicWord to start in bootloader mode after reset.
     // As this overwrites the start of the interrupt vector table, disable interrupts.
     if (restartType == RestartType::MasterIntoBootloader)
@@ -199,11 +257,69 @@ void BcuBase::softSystemReset()
         *magicWord = BOOTLOADER_MAGIC_WORD;
 #endif
     }
-
     NVIC_SystemReset();
+#else
+    // RP2350: Use watchdog to trigger a system reset
+    watchdog_reboot(0, 0, 0);
+    while (true) tight_loop_contents();
+#endif
+}
+
+byte* BcuBase::currentReceivedTelegram()
+{
+    if (busInterface)
+        return rxTelegram;
+    return bus ? bus->telegram : rxTelegram;
+}
+
+int BcuBase::currentReceivedTelegramLen()
+{
+    if (busInterface)
+        return rxTelegramLen;
+    return bus ? bus->telegramLen : rxTelegramLen;
 }
 
 void BcuBase::setProgPin(int prgPin) {
     progPin=prgPin;
     setFatalErrorPin(progPin);
+}
+
+// ---- KnxBusCallback implementation ----
+
+bool BcuBase::onTelegramReceived(const uint8_t* telegram, uint16_t length)
+{
+    if (rxTelegramLen != 0)
+        return false; // busy, previous telegram not yet processed
+
+    int maxLen = maxTelegramSize();
+    if (length > maxLen)
+        length = maxLen;
+
+    memcpy(rxTelegram, telegram, length);
+    rxTelegramLen = length;
+    return true;
+}
+
+void BcuBase::onTelegramSent(bool success)
+{
+    finishedSendingTelegram(success);
+}
+
+uint16_t BcuBase::ownAddress() const
+{
+    return ownAddr;
+}
+
+bool BcuBase::isAddressRelevant(uint16_t destAddr, bool isGroupAddr) const
+{
+    if (destAddr == ownAddr)
+        return true;
+    if (isGroupAddr && addrTables)
+        return addrTables->indexOfAddr(destAddr) >= 0;
+    return false;
+}
+
+bool BcuBase::canAcceptTelegram() const
+{
+    return rxTelegramLen == 0;
 }

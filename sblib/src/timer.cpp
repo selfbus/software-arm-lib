@@ -8,6 +8,8 @@
  *  published by the Free Software Foundation.
  */
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/timer.h>
 #include <sblib/interrupt.h>
 
@@ -249,3 +251,5 @@ extern "C" void SysTick_Handler()
 {
     ++systemTime;
 }
+
+#endif // !defined(__SBLIB_TARGET_RP2350__)

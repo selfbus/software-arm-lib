@@ -30,6 +30,7 @@ class BcuDefault: public BcuBase
 {
 public:
     BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables);
+    BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables, KnxBusInterface* busIf);
     BcuDefault() = delete;
     ~BcuDefault() = default;
 

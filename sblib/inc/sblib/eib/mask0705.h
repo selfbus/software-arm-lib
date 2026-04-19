@@ -30,7 +30,9 @@ class MASK0705 : public MASK0701
 {
 public:
 	MASK0705();
+	MASK0705(KnxBusInterface* busIf);
 	MASK0705(UserRamMASK0705* userRam, UserEepromMASK0705* userEeprom, ComObjectsMASK0705* comObjects, AddrTablesMASK0705* addrTables, PropertiesMASK0705* properties);
+	MASK0705(UserRamMASK0705* userRam, UserEepromMASK0705* userEeprom, ComObjectsMASK0705* comObjects, AddrTablesMASK0705* addrTables, PropertiesMASK0705* properties, KnxBusInterface* busIf);
 	~MASK0705() = default;
 
     virtual const char* getBcuType() const override { return "BIM112_75"; }

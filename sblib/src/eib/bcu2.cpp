@@ -95,8 +95,18 @@ bool BCU2::applicationRunning() const
 BCU2::BCU2() : BCU2(new UserRamBCU2(), new UserEepromBCU2(), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this))
 {}
 
+BCU2::BCU2(KnxBusInterface* busIf) : BCU2(new UserRamBCU2(), new UserEepromBCU2(), new ComObjectsBCU2(this), new AddrTablesBCU2(this), new PropertiesBCU2(this), busIf)
+{}
+
 BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties) :
         BcuDefault(userRam, userEeprom, comObjects, addrTables),
+        userRam(userRam),
+        userEeprom(userEeprom),
+        properties(properties)
+{}
+
+BCU2::BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties, KnxBusInterface* busIf) :
+        BcuDefault(userRam, userEeprom, comObjects, addrTables, busIf),
         userRam(userRam),
         userEeprom(userEeprom),
         properties(properties)

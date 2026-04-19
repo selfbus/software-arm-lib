@@ -12,6 +12,11 @@
 #ifndef PROTOCOL_H_
 #define PROTOCOL_H_
 
+#ifdef USE_MOCK_KNX_BUS
+// RP2350 / KnxBusInterface-based tests: use MockKnxBus instead of Bus class
+#include "protocol_rp2350.h"
+#else
+
 #include <catch.hpp>
 
 #define private   public
@@ -107,5 +112,7 @@ struct Test_Case
 
 void executeTest(BcuType testBcuType, Test_Case * tc);
 void telegramPreparation(BcuDefault* testBcu, Telegram* tel, uint16_t telCount);
+
+#endif // USE_MOCK_KNX_BUS
 
 #endif /* PROTOCOL_H_ */

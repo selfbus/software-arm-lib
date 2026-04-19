@@ -62,28 +62,36 @@ void waitForInterrupt();
  *
  * @param interruptType - the interrupt to enable: TIMER_16_0_IRQn, I2C_IRQn, ...
  */
+#if !defined(__SBLIB_TARGET_RP2350__)
 void enableInterrupt(IRQn_Type interruptType);
+#endif
 
 /**
  * Disable an interrupt.
  *
  * @param interruptType - the interrupt to enable: TIMER_16_0_IRQn, I2C_IRQn, ...
  */
+#if !defined(__SBLIB_TARGET_RP2350__)
 void disableInterrupt(IRQn_Type interruptType);
+#endif
 
 /**
  * Clear the pending status of an interrupt.
  *
  * @param interruptType - the interrupt to clear: TIMER_16_0_IRQn, I2C_IRQn, ...
  */
+#if !defined(__SBLIB_TARGET_RP2350__)
 void clearPendingInterrupt(IRQn_Type interruptType);
+#endif
 
 /**
  * Set the pending status of an interrupt.
  *
  * @param interruptType - the interrupt to set: TIMER_16_0_IRQn, I2C_IRQn, ...
  */
+#if !defined(__SBLIB_TARGET_RP2350__)
 void setPendingInterrupt(IRQn_Type interruptType);
+#endif
 
 /**
  * @fn bool isInsideInterrupt()
@@ -91,7 +99,9 @@ void setPendingInterrupt(IRQn_Type interruptType);
  *
  * @return true if called inside a Isr otherwise false
  */
+#if !defined(__SBLIB_TARGET_RP2350__)
 bool isInsideInterrupt(void);
+#endif
 
 /**
  * @fn bool getInterruptEnabled(IRQn_Type)
@@ -105,7 +115,9 @@ bool isInsideInterrupt(void);
  * @param interruptType - the interrupt to get enabled status must be >=0
  * @return true if interrupt is enabled, otherwise false
  */
+#if !defined(__SBLIB_TARGET_RP2350__)
 bool getInterruptEnabled(IRQn_Type interruptType);
+#endif
 
 /**
  * This define creates an interrupt handler that calls a callback function.
@@ -120,6 +132,35 @@ extern "C" void handler() { callback; }
 //
 // Inline functions
 //
+
+#if defined(__SBLIB_TARGET_RP2350__)
+
+// RP2350 uses Pico SDK (hardware_sync) for interrupt control.
+// The basic noInterrupts/interrupts use ARM intrinsics which are
+// available on RP2350's Cortex-M33 as well.
+#include "hardware/sync.h"
+
+ALWAYS_INLINE void noInterrupts()
+{
+    __dmb();
+    __isb();
+    __asm volatile ("cpsid i" : : : "memory");
+}
+
+ALWAYS_INLINE void interrupts()
+{
+    __asm volatile ("cpsie i" : : : "memory");
+}
+
+ALWAYS_INLINE void waitForInterrupt()
+{
+    __wfi();
+}
+
+// IRQn_Type-based functions are not available on RP2350.
+// Use Pico SDK irq_set_enabled() directly instead.
+
+#else // LPC11xx
 
 ALWAYS_INLINE void noInterrupts()
 {
@@ -178,4 +219,7 @@ ALWAYS_INLINE bool getInterruptEnabled(IRQn_Type interruptType)
         fatalError();
     }
 }
+
+#endif // LPC11xx vs RP2350
+
 #endif /*sblib_interrupt_h*/

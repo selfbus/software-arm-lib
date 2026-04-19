@@ -28,8 +28,13 @@
  */
 
 #if !defined(SERIAL_TX_PIN) || !defined(SERIAL_RX_PIN)
-#   define SERIAL_TX_PIN PIO1_7     //!> default serial Tx-Pin PIO1.7 (LPC11xx)
-#   define SERIAL_RX_PIN PIO1_6     //!> default serial Tx-Pin PIO1.6 (LPC11xx)
+#   if defined(__SBLIB_TARGET_RP2350__)
+#       define SERIAL_TX_PIN 0      //!> default serial Tx-Pin GP0 (RP2350)
+#       define SERIAL_RX_PIN 1      //!> default serial Rx-Pin GP1 (RP2350)
+#   else
+#       define SERIAL_TX_PIN PIO1_7 //!> default serial Tx-Pin PIO1.7 (LPC11xx)
+#       define SERIAL_RX_PIN PIO1_6 //!> default serial Rx-Pin PIO1.6 (LPC11xx)
+#   endif
 #endif
 
 class Serial;

@@ -8,6 +8,8 @@
  *  published by the Free Software Foundation.
  */
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/analog_pin.h>
 
 #include <sblib/platform.h>
@@ -88,3 +90,5 @@ int analogValidRead(int channel)
 
     return (int)(regVal >> 6) & 0x3ff;
 }
+
+#endif // !defined(__SBLIB_TARGET_RP2350__)

@@ -10,6 +10,8 @@
 #ifndef sblib_bus_h
 #define sblib_bus_h
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/core.h>
 #include <sblib/eib/bcu_base.h>
 
@@ -308,5 +310,7 @@ inline void Bus::end()
 {
     pause(true);
 }
+
+#endif // !defined(__SBLIB_TARGET_RP2350__) — end of Bus class
 
 #endif /*sblib_bus_h*/

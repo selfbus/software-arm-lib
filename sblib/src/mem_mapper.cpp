@@ -25,11 +25,9 @@ MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAd
     flashBasePage = iapPageOfAddress(this->flashBase);
     lastAllocated = 0; // means: nothing allocated in this run
     writePage = 0;
-    allocTableModified = false;
     flashMemModified = false;
-    memcpy(allocTable, this->flashBase, FLASH_PAGE_SIZE);
-    // Quick check if there is more than one zero on the allocTable, a certain
-    // sign of table corruption. In this case, clear the table (set all 0xff).
+    // Quick check if there is more than one zero on the allocTable in flash,
+    // a certain sign of table corruption. In this case, clear the table (set all 0xff).
     // This is necessary because a corrupted table leads to all sorts of
     // malfunction.
     // (A more thorough test would be to check for any value (except 0xff) to
@@ -39,7 +37,7 @@ MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAd
     bool errorFound = false;
     for (int i=0; i<FLASH_PAGE_SIZE; i++)
     {
-        if (allocTable[i] == 0)
+        if (this->flashBase[i] == 0)
         {
             if (zeroEntryFound)
             {
@@ -55,27 +53,25 @@ MemMapper::MemMapper(unsigned int flashBase, unsigned int flashSize, bool autoAd
 
     if (errorFound)
     {
-        allocTableModified = true;
-       	memset(allocTable, 0xff, FLASH_PAGE_SIZE);
+        // Use writeBuf temporarily to clear corrupt alloc table
+        memset(writeBuf, 0xff, FLASH_PAGE_SIZE);
+        if (iapErasePage(flashBasePage) != IAP_SUCCESS)
+        {
+            fatalError();
+        }
+        if (iapProgram(this->flashBase, writeBuf, FLASH_PAGE_SIZE) != IAP_SUCCESS)
+        {
+            fatalError();
+        }
+        // writeBuf content is now stale, reset state
+        writePage = 0;
+        flashMemModified = false;
     }
 }
 
 int MemMapper::doFlash(void) const
 {
     int ret = 0;
-    if (allocTableModified)
-    {
-        if (iapErasePage(flashBasePage) != IAP_SUCCESS)
-        {
-            fatalError();
-        }
-        if (iapProgram(flashBase, allocTable, FLASH_PAGE_SIZE) != IAP_SUCCESS)
-        {
-            fatalError();
-        }
-        allocTableModified = false;
-        ret |= 1;
-    }
     if (flashMemModified)
     {
         if (iapErasePage(writePage) != IAP_SUCCESS)
@@ -93,13 +89,33 @@ int MemMapper::doFlash(void) const
     return ret;
 }
 
+void MemMapper::flushAllocTable(int virtPage, byte physPageXor)
+{
+    // Flush any pending data page first
+    doFlash();
+    // Reuse writeBuf to update the alloc table in flash
+    memcpy(writeBuf, flashBase, FLASH_PAGE_SIZE);
+    writeBuf[virtPage] = physPageXor;
+    if (iapErasePage(flashBasePage) != IAP_SUCCESS)
+    {
+        fatalError();
+    }
+    if (iapProgram(flashBase, writeBuf, FLASH_PAGE_SIZE) != IAP_SUCCESS)
+    {
+        fatalError();
+    }
+    // writeBuf now contains stale alloc table data, reset state
+    writePage = 0;
+    flashMemModified = false;
+}
+
 int MemMapper::allocatePage(int virtPage)
 {
     if (lastAllocated == 0)
     { // not yet found the highest used entry
         for (int i = 0; i < FLASH_PAGE_SIZE; i++)
         {
-            unsigned int entry = allocTable[i] ^ 0xff;
+            unsigned int entry = flashBase[i] ^ 0xff;
             if (entry > lastAllocated)
             {
                 lastAllocated = entry;
@@ -118,15 +134,18 @@ int MemMapper::allocatePage(int virtPage)
         lastAllocated++;
         writePage = lastAllocated;
     }
-    memset(writeBuf, 0, FLASH_PAGE_SIZE);
 
-    allocTable[virtPage] = writePage ^ 0xff;
+    // Update alloc table in flash immediately
+    flushAllocTable(virtPage, writePage ^ 0xff);
+
+    // Prepare writeBuf as empty page for new allocation
+    memset(writeBuf, 0, FLASH_PAGE_SIZE);
+    // writePage was already set above
     return MEM_MAPPER_SUCCESS;
 }
 
 int MemMapper::addRange(int virtAddress, int length)
 {
-    bool tableModified = false;
     int virtPage = virtAddress >> 8;
 
     if ((virtAddress & 0xff) || virtPage < 0 || virtPage >= FLASH_PAGE_SIZE)
@@ -143,7 +162,7 @@ int MemMapper::addRange(int virtAddress, int length)
 
     for (int page = virtPage; page < (pages + virtPage); page++)
     {
-        byte flashPageNum = allocTable[page] ^ 0xff;
+        byte flashPageNum = flashBase[page] ^ 0xff;
         if (flashPageNum == 0)
         { // not yet allocated in flash memory
             int result = allocatePage(page);
@@ -151,14 +170,12 @@ int MemMapper::addRange(int virtAddress, int length)
             {
                 return result;
             }
+            // allocatePage already flushed alloc table to flash;
+            // flush the empty data page as well
             flashMemModified = true;
             doFlash();
-            tableModified = true;
         }
     }
-    if (tableModified)
-        allocTableModified = true;
-    doFlash();
     return MEM_MAPPER_SUCCESS;
 }
 
@@ -171,7 +188,7 @@ int MemMapper::getFlashPageNum(int virtAddress) const
         return MEM_MAPPER_INVALID_ADDRESS;
     }
 
-    return (allocTable[virtPage] ^ 0xff);
+    return (flashBase[virtPage] ^ 0xff);
 }
 
 int MemMapper::writeMem(int virtAddress, byte data)
@@ -200,7 +217,7 @@ int MemMapper::writeMem(int virtAddress, byte data)
             {
                 return result;
             }
-            allocTableModified = true;
+            // allocatePage flushed alloc table and prepared writeBuf
         }
     }
     writeBuf[(virtAddress & 0xff)] = data;

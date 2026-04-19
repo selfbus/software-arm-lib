@@ -14,7 +14,11 @@
 #include <sblib/platform.h>
 #include <sblib/types.h>
 
+#if !defined(__SBLIB_TARGET_RP2350__)
 class Timer;
+#else
+class Timer; // RP2350: full definition below
+#endif
 
 
 /**
@@ -80,6 +84,7 @@ unsigned int millis();
  */
 unsigned int elapsed(unsigned int ref);
 
+#if !defined(__SBLIB_TARGET_RP2350__)
 /**
  * The number of CPU clock cycles per microsecond.
  */
@@ -107,6 +112,7 @@ unsigned int elapsed(unsigned int ref);
 #ifndef F_CPU
 #   define F_CPU (48000000UL)
 #endif
+#endif // !defined(__SBLIB_TARGET_RP2350__) — end of clockCycles/F_CPU macros
 
 /**
  * @def DELAY_USEC_HIGH_PRECISION macro for higher precision microsecond delay
@@ -117,6 +123,7 @@ unsigned int elapsed(unsigned int ref);
  */
 #define DELAY_USEC_HIGH_PRECISION(usec) delay_cycles((double)F_CPU * (usec) / 1E6 / 6.0+1)
 
+#if !defined(__SBLIB_TARGET_RP2350__)
 /**
  * The 16bit timer #0.
  */
@@ -497,7 +504,7 @@ protected:
 //
 
 
-ALWAYS_INLINE void Timer::prescaler(unsigned int factor)
+ALWAYS_INLINE void Timer::prescaler(unsigned int factor) // NOLINT
 {
     timer->PR = factor;
 }
@@ -637,6 +644,100 @@ ALWAYS_INLINE bool Timer::getMatchChannelLevel(int channel)
 {
     return (bool)(timer->EMR & (1 << channel));
 }
+#endif // !defined(__SBLIB_TARGET_RP2350__) — end of LPC Timer class + instances
+
+// ---------------------------------------------------------------------------
+// RP2350 Timer emulation
+// ---------------------------------------------------------------------------
+#if defined(__SBLIB_TARGET_RP2350__)
+
+/**
+ * RP2350 Timer emulation.
+ *
+ * Emulates the LPC Timer class API using Pico SDK repeating timers.
+ * When start() is called, the emulation finds the first match channel
+ * configured with RESET|INTERRUPT and creates a repeating timer whose
+ * period equals matchValue * (prescaler+1) / SystemCoreClock seconds.
+ *
+ * The repeating timer callback sets the interrupt flags and calls the
+ * corresponding IRQ handler function (TIMER32_0_IRQHandler etc.),
+ * which the user provides as an extern "C" function.
+ *
+ * PWM support is not emulated; RP2350 examples should use hardware_pwm directly.
+ */
+class Timer
+{
+public:
+    Timer(byte timerNum);
+
+    void begin();
+    void end();
+
+    void prescaler(unsigned int factor);
+    unsigned int prescaler() const;
+
+    void start();
+    void stop();
+    void restart();
+    void reset();
+
+    unsigned int value() const;
+    void value(unsigned int val);
+
+    void interrupts();
+    void noInterrupts();
+
+    int flags() const;
+    void resetFlags();
+    void resetFlag(TimerMatch match);
+    void resetFlag(TimerCapture capture);
+    bool flag(TimerMatch match) const;
+    bool flag(TimerCapture capture) const;
+    static int flagMask(TimerMatch match);
+    static int flagMask(TimerCapture cap);
+
+    void matchMode(int channel, int mode);
+    int matchMode(int channel) const;
+    void match(int channel, unsigned int value);
+    unsigned int match(int channel) const;
+
+    void captureMode(int channel, int mode);
+    int captureMode(int channel) const;
+    unsigned int capture(int channel) const;
+
+    void pwmEnable(int channel);
+    void pwmDisable(int channel);
+
+    void counterMode(int mode, int clearMode);
+    void matchModePinConfig(int channel, int mode);
+    bool is32bitTimer(void);
+    bool getMatchChannelLevel(int channel);
+    void setIRQPriority(uint32_t newPriority);
+
+    // Internal: called from Pico SDK repeating timer callback
+    void _timerFired();
+
+protected:
+    byte timerNum;
+    unsigned int prescalerVal;
+    unsigned int matchValues[4];
+    int matchModes[4];
+    volatile int irqFlags;
+    volatile unsigned int counterVal;
+    bool running;
+    bool interruptEnabled;
+    void* rpTimerPtr;  // opaque: points to repeating_timer_t
+
+    void startRepeatingTimer();
+    void stopRepeatingTimer();
+};
+
+extern Timer timer16_0;
+extern Timer timer16_1;
+extern Timer timer32_0;
+extern Timer timer32_1;
+
+#endif // defined(__SBLIB_TARGET_RP2350__) — end of RP2350 Timer class
 
 /**
  * @fn void delay_cycles(unsigned int)

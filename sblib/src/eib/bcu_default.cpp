@@ -29,6 +29,18 @@ BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* com
     this->comObjects = comObjects;
 }
 
+BcuDefault::BcuDefault(UserRam* userRam, UserEeprom* userEeprom, ComObjects* comObjects, AddrTables* addrTables, KnxBusInterface* busIf) :
+        BcuBase(userRam, addrTables, busIf),
+        userEeprom(userEeprom),
+        memMapper(nullptr),
+        usrCallback(nullptr),
+        sendGrpTelEnabled(false),
+        groupTelWaitMillis(DEFAULT_GROUP_TEL_WAIT_MILLIS),
+        groupTelSent(millis())
+{
+    this->comObjects = comObjects;
+}
+
 void BcuDefault::_begin()
 {
 #ifndef ROUTER
@@ -123,7 +135,8 @@ void BcuDefault::loop()
     BcuBase::loop(); // check processTelegram and programming button state
 
     // Rest of this function is only relevant if currently able to send another telegram.
-    if (bus->sendingFrame())
+    bool sending = busInterface ? busInterface->sendingFrame() : (bus ? bus->sendingFrame() : false);
+    if (sending)
     {
         return;
     }
@@ -592,7 +605,10 @@ bool BcuDefault::flushUserMemory(UsrCallbackType reason)
 {
 ///\todo workaround for lib test cases running into an infinitive loop
 #ifndef IAP_EMULATION
-    bus->pause();
+    if (busInterface)
+        busInterface->pause();
+    else if (bus)
+        bus->pause();
 #endif
 
     if (usrCallback)
@@ -607,7 +623,10 @@ bool BcuDefault::flushUserMemory(UsrCallbackType reason)
         memMapper->doFlash();
     }
 
-    bus->resume();
+    if (busInterface)
+        busInterface->resume();
+    else if (bus)
+        bus->resume();
     return (true);
 }
 

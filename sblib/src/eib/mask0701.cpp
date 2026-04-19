@@ -17,8 +17,15 @@
 MASK0701::MASK0701() : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(), new ComObjectsBCU2(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this))
 {}
 
+MASK0701::MASK0701(KnxBusInterface* busIf) : MASK0701(new UserRamMASK0701(), new UserEepromMASK0701(), new ComObjectsBCU2(this), new AddrTablesMASK0701(this), new PropertiesMASK0701(this), busIf)
+{}
+
 MASK0701::MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsBCU2* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties) :
 		BCU2(userRam, userEeprom, comObjects, addrTables, properties)
+{}
+
+MASK0701::MASK0701(UserRamMASK0701* userRam, UserEepromMASK0701* userEeprom, ComObjectsBCU2* comObjects, AddrTablesMASK0701* addrTables, PropertiesMASK0701* properties, KnxBusInterface* busIf) :
+		BCU2(userRam, userEeprom, comObjects, addrTables, properties, busIf)
 {}
 
 bool MASK0701::processApciMemoryReadPDU(int addressStart, byte *payLoad, int lengthPayLoad)

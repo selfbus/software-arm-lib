@@ -13,8 +13,19 @@
 BCU1::BCU1() : BCU1(new UserRamBCU1(), new UserEepromBCU1(), new ComObjectsBCU1(this), new AddrTablesBCU1(this))
 {}
 
+BCU1::BCU1(KnxBusInterface* busIf) : BCU1(new UserRamBCU1(), new UserEepromBCU1(), new ComObjectsBCU1(this), new AddrTablesBCU1(this), busIf)
+{}
+
 BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables) :
         BcuDefault(userRam, userEeprom, comObjects, addrTables),
+        userRam(userRam),
+        userEeprom(userEeprom),
+        comObjects(comObjects),
+        addrTables(addrTables)
+{}
+
+BCU1::BCU1(UserRamBCU1* userRam, UserEepromBCU1* userEeprom, ComObjectsBCU1* comObjects, AddrTablesBCU1* addrTables, KnxBusInterface* busIf) :
+        BcuDefault(userRam, userEeprom, comObjects, addrTables, busIf),
         userRam(userRam),
         userEeprom(userEeprom),
         comObjects(comObjects),

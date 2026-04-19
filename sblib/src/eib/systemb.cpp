@@ -13,6 +13,13 @@
 SYSTEMB::SYSTEMB() : SYSTEMB(new UserRamSYSTEMB(), new UserEepromSYSTEMB(), new ComObjectsSYSTEMB(this), new AddrTablesSYSTEMB(this), new PropertiesSYSTEMB(this))
 {}
 
+SYSTEMB::SYSTEMB(KnxBusInterface* busIf) : SYSTEMB(new UserRamSYSTEMB(), new UserEepromSYSTEMB(), new ComObjectsSYSTEMB(this), new AddrTablesSYSTEMB(this), new PropertiesSYSTEMB(this), busIf)
+{}
+
 SYSTEMB::SYSTEMB(UserRamSYSTEMB* userRam, UserEepromSYSTEMB* userEeprom, ComObjectsSYSTEMB* comObjects, AddrTablesSYSTEMB* addrTables, PropertiesSYSTEMB* properties) :
          MASK0701(userRam, userEeprom, comObjects, addrTables, properties)
+{}
+
+SYSTEMB::SYSTEMB(UserRamSYSTEMB* userRam, UserEepromSYSTEMB* userEeprom, ComObjectsSYSTEMB* comObjects, AddrTablesSYSTEMB* addrTables, PropertiesSYSTEMB* properties, KnxBusInterface* busIf) :
+         MASK0701(userRam, userEeprom, comObjects, addrTables, properties, busIf)
 {}

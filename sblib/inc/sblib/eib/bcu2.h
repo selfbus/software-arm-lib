@@ -30,7 +30,9 @@ class BCU2 : public BcuDefault
 {
 public:
     BCU2();
+    BCU2(KnxBusInterface* busIf);
     BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties);
+    BCU2(UserRamBCU2* userRam, UserEepromBCU2* userEeprom, ComObjectsBCU2* comObjects, AddrTablesBCU2* addrTables, PropertiesBCU2* properties, KnxBusInterface* busIf);
     ~BCU2() = default;
 
     /**

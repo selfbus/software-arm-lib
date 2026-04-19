@@ -195,13 +195,13 @@ private:
     unsigned int getUIntX(int virtAddress, int length);
     int setUIntX(int virtAddress, int length, int val);
 
+    void flushAllocTable(int virtPage, byte physPageXor);
+
     uint8_t * flashBase; //memory layout: flashBase + 0 = allocTable, flashBase + 1 = usableMemory
     unsigned int flashBasePage;
 
     unsigned int flashSize;
     unsigned int flashSizePages;
-
-    byte allocTable[FLASH_PAGE_SIZE];
 
     mutable byte writeBuf[FLASH_PAGE_SIZE];
     mutable int writePage;
@@ -211,7 +211,6 @@ private:
 
     bool autoAddPage;
     mutable bool flashMemModified;
-    mutable bool allocTableModified;
 };
 
 #endif /* SBLIB_MEM_MAPPER_H_ */

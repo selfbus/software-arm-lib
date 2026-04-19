@@ -8,6 +8,8 @@
  *  published by the Free Software Foundation.
  */
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/serial.h>
 #include <sblib/digital_pin.h>
 #include <sblib/core.h>
@@ -19,3 +21,5 @@ extern "C" void UART_IRQHandler()
 {
     serial.interruptHandler();
 }
+
+#endif // !defined(__SBLIB_TARGET_RP2350__)

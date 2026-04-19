@@ -24,12 +24,33 @@ if (NOT EXISTS "${SBLIB_PATH}")
 endif()
 
 include(sblib-test.cmake)
+include(sblib-test-rp2350.cmake)
 include(${CATCH_PATH}/catch.cmake)
 
 set(SBLIB_TEST_FULL_SRC
         ${SBLIB_CATCH_SRC}
 #        ${SBLIB_SRC}
         ${SBLIB_TEST_SRC}
+)
+
+set(SBLIB_TEST_RP2350_FULL_SRC
+        ${SBLIB_CATCH_SRC}
+        ${SBLIB_TEST_RP2350_SRC}
+)
+
+set(RP2350_CORE_DEFINES
+        ${CORE_DEFINES}
+        USE_MOCK_KNX_BUS
+)
+
+set(RP2350_DEBUG_DEFINES
+        ${RP2350_CORE_DEFINES}
+        DEBUG
+)
+
+set(RP2350_RELEASE_DEFINES
+        ${RP2350_CORE_DEFINES}
+        NDEBUG
 )
 
 set(CORE_DEFINES
@@ -129,4 +150,43 @@ if(COMPILER_SUPPORTS_64BIT)
     )
 else()
     message(NOTICE "Looks like the compiler has no 64bit support. (in ${PROJECT_NAME})")
+endif()
+
+
+# --- RP2350 / MockKnxBus test targets ---
+set(TARGET_RP2350_X86 ${PROJECT_NAME}-rp2350_x86)
+set(TARGET_RP2350_X64 ${PROJECT_NAME}-rp2350_x64)
+
+if(COMPILER_SUPPORTS_32BIT)
+    add_library(${TARGET_RP2350_X86} STATIC ${SBLIB_TEST_RP2350_FULL_SRC})
+    target_link_libraries(${TARGET_RP2350_X86} PUBLIC sblib_x86)
+    target_include_directories(${TARGET_RP2350_X86} PUBLIC ${CATCH_PATH}/inc)
+    target_include_directories(${TARGET_RP2350_X86} PUBLIC ${SBLIB_PATH}/inc)
+    target_include_directories(${TARGET_RP2350_X86} PUBLIC cpu-emu)
+    target_include_directories(${TARGET_RP2350_X86} PUBLIC inc)
+    target_compile_definitions(${TARGET_RP2350_X86} PRIVATE
+            $<$<CONFIG:Debug>:${RP2350_DEBUG_DEFINES}>
+            $<$<CONFIG:Release>:${RP2350_RELEASE_DEFINES}>
+    )
+    target_compile_options(${TARGET_RP2350_X86} PRIVATE
+            $<$<CONFIG:Debug>:${DEBUG32_FLAGS}>
+            $<$<CONFIG:Release>:${RELEASE32_FLAGS}>
+    )
+endif()
+
+if(COMPILER_SUPPORTS_64BIT)
+    add_library(${TARGET_RP2350_X64} STATIC ${SBLIB_TEST_RP2350_FULL_SRC})
+    target_link_libraries(${TARGET_RP2350_X64} PUBLIC sblib_x64)
+    target_include_directories(${TARGET_RP2350_X64} PUBLIC ${CATCH_PATH}/inc)
+    target_include_directories(${TARGET_RP2350_X64} PUBLIC ${SBLIB_PATH}/inc)
+    target_include_directories(${TARGET_RP2350_X64} PUBLIC cpu-emu)
+    target_include_directories(${TARGET_RP2350_X64} PUBLIC inc)
+    target_compile_definitions(${TARGET_RP2350_X64} PRIVATE
+            $<$<CONFIG:Debug>:${RP2350_DEBUG_DEFINES}>
+            $<$<CONFIG:Release>:${RP2350_RELEASE_DEFINES}>
+    )
+    target_compile_options(${TARGET_RP2350_X64} PRIVATE
+            $<$<CONFIG:Debug>:${DEBUG64_FLAGS}>
+            $<$<CONFIG:Release>:${RELEASE64_FLAGS}>
+    )
 endif()

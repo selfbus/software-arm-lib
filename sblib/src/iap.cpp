@@ -6,6 +6,8 @@
  *  published by the Free Software Foundation.
  */
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+
 #include <sblib/internal/iap.h>
 
 #include <sblib/interrupt.h>
@@ -275,3 +277,5 @@ unsigned int iapFlashSize()
     iapFlashBytes = sector * FLASH_SECTOR_SIZE;
     return iapFlashBytes;
 }
+
+#endif // !defined(__SBLIB_TARGET_RP2350__)

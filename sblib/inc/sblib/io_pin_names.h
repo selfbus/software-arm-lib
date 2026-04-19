@@ -15,6 +15,8 @@
 #   include <sblib/hardware/gpio_lpc11xx_fused_io.h>
 #elif defined (__LPC11XX__)
 #   include <sblib/hardware/gpio_lpc11xx.h>
+#elif defined(__SBLIB_TARGET_RP2350__)
+#   include <sblib/hardware/gpio_rp2350.h>
 #endif
 
 #endif /* SBLIB_IO_PIN_NAMES_H_ */

@@ -10,9 +10,14 @@
 #ifndef sblib_digital_pin_h
 #define sblib_digital_pin_h
 
+#if defined(__SBLIB_TARGET_RP2350__)
+#include <sblib/platform.h>
+#include <sblib/types.h>
+#else
 #include <sblib/ioports.h>
 #include <sblib/platform.h>
 #include <sblib/types.h>
+#endif
 
 /**
  * Configure the mode of an I/O pin.
@@ -263,6 +268,7 @@ enum PinMode
      */
     REPEATER_MODE = 0x18,
 
+#if !defined(__SBLIB_TARGET_RP2350__)
     /**
      * Configure the pin as serial data input (RxD).
      */
@@ -296,6 +302,7 @@ enum PinMode
      * SPI master mode or INPUT for SPI slave mode.
      */
     SPI_SSEL = PINMODE_FUNC(PF_SSEL)
+#endif // !defined(__SBLIB_TARGET_RP2350__)
 };
 
 enum PinInterruptMode
@@ -335,6 +342,8 @@ enum PinInterruptMode
 //  Inline functions
 //
 
+#if !defined(__SBLIB_TARGET_RP2350__)
+// LPC11xx inline implementations using direct GPIO register access
 ALWAYS_INLINE void digitalWrite(int pin, bool value)
 {
     int mask = digitalPinToBitMask(pin);
@@ -362,5 +371,6 @@ ALWAYS_INLINE void pinDisableInterrupt(int pin)
     port->IE  &= ~mask;
 
 }
+#endif // !defined(__SBLIB_TARGET_RP2350__)
 
 #endif /*sblib_digital_pin_h*/

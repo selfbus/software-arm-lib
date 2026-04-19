@@ -14,6 +14,7 @@
 #include <sblib/eib/userRam.h>
 #include <sblib/eib/addr_tables.h>
 #include <sblib/eib/com_objects.h>
+#include <sblib/eib/knx_bus_interface.h>
 #include <sblib/timeout.h>
 #include <sblib/timer.h>
 #include <sblib/debounce.h>
@@ -23,14 +24,29 @@ class Bus;
 
 /**
  * Class for controlling minimum BCU related things.
+ *
+ * Implements KnxBusCallback to receive telegrams from any physical bus layer
+ * (PIO, TPUART, legacy Timer-based, ...).
  */
-class BcuBase: public TLayer4
+class BcuBase: public TLayer4, public KnxBusCallback
 {
 public:
-    Bus* bus;
+    Bus* bus;                          //!< Legacy bus pointer (nullptr when using KnxBusInterface)
+    KnxBusInterface* busInterface;     //!< Abstract bus interface (preferred for new implementations)
+#if !defined(__SBLIB_TARGET_RP2350__)
     BcuBase(UserRam* userRam, AddrTables* addrTables);
+#endif
+    BcuBase(UserRam* userRam, AddrTables* addrTables, KnxBusInterface* busIf);
     BcuBase() = delete;
     ~BcuBase() = default;
+
+    // ---- KnxBusCallback implementation ----
+    bool onTelegramReceived(const uint8_t* telegram, uint16_t length) override;
+    void onTelegramSent(bool success) override;
+    uint16_t ownAddress() const override;
+    bool isAddressRelevant(uint16_t destAddr, bool isGroupAddr) const override;
+    bool canAcceptTelegram() const override;
+    int maxTelegramSize() const override;
 
     /**
      * Set ProgPin of board, must be called before begin method
@@ -84,7 +100,32 @@ public:
     AddrTables* addrTables;
     ComObjects* comObjects;
 
-    virtual int maxTelegramSize();
+    /**
+     * The received telegram buffer.
+     * Filled by onTelegramReceived() when using KnxBusInterface,
+     * or directly by Bus when using the legacy interface.
+     */
+    byte* rxTelegram;
+
+    /**
+     * Length of the received telegram in rxTelegram[].
+     * 0 means no telegram pending.
+     */
+    volatile int rxTelegramLen;
+
+    /**
+     * Get a pointer to the current received telegram being processed.
+     * In legacy mode: points to bus->telegram.
+     * In KnxBusInterface mode: points to rxTelegram.
+     */
+    byte* currentReceivedTelegram();
+
+    /**
+     * Get the length of the current received telegram being processed.
+     * In legacy mode: returns bus->telegramLen.
+     * In KnxBusInterface mode: returns rxTelegramLen.
+     */
+    int currentReceivedTelegramLen();
 
 protected:
     /**

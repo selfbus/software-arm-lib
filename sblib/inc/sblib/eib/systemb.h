@@ -30,7 +30,9 @@ class SYSTEMB : public MASK0701
 {
 public:
 	SYSTEMB();
+	SYSTEMB(KnxBusInterface* busIf);
 	SYSTEMB(UserRamSYSTEMB* userRam, UserEepromSYSTEMB* userEeprom, ComObjectsSYSTEMB* comObjects, AddrTablesSYSTEMB* addrTables, PropertiesSYSTEMB* properties);
+	SYSTEMB(UserRamSYSTEMB* userRam, UserEepromSYSTEMB* userEeprom, ComObjectsSYSTEMB* comObjects, AddrTablesSYSTEMB* addrTables, PropertiesSYSTEMB* properties, KnxBusInterface* busIf);
 	virtual ~SYSTEMB() = default;
 
     virtual const char* getBcuType() const override { return "SYSTEM_B"; }
