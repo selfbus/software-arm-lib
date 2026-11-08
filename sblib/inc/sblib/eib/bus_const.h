@@ -125,10 +125,10 @@ enum TxErrorCode
 /**
  * For rx process: Time from end of stop bit to start of ACK = 15* bit time -10us/+30us according to KNX Standard v3.0.0 03_02_02
  * (Communication Medium TP1) 2.3.1 p.35 figure 40 (ack_char) and AN187 (TP1 Layer 2 timing correction); KNX Spec 2.1 had -5us
- * We add an marging of 100us as we have seen some early acks on the bus
+ * We add a margin of 100us as we have seen some early acks on the bus
  */
 #define ACK_WAIT_TIME_MIN   (BIT_TIMES_DELAY(15) - 10 - 100)
-#define ACK_WAIT_TIME_MAX   (BIT_TIMES_DELAY(15) +30 + 100)
+#define ACK_WAIT_TIME_MAX   (BIT_TIMES_DELAY(15) + 30 + 100)
 
 #define WAIT_40BIT          BIT_TIMES_DELAY(40) //!< Minimum time to wait for start of frame (see KNX spec 2.1 chapter 3/2/2 section 2.3.1 p. 35): BIT_TIME * 40
 #define WAIT_50BIT_FOR_IDLE BIT_TIMES_DELAY(50) //!< Time to wait before bus is in idle state: BIT_TIME * 50
