@@ -478,7 +478,9 @@ bool TLayer4::processConControlAcknowledgmentPDU(uint16_t senderAddr, const TPDU
                 serial.print(LOG_SEP);
                 dumpTelegramBytes(false, telegram, telLength);
             );
-            actionA06DisconnectAndClose();
+            // This was actionA06DisconnectAndClose in KNX Standard v2.1. In KNX Standard v3.0 Application Note AN210
+            // it was changed to actionA00Nothing for improved connection reliability.
+            actionA00Nothing();
             return (false);
         }
 
