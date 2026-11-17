@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstring>
 #include <limits>
+#include <climits> // INT_MIN
 
 #include <catch.hpp> ///\todo replace with catch2/catch_test_macros.hpp
 

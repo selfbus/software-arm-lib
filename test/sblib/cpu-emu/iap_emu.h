@@ -11,6 +11,8 @@
 #ifndef IAP_EMU_H_
 #define IAP_EMU_H_
 
+#include <stdint.h> // uintptr_t
+
 #ifdef __cplusplus
 extern "C"
 {
