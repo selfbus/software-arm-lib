@@ -112,6 +112,9 @@ if(CMAKE_CROSSCOMPILING)
         $<$<CONFIG:Release>: -Os>
     )
 
+    # Keep the handlers global with LTO. Otherwise the linker script does not see them and calculates the
+    # boot ROM checksum (__valid_user_code_checksum) from the wrong addresses.
+    target_link_options(${TARGET_ARM} PRIVATE -Wl,--undefined=NMI_Handler -Wl,--undefined=HardFault_Handler)
     target_link_options(${TARGET_ARM} PRIVATE -T ${CMAKE_CURRENT_SOURCE_DIR}/linkscripts/bootloader_combined.ld)
     target_link_options(${TARGET_ARM} PRIVATE -Xlinker -Map=$<TARGET_FILE_DIR:${TARGET_ARM}>/${TARGET_ARM}.map)
 
