@@ -12,7 +12,7 @@
             "hidden": false,
             "generator": "Ninja Multi-Config",
             "binaryDir": "${sourceDir}/cmake-build/${presetName}",
-            "toolchainFile": "${sourceDir}/../software-arm-lib/cmake/toolchains/arm-none-eabi_mcuxpresso.cmake",
+            "toolchainFile": "${sourceDir}/../../cmake/toolchains/arm-none-eabi.cmake",
             "cacheVariables": {
                 "CMSIS_ARCHITECTURE": "arm"
             }
