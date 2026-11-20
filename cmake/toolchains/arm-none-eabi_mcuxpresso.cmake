@@ -3,6 +3,12 @@ cmake_minimum_required(VERSION 3.28)
 # Toolchain file for MCUXpresso IDE arm-none-eabi toolchain
 #
 # Minimum supported MCUXpresso version is 11.9.0.
+#
+# The compiler detection is skipped (*_COMPILER_FORCED). With a forced compiler CMake derives
+# the default standard from the compiler version (Compiler/GNU-<LANG>.cmake);
+# arm-none-eabi_mcuxpresso/compiler_defaults.cmake sets that version, so C_STANDARD/CXX_STANDARD
+# and C_EXTENSIONS/CXX_EXTENSIONS result in -std=... as with a detected compiler.
+#
 # Usage: cmake -DCMAKE_TOOLCHAIN_FILE=path/to/arm-none-eabi_mcuxpresso.cmake ...
 
 if(NOT TOOLCHAIN_PREFIX)
@@ -130,6 +136,9 @@ set(CMAKE_CXX_COMPILER_FORCED   TRUE)
 
 set(TOOLCHAIN_DIR "${CMAKE_CURRENT_LIST_DIR}")
 set(FLAGS_DIR "${TOOLCHAIN_DIR}/arm-none-eabi_mcuxpresso")
+
+# Compiler version, CMake derives the default language standard from it (the compiler detection is skipped)
+include("${FLAGS_DIR}/compiler_defaults.cmake")
 
 # Include compiler flags
 include("${FLAGS_DIR}/flags_compiler.cmake")
