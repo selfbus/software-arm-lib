@@ -1,4 +1,4 @@
-# Version of the forced compilers of the toolchain file
+# Version of the forced compilers, shared by both toolchain files
 #
 # The toolchain files skip the compiler detection (CMAKE_<LANG>_COMPILER_FORCED), so CMake does not know the compiler
 # version. Without it CMake knows neither the -std options nor the default standard of the compiler and never turns
