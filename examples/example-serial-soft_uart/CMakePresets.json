@@ -22,7 +22,7 @@
             "name": "default-toolchain-arm-none-eabi",
             "description": "Sets Toolchain arm-none-eabi (using MCUXpresso)",
             "hidden": true,
-            "toolchainFile": "${sourceDir}/../../../software-arm-lib/cmake/toolchains/arm-none-eabi_mcuxpresso.cmake"
+            "toolchainFile": "${sourceDir}/../../cmake/toolchains/arm-none-eabi_mcuxpresso.cmake"
         },
         {
             "name": "arm",
@@ -46,7 +46,7 @@
             "hidden": false,
             "verbose": true,
             "targets": [
-                "HoermannGateway_arm"
+                "example-serial-soft_uart_arm"
             ]
         },
         {
@@ -58,7 +58,7 @@
             "hidden": false,
             "verbose": true,
             "targets": [
-                "HoermannGateway_arm"
+                "example-serial-soft_uart_arm"
             ]
         }
     ],
