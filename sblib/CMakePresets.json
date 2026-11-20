@@ -20,14 +20,14 @@
         },
         {
             "name": "default-toolchain-arm-none-eabi",
-            "description": "Sets Toolchain arm-none-eabi (using MCUXpresso)",
+            "description": "Sets the generic Toolchain arm-none-eabi (from ARM_TOOLCHAIN_PATH, MCUXPRESSO_TOOLCHAIN_PATH or PATH)",
             "hidden": true,
-            "toolchainFile": "${sourceDir}/../cmake/toolchains/arm-none-eabi_mcuxpresso.cmake"
+            "toolchainFile": "${sourceDir}/../cmake/toolchains/arm-none-eabi.cmake"
         },
         {
             "name": "arm",
             "displayName": "ARM Target",
-            "description": "Sets Toolchain arm-none-eabi (using MCUXpresso), build directory and Ninja Multi Config generator",
+            "description": "Sets the generic Toolchain arm-none-eabi (from ARM_TOOLCHAIN_PATH, MCUXPRESSO_TOOLCHAIN_PATH or PATH), build directory and Ninja Multi Config generator",
             "hidden": false,
             "inherits": [
                 "default-build-directory",
