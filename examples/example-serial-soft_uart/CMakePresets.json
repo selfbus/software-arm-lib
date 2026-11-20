@@ -46,7 +46,7 @@
             "hidden": false,
             "verbose": true,
             "targets": [
-                "HoermannGateway_arm"
+                "example-serial-soft_uart_arm"
             ]
         },
         {
@@ -58,7 +58,7 @@
             "hidden": false,
             "verbose": true,
             "targets": [
-                "HoermannGateway_arm"
+                "example-serial-soft_uart_arm"
             ]
         }
     ],
