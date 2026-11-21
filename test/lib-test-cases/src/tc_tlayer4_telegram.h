@@ -378,10 +378,9 @@ static Telegram testCaseTelegrams_32[] =
     // steps 0.x done in tc_setup_OpenWait_A001
 
     // 1. T_ACK with wrong sequence number (5)
-    {TEL_RX, 8, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xD6}}, // T-Ack(Seq=5)
-    // 2. Check T_DISCONNECT_PDU
-    {TEL_TX, 7, 0, 0, disconnectClosed, {0xB0, 0xA0, 0x00, 0xA0, 0x01, 0x60, 0x81}},
-    // 3. Check for empty TX-Response
+    {TEL_RX, 8, 0, 0, connectedOpenWait, {0xB0, 0xA0, 0x01, 0xA0, 0x00, 0x60, 0xD6}}, // T-Ack(Seq=5)
+    // AN210: ignore a repeated T_ACK and keep the connection open.
+    // 2. Check for empty TX-Response
     {CHECK_TX_BUFFER, 0, 0, 0, NULL, {}},
     {END}
 };
