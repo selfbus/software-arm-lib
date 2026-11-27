@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+
+<configuration>
+    <include resource="logback/uiAppenders.xml"/>   <!-- Console and gui appenders -->
+    <include resource="logback/fileAppenders.xml"/> <!-- *.log and *.html file appenders -->
+    <include resource="logback/vendorLoggers.xml"/> <!-- Set vendor logger levels -->
+
+    <!-- ERROR, WARN, INFO, DEBUG, TRACE -->
+    <root level="TRACE"> <!-- just ignore the IDEA warning "Attribute level is not allowed here", it is allowed :) -->
+        <appender-ref ref="CONSOLE" />
+        <appender-ref ref="JTextPane" />
+        <appender-ref ref="logFile" />
+        <appender-ref ref="htmlAppender" />
+        <!-- <appender-ref ref="htmlWarnAppender" />  -->
+    </root>
+</configuration>

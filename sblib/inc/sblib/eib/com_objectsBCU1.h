@@ -49,6 +49,7 @@ public:
 	ComObjectsBCU1(BcuDefault* bcuInstance) : ComObjects((BcuBase*)bcuInstance) {}
 	~ComObjectsBCU1() = default;
 
+    void printObjectConfigTable();
 	virtual const ComConfig& objectConfig(int objno) override;
 	virtual int objectSize(int objno) override;
 	virtual byte* objectValuePtr(int objno) override;

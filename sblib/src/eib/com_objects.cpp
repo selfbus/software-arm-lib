@@ -187,16 +187,6 @@
 #include <sblib/eib/bcu_base.h>
 #include <sblib/eib/bus.h>
 
-#if defined(DUMP_COM_OBJ)
-#   include <sblib/serial.h>
-#endif
-
-#ifdef DUMP_COM_OBJ
-#   define d(x) x
-#else
-#   define d(x)
-#endif
-
 /** The COMFLAG_UPDATE flag, moved to the high nibble */
 #define COMFLAG_UPDATE_HIGH (COMFLAG_UPDATE << 4)
 
@@ -233,16 +223,16 @@ void ComObjects::addObjectFlags(int objno, int flags)
     if (objno & 1)
         flags <<= 4;
 
-    d(serial.print(" addObjFlags in (obj, flags): ");)
-  	d(serial.print(objno, DEC, 2);)
-    d(serial.print(", ");)
+    d(serial.print(" addObjFlags(");)
+  	d(serial.print(objno, DEC, 3);)
+    d(serial.print(", 0x");)
   	d(serial.print(flags, HEX, 2);)
-  	d(serial.print(", is: ");)
+  	d(serial.print(") old: 0x");)
   	d(serial.print(flagsTab[objno >> 1], HEX, 2);)
 
     flagsTab[objno >> 1] |= flags;
 
-    d(serial.print(", out: ");)
+    d(serial.print(" new: ");)
 	d(serial.print(flagsTab[objno >> 1], HEX, 2);)
 	d(serial.println();)
 }
@@ -257,9 +247,9 @@ void ComObjects::setObjectFlags(int objno, int flags)
     flagsPtr += objno >> 1; // "select" high or low nibble according to objno odd or even
 
     d(
-      serial.print(" setObjFlags obj: ", objno, DEC, 2);
-      serial.print(" is: ", *flagsPtr, HEX, 2);
-	  serial.print(" to: ", flags, HEX, 2);
+      serial.print(" setObjFlags obj: ", objno, DEC, 3);
+      serial.print(" is: 0x", *flagsPtr, HEX, 2);
+	  serial.print(" to: 0x", flags, HEX, 2);
     )
 
     if (objno & 1)
@@ -272,7 +262,7 @@ void ComObjects::setObjectFlags(int objno, int flags)
         *flagsPtr &= 0xf0;
         *flagsPtr |= flags;
     }
-	d(serial.println(" out: ", *flagsPtr, HEX, 2);)
+	d(serial.println(" out: 0x", *flagsPtr, HEX, 2);)
 }
 
 unsigned int ComObjects::objectRead(int objno)
@@ -308,6 +298,11 @@ void ComObjects::_objectWrite(int objno, unsigned int value, int flags)
     }
 
     //addObjectFlags(objno, flags);
+    d(
+      serial.print("ComObjects::_objectWrite call setObjectFlags(", objno, DEC, 3);
+      serial.print(", 0x", flags, HEX, 2);
+      serial.println(")");
+    )
     setObjectFlags(objno, flags); //clear any pending ram com object flags and set new flags
 }
 

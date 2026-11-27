@@ -72,7 +72,7 @@ void ComObjectsBCU1::processGroupTelegram(uint16_t addr, int apci, byte* tel, in
  */
     const byte* assocTab = bcu->addrTables->assocTable();
     const int endAssoc = 1 + (*assocTab) * 2;
-    int objno, objConf;
+    int objno;
 
     DB_COM_OBJ(
             serial.print("grpAddr ", mainGroup(addr));
@@ -112,23 +112,39 @@ void ComObjectsBCU1::processGroupTelegram(uint16_t addr, int apci, byte* tel, in
         }
 
         //DB_COM_OBJ(serial.println("commsTabAddr: 0x", ((UserEepromBCU1*)((BcuDefault*)bcu)->userEeprom)->commsTabAddr(), HEX););
-        objConf = objectConfig(objno).config;
-        DB_COM_OBJ(serial.println("objConf: 0x", objno, HEX, 2););
+        uint8_t objConf = objectConfig(objno).config;
+        DB_COM_OBJ(serial.println("objConf: 0x", objConf, HEX, 2););
 
-
-
-        if (apci == APCI_GROUP_VALUE_WRITE_PDU || apci == APCI_GROUP_VALUE_RESPONSE_PDU)
+        if ((objConf & COMCONF_COMM) != COMCONF_COMM)
         {
-            // Check if communication and write are enabled
-            if ((objConf & COMCONF_WRITE_COMM) == COMCONF_WRITE_COMM)
-                processGroupWriteTelegram(objno, tel); // set update flag and update value of object
+            // communication is disabled, just continue and check remaining associations
+            continue;
         }
-        else if (apci == APCI_GROUP_VALUE_READ_PDU)
+
+        switch (apci)
         {
-            // Check if communication and read are enabled
-            if ((objConf & COMCONF_READ_COMM) == COMCONF_READ_COMM)
-                // we received read-request from bus - so send response back and search for more associations
-                sendGroupWriteTelegram(objno, addr, true); // send write to the bus and update all associated local objects
+            case APCI_GROUP_VALUE_WRITE_PDU:
+                // Check if write is enabled
+                if ((objConf & COMCONF_WRITE) == COMCONF_WRITE)
+                    processGroupWriteTelegram(objno, tel); // set update flag and update value of object
+                break;
+
+            case APCI_GROUP_VALUE_RESPONSE_PDU:
+                // Check if update is enabled
+                if ((objConf & COMCONF_UPDATE) == COMCONF_UPDATE)
+                    processGroupWriteTelegram(objno, tel); // set update flag and update value of object
+                break;
+
+            case APCI_GROUP_VALUE_READ_PDU:
+                // Check if read is enabled
+                if ((objConf & COMCONF_READ) == COMCONF_READ)
+                    // we received read-request from bus - so send response back and search for more associations
+                    sendGroupWriteTelegram(objno, addr, true); // send write to the bus and update all associated local objects
+                break;
+
+            default:
+                // this should never happen
+                IF_DEBUG(fatalError(););
         }
     }
 }
@@ -166,4 +182,51 @@ inline const ComConfigBCU1* ComObjectsBCU1::objectConfigBCU1(int objno)
 	    return (nullptr);
 	}
     return (const ComConfigBCU1*) (objConfigTable + 1 + sizeof(ComConfigBCU1::DataPtrType) + objno * sizeof(ComConfigBCU1) );
+}
+
+void ComObjectsBCU1::printObjectConfigTable()
+{
+#ifdef DUMP_COM_OBJ
+    uint16_t comObjTableAddr = ((BcuDefault*)bcu)->userEeprom->commsTabPtr();
+    comObjTableAddr += ((BcuDefault*)bcu)->userEeprom->startAddr(); // for BCU1 add 0x100
+    serial.println("ObjectConfigTable:");
+    serial.println("   address      : 0x", (unsigned int)comObjTableAddr, HEX, 4);
+    if (comObjTableAddr == 0)
+    {
+        serial.println("invalid address!");
+        return;
+    }
+    byte* currentTablePosition = ((BcuDefault*)bcu)->userMemoryPtr(comObjTableAddr);
+    byte currentSize = *currentTablePosition;
+    serial.println("   #com objects : ", (unsigned int)currentSize, DEC, 3);
+    currentTablePosition++; // 1 byte #com objects
+    uint16_t ramFlagsTablePointer;
+    ramFlagsTablePointer = *currentTablePosition;
+
+    currentTablePosition++; // 1 byte RAM-Flags-Pointer
+    serial.println("   RAM-Flags-Ptr: 0x", (unsigned int)ramFlagsTablePointer, HEX, 4);
+    for (uint8_t i = 0; i < currentSize; i++)
+    {
+        uint8_t data;
+        data = *currentTablePosition;
+        currentTablePosition++; // 1 byte data pointer
+        uint8_t config = *currentTablePosition;
+        if ((config & COMCONF_VALUE_TYPE) == COMCONF_VALUE_TYPE)
+        {
+            data += 0x100; // Segment selector KNX Spec. 3.0 3/5/1 4.18.3.1.2.1
+        }
+
+        currentTablePosition++; // 1 byte config
+        uint8_t type = *currentTablePosition;
+        currentTablePosition++; // 1 byte type
+        serial.print("#", i, DEC, 3);
+        serial.print(": data 0x", data, HEX, 4);
+        serial.print(" config (0x", config, HEX, 2);
+        serial.print("): ");
+        printComObjectConfig(config);
+        serial.print(" type: ");
+        printComObjectType(type);
+        serial.println();
+    }
+#endif
 }

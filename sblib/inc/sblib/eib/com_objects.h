@@ -36,6 +36,7 @@
 #include <sys/param.h>
 #include <sblib/eib/types.h>
 #include <sblib/eib/datapoint_types.h>
+#include <sblib/eib/com_objects_debug.h>
 
 class BcuBase;
 

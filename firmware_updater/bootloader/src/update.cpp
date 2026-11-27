@@ -57,7 +57,7 @@
  *          Maximum extended frame length is 254 bytes - 1 byte for the @ref UPD_Command totaling in 1265 bytes
  */
 constexpr uint16_t bufferSize = 1265;
-static uint8_t __attribute__ ((aligned (FLASH_RAM_BUFFER_ALIGNMENT))) ramBuffer[bufferSize]; //!< RAM buffer used for flash operations
+alignas(FLASH_RAM_BUFFER_ALIGNMENT) static uint8_t ramBuffer[bufferSize]; //!< RAM buffer used for flash operations
 static uint8_t * retTelegram = nullptr;                  //!< pointer to return buffer, as a field for easier access and smaller code size
 
 // Try to avoid direct access to these global variables.

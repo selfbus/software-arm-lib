@@ -1,0 +1,12 @@
+version: 2
+updates:
+ - package-ecosystem: "gradle"
+   directory: "/firmware_updater/updater"
+   schedule:
+     interval: "weekly"
+     day: "thursday"
+     time: "12:53"
+   ignore:
+     # Exclude java-intelhex-parser
+     - dependency-name: "com.github.j123b567:java-intelhex-parser"
+       versions: [">= 0"] # Prevent updating due to its specific pinned commit

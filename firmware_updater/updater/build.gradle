@@ -1,0 +1,164 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.gradleup.shadow' version '9.2.2'
+    id 'jvm-test-suite'
+}
+
+group = 'org.selfbus'
+version = '1.27' ///\todo Change also in ToolInfo.java (versionMajor, versionMinor)
+description = 'Selfbus Updater, a tool to update the firmware of Selfbus devices via the KNX Bus.'
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+    // withJavadocJar() //todo fails, because there is no real docu
+}
+
+application {
+    mainClass = 'org.selfbus.updater.Updater'
+}
+
+def gitHash = "git rev-parse --verify --short HEAD".execute().text.trim()
+def buildDate = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z")
+        .withZone(ZoneId.of("UTC"))
+        .format(Instant.now())
+jar {
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass,
+                'Implementation-Version': project.version,
+                'Revision': "${gitHash}",
+                'Build-Date': "${buildDate}"
+        )
+    }
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src']
+        resources.srcDirs = ['src/resources']
+    }
+    test {
+        java.srcDirs = ['test']
+        //java.exclude 'dir1/', 'dir2'
+        resources.srcDirs = ['test/resources']
+    }
+}
+
+tasks.named('compileJava') {
+    options.javaModuleVersion = provider { project.version }
+}
+
+// ensure UTF-8 encoding
+compileJava.options.encoding = 'UTF-8'
+compileTestJava.options.encoding = 'UTF-8'
+javadoc.options.encoding = 'UTF-8'
+
+compileJava.options.compilerArgs = [
+        '-Xlint:all',     // enable all warnings
+        '-Xlint:-serial', // disable serialisation warning
+]
+
+compileTestJava.options.compilerArgs = [
+        '-Xlint:all', // enable all warnings
+]
+
+tasks.assemble {
+    dependsOn(tasks.shadowJar)
+}
+
+testing {
+    //
+    // comment avoids warning "suites' cannot be applied to '(groovy.lang.closure)'"
+    //
+    //noinspection GroovyAssignabilityCheck
+    suites {
+        test {
+            useJUnitJupiter()
+        }
+
+        integrationTest(JvmTestSuite) {
+            dependencies {
+                implementation project()
+            }
+
+            targets {
+                configureEach {
+                    testTask.configure {
+                        shouldRunAfter(test)
+                    }
+                }
+            }
+        }
+    }
+}
+
+tasks.named('check') {
+    dependsOn(testing.suites.integrationTest)
+}
+
+//
+// Repositories are now configured in settings.gradle, so we can include https://jitpack.io.
+// We need it to add java-intelhex-parser as an dependency, instead of copy/pasting the source.
+//
+dependencies {
+    // Use this implementation for debugging with local calimero-core
+    // Set location of local calimero-core in settings.gradle
+    //implementation 'com.github.calimero:calimero-core'
+
+    // calimero knx bus access library
+    implementation 'com.github.calimero:calimero-core:2.6'
+
+    // calimero serial tx/rx lib for ft1.2 and tpuart support
+    implementation 'com.github.calimero:calimero-rxtx:2.6'
+
+    // calimero usb support
+    implementation 'io.calimero:calimero-usb:2.6'
+
+    // find specific directories under linux and windows
+    implementation 'net.harawata:appdirs:1.5.0'
+
+    // For search in byte array
+    implementation 'com.google.guava:guava:33.5.0-jre'
+
+    // command line option
+    implementation 'commons-cli:commons-cli:1.11.0' // todo On update check todo in CliOptions::helpToString
+
+    // console and file logging
+    implementation 'ch.qos.logback:logback-classic:1.5.21'
+
+    // Redirect System.Logger (used by calimero >=3.0) to slf4J (logback)
+    implementation 'org.slf4j:slf4j-jdk-platform-logging:2.0.17'
+
+    // Console ansi color support
+    implementation 'org.jline:jline-terminal-jansi:3.30.6'
+
+    // GUI
+    implementation files('libs/forms_rt.jar')
+
+    // GUI settings
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.20.1'
+
+    // Intel hex parser
+    // commit 9dec823 of 2023/02/27
+    // https://github.com/j123b567/java-intelhex-parser/commit/9dec82355697dba028e8aa1832b8b9ee1b66d9e2
+    implementation 'com.github.j123b567:java-intelhex-parser:9dec823'
+    // To revert this, just delete "implementation 'com.github.j123b567:java-intelhex-parser:9dec823'"
+    // and c&p the code of
+    // ../cz/jaybee/intelhex to
+    // ../software-arm-lib/firmware_updater/updater/source/src/main/java/cz/jaybee/intelhex
+}
+
+// Just to maintain compatibility with the old fatJar task for a while.
+tasks.register('fatJar') {
+    dependsOn shadowJar
+    group = 'build'
+    description = 'An alias for the shadowJar task that creates a fat JAR'
+    doFirst {
+        def blue = '\u001B[34m'
+        def reset = '\u001B[0m'
+        logger.warn("${blue}The fatJar task is deprecated. Please use the \"shadowJar\" task directly.${reset}")
+    }
+}

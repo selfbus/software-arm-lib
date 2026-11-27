@@ -19,4 +19,8 @@ set(SBLIB_LIB_TEST_CASES_SRC
         src/test_prot_app_program.cpp
         src/test_prot_tlayer4.cpp
         src/timeout_test.cpp
+        src/knx/test_memory.h
+        src/knx/test_memory.cpp
+        src/knx/test_user_eeprom.h
+        src/knx/test_user_eeprom.cpp
 )

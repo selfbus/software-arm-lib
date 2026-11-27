@@ -25,6 +25,7 @@ inline void BCU1::begin(int manufacturer, int deviceType, int version)
 {
     BcuDefault::begin(manufacturer, deviceType, version);
     BcuDefault::_begin();
+    comObjects->printObjectConfigTable();
 }
 
 bool BCU1::applicationRunning() const

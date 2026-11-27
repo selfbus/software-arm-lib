@@ -86,6 +86,9 @@ struct ComConfig
  */
 enum ComConfigFlag
 {
+    /** Com object configuration flag: update enabled */
+    COMCONF_UPDATE = 0x80,
+
     /** Com object configuration flag: transmit enabled */
     COMCONF_TRANS = 0x40,
 
