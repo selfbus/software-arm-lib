@@ -7,6 +7,10 @@ set(LINKER_FLAGS_LIST
     -Xlinker --cref
     -Xlinker --gc-sections
     -Xlinker -print-memory-usage
+    # Keep the handlers global with LTO. Otherwise the linker script does not see them and calculates the
+    # boot ROM checksum (__valid_user_code_checksum) from the wrong addresses.
+    -Xlinker --undefined=NMI_Handler
+    -Xlinker --undefined=HardFault_Handler
 )
 string(JOIN " " LINKER_FLAGS ${LINKER_FLAGS_LIST})
 set(LINKER_FLAGS_DEBUG "-DDEBUG")
