@@ -21,7 +21,7 @@ int AddrTablesBCU2::indexOfAddr(int addr)
     int addrHigh = addr >> 8;
     int addrLow = addr & 255;
 
-    for (int i = 1; i <= num; ++i, tab += 2)
+    for (int i = 1; i < num; ++i, tab += 2)
     {
         if (tab[0] == addrHigh && tab[1] == addrLow)
             return i;
