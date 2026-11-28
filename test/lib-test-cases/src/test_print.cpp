@@ -158,13 +158,13 @@ TEST_CASE("Print::", "[print]") {
 
         SECTION("Print minimum negative")
         {
-            mock.print(INT_MIN, DEC);
+            mock.print(std::numeric_limits<int>::min(), DEC);
             REQUIRE(mock.getString() == "-2147483648");
         }
 
         SECTION("Print minimum negative binary")
         {
-            mock.print(INT_MIN, BIN);
+            mock.print(std::numeric_limits<int>::min(), BIN);
             REQUIRE(mock.getString() == "-10000000000000000000000000000000");
         }
     }
